@@ -30,7 +30,7 @@ Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi ini di komputer/la
 ### 1. Clone Repository
 Buka terminal/CMD Anda, lalu jalankan perintah berikut:
 ```bash
-git clone <URL_REPOSITORY_ANDA>
+git clone https://github.com/flustratech-dev/rynude_ai.git
 cd claude-ui-clone
 ```
 
@@ -58,7 +58,7 @@ Buka file `.env` di teks editor, lalu sesuaikan konfigurasi database Anda:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=nama_database_anda
+DB_DATABASE=db_bebas aja bos 
 DB_USERNAME=root
 DB_PASSWORD=
 ```
