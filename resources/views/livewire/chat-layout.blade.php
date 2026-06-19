@@ -82,18 +82,30 @@
             <div class="flex-1 flex flex-col min-w-0 relative">
                 <!-- Removed full-screen loading overlay to prevent black popup bug -->
                 @if($activePanel === 'chats')
-                    <livewire:chats-panel key="panel-chats" />
+                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                        <livewire:chats-panel key="panel-chats" />
+                    </div>
                 @elseif($activePanel === 'projects')
-                    <livewire:projects-panel key="panel-projects" />
+                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                        <livewire:projects-panel key="panel-projects" />
+                    </div>
                 @elseif($activePanel === 'code')
-                    <livewire:code-panel key="panel-code" />
+                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                        <livewire:code-panel key="panel-code" />
+                    </div>
                 @elseif($activePanel === 'cowork')
-                    <livewire:cowork-panel key="panel-cowork" />
+                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                        <livewire:cowork-panel key="panel-cowork" />
+                    </div>
                 @elseif($activePanel === 'design')
-                    <livewire:design-panel key="panel-design" />
-                @else
-                    <livewire:chat-interface key="panel-chat-interface" />
+                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                        <livewire:design-panel key="panel-design" />
+                    </div>
                 @endif
+                
+                <div class="absolute inset-0 z-0 h-full {{ $activePanel ? 'invisible pointer-events-none' : 'flex flex-col' }}">
+                    <livewire:chat-interface key="panel-chat-interface" />
+                </div>
             </div>
 
             <div 
