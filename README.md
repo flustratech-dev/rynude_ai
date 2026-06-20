@@ -40,9 +40,12 @@ Daripada harus membuka banyak *tab* browser untuk ChatGPT, Claude, dan Hugging F
   <img src="screenshots/main-chat.png" alt="Rynude AI Main Chat Interface" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
   
   <p float="left" align="center">
-    <img src="screenshots/models-dropdown.png" alt="Hugging Face Models Dropdown" width="390" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-right: 10px;">
-    <img src="screenshots/settings-models.png" alt="Settings AI Models Management" width="390" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <img src="screenshots/models-dropdown.png" alt="Dropdown Model" width="260" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-right: 10px;">
+    <img src="screenshots/more-models-1.png" alt="Hugging Face Models 1" width="260" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-right: 10px;">
+    <img src="screenshots/more-models-2.png" alt="Hugging Face Models 2" width="260" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
   </p>
+
+  <img src="screenshots/settings-models.png" alt="Settings AI Models Management" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 10px;">
 </div>
 
 ### 🏗️ Arsitektur Aplikasi (Cara Kerja)
