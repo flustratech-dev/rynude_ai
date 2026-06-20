@@ -34,6 +34,17 @@ Rynude AI adalah antarmuka obrolan (Chat UI) *open-source* yang mereplika pengal
 
 Daripada harus membuka banyak *tab* browser untuk ChatGPT, Claude, dan Hugging Face secara terpisah, Rynude menyatukan semuanya dalam satu aplikasi lokal milik Anda sendiri yang super cepat, aman, dan tanpa batasan!
 
+### 📸 Tampilan Aplikasi (Screenshots)
+
+<div align="center">
+  <img src="screenshots/main-chat.png" alt="Rynude AI Main Chat Interface" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
+  
+  <p float="left" align="center">
+    <img src="screenshots/models-dropdown.png" alt="Hugging Face Models Dropdown" width="390" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-right: 10px;">
+    <img src="screenshots/settings-models.png" alt="Settings AI Models Management" width="390" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+  </p>
+</div>
+
 ### 🏗️ Arsitektur Aplikasi (Cara Kerja)
 
 ```mermaid
