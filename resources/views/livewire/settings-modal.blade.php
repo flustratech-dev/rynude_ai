@@ -65,6 +65,7 @@
                         ['id' => 'billing', 'label' => 'Billing', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"></path>'],
                         ['id' => 'capabilities', 'label' => 'Capabilities', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"></path>'],
                         ['id' => 'connectors', 'label' => 'Connectors', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z"></path>'],
+                        ['id' => 'models', 'label' => 'AI Models', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"></path>'],
                         ['id' => 'claude-code', 'label' => 'Claude Code', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"></path>'],
                         ['id' => 'api-keys', 'label' => 'API Keys', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"></path>'],
                     ];
@@ -135,6 +136,8 @@
                             Claude will keep these in mind across chats and Cowork within <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Anthropic's guidelines</a>. <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Learn more</a>
                         </p>
                         <textarea 
+                            wire:model="customInstructions"
+                            wire:change="saveProfile"
                             class="w-full h-24 p-3 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" 
                             placeholder="e.g. keep explanations brief and to the point"
                         ></textarea>
@@ -192,8 +195,8 @@
                         <div class="p-4 bg-[#FBFBFA] dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
                             <h3 class="text-sm font-medium text-gray-900 dark:text-stone-100 mb-1">Status Kuota</h3>
                             <div class="flex items-center justify-between">
-                                <span class="text-sm text-gray-500 dark:text-stone-400">Sisa Kuota Sistem Anda:</span>
-                                <span class="text-lg font-bold text-[#D97757]">0 Request</span>
+                                <span class="text-sm text-gray-500 dark:text-stone-400">Sisa Kuota Token Anda:</span>
+                                <span class="text-lg font-bold text-[#D97757]">{{ number_format($tokensLimit) }} Tokens</span>
                             </div>
                         </div>
 
@@ -405,6 +408,85 @@
                     </div>
                 </div>
 
+                {{-- ========== AI MODELS TAB ========== --}}
+                <div x-show="$wire.activeTab === 'models'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200">AI Models Management</h2>
+                        <button wire:click="createModel" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">+ Add Model</button>
+                    </div>
+
+                    @if (session()->has('modelMessage'))
+                        <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-stone-800 dark:text-green-400 border border-green-200 dark:border-stone-700" role="alert">
+                            {{ session('modelMessage') }}
+                        </div>
+                    @endif
+
+                    <div class="overflow-x-auto border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
+                        <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
+                            <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
+                                <tr>
+                                    <th class="px-4 py-3 font-medium">Model Code</th>
+                                    <th class="px-4 py-3 font-medium">Name</th>
+                                    <th class="px-4 py-3 font-medium text-center">Status</th>
+                                    <th class="px-4 py-3 font-medium text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#E5E5E5] dark:divide-stone-700">
+                                @foreach($aiModels as $model)
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-stone-700/30 transition-colors">
+                                        <td class="px-4 py-3 font-mono text-[13px] text-gray-800 dark:text-stone-200">{{ $model->code }}</td>
+                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-stone-100">{{ $model->name }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button 
+                                                wire:click="toggleModelActive({{ $model->id }})"
+                                                class="px-3 py-1 rounded-full text-[11px] font-medium transition-colors {{ $model->is_active ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400' }}"
+                                            >
+                                                {{ $model->is_active ? 'Active' : 'Inactive' }}
+                                            </button>
+                                        </td>
+                                        <td class="px-4 py-3 text-right">
+                                            <button wire:click="editModel({{ $model->id }})" class="text-[#D97757] hover:text-[#c66547] font-medium text-[13px] mr-3">Edit</button>
+                                            <button wire:click="deleteModel({{ $model->id }})" class="text-red-500 hover:text-red-700 font-medium text-[13px]" onclick="confirm('Are you sure you want to delete this model?') || event.stopImmediatePropagation()">Delete</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Create/Edit Modal overlay (inside models tab) -->
+                    @if($isModelModalOpen)
+                        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-stone-700 overflow-hidden">
+                                <div class="p-5 border-b border-gray-200 dark:border-stone-700 flex justify-between items-center bg-[#F3F2EE] dark:bg-stone-800">
+                                    <h3 class="font-bold text-[#2D2825] dark:text-stone-100">{{ $editModelId ? 'Edit Model' : 'Add New Model' }}</h3>
+                                    <button wire:click="closeModelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-stone-300">&times;</button>
+                                </div>
+                                <div class="p-5">
+                                    <div class="mb-4">
+                                        <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Code</label>
+                                        <input type="text" wire:model="modelCode" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. claude-3-opus-20240229">
+                                        @error('modelCode') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Name</label>
+                                        <input type="text" wire:model="modelName" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. Claude 3 Opus">
+                                        @error('modelName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="mb-6 flex items-center mt-6">
+                                        <input type="checkbox" id="modelIsActive" wire:model="modelIsActive" class="w-4 h-4 text-[#D97757] bg-gray-100 border-gray-300 rounded focus:ring-[#D97757] dark:bg-stone-700 dark:border-stone-600">
+                                        <label for="modelIsActive" class="ml-2 text-[14px] font-medium text-[#2D2825] dark:text-stone-300">Set as Active</label>
+                                    </div>
+                                    <div class="flex justify-end gap-3 pt-4 border-t border-[#E5E5E5] dark:border-stone-700">
+                                        <button wire:click="closeModelModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 dark:hover:bg-stone-700 transition-colors">Cancel</button>
+                                        <button wire:click="storeModel" class="px-4 py-2 text-sm font-medium text-white bg-[#D97757] rounded-lg hover:bg-[#c66547] transition-colors">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
                 {{-- ========== CLAUDE CODE TAB ========== --}}
                 <div x-show="$wire.activeTab === 'claude-code'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Claude Code</h2>
@@ -440,7 +522,7 @@
                 </div>
 
                 {{-- Fallback for any unknown tabs --}}
-                <div x-show="!['general', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'claude-code'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
+                <div x-show="!['general', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
                     Content for <span x-text="$wire.activeTab" class="ml-1 font-medium text-gray-600 dark:text-stone-300"></span> will go here.
                 </div>
 

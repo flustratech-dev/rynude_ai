@@ -27,6 +27,9 @@ class User extends Authenticatable
         'use_proxy',
         'proxy_base_url',
         'proxy_api_key',
+        'role',
+        'token_balance',
+        'custom_instructions',
     ];
 
     /**

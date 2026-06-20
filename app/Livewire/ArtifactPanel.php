@@ -12,6 +12,7 @@ class ArtifactPanel extends Component
     public $artifacts = [];
     public $copied = false;
     public $activeTab = 'code'; // 'code' or 'preview'
+    public $versions = [];
 
     public function mount()
     {
@@ -23,6 +24,8 @@ class ArtifactPanel extends Component
     {
         $this->currentArtifact = $artifact;
         $this->isOpen = true;
+        
+        $this->loadVersions($artifact['id']);
 
         // Add to artifacts list if not already there
         $exists = collect($this->artifacts)->firstWhere('id', $artifact['id']);
@@ -34,7 +37,34 @@ class ArtifactPanel extends Component
     public function openArtifact($id)
     {
         $this->currentArtifact = collect($this->artifacts)->firstWhere('id', $id);
+        if (!$this->currentArtifact) {
+            $model = \App\Models\MessageArtifact::find($id);
+            if ($model) {
+                $this->currentArtifact = $model->toArray();
+            }
+        }
+        
         $this->isOpen = true;
+        $this->loadVersions($id);
+    }
+    
+    public function loadVersions($id)
+    {
+        $this->versions = [];
+        $model = \App\Models\MessageArtifact::find($id);
+        if ($model && $model->identifier) {
+            $allVersions = \App\Models\MessageArtifact::where('identifier', $model->identifier)
+                ->orderBy('created_at', 'asc')
+                ->get();
+                
+            foreach ($allVersions as $index => $v) {
+                $this->versions[] = [
+                    'id' => $v->id,
+                    'version_number' => $index + 1,
+                    'is_current' => $v->id == $id,
+                ];
+            }
+        }
     }
 
     public function closeArtifact()

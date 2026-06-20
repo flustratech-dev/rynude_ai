@@ -6,7 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class MessageArtifact extends Model
 {
-    protected $fillable = ['message_id', 'type', 'language', 'title', 'content'];
+    protected $fillable = [
+        'message_id',
+        'identifier',
+        'type',
+        'language',
+        'title',
+        'content',
+    ];
 
     public function message()
     {

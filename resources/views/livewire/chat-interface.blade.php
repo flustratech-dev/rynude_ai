@@ -1,4 +1,5 @@
 <div class="flex flex-col h-full bg-[#F9F8F6] dark:bg-stone-900">
+    <input type="file" wire:model="attachment" id="file-upload" class="hidden" accept="image/*,.pdf,.doc,.docx,.txt">
 
     {{-- Empty State: Greeting + Form centered vertically --}}
     @if(empty($messages))
@@ -20,7 +21,40 @@
             <div class="w-full max-w-full md:max-w-[42rem] mx-auto" wire:key="empty-state-form-container">
                 <form wire:submit.prevent="sendMessage" wire:key="empty-state-form">
                     {{-- Prompt Box Container --}}
-                    <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth">
+                    <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
+                        {{-- Uploading State --}}
+                        <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
+                            <div class="w-16 h-16 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                                <svg class="animate-spin w-6 h-6 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200">Uploading...</span>
+                                <span class="text-[11px] text-stone-500">Please wait</span>
+                            </div>
+                        </div>
+
+                        {{-- Attachment Preview Area --}}
+                        @if($attachment)
+                            <div wire:loading.remove wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
+                                <div class="relative group">
+                                    <div class="w-16 h-16 rounded-xl overflow-hidden border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                                        @if(str_starts_with($attachment->getMimeType(), 'image/'))
+                                            <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
+                                        @else
+                                            <svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        @endif
+                                    </div>
+                                    <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate max-w-[200px]">{{ $attachment->getClientOriginalName() }}</span>
+                                    <span class="text-[11px] text-stone-500">{{ round($attachment->getSize() / 1024) }} KB</span>
+                                </div>
+                            </div>
+                        @endif
+
                         <textarea
                             x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' } }"
                             x-init="$watch('$wire.prompt', value => { if(!value) { $el.style.height = 'auto'; } else { resize(); } }); resize()"
@@ -43,7 +77,7 @@
                                 </button>
 
                                 <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute top-full left-0 mt-2 w-[240px] bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
-                                    <button class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                    <button type="button" onclick="document.getElementById('file-upload').click();" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
                                             <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                                             <span class="text-[13px] text-stone-800 dark:text-stone-200">Add files or photos</span>
@@ -259,14 +293,33 @@
         {{-- Scrollable Messages --}}
         <div class="flex-1 overflow-y-auto" id="chat-scroll-container">
             <div class="max-w-3xl mx-auto w-full py-4 md:py-6 px-3 md:px-4">
-                <div class="space-y-2 md:space-y-3">
+                <div class="space-y-1">
                     @foreach($messages as $msg)
-                        <div class="w-full max-w-[49rem] mx-auto flex flex-col gap-2 md:gap-3 py-1 md:py-2 px-2 md:px-4">
+                        <div class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4">
                             @if($msg['role'] === 'user')
                                 <!-- User Message -->
                                 <div class="flex justify-end w-full">
-                                    <div class="bg-[#F3F2EE] dark:bg-stone-800 border border-transparent dark:border-stone-700/50 text-[#2D2825] dark:text-stone-200 px-4 md:px-[22px] py-2.5 md:py-3 rounded-[1.5rem] max-w-[85%] md:max-w-[75%] text-[15px] leading-relaxed shadow-sm">
-                                        {{ $msg['content'] }}
+                                    <div class="flex flex-col items-end gap-2 max-w-[85%] md:max-w-[75%]">
+                                        @if(isset($msg['attachment']) && $msg['attachment'])
+                                            <div class="bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl p-2 shadow-sm flex items-center gap-3">
+                                                @if(str_starts_with($msg['attachment']['file_type'], 'image/'))
+                                                    <img src="{{ Storage::url($msg['attachment']['file_path']) }}" class="w-20 h-20 object-cover rounded-xl border border-[#E5E5E5] dark:border-stone-700" alt="Attachment">
+                                                @else
+                                                    <div class="w-12 h-12 bg-stone-100 dark:bg-stone-700 rounded-xl flex items-center justify-center shrink-0">
+                                                        <svg class="w-6 h-6 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                                    </div>
+                                                @endif
+                                                <div class="pr-2">
+                                                    <p class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate max-w-[150px]">{{ $msg['attachment']['file_name'] }}</p>
+                                                    <p class="text-[11px] text-stone-500 uppercase">{{ explode('/', $msg['attachment']['file_type'])[1] ?? 'FILE' }}</p>
+                                                </div>
+                                            </div>
+                                        @endif
+                                        @if(!empty($msg['content']))
+                                            <div class="bg-[#F3F2EE] dark:bg-stone-800 border border-transparent dark:border-stone-700/50 text-[#2D2825] dark:text-stone-200 px-4 md:px-[22px] py-2.5 md:py-3 rounded-[1.5rem] text-[15px] leading-relaxed shadow-sm break-words w-full">
+                                                {{ $msg['content'] }}
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @else
@@ -304,15 +357,15 @@
 
 
                     {{-- Loading Indicator / Streaming Target --}}
-                    <div wire:loading wire:target="sendMessage, generateResponse" class="w-full max-w-[49rem] mx-auto py-3 md:py-4 px-2 md:px-4">
+                    <div wire:loading wire:target="sendMessage, generateResponse" class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 mt-1">
                         <div class="flex justify-start w-full gap-3 md:gap-4">
                             <div class="flex-shrink-0 mt-1">
                                 <svg class="w-7 h-7 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
                                 </svg>
                             </div>
-                            <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full whitespace-pre-wrap" wire:stream="message-stream">
-                                <div class="text-stone-400 text-sm flex items-center gap-2">
+                            <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full prose-p:leading-relaxed prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors" wire:stream="message-stream">
+                                <div class="text-stone-400 text-sm flex items-center gap-2 mt-1">
                                     <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     <span>Claude is thinking...</span>
                                 </div>
@@ -335,7 +388,41 @@
         <div class="shrink-0 h-fit bg-[#F9F8F6] dark:bg-stone-900" wire:key="active-state-form-container">
             <form wire:submit.prevent="sendMessage" class="w-full max-w-[42rem] mx-auto pb-4 md:pb-6 px-3 md:px-4 pt-3 md:pt-4" wire:key="active-state-form">
                 {{-- Prompt Box Container --}}
-                <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth">
+                <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
+                    
+                    {{-- Uploading State --}}
+                    <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
+                        <div class="w-16 h-16 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                            <svg class="animate-spin w-6 h-6 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200">Uploading...</span>
+                            <span class="text-[11px] text-stone-500">Please wait</span>
+                        </div>
+                    </div>
+
+                    {{-- Attachment Preview Area --}}
+                    @if($attachment)
+                        <div wire:loading.remove wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
+                            <div class="relative group">
+                                <div class="w-16 h-16 rounded-xl overflow-hidden border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                                    @if(str_starts_with($attachment->getMimeType(), 'image/'))
+                                        <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
+                                    @else
+                                        <svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    @endif
+                                </div>
+                                <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate max-w-[200px]">{{ $attachment->getClientOriginalName() }}</span>
+                                <span class="text-[11px] text-stone-500">{{ round($attachment->getSize() / 1024) }} KB</span>
+                            </div>
+                        </div>
+                    @endif
+
                     <textarea 
                         x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' } }"
                         x-init="$watch('$wire.prompt', value => { if(!value) { $el.style.height = 'auto'; } else { resize(); } }); resize()"
@@ -359,7 +446,7 @@
                             </button>
 
                             <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute bottom-full left-0 mb-2 w-[240px] bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
-                                <button class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                <button type="button" onclick="document.getElementById('file-upload').click();" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                     <div class="flex items-center gap-2.5">
                                         <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Add files or photos</span>
@@ -510,11 +597,11 @@
                             </div>
 
                             {{-- Send Button --}}
-                            <button type="submit" x-data :disabled="!$wire.prompt.trim()" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse" :class="$wire.prompt.trim() ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-colors p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed">
-                                <svg wire:loading.remove wire:target="sendMessage, generateResponse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <button type="submit" x-data :disabled="!$wire.prompt.trim() && !$wire.attachment" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse, attachment" :class="($wire.prompt.trim() || $wire.attachment) ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-colors p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed">
+                                <svg wire:loading.remove wire:target="sendMessage, generateResponse, attachment" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M12 19V5M5 12l7-7 7 7"/>
                                 </svg>
-                                <svg wire:loading wire:target="sendMessage, generateResponse" class="animate-spin w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg wire:loading wire:target="sendMessage, generateResponse, attachment" class="animate-spin w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>

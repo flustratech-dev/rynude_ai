@@ -38,6 +38,8 @@ class AnthropicProvider implements LLMProviderInterface
         }
 
         $client = new \GuzzleHttp\Client();
+        $inputTokens = 0;
+        $outputTokens = 0;
         
         try {
             $response = $client->post(env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1/messages'), [
@@ -86,7 +88,11 @@ class AnthropicProvider implements LLMProviderInterface
 
                         $data = json_decode($jsonStr, true);
                         if ($data && isset($data['type'])) {
-                            if ($data['type'] === 'content_block_delta' && isset($data['delta']['text'])) {
+                            if ($data['type'] === 'message_start' && isset($data['message']['usage']['input_tokens'])) {
+                                $inputTokens += $data['message']['usage']['input_tokens'];
+                            } elseif ($data['type'] === 'message_delta' && isset($data['usage']['output_tokens'])) {
+                                $outputTokens += $data['usage']['output_tokens'];
+                            } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['text'])) {
                                 yield $data['delta']['text'];
                             } elseif ($data['type'] === 'error') {
                                 yield "\n[Error from API: " . ($data['error']['message'] ?? 'Unknown error') . "]";
@@ -95,6 +101,12 @@ class AnthropicProvider implements LLMProviderInterface
                     }
                 }
             }
+            
+            // Deduct tokens
+            if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
+                $user->decrement('token_balance', $inputTokens + $outputTokens);
+            }
+            
         } catch (\GuzzleHttp\Exception\ConnectException $e) {
             yield "\n[Error: Connection timeout. Please check your network and try again.]";
         } catch (\Exception $e) {

@@ -9,10 +9,10 @@ class SettingsModal extends Component
     public $isOpen = false;
     public $activeTab = 'general';
 
-    // General fields
     public $name = 'Guest User';
     public $email = 'guest@example.com';
     public $language = 'en';
+    public $customInstructions = '';
 
     // Appearance
     public $theme = 'light';
@@ -37,11 +37,13 @@ class SettingsModal extends Component
             $user = \Illuminate\Support\Facades\Auth::user();
             $this->name = $user->name;
             $this->email = $user->email;
+            $this->customInstructions = $user->custom_instructions ?? '';
             $this->anthropicApiKey = $user->anthropic_api_key ?? '';
             $this->openaiApiKey = $user->openai_api_key ?? '';
             $this->useProxy = $user->use_proxy ?? false;
             $this->proxyBaseUrl = $user->proxy_base_url ?? '';
             $this->proxyApiKey = $user->proxy_api_key ?? '';
+            $this->tokensLimit = $user->token_balance ?? 0;
         }
     }
 
@@ -64,7 +66,12 @@ class SettingsModal extends Component
 
     public function saveProfile()
     {
-        // Mock save — real implementation will use User model
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $user = \Illuminate\Support\Facades\Auth::user();
+            $user->name = $this->name;
+            $user->custom_instructions = $this->customInstructions;
+            $user->save();
+        }
         $this->dispatch('profileSaved');
     }
 
@@ -97,8 +104,100 @@ class SettingsModal extends Component
         $this->dispatch('apiKeysSaved');
     }
 
+    // Models Management
+    public $aiModels = [];
+    public $isModelModalOpen = false;
+    public $editModelId = null;
+    public $modelCode = '';
+    public $modelName = '';
+    public $modelIsActive = true;
+
+    protected $rules = [
+        'modelCode' => 'required|string',
+        'modelName' => 'required|string|max:255',
+    ];
+
+    public function loadModels()
+    {
+        $this->aiModels = \App\Models\AiModel::orderBy('created_at', 'desc')->get();
+    }
+
+    public function createModel()
+    {
+        $this->resetModelInputFields();
+        $this->isModelModalOpen = true;
+    }
+
+    public function closeModelModal()
+    {
+        $this->isModelModalOpen = false;
+        $this->resetModelInputFields();
+    }
+
+    public function resetModelInputFields()
+    {
+        $this->editModelId = null;
+        $this->modelCode = '';
+        $this->modelName = '';
+        $this->modelIsActive = true;
+        $this->resetValidation();
+    }
+
+    public function storeModel()
+    {
+        $rules = $this->rules;
+        if ($this->editModelId) {
+            $rules['modelCode'] = 'required|string|unique:ai_models,code,' . $this->editModelId;
+        } else {
+            $rules['modelCode'] = 'required|string|unique:ai_models,code';
+        }
+
+        $this->validate($rules);
+
+        \App\Models\AiModel::updateOrCreate(['id' => $this->editModelId], [
+            'code' => $this->modelCode,
+            'name' => $this->modelName,
+            'is_active' => $this->modelIsActive,
+        ]);
+
+        session()->flash('modelMessage', $this->editModelId ? 'Model Updated Successfully.' : 'Model Created Successfully.');
+        $this->closeModelModal();
+        $this->loadModels();
+    }
+
+    public function editModel($id)
+    {
+        $model = \App\Models\AiModel::findOrFail($id);
+        $this->editModelId = $id;
+        $this->modelCode = $model->code;
+        $this->modelName = $model->name;
+        $this->modelIsActive = $model->is_active;
+
+        $this->isModelModalOpen = true;
+    }
+
+    public function deleteModel($id)
+    {
+        \App\Models\AiModel::find($id)->delete();
+        session()->flash('modelMessage', 'Model Deleted Successfully.');
+        $this->loadModels();
+    }
+
+    public function toggleModelActive($id)
+    {
+        $model = \App\Models\AiModel::find($id);
+        if ($model) {
+            $model->is_active = !$model->is_active;
+            $model->save();
+            $this->loadModels();
+        }
+    }
+
     public function render()
     {
+        if ($this->activeTab === 'models' && empty($this->aiModels)) {
+            $this->loadModels();
+        }
         return view('livewire.settings-modal');
     }
 }

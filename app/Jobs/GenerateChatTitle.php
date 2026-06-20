@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Jobs;
+
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use App\Models\Conversation;
+use App\Services\AI\AiService;
+use Illuminate\Support\Facades\Log;
+
+class GenerateChatTitle implements ShouldQueue
+{
+    use Queueable;
+
+    public $conversation;
+    public $prompt;
+    public $model;
+
+    /**
+     * Create a new job instance.
+     */
+    public function __construct(Conversation $conversation, string $prompt, string $model = 'claude-haiku-4-5')
+    {
+        $this->conversation = $conversation;
+        $this->prompt = $prompt;
+        $this->model = $model;
+    }
+
+    /**
+     * Execute the job.
+     */
+    public function handle(): void
+    {
+        try {
+            $aiService = new AiService();
+            $messages = [
+                [
+                    'role' => 'user',
+                    'content' => "Provide a short, concise title (1-4 words max) for a chat that starts with this prompt: \"{$this->prompt}\". Reply ONLY with the title, no quotes, no extra text."
+                ]
+            ];
+
+            // Generate title synchronously using AiService stream
+            $stream = $aiService->streamResponse($messages, $this->model);
+            $title = '';
+            foreach ($stream as $chunk) {
+                $title .= $chunk;
+            }
+
+            $title = trim(str_replace('"', '', $title));
+
+            if (!empty($title)) {
+                $this->conversation->update(['title' => $title]);
+            }
+        } catch (\Exception $e) {
+            Log::error('GenerateChatTitleJob Failed: ' . $e->getMessage());
+        }
+    }
+}

@@ -80,6 +80,14 @@
                     <div class="flex-1 overflow-auto bg-[#FAFAFA] dark:bg-stone-900 rounded-b-[1rem]">
                         @if($currentArtifact['language'] === 'html')
                             <iframe srcdoc="{{ $currentArtifact['content'] }}" class="w-full h-full border-0 bg-white"></iframe>
+                        @elseif($currentArtifact['language'] === 'react' || $currentArtifact['language'] === 'jsx' || $currentArtifact['language'] === 'tsx')
+                            @php
+                            $reactHtml = '<!DOCTYPE html><html><head><meta charset="utf-8" /><script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div><script type="text/babel">'.$currentArtifact['content'].'
+                            const App = typeof window.App !== "undefined" ? window.App : (typeof App !== "undefined" ? App : (typeof Example !== "undefined" ? Example : () => <div>Component not found</div>));
+                            const root = ReactDOM.createRoot(document.getElementById("root"));
+                            root.render(<App />);</script></body></html>';
+                            @endphp
+                            <iframe srcdoc="{{ $reactHtml }}" class="w-full h-full border-0 bg-white"></iframe>
                         @elseif($currentArtifact['language'] === 'svg')
                             <div class="flex items-center justify-center w-full h-full bg-white">
                                 {!! $currentArtifact['content'] !!}
@@ -103,6 +111,19 @@
                                 </div>
                             </div>
                         @endif
+                    </div>
+                @endif
+                
+                @if(count($versions) > 1)
+                    <div class="absolute bottom-4 right-4 flex items-center bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg shadow-sm p-1 z-20">
+                        @foreach($versions as $v)
+                            <button 
+                                wire:click="openArtifact({{ $v['id'] }})"
+                                class="px-3 py-1 text-xs font-medium rounded-md transition-colors {{ $v['is_current'] ? 'bg-[#F3F2F1] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200' : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200' }}"
+                            >
+                                V{{ $v['version_number'] }}
+                            </button>
+                        @endforeach
                     </div>
                 @endif
             </div>

@@ -11,9 +11,14 @@ use App\Models\Message;
 use App\Models\MessageArtifact;
 use App\Services\AI\AiService;
 
+use Livewire\WithFileUploads;
+
 class ChatInterface extends Component
 {
+    use WithFileUploads;
+
     public string $prompt = '';
+    public $attachment;
     public array $messages = [];
     public ?int $conversationId = null;
     public $models = [];
@@ -96,7 +101,7 @@ class ChatInterface extends Component
 
     public function loadConversation()
     {
-        $conversation = Conversation::with('messages.artifacts')->find($this->conversationId);
+        $conversation = Conversation::with(['messages.artifacts', 'messages.attachment'])->find($this->conversationId);
         if ($conversation && $conversation->user_id === Auth::id()) {
             $this->messages = [];
             foreach ($conversation->messages as $msg) {
@@ -112,10 +117,20 @@ class ChatInterface extends Component
                     ];
                 }
                 
+                $attachmentData = null;
+                if ($msg->attachment) {
+                    $attachmentData = [
+                        'file_path' => $msg->attachment->file_path,
+                        'file_type' => $msg->attachment->file_type,
+                        'file_name' => $msg->attachment->file_name,
+                    ];
+                }
+                
                 $this->messages[] = [
                     'role' => $msg->role,
                     'content' => $msg->content,
                     'artifact' => $artifactData,
+                    'attachment' => $attachmentData,
                 ];
             }
         }
@@ -126,6 +141,7 @@ class ChatInterface extends Component
     {
         $this->messages = [];
         $this->prompt = '';
+        $this->attachment = null;
         $this->conversationId = null;
     }
 
@@ -158,6 +174,11 @@ class ChatInterface extends Component
         }
     }
 
+    public function removeAttachment()
+    {
+        $this->attachment = null;
+    }
+
     public function sendMessage()
     {
         if (!Auth::check()) {
@@ -166,7 +187,7 @@ class ChatInterface extends Component
 
         $text = trim($this->prompt);
 
-        if (empty($text)) {
+        if (empty($text) && empty($this->attachment)) {
             return;
         }
 
@@ -174,27 +195,72 @@ class ChatInterface extends Component
         if (!$this->conversationId) {
             $conversation = Conversation::create([
                 'user_id' => Auth::id(),
-                'title' => substr($text, 0, 30) . '...',
+                'title' => 'New Chat',
             ]);
             $this->conversationId = $conversation->id;
+            
+            // Dispatch job to generate title
+            \App\Jobs\GenerateChatTitle::dispatch($conversation, $text, $this->selectedModel ?? 'claude-haiku-4-5');
+            
             $this->dispatch('chatCreated');
         }
 
         // Add user message to DB
-        Message::create([
+        $userMessage = Message::create([
             'conversation_id' => $this->conversationId,
             'role' => 'user',
             'content' => $text,
         ]);
 
+        $attachmentData = null;
+        if ($this->attachment) {
+            $path = $this->attachment->store('attachments', 'public');
+            $attModel = \App\Models\MessageAttachment::create([
+                'message_id' => $userMessage->id,
+                'file_path' => $path,
+                'file_type' => $this->attachment->getMimeType(),
+                'file_name' => $this->attachment->getClientOriginalName(),
+            ]);
+
+            $attachmentData = [
+                'file_path' => $path,
+                'file_type' => $this->attachment->getMimeType(),
+                'file_name' => $this->attachment->getClientOriginalName(),
+            ];
+        }
+
         $this->messages[] = [
             'role' => 'user',
             'content' => $text,
+            'attachment' => $attachmentData,
         ];
 
         $this->prompt = '';
+        $this->attachment = null;
         
         $this->dispatch('messageAdded');
+    }
+
+    #[On('regenerateResponse')]
+    public function regenerateResponse()
+    {
+        if (empty($this->messages) || !$this->conversationId) {
+            return;
+        }
+
+        // Find the last assistant message and remove it from DB and state
+        $lastMessage = end($this->messages);
+        if ($lastMessage['role'] === 'assistant') {
+            array_pop($this->messages);
+            $dbMsg = Message::where('conversation_id', $this->conversationId)->where('role', 'assistant')->latest()->first();
+            if ($dbMsg) {
+                // If there's an artifact attached, delete it
+                MessageArtifact::where('message_id', $dbMsg->id)->delete();
+                $dbMsg->delete();
+            }
+        }
+
+        $this->dispatch('generateResponse');
     }
 
     #[On('generateResponse')]
@@ -224,9 +290,15 @@ class ChatInterface extends Component
         }
 
         // Prepend system prompt for Artifacts
+        $baseSystemPrompt = "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a PDF, you must generate a beautifully styled HTML document (language=\"html\") tailored for printing (e.g. A4 size css), and inform the user they can preview it in the panel and click the Download icon to save it as a PDF. Provide brief explanation outside the tag if needed.";
+
+        if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
+            $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
+        }
+
         array_unshift($messagesForAi, [
             'role' => 'system',
-            'content' => "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a PDF, you must generate a beautifully styled HTML document (language=\"html\") tailored for printing (e.g. A4 size css), and inform the user they can preview it in the panel and click the Download icon to save it as a PDF. Provide brief explanation outside the tag if needed.",
+            'content' => $baseSystemPrompt,
         ]);
 
         // Call AI Service
@@ -272,6 +344,7 @@ class ChatInterface extends Component
         $pattern = '/<antArtifact\s+identifier="([^"]+)"\s+type="([^"]+)"\s+language="([^"]*)"\s+title="([^"]+)">([\s\S]*?)<\/antArtifact>/';
         
         if (preg_match($pattern, $fullResponse, $matches)) {
+            $identifier = $matches[1];
             $type = $matches[2];
             $language = $matches[3];
             $title = $matches[4];
@@ -289,6 +362,7 @@ class ChatInterface extends Component
             
             $artModel = MessageArtifact::create([
                 'message_id' => $assistantMessage->id,
+                'identifier' => $identifier,
                 'type' => $type === 'application/vnd.ant.code' ? 'code' : 'text',
                 'language' => $language ?: 'text',
                 'title' => $title,
