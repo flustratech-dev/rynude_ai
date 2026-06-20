@@ -20,6 +20,7 @@ class SettingsModal extends Component
     // API Key fields
     public $anthropicApiKey = '';
     public $openaiApiKey = '';
+    public $nineRouterApiKey = '';
     public $useProxy = false;
     public $proxyBaseUrl = '';
     public $proxyApiKey = '';
@@ -40,6 +41,7 @@ class SettingsModal extends Component
             $this->customInstructions = $user->custom_instructions ?? '';
             $this->anthropicApiKey = $user->anthropic_api_key ?? '';
             $this->openaiApiKey = $user->openai_api_key ?? '';
+            $this->nineRouterApiKey = $user->nine_router_api_key ?? '';
             $this->useProxy = $user->use_proxy ?? false;
             $this->proxyBaseUrl = $user->proxy_base_url ?? '';
             $this->proxyApiKey = $user->proxy_api_key ?? '';
@@ -95,6 +97,7 @@ class SettingsModal extends Component
         $user = \Illuminate\Support\Facades\Auth::user();
         $user->anthropic_api_key = $this->anthropicApiKey;
         $user->openai_api_key = $this->openaiApiKey;
+        $user->nine_router_api_key = $this->nineRouterApiKey;
         $user->use_proxy = $this->useProxy;
         $user->proxy_base_url = $this->proxyBaseUrl;
         $user->proxy_api_key = $this->proxyApiKey;

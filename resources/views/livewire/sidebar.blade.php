@@ -28,6 +28,24 @@
 
         {{-- Navigation --}}
         <div class="px-2 mt-1 space-y-0.5">
+            @if($hasUpdate)
+            <button
+                @click="Livewire.dispatch('openUpdateModal')"
+                class="w-full flex items-center justify-between px-2 py-1.5 mb-1 rounded-lg text-[14px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-colors border border-blue-200 dark:border-blue-500/20 shadow-sm"
+            >
+                <div class="flex items-center gap-2.5">
+                    <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    <span>Update Available</span>
+                </div>
+                <span class="flex h-2 w-2 relative mr-1">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+            </button>
+            @endif
+
             <button wire:click="startNewChat()" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors">
                 <div class="w-[20px] h-[20px] flex items-center justify-center bg-[#E5E5E5] dark:bg-stone-700 rounded-full text-gray-600 dark:text-stone-300">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -251,6 +269,17 @@
                                 <span>Get apps and extensions</span>
                             </span>
                         </button>
+                        <button
+                            @click="profileMenuOpen = false; Livewire.dispatch('openUpdateModal')"
+                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                        >
+                            <span class="flex items-center gap-3">
+                                <svg class="w-4 h-4 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                <span>Check for updates</span>
+                            </span>
+                        </button>
 
                         {{-- Learn More Submenu --}}
                         <div x-data="{ learnMoreOpen: false }" class="relative">
@@ -365,6 +394,22 @@
                 <line x1="9" y1="3" x2="9" y2="21"></line>
             </svg>
         </button>
+
+        @if($hasUpdate)
+        <button
+            @click="Livewire.dispatch('openUpdateModal')"
+            class="p-2 rounded-lg mb-1 transition-colors w-full flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 relative"
+            title="Update Available"
+        >
+            <span class="absolute top-1 right-1 flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+        </button>
+        @endif
 
         <button wire:click="startNewChat()" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center" title="New chat">
             <div class="w-6 h-6 flex items-center justify-center bg-[#E5E5E5] dark:bg-stone-700 rounded-full text-gray-600 dark:text-stone-300">

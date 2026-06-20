@@ -24,6 +24,8 @@ class User extends Authenticatable
         'password',
         'anthropic_api_key',
         'openai_api_key',
+        'nine_router_api_key',
+        'nine_router_base_url',
         'use_proxy',
         'proxy_base_url',
         'proxy_api_key',
@@ -54,6 +56,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'anthropic_api_key' => 'encrypted',
             'openai_api_key' => 'encrypted',
+            'nine_router_api_key' => 'encrypted',
             'use_proxy' => 'boolean',
             'proxy_api_key' => 'encrypted',
         ];

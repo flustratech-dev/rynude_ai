@@ -15,12 +15,15 @@ class OpenAIProvider implements LLMProviderInterface
         $isProxy = $user && $user->use_proxy;
         $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo');
         
-        if ($isProxy || $is9RouterAuto) {
+        if ($is9RouterAuto) {
+            $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
+            $baseUrl = 'http://127.0.0.1:20128/v1';
+        } elseif ($isProxy) {
             // Always try to use the proxy key if provided, otherwise fallback to dummy
             $apiKey = ($user && !empty($user->proxy_api_key)) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
             
-            // If proxy base url is set by user AND proxy is enabled, use it. Otherwise fallback to 9router default
-            if ($isProxy && !empty($user->proxy_base_url)) {
+            // If proxy base url is set by user AND proxy is enabled, use it.
+            if (!empty($user->proxy_base_url)) {
                 $baseUrl = rtrim($user->proxy_base_url, '/');
             } else {
                 $baseUrl = 'http://127.0.0.1:20128/v1';

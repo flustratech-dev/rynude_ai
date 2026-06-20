@@ -81,6 +81,7 @@
         </div>
 
         @livewire('quota-warning-modal')
+        @livewire('system-update-modal')
         @livewireScripts
 
         <!-- Markdown & Code Block Setup -->

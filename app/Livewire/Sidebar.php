@@ -14,12 +14,35 @@ class Sidebar extends Component
 
     public ?string $activePanel = null;
     public bool $artifactPanelOpen = false;
+    public bool $hasUpdate = false;
 
     public function mount(?string $activePanel = null, bool $artifactPanelOpen = false)
     {
         $this->activePanel = $activePanel;
         $this->artifactPanelOpen = $artifactPanelOpen;
         $this->loadConversations();
+        $this->checkForUpdates();
+    }
+
+    public function checkForUpdates()
+    {
+        try {
+            // Check every 5 minutes (300 seconds)
+            $this->hasUpdate = \Illuminate\Support\Facades\Cache::remember('system_update_available', 300, function () {
+                if (!function_exists('shell_exec')) return false;
+                
+                $localHash = trim(shell_exec('git rev-parse HEAD 2> nul'));
+                $remoteOutput = trim(shell_exec('git ls-remote origin -h refs/heads/main 2> nul'));
+                $remoteHash = explode("\t", $remoteOutput)[0] ?? null;
+                
+                if ($localHash && $remoteHash && $localHash !== $remoteHash) {
+                    return true;
+                }
+                return false;
+            });
+        } catch (\Exception $e) {
+            $this->hasUpdate = false;
+        }
     }
 
     #[On('chatCreated')]

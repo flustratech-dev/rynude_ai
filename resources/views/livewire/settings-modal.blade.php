@@ -211,6 +211,14 @@
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key OpenAI Anda untuk model GPT.</p>
                                 <input type="password" wire:model="openaiApiKey" placeholder="sk-proj-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
                             </div>
+                            
+                            <div class="pt-2 border-t border-[#E5E5E5] dark:border-stone-700"></div>
+                            
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">9Router API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key 9Router Anda.</p>
+                                <input type="password" wire:model="nineRouterApiKey" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
+                            </div>
 
                             <div class="pt-4 border-t border-[#E5E5E5] dark:border-stone-700">
                                 <label class="flex items-center gap-3 cursor-pointer mb-4">
