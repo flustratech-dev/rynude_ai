@@ -170,7 +170,7 @@
                                 <svg class="w-6 h-6 text-stone-400 dark:text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
                             </div>
                             <p class="text-[14px] font-medium text-stone-800 dark:text-stone-200">No artifacts yet</p>
-                            <p class="text-[13px] text-stone-500 dark:text-stone-400">Ask Claude to write code or create documents.</p>
+                            <p class="text-[13px] text-stone-500 dark:text-stone-400">Ask Rynude to write code or create documents.</p>
                         </div>
                     @endforelse
                 </div>

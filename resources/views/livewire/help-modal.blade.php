@@ -78,9 +78,9 @@
                     <div class="space-y-2">
                         @php
                             $faqs = [
-                                ['id' => 'what-is', 'question' => 'What is Rynude?', 'answer' => 'Rynude is an AI-powered chat interface built on Claude, designed to help you with writing, analysis, coding, math, and more. It provides a sleek, centralized experience for all your AI interactions.'],
-                                ['id' => 'byok', 'question' => 'What is BYOK (Bring Your Own Key)?', 'answer' => 'BYOK allows you to use your own Anthropic API key instead of the system-provided quota. This gives you direct access to Claude with your own billing and higher rate limits.'],
-                                ['id' => 'artifacts', 'question' => 'What are Artifacts?', 'answer' => 'Artifacts are self-contained pieces of content that Claude creates for you — code snippets, documents, analyses, and more. They appear in a side panel and can be copied, downloaded, or referenced in follow-up messages.'],
+                                ['id' => 'what-is', 'question' => 'What is Rynude?', 'answer' => 'Rynude is an AI-powered chat interface, designed to help you with writing, analysis, coding, math, and more. It provides a sleek, centralized experience for all your AI interactions.'],
+                                ['id' => 'byok', 'question' => 'What is BYOK (Bring Your Own Key)?', 'answer' => 'BYOK allows you to use your own Anthropic API key instead of the system-provided quota. This gives you direct access to Rynude with your own billing and higher rate limits.'],
+                                ['id' => 'artifacts', 'question' => 'What are Artifacts?', 'answer' => 'Artifacts are self-contained pieces of content that Rynude creates for you — code snippets, documents, analyses, and more. They appear in a side panel and can be copied, downloaded, or referenced in follow-up messages.'],
                                 ['id' => 'projects', 'question' => 'What are Projects?', 'answer' => 'Projects let you organize related chats together. Create a project for a specific topic or task, and all associated conversations will be grouped in one place.'],
                                 ['id' => 'models', 'question' => 'Which Claude models are available?', 'answer' => 'Rynude supports Claude Opus 4, Claude Sonnet 4, and Claude Haiku 3.5. Each model offers different capabilities — Opus for the most complex tasks, Sonnet for balanced performance, and Haiku for fast responses.'],
                             ];
@@ -168,7 +168,7 @@
                             </div>
                             <div class="flex-1">
                                 <h3 class="text-[15px] font-medium text-claude-800">Mobile App</h3>
-                                <p class="text-sm text-claude-500">Chat with Claude on iOS and Android.</p>
+                                <p class="text-sm text-claude-500">Chat with Rynude on iOS and Android.</p>
                             </div>
                             <span class="px-3 py-1 rounded-full text-xs font-medium bg-claude-100 text-claude-600 flex-shrink-0">Coming Soon</span>
                         </div>
@@ -182,7 +182,7 @@
                             </div>
                             <div class="flex-1">
                                 <h3 class="text-[15px] font-medium text-claude-800">API Access</h3>
-                                <p class="text-sm text-claude-500">Integrate Claude into your own applications via API.</p>
+                                <p class="text-sm text-claude-500">Integrate Rynude into your own applications via API.</p>
                             </div>
                             <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 flex-shrink-0">Available</span>
                         </div>

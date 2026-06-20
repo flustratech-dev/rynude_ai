@@ -67,7 +67,7 @@
                         ['id' => 'connectors', 'label' => 'Connectors', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z"></path>'],
                         ['id' => 'huggingface', 'label' => 'Hugging Face', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"></path>'],
                         ['id' => 'models', 'label' => 'AI Models', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"></path>'],
-                        ['id' => 'claude-code', 'label' => 'Claude Code', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"></path>'],
+                        ['id' => 'claude-code', 'label' => 'Rynude Code', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"></path>'],
                         ['id' => 'api-keys', 'label' => 'API Keys', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"></path>'],
                     ];
                 @endphp
@@ -115,7 +115,7 @@
                         </div>
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
-                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What should Claude call you?</label>
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What should Rynude call you?</label>
                             <input type="text" value="ryan" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
 
@@ -130,11 +130,11 @@
                         </div>
                     </div>
 
-                    {{-- Instructions for Claude --}}
+                    {{-- Instructions for Rynude --}}
                     <div class="mt-8">
-                        <h3 class="text-[15px] text-[#2D2825] dark:text-stone-200 mb-1">Instructions for Claude</h3>
+                        <h3 class="text-[15px] text-[#2D2825] dark:text-stone-200 mb-1">Instructions for Rynude</h3>
                         <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-4">
-                            Claude will keep these in mind across chats and Cowork within <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Anthropic's guidelines</a>. <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Learn more</a>
+                            Rynude will keep these in mind across chats and Cowork within <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Anthropic's guidelines</a>. <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Learn more</a>
                         </p>
                         <textarea 
                             wire:model="customInstructions"
@@ -204,7 +204,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Anthropic API Key</label>
-                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Anthropic Anda untuk model Claude.</p>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Anthropic Anda untuk model Rynude.</p>
                                 <input type="password" wire:model="anthropicApiKey" placeholder="sk-ant-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
                             </div>
                             <div>
@@ -268,7 +268,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 block mb-1">Delete account</label>
-                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400">Permanently delete your account and all of its contents from Claude.</p>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400">Permanently delete your account and all of its contents from Rynude.</p>
                             </div>
                             <button class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">Delete</button>
                         </div>
@@ -283,7 +283,7 @@
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on your conversations</label>
-                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Anthropic to use your conversations to train our models. This helps us improve Claude for everyone.</p>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Anthropic to use your conversations to train our models. This helps us improve Rynude for everyone.</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer mt-1">
                                     <input type="checkbox" value="" class="sr-only peer">
@@ -343,7 +343,7 @@
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Web Search (Beta)</label>
-                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Claude to search the web for up-to-date information to answer your questions more accurately.</p>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Rynude to search the web for up-to-date information to answer your questions more accurately.</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer mt-1">
                                     <input type="checkbox" value="" class="sr-only peer" checked>
@@ -355,7 +355,7 @@
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Artifacts</label>
-                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Enable Claude to generate standalone artifacts like code, documents, and SVGs in a dedicated panel.</p>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Enable Rynude to generate standalone artifacts like code, documents, and SVGs in a dedicated panel.</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer mt-1">
                                     <input type="checkbox" value="" class="sr-only peer" checked>
@@ -367,7 +367,7 @@
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Code Execution (Beta)</label>
-                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Claude to write and run code in a secure sandbox to perform complex calculations and data analysis.</p>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Rynude to write and run code in a secure sandbox to perform complex calculations and data analysis.</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer mt-1">
                                     <input type="checkbox" value="" class="sr-only peer">
@@ -381,7 +381,7 @@
                 {{-- ========== CONNECTORS TAB ========== --}}
                 <div x-show="$wire.activeTab === 'connectors'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Connectors</h2>
-                    <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Connect Claude to your tools to let it read context and perform actions on your behalf.</p>
+                    <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Connect Rynude to your tools to let it read context and perform actions on your behalf.</p>
                     
                     <div class="space-y-4">
                         <div class="flex items-center justify-between p-4 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
@@ -532,10 +532,10 @@
 
                 </div>
 
-                {{-- ========== CLAUDE CODE TAB ========== --}}
+                {{-- ========== RYNUDE CODE TAB ========== --}}
                 <div x-show="$wire.activeTab === 'claude-code'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Claude Code</h2>
-                    <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Claude Code is an AI coding assistant that lives in your terminal. It understands your codebase and helps you write code faster.</p>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Rynude Code</h2>
+                    <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Rynude Code is an AI coding assistant that lives in your terminal. It understands your codebase and helps you write code faster.</p>
                     
                     <div class="p-6 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-gray-50 dark:bg-stone-800/30 mb-8">
                         <div class="flex items-center gap-3 mb-4">

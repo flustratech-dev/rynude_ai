@@ -74,7 +74,7 @@
                     </svg>
                 </div>
                 <p class="text-claude-500 dark:text-stone-400 text-sm">No code snippets yet</p>
-                <p class="text-claude-400 dark:text-stone-500 text-xs mt-1">Start a chat and ask Claude to generate code</p>
+                <p class="text-claude-400 dark:text-stone-500 text-xs mt-1">Start a chat and ask Rynude to generate code</p>
             </div>
         @endif
     </div>
