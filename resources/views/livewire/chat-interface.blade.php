@@ -22,6 +22,18 @@
                 <form wire:submit.prevent="sendMessage" wire:key="empty-state-form">
                     {{-- Prompt Box Container --}}
                     <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
+                        {{-- Rynude Usage Warning --}}
+                        @if($this->rynudeUsage['is_rynude'])
+                            @if($this->rynudeUsage['reached'])
+                                <div class="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[12px] font-medium px-4 py-2 text-center rounded-t-[1.25rem] border-b border-red-100 dark:border-red-900/30">
+                                    Batas maksimal 50 pesan untuk sesi 2 jam ini telah tercapai.
+                                </div>
+                            @else
+                                <div class="bg-stone-50 dark:bg-stone-800/50 text-stone-500 text-[11px] font-medium px-4 py-1.5 text-center rounded-t-[1.25rem] border-b border-stone-100 dark:border-stone-700/50">
+                                    Sisa pesan gratis (sesi 2 jam): {{ $this->rynudeUsage['remaining'] }}/50
+                                </div>
+                            @endif
+                        @endif
                         {{-- Uploading State --}}
                         <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
                             <div class="w-16 h-16 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
@@ -62,8 +74,9 @@
                         wire:model="prompt"
                             @keydown.enter.prevent="if(!$event.shiftKey) { $wire.sendMessage() }"
                             rows="1"
-                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto"
+                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
                             placeholder="How can I help you today?"
+                            @if($this->rynudeUsage['reached']) disabled @endif
                         ></textarea>
 
                         {{-- Bottom Action Bar --}}
@@ -227,7 +240,7 @@
                                 </div>
                                 
                                 {{-- Send Button --}}
-                                <button type="submit" x-data :disabled="!$wire.prompt.trim()" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse" :class="$wire.prompt.trim() ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-all duration-200 p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105 active:scale-95">
+                                <button type="submit" x-data :disabled="!$wire.prompt.trim() || {{ $this->rynudeUsage['reached'] ? 'true' : 'false' }}" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse" :class="($wire.prompt.trim() && !{{ $this->rynudeUsage['reached'] ? 'true' : 'false' }}) ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-all duration-200 p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105 active:scale-95">
                                     <svg wire:loading.remove wire:target="sendMessage, generateResponse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M12 19V5M5 12l7-7 7 7"/>
                                     </svg>
@@ -390,6 +403,19 @@
                 {{-- Prompt Box Container --}}
                 <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
                     
+                    {{-- Rynude Usage Warning --}}
+                    @if($this->rynudeUsage['is_rynude'])
+                        @if($this->rynudeUsage['reached'])
+                            <div class="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[12px] font-medium px-4 py-2 text-center rounded-t-[1.25rem] border-b border-red-100 dark:border-red-900/30">
+                                Batas maksimal 50 pesan untuk sesi 2 jam ini telah tercapai.
+                            </div>
+                        @else
+                            <div class="bg-stone-50 dark:bg-stone-800/50 text-stone-500 text-[11px] font-medium px-4 py-1.5 text-center rounded-t-[1.25rem] border-b border-stone-100 dark:border-stone-700/50">
+                                Sisa pesan gratis (sesi 2 jam): {{ $this->rynudeUsage['remaining'] }}/50
+                            </div>
+                        @endif
+                    @endif
+                    
                     {{-- Uploading State --}}
                     <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
                         <div class="w-16 h-16 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
@@ -430,15 +456,15 @@
                         wire:model="prompt" 
                         @keydown.enter.prevent="if(!$event.shiftKey) { $wire.sendMessage() }" 
                         rows="1" 
-                        class="w-full bg-transparent border-0 focus:ring-0 px-3 md:px-4 pt-3 md:pt-4 pb-2 resize-none text-[#2D2825] dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto" 
-                        placeholder="How can I help you today?"></textarea>
+                        class="w-full bg-transparent border-0 focus:ring-0 px-3 md:px-4 pt-3 md:pt-4 pb-2 resize-none text-[#2D2825] dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed" 
+                        placeholder="How can I help you today?"
+                        @if($this->rynudeUsage['reached']) disabled @endif></textarea>
 
                     {{-- Bottom Action Bar --}}
                     <div class="flex items-center justify-between px-3 pb-3 pt-1">
                         {{-- Left: Plus Icon --}}
                         <div x-data="{ openPlus: false }" class="relative">
                             <button @click="openPlus = !openPlus" type="button" class="p-2 text-stone-500 hover:text-stone-800 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" :class="openPlus ? 'bg-stone-100 text-stone-800' : 'hover:bg-stone-100'">
-                        <div x-data="{ openPlus: false }" class="relative">
                             <button @click="openPlus = !openPlus" type="button" class="p-2 text-stone-500 hover:text-stone-800 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" :class="openPlus ? 'bg-stone-100 text-stone-800' : 'hover:bg-stone-100'">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                     <path d="M12 5v14M5 12h14"/>
