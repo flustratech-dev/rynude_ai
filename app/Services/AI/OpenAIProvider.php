@@ -13,10 +13,17 @@ class OpenAIProvider implements LLMProviderInterface
         $user = \Illuminate\Support\Facades\Auth::user();
         
         $isProxy = $user && $user->use_proxy;
+        $is9RouterAuto = str_starts_with($model, 'kr/claude');
         
-        if ($isProxy) {
-            $apiKey = $user->proxy_api_key;
-            $baseUrl = rtrim($user->proxy_base_url ?? 'https://openrouter.ai/api/v1', '/');
+        if ($isProxy || $is9RouterAuto) {
+            $apiKey = $isProxy && !empty($user->proxy_api_key) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
+            
+            // If proxy base url is set by user, use it. Otherwise if it's a 9router model, fallback to 127.0.0.1:20128
+            if ($isProxy && !empty($user->proxy_base_url)) {
+                $baseUrl = rtrim($user->proxy_base_url, '/');
+            } else {
+                $baseUrl = 'http://127.0.0.1:20128/v1';
+            }
         } else {
             $apiKey = $user ? $user->openai_api_key : null;
             if (empty($apiKey)) {
@@ -26,8 +33,13 @@ class OpenAIProvider implements LLMProviderInterface
         }
 
         if (empty($apiKey)) {
-            yield ($isProxy ? "Proxy API key" : "OpenAI API key") . " is not configured. Please add it in your Settings.";
-            return;
+            if ($isProxy) {
+                // Local proxies like LM Studio or 9Router might not require an API key
+                $apiKey = 'sk-dummy-key-for-local-proxy';
+            } else {
+                yield "OpenAI API key is not configured. Please add it in your Settings.";
+                return;
+            }
         }
 
         // Filter messages (OpenAI only supports system, user, assistant)

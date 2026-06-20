@@ -2,6 +2,8 @@
     x-data="{
         sidebarOpen: {{ Js::from($sidebarOpen) }},
         isMobile: false,
+        activePanel: @entangle('activePanel'),
+        artifactPanelOpen: @entangle('artifactPanelOpen'),
         init() {
             this.checkMobile();
             window.addEventListener('resize', () => this.checkMobile());
@@ -80,36 +82,30 @@
         </div>
         <div class="flex-1 flex overflow-hidden">
             <div class="flex-1 flex flex-col min-w-0 relative">
-                <!-- Removed full-screen loading overlay to prevent black popup bug -->
-                @if($activePanel === 'chats')
-                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
-                        <livewire:chats-panel key="panel-chats" />
-                    </div>
-                @elseif($activePanel === 'projects')
-                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
-                        <livewire:projects-panel key="panel-projects" />
-                    </div>
-                @elseif($activePanel === 'code')
-                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
-                        <livewire:code-panel key="panel-code" />
-                    </div>
-                @elseif($activePanel === 'cowork')
-                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
-                        <livewire:cowork-panel key="panel-cowork" />
-                    </div>
-                @elseif($activePanel === 'design')
-                    <div class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
-                        <livewire:design-panel key="panel-design" />
-                    </div>
-                @endif
+                <!-- SPA Pre-mounted panels managed by AlpineJS -->
+                <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                    <livewire:chats-panel key="panel-chats" />
+                </div>
+                <div x-show="activePanel === 'projects'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                    <livewire:projects-panel key="panel-projects" />
+                </div>
+                <div x-show="activePanel === 'code'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                    <livewire:code-panel key="panel-code" />
+                </div>
+                <div x-show="activePanel === 'cowork'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                    <livewire:cowork-panel key="panel-cowork" />
+                </div>
+                <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                    <livewire:design-panel key="panel-design" />
+                </div>
                 
-                <div class="absolute inset-0 z-0 h-full {{ $activePanel ? 'invisible pointer-events-none' : 'flex flex-col' }}">
+                <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full">
                     <livewire:chat-interface key="panel-chat-interface" />
                 </div>
             </div>
 
             <div 
-                x-show="$wire.artifactPanelOpen"
+                x-show="artifactPanelOpen"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-x-8"
@@ -123,7 +119,7 @@
             </div>
 
             <div
-                x-show="isMobile && $wire.artifactPanelOpen"
+                x-show="isMobile && artifactPanelOpen"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-y-8"

@@ -34,7 +34,7 @@ class ChatInterface extends Component
         $user = Auth::user();
         $hasAnthropic = $user && !empty($user->anthropic_api_key);
         $hasOpenAI = $user && !empty($user->openai_api_key);
-        $useProxy = $user && $user->use_proxy && !empty($user->proxy_api_key);
+        $useProxy = $user && $user->use_proxy && !empty($user->proxy_base_url);
         
         $available = $hasAnthropic || $useProxy;
 
@@ -72,7 +72,9 @@ class ChatInterface extends Component
             $isOpenAI = str_starts_with($model->code, 'gpt');
 
             $is_available = false;
-            if ($useProxy) {
+            if (str_starts_with($model->code, 'kr/claude')) {
+                $is_available = true;
+            } elseif ($useProxy) {
                 $is_available = true;
             } elseif ($isAnthropic && $hasAnthropic) {
                 $is_available = true;

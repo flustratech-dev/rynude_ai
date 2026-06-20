@@ -29,7 +29,7 @@ class ChatsPanel extends Component
             $query->where('user_id', $userId);
         }
         
-        $this->conversations = $query->orderByDesc('updated_at')->get()->map(function($c) {
+        $this->conversations = $query->orderByDesc('updated_at')->take(100)->get()->map(function($c) {
             return [
                 'id' => $c->id,
                 'title' => $c->title ?? 'New Chat',

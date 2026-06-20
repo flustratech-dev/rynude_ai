@@ -17,6 +17,11 @@ class AiService
             return new OpenAIProvider();
         }
 
+        // Hardcode Kiro/9Router models to always use OpenAI Provider (since 9Router uses OpenAI compatible endpoint)
+        if (str_starts_with($model, 'kr/claude')) {
+            return new OpenAIProvider();
+        }
+
         if (str_starts_with($model, 'claude')) {
             return new AnthropicProvider();
         }

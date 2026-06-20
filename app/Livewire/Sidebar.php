@@ -32,7 +32,7 @@ class Sidebar extends Component
             $query->where('user_id', $userId);
         }
         
-        $conversations = $query->orderByDesc('updated_at')->get()->map(function($c) {
+        $conversations = $query->orderByDesc('updated_at')->take(30)->get()->map(function($c) {
             return [
                 'id' => $c->id,
                 'title' => $c->title ?? 'New Chat',

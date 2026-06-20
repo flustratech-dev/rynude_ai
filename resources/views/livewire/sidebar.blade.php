@@ -38,8 +38,9 @@
             </button>
 
             <button
-                wire:click="openPanel('chats')"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 {{ $activePanel === 'chats' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80' }}"
+                @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                :class="activePanel === 'chats' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
@@ -48,8 +49,9 @@
             </button>
 
             <button
-                wire:click="openPanel('projects')"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 {{ $activePanel === 'projects' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80' }}"
+                @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                :class="activePanel === 'projects' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
@@ -58,8 +60,9 @@
             </button>
 
             <button
-                wire:click="openPanel('artifacts')"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 {{ $artifactPanelOpen ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80' }}"
+                @click="artifactPanelOpen = !artifactPanelOpen"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                :class="artifactPanelOpen ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 3l4 7H8z" />
@@ -88,8 +91,9 @@
             
             <div class="space-y-0.5 mt-0.5">
                 <button
-                    wire:click="openPanel('code')"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 {{ $activePanel === 'code' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80' }}"
+                    @click="activePanel = activePanel === 'code' ? null : 'code'; artifactPanelOpen = false"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                    :class="activePanel === 'code' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
@@ -98,8 +102,9 @@
                 </button>
 
                 <button
-                    wire:click="openPanel('cowork')"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 {{ $activePanel === 'cowork' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80' }}"
+                    @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                    :class="activePanel === 'cowork' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 6h11M9 12h11M9 18h11M5 6l1 1 2-2M5 12l1 1 2-2M5 18l1 1 2-2"/>
@@ -108,8 +113,9 @@
                 </button>
 
                 <button
-                    wire:click="openPanel('design')"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 {{ $activePanel === 'design' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80' }}"
+                    @click="activePanel = activePanel === 'design' ? null : 'design'; artifactPanelOpen = false"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                    :class="activePanel === 'design' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
@@ -127,7 +133,7 @@
         <div class="mt-4 px-2 flex-1 overflow-hidden flex flex-col">
             <div class="flex items-center justify-between px-2 py-1">
                 <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400">Recents</span>
-                <button wire:click="openPanel('chats')" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
+                <button @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
                     <svg class="w-[14px] h-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
                     </svg>
@@ -369,8 +375,9 @@
         <div class="w-6 border-t border-gray-200 dark:border-stone-800 my-1"></div>
 
         <button
-            wire:click="openPanel('chats')"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center {{ $activePanel === 'chats' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200' }}"
+            @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="activePanel === 'chats' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Chats"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -379,8 +386,9 @@
         </button>
 
         <button
-            wire:click="openPanel('projects')"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center {{ $activePanel === 'projects' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200' }}"
+            @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="activePanel === 'projects' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Projects"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -389,8 +397,9 @@
         </button>
 
         <button
-            wire:click="openPanel('artifacts')"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center {{ $artifactPanelOpen ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]' }}"
+            @click="artifactPanelOpen = !artifactPanelOpen"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="artifactPanelOpen ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
             title="Artifacts"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -413,8 +422,9 @@
         <div class="w-6 border-t border-gray-200 my-1"></div>
 
         <button
-            wire:click="openPanel('code')"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center {{ $activePanel === 'code' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]' }}"
+            @click="activePanel = activePanel === 'code' ? null : 'code'; artifactPanelOpen = false"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="activePanel === 'code' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
             title="Code"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -423,8 +433,9 @@
         </button>
 
         <button
-            wire:click="openPanel('cowork')"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center {{ $activePanel === 'cowork' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]' }}"
+            @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
             title="Cowork"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -433,8 +444,9 @@
         </button>
 
         <button
-            wire:click="openPanel('design')"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center {{ $activePanel === 'design' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]' }}"
+            @click="activePanel = activePanel === 'design' ? null : 'design'"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="activePanel === 'design' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
             title="Design"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

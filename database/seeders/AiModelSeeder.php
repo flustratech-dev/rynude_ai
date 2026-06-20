@@ -11,6 +11,8 @@ class AiModelSeeder extends Seeder
     public function run(): void
     {
         $models = [
+            ['code' => 'kr/claude-sonnet-4.5', 'name' => 'Rynude Sonnet'],
+            ['code' => 'kr/claude-haiku-4.5', 'name' => 'Rynude Haiku'],
             ['code' => 'gpt-chat-latest', 'name' => 'GPT Chat Latest'],
             ['code' => 'gpt-5.5', 'name' => 'GPT 5.5'],
             ['code' => 'gpt-5.4-pro', 'name' => 'GPT 5.4 Pro'],
