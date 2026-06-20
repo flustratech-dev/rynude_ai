@@ -78,9 +78,9 @@
             </button>
 
             <button
-                @click="artifactPanelOpen = !artifactPanelOpen"
+                @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
-                :class="artifactPanelOpen ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                :class="activePanel === 'artifacts' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 3l4 7H8z" />
@@ -91,8 +91,9 @@
             </button>
 
             <button
-                wire:click="openSettingsModal('appearance')"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors"
+                @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: false } })); }"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
@@ -442,9 +443,9 @@
         </button>
 
         <button
-            @click="artifactPanelOpen = !artifactPanelOpen"
+            @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
-            :class="artifactPanelOpen ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
+            :class="activePanel === 'artifacts' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Artifacts"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -455,8 +456,9 @@
         </button>
 
         <button
-            wire:click="openSettingsModal('appearance')"
-            class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center"
+            @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: false } })); }"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Customize"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">

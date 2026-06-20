@@ -29,6 +29,8 @@
     class="h-[100dvh] flex bg-[#F9F8F6] dark:bg-stone-900 overflow-hidden"
     x-init="init()"
     @toggle-sidebar.window="toggle()"
+    @close-artifact-panel.window="artifactPanelOpen = false; if (activePanel === 'artifacts') activePanel = null;"
+    @close-customize.window="activePanel = null; sidebarOpen = true; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: true } }));"
 >
     {{-- ========== MOBILE SIDEBAR OVERLAY ========== --}}
     <div x-show="isMobile && sidebarOpen" x-cloak class="relative z-40">
@@ -80,7 +82,7 @@
                 </svg>
             </button>
         </div>
-        <div class="flex-1 flex overflow-hidden">
+        <div class="flex-1 flex overflow-hidden relative">
             <div class="flex-1 flex flex-col min-w-0 relative">
                 <!-- SPA Pre-mounted panels managed by AlpineJS -->
                 <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
@@ -99,13 +101,17 @@
                     <livewire:design-panel key="panel-design" />
                 </div>
                 
+                <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#FAFAFA] dark:bg-stone-900 h-full overflow-hidden">
+                    <livewire:customize-panel key="panel-customize" />
+                </div>
+                
                 <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full">
                     <livewire:chat-interface key="panel-chat-interface" />
                 </div>
             </div>
 
             <div 
-                x-show="artifactPanelOpen"
+                x-show="artifactPanelOpen || activePanel === 'artifacts'"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-x-8"
@@ -113,13 +119,13 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-x-0"
                 x-transition:leave-end="opacity-0 translate-x-8"
-                class="hidden md:flex w-[50%] min-w-[400px] border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20"
+                :class="activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-stone-800 w-full' : 'hidden md:flex w-[50%] min-w-[400px] border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative'"
             >
                 <livewire:artifact-panel key="desktop-artifact-panel" />
             </div>
 
             <div
-                x-show="isMobile && artifactPanelOpen"
+                x-show="isMobile && (artifactPanelOpen || activePanel === 'artifacts')"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-y-8"

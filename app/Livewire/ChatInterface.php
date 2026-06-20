@@ -24,6 +24,7 @@ class ChatInterface extends Component
     public $models = [];
     public $moreModels = [];
     public $selectedModel = null;
+    public ?int $activeProjectId = null;
 
     public function mount()
     {
@@ -139,6 +140,7 @@ class ChatInterface extends Component
                     'attachment' => $attachmentData,
                 ];
             }
+            $this->activeProjectId = $conversation->project_id;
         }
     }
 
@@ -149,6 +151,20 @@ class ChatInterface extends Component
         $this->prompt = '';
         $this->attachment = null;
         $this->conversationId = null;
+        $this->activeProjectId = null;
+    }
+
+    #[On('startProjectChat')]
+    public function startProjectChat($projectId)
+    {
+        $this->resetChat();
+        $this->activeProjectId = $projectId;
+    }
+
+    #[On('openChat')]
+    public function openChat($chatId)
+    {
+        $this->loadSelectedConversation($chatId);
     }
 
     #[On('selectConversation')]
@@ -185,6 +201,13 @@ class ChatInterface extends Component
         $this->attachment = null;
     }
 
+    #[On('sendPromptFromArtifact')]
+    public function sendPromptFromArtifact($prompt)
+    {
+        $this->prompt = $prompt;
+        $this->sendMessage();
+    }
+
     public function sendMessage()
     {
         if (!Auth::check()) {
@@ -202,12 +225,9 @@ class ChatInterface extends Component
             $conversation = Conversation::create([
                 'user_id' => Auth::id(),
                 'title' => 'New Chat',
+                'project_id' => $this->activeProjectId,
             ]);
             $this->conversationId = $conversation->id;
-            
-            // Dispatch job to generate title
-            \App\Jobs\GenerateChatTitle::dispatch($conversation, $text, $this->selectedModel ?? 'claude-haiku-4-5', Auth::id());
-            
             $this->dispatch('chatCreated');
         }
 
@@ -305,6 +325,25 @@ class ChatInterface extends Component
             $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
         }
 
+        if ($this->activeProjectId) {
+            $project = \App\Models\Project::with('files')->find($this->activeProjectId);
+            if ($project) {
+                if ($project->custom_instructions) {
+                    $baseSystemPrompt .= "\n\nProject Custom Instructions:\n" . $project->custom_instructions;
+                }
+                if ($project->files->count() > 0) {
+                    $baseSystemPrompt .= "\n\nProject Knowledge Files:\n";
+                    foreach ($project->files as $file) {
+                        if (\Illuminate\Support\Facades\Storage::exists($file->file_path)) {
+                            // Basic extraction, limit size to prevent massive context explosion
+                            $content = \Illuminate\Support\Facades\Storage::get($file->file_path);
+                            $baseSystemPrompt .= "\n--- Document: {$file->file_name} ---\n" . substr($content, 0, 50000) . "\n";
+                        }
+                    }
+                }
+            }
+        }
+
         array_unshift($messagesForAi, [
             'role' => 'system',
             'content' => $baseSystemPrompt,
@@ -399,6 +438,37 @@ class ChatInterface extends Component
             'content' => $fullResponse,
             'artifact' => $artifactData,
         ];
+
+        // Generate title dynamically if it's a new chat
+        if ($this->conversationId) {
+            $conversation = \App\Models\Conversation::find($this->conversationId);
+            if ($conversation && $conversation->title === 'New Chat') {
+                $userMsg = collect($this->messages)->firstWhere('role', 'user');
+                if ($userMsg) {
+                    try {
+                        $titleAi = new \App\Services\AI\AiService();
+                        $titleStream = $titleAi->streamResponse([
+                            [
+                                'role' => 'user',
+                                'content' => "Provide a short, concise title (1-4 words max) for a chat that starts with this prompt: \"{$userMsg['content']}\". Reply ONLY with the title, no quotes, no extra text."
+                            ]
+                        ], $this->selectedModel ?? 'claude-haiku-4-5');
+                        
+                        $title = '';
+                        foreach ($titleStream as $chunk) {
+                            $title .= $chunk;
+                        }
+                        $title = trim(str_replace('"', '', $title));
+                        if (!empty($title)) {
+                            $conversation->update(['title' => $title]);
+                            $this->dispatch('chatCreated');
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Inline Title Gen Failed: ' . $e->getMessage());
+                    }
+                }
+            }
+        }
     }
 
     public function render()

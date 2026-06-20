@@ -2,22 +2,101 @@
 
 namespace App\Livewire;
 
+use App\Models\Project;
+use App\Models\ProjectFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+
+use Livewire\Attributes\On;
 
 class ProjectsPanel extends Component
 {
+    use WithFileUploads;
+
     public array $projects = [];
     public bool $showCreateForm = false;
     public string $newProjectName = '';
     public string $newProjectDescription = '';
 
+    public ?int $selectedProjectId = null;
+    public ?array $selectedProject = null;
+    
+    // Project View States
+    public string $customInstructions = '';
+    public $newKnowledgeFiles = [];
+    public array $projectFiles = [];
+    public array $projectChats = [];
+    
+    public string $sortBy = 'updated_at';
+
     public function mount()
     {
-        $this->projects = [
-            ['id' => 1, 'name' => 'Rynude App', 'description' => 'Main application project', 'chat_count' => 5, 'created_at' => '2026-06-10'],
-            ['id' => 2, 'name' => 'API Documentation', 'description' => 'Auto-generated docs from codebase', 'chat_count' => 2, 'created_at' => '2026-06-14'],
-            ['id' => 3, 'name' => 'UI Redesign', 'description' => 'Claude-inspired interface overhaul', 'chat_count' => 8, 'created_at' => '2026-06-16'],
-        ];
+        $this->loadProjects();
+    }
+
+    public function setSortBy($sort)
+    {
+        $this->sortBy = $sort;
+        $this->loadProjects();
+    }
+
+    public function loadProjects()
+    {
+        if (Auth::check()) {
+            $query = Auth::user()->projects()->withCount('conversations as chat_count');
+            
+            if ($this->sortBy === 'name') {
+                $query->orderBy('name', 'asc');
+            } else {
+                $query->orderByDesc($this->sortBy);
+            }
+
+            $this->projects = $query->get()
+                ->map(function ($project) {
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'description' => $project->description,
+                        'chat_count' => $project->chat_count ?? 0,
+                        'created_at' => $project->updated_at->diffForHumans(),
+                    ];
+                })->toArray();
+        }
+    }
+
+    public function selectProject($id)
+    {
+        $this->selectedProjectId = $id;
+        
+        $project = Project::with(['files', 'conversations' => function($q) {
+            $q->orderByDesc('updated_at')->take(5);
+        }])->where('id', $id)->where('user_id', Auth::id())->first();
+
+        if ($project) {
+            $this->selectedProject = [
+                'id' => $project->id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'chat_count' => $project->conversations->count(),
+            ];
+            $this->customInstructions = $project->custom_instructions ?? '';
+            $this->projectFiles = $project->files->toArray();
+            $this->projectChats = $project->conversations->toArray();
+        } else {
+            $this->backToList();
+        }
+    }
+
+    public function backToList()
+    {
+        $this->selectedProjectId = null;
+        $this->selectedProject = null;
+        $this->customInstructions = '';
+        $this->projectFiles = [];
+        $this->projectChats = [];
+        $this->loadProjects();
     }
 
     public function toggleCreateForm()
@@ -34,27 +113,109 @@ class ProjectsPanel extends Component
             'newProjectName.required' => 'Project name is required.',
         ]);
 
-        $this->projects[] = [
-            'id' => count($this->projects) + 1,
+        $project = Auth::user()->projects()->create([
             'name' => $this->newProjectName,
             'description' => $this->newProjectDescription,
-            'chat_count' => 0,
-            'created_at' => now()->toDateString(),
-        ];
+        ]);
 
         $this->newProjectName = '';
         $this->newProjectDescription = '';
         $this->showCreateForm = false;
+        
+        $this->loadProjects();
+        $this->selectProject($project->id);
     }
 
     public function deleteProject($id)
     {
-        $this->projects = array_values(array_filter($this->projects, fn($p) => $p['id'] !== $id));
+        $project = Project::where('id', $id)->where('user_id', Auth::id())->first();
+        if ($project) {
+            // Delete associated files
+            foreach ($project->files as $file) {
+                Storage::delete($file->file_path);
+            }
+            $project->delete();
+        }
+        
+        if ($this->selectedProjectId === $id) {
+            $this->backToList();
+        } else {
+            $this->loadProjects();
+        }
+    }
+
+    public function saveInstructions()
+    {
+        if ($this->selectedProjectId) {
+            Project::where('id', $this->selectedProjectId)
+                ->where('user_id', Auth::id())
+                ->update(['custom_instructions' => $this->customInstructions]);
+        }
+    }
+
+    public function updatedNewKnowledgeFiles()
+    {
+        $this->validate([
+            'newKnowledgeFiles.*' => 'max:10240', // 10MB Max per file
+        ]);
+
+        if ($this->selectedProjectId && !empty($this->newKnowledgeFiles)) {
+            foreach ($this->newKnowledgeFiles as $file) {
+                $path = $file->store('project_knowledge');
+                ProjectFile::create([
+                    'project_id' => $this->selectedProjectId,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ]);
+            }
+            
+            $this->newKnowledgeFiles = []; // Reset input
+            
+            // Reload files
+            $this->projectFiles = ProjectFile::where('project_id', $this->selectedProjectId)->get()->toArray();
+        }
+    }
+
+    public function deleteKnowledgeFile($fileId)
+    {
+        $file = ProjectFile::where('id', $fileId)->where('project_id', $this->selectedProjectId)->first();
+        if ($file) {
+            Storage::delete($file->file_path);
+            $file->delete();
+            $this->projectFiles = ProjectFile::where('project_id', $this->selectedProjectId)->get()->toArray();
+        }
+    }
+
+    public function startNewChatInProject()
+    {
+        if ($this->selectedProjectId) {
+            // Close the panel and signal ChatLayout to open a new chat with this project context
+            $this->dispatch('close-panel');
+            $this->dispatch('startProjectChat', projectId: $this->selectedProjectId);
+        }
+    }
+    
+    public function openProjectChat($chatId)
+    {
+        $this->dispatch('close-panel');
+        $this->dispatch('openChat', chatId: $chatId);
     }
 
     public function closePanel()
     {
         $this->dispatch('close-panel');
+    }
+
+    #[On('chatCreated')]
+    #[On('messageAdded')]
+    public function refreshData()
+    {
+        $this->loadProjects();
+        if ($this->selectedProjectId) {
+            $this->selectProject($this->selectedProjectId);
+        }
     }
 
     public function render()

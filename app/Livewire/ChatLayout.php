@@ -58,12 +58,19 @@ class ChatLayout extends Component
     public function hideArtifactPanel()
     {
         $this->artifactPanelOpen = false;
+        if ($this->activePanel === 'artifacts') {
+            $this->activePanel = null;
+        }
     }
 
     #[\Livewire\Attributes\On('openArtifact')]
+    #[\Livewire\Attributes\On('showArtifactPanel')]
     public function showArtifactPanel()
     {
         $this->artifactPanelOpen = true;
+        if ($this->activePanel === 'artifacts') {
+            $this->activePanel = null; // Switch out of full screen list to show split screen
+        }
     }
 
     public function render()

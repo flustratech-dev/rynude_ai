@@ -16,7 +16,20 @@ class ArtifactPanel extends Component
 
     public function mount()
     {
-        $this->artifacts = [];
+        $user_id = \Illuminate\Support\Facades\Auth::id();
+        if ($user_id) {
+            $this->artifacts = \App\Models\MessageArtifact::whereHas('message.conversation', function($q) use ($user_id) {
+                $q->where('user_id', $user_id);
+            })->orderBy('created_at', 'desc')->get()->unique('identifier')->values()->toArray();
+        } else {
+            $this->artifacts = [];
+        }
+    }
+
+    public function generateTemplate($type)
+    {
+        $prompt = "Create a new artifact for: " . $type . ". Please generate a full, working example.";
+        $this->dispatch('sendPromptFromArtifact', prompt: $prompt);
     }
 
     #[On('openArtifact')]
@@ -69,14 +82,46 @@ class ArtifactPanel extends Component
 
     public function closeArtifact()
     {
-        if ($this->isOpen) {
-            // Close the artifact and go back to the list
-            $this->isOpen = false;
-            $this->currentArtifact = null;
-        } else {
-            // Close the entire panel
-            $this->dispatch('closeArtifactPanel');
+        $this->isOpen = false;
+        $this->currentArtifact = null;
+        $this->dispatch('closeArtifactPanel');
+    }
+
+    public function deleteArtifact($id)
+    {
+        $model = \App\Models\MessageArtifact::find($id);
+        if ($model) {
+            \App\Models\MessageArtifact::where('identifier', $model->identifier)->delete();
+            $this->mount();
+            if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
+                $this->closeArtifact();
+            }
         }
+    }
+
+    public function renameArtifact($id, $newTitle)
+    {
+        $model = \App\Models\MessageArtifact::find($id);
+        if ($model && !empty(trim($newTitle))) {
+            \App\Models\MessageArtifact::where('identifier', $model->identifier)->update(['title' => trim($newTitle)]);
+            $this->mount();
+            if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
+                $this->currentArtifact['title'] = trim($newTitle);
+            }
+        }
+    }
+
+    public function createNewArtifact()
+    {
+        $this->currentArtifact = [
+            'id' => null,
+            'title' => 'Untitled',
+            'language' => 'new',
+            'type' => 'new',
+            'content' => ''
+        ];
+        $this->isOpen = true;
+        $this->dispatch('showArtifactPanel'); // Custom event to ensure it opens in split screen
     }
 
     public function copyCode()
