@@ -10,23 +10,15 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Maya',
+            'email' => 'maya@example.com',
+            'password' => bcrypt('password'),
         ]);
 
-        \App\Models\AiModel::insert([
-            ['name' => 'Claude 3.5 Sonnet', 'code' => 'claude-3-5-sonnet', 'is_active' => true],
-            ['name' => 'Claude 3 Opus', 'code' => 'claude-3-opus', 'is_active' => true],
-            ['name' => 'Claude 3 Haiku', 'code' => 'claude-3-haiku', 'is_active' => true],
-        ]);
+        $this->call(AiModelSeeder::class);
 
         \App\Models\Conversation::insert([
             ['user_id' => $user->id, 'title' => 'Project architecture discussion', 'created_at' => now(), 'updated_at' => now()],
