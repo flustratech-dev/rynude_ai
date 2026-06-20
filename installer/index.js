@@ -100,6 +100,8 @@ async function run() {
             fs.removeSync(backupDir); // clean up tmp
             
             execSync('php artisan migrate --force', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            execSync('php artisan db:seed --class=AiModelSeeder --force', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            execSync('php artisan optimize:clear', { cwd: INSTALL_DIR, stdio: 'ignore' });
             envSpinner.succeed('Konfigurasi dan database lama Anda berhasil dipulihkan (Aman!).');
         } else {
             // Fresh Install
@@ -110,7 +112,9 @@ async function run() {
             
             fs.ensureFileSync(path.join(INSTALL_DIR, 'database', 'database.sqlite'));
             execSync('php artisan key:generate', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            execSync('php artisan storage:link', { cwd: INSTALL_DIR, stdio: 'ignore' });
             execSync('php artisan migrate:fresh --seed', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            execSync('php artisan optimize:clear', { cwd: INSTALL_DIR, stdio: 'ignore' });
             envSpinner.succeed('Konfigurasi dan database siap.');
         }
     } catch (e) {
