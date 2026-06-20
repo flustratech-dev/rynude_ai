@@ -28,22 +28,32 @@ async function run() {
     
     await checkRequirements();
 
+    let hasBackup = false;
+    const backupDir = path.join(os.homedir(), '.rynude_backup_tmp');
+    const dbPath = path.join(INSTALL_DIR, 'database', 'database.sqlite');
+    const envPath = path.join(INSTALL_DIR, '.env');
+
     if (fs.existsSync(INSTALL_DIR)) {
         const response = await prompts({
             type: 'confirm',
             name: 'overwrite',
-            message: `Folder instalasi ${chalk.yellow(INSTALL_DIR)} sudah ada. Apakah Anda ingin menginstal ulang (menghapus instalasi yang lama)?`,
-            initial: false
+            message: `Aplikasi Rynude AI sudah terinstal. Apakah Anda ingin melakukan UPDATE ke versi terbaru? (Data obrolan & API Key Anda akan aman)`,
+            initial: true
         });
 
         if (!response.overwrite) {
-            console.log(chalk.yellow('Instalasi dibatalkan.'));
+            console.log(chalk.yellow('Update dibatalkan.'));
             process.exit(0);
         }
         
-        const spinner = ora('Menghapus instalasi lama...').start();
+        const spinner = ora('Mem-backup data Anda (Database & Konfigurasi)...').start();
+        fs.ensureDirSync(backupDir);
+        if (fs.existsSync(dbPath)) fs.copySync(dbPath, path.join(backupDir, 'database.sqlite'));
+        if (fs.existsSync(envPath)) fs.copySync(envPath, path.join(backupDir, '.env'));
+        hasBackup = true;
+        
         fs.removeSync(INSTALL_DIR);
-        spinner.succeed('Instalasi lama berhasil dihapus.');
+        spinner.succeed('Data lama dibackup dan siap diupdate.');
     }
 
     console.log(chalk.gray(`\nMenginstal Rynude AI ke folder tersembunyi: ${INSTALL_DIR}`));
@@ -80,21 +90,29 @@ async function run() {
     }
 
     // 4. ENV Setup
-    const envSpinner = ora('Menyiapkan database bawaan (SQLite)...').start();
+    const envSpinner = ora('Menyiapkan konfigurasi & database...').start();
     try {
-        fs.copySync(path.join(INSTALL_DIR, '.env.example'), path.join(INSTALL_DIR, '.env'));
-        
-        // Ubah koneksi ke sqlite agar zero-config
-        let envContent = fs.readFileSync(path.join(INSTALL_DIR, '.env'), 'utf-8');
-        envContent = envContent.replace(/DB_CONNECTION=.*/, 'DB_CONNECTION=sqlite');
-        fs.writeFileSync(path.join(INSTALL_DIR, '.env'), envContent);
-        
-        // Buat file database
-        fs.ensureFileSync(path.join(INSTALL_DIR, 'database', 'database.sqlite'));
-        
-        execSync('php artisan key:generate', { cwd: INSTALL_DIR, stdio: 'ignore' });
-        execSync('php artisan migrate:fresh --seed', { cwd: INSTALL_DIR, stdio: 'ignore' });
-        envSpinner.succeed('Konfigurasi dan database siap.');
+        if (hasBackup && fs.existsSync(path.join(backupDir, '.env')) && fs.existsSync(path.join(backupDir, 'database.sqlite'))) {
+            // Restore from backup
+            fs.copySync(path.join(backupDir, '.env'), path.join(INSTALL_DIR, '.env'));
+            fs.ensureDirSync(path.join(INSTALL_DIR, 'database'));
+            fs.copySync(path.join(backupDir, 'database.sqlite'), path.join(INSTALL_DIR, 'database', 'database.sqlite'));
+            fs.removeSync(backupDir); // clean up tmp
+            
+            execSync('php artisan migrate --force', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            envSpinner.succeed('Konfigurasi dan database lama Anda berhasil dipulihkan (Aman!).');
+        } else {
+            // Fresh Install
+            fs.copySync(path.join(INSTALL_DIR, '.env.example'), path.join(INSTALL_DIR, '.env'));
+            let envContent = fs.readFileSync(path.join(INSTALL_DIR, '.env'), 'utf-8');
+            envContent = envContent.replace(/DB_CONNECTION=.*/, 'DB_CONNECTION=sqlite');
+            fs.writeFileSync(path.join(INSTALL_DIR, '.env'), envContent);
+            
+            fs.ensureFileSync(path.join(INSTALL_DIR, 'database', 'database.sqlite'));
+            execSync('php artisan key:generate', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            execSync('php artisan migrate:fresh --seed', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            envSpinner.succeed('Konfigurasi dan database siap.');
+        }
     } catch (e) {
         envSpinner.fail('Gagal menyiapkan database.');
         console.error(chalk.red(e.message));
