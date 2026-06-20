@@ -14,28 +14,49 @@ git clone <URL_REPO_KAMU>
 cd rynude_ai
 ```
 
-### Install Dependencies
-Pastikan kamu sudah menginstal **PHP**, **Composer**, dan **Node.js** di komputermu.
+### 2. Setup Global Command (Opsional)
+Anda bisa membuat perintah `rynude` tersedia di **seluruh komputer Anda**, sehingga ke depannya Anda tidak perlu repot membuka folder project ini lagi! 
+
+*(Catatan: Pengguna Windows dapat langsung mengetik `rynude` di terminal jika berada di dalam folder project tanpa perlu setup global ini)*
+
+**Untuk Pengguna Windows (Gunakan ini jika ingin akses Global, atau jika perintah rynude gagal dijalankan):**
+1. Cari file **`setup-global.bat`** di dalam folder project ini.
+2. Klik dua kali (jalankan) file tersebut.
+
+**Untuk Pengguna macOS / Linux (Gunakan ini untuk akses Global):**
+1. Buka terminal di dalam folder project ini.
+2. Jalankan perintah: `bash setup-global.sh`
+*(Jika perintah `rynude` belum dikenali, ikuti petunjuk di terminal untuk menambahkan path ke `.zshrc` atau `.bashrc` Anda)*
+
+🎉 **Selesai!** Sistem akan otomatis mendeteksi dan bisa dijalankan dari folder mana saja nantinya.
+
+### 3. Install Dependencies
+Instal semua paket pendukung backend (PHP) dan frontend (Node.js):
 ```bash
 composer install
 npm install
 ```
 
-### Konfigurasi Database (Tanpa XAMPP!)
-Project ini sudah diatur menggunakan **SQLite**. Kamu **TIDAK PERLU** repot menyalakan XAMPP, MySQL, atau membuat database manual.
+### 4. Setup Konfigurasi (.env)
+Duplikat file konfigurasi:
 ```bash
-# 1. Copy file environment
-# Untuk pengguna Windows (Command Prompt):
-copy .env.example .env
-
-# Untuk pengguna Mac / Linux:
 cp .env.example .env
+```
+*(Pengguna Windows/CMD bisa menggunakan `copy .env.example .env`)*
 
-# 2. Generate application key
+Buka file `.env` dan sesuaikan koneksi database Anda (contoh menggunakan MySQL):
+```env
+DB_CONNECTION=mysql
+DB_DATABASE=db_rynude
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 5. Finalisasi Setup
+Generate application key dan jalankan migrasi database (beserta seeder untuk model AI bawaan):
+```bash
 php artisan key:generate
-
-# 3. Setup database dan isi data awal
-php artisan migrate:fresh --seed
+php artisan migrate --seed
 ```
 
 ---
@@ -65,17 +86,6 @@ npm install -g 9router
 
 Setelah project dan 9router siap, saatnya menghubungkan keduanya agar Rynude AI mengambil data dari 9router.
 
-### Jalankan Aplikasi Rynude AI
-Kembali ke terminal project Laravel kamu, jalankan perintah ini (bisa buka 2 tab terminal):
-```bash
-# Tab 1: Build asset tampilan
-npm run dev
-
-# Tab 2: Jalankan server website
-php artisan serve
-```
-Setelah itu, buka browser dan akses aplikasinya di: **http://localhost:8000**
-
 ### Pengaturan API Key di dalam Aplikasi
 1. Buka aplikasi di browser dan **Login**.
 2. Klik ikon/menu profil kamu (Settings) di bagian sidebar untuk membuka **Settings Modal**.
@@ -85,29 +95,37 @@ Setelah itu, buka browser dan akses aplikasinya di: **http://localhost:8000**
    - **Base URL (Custom Endpoint):** Isi dengan `http://localhost:20128/v1`
    - **API Key:** Isi dengan `sk-dummy-key` (atau API Key provider lain jika kamu mengaturnya spesifik di dalam 9router).
 6. Simpan pengaturan.
+7. Tutup menu pengaturan, kemudian kembali ke layar obrolan (*chat*).
+8. Pada *dropdown* pilihan model di bagian atas layar, silakan pilih **Rynude Sonnet** atau **Rynude Haiku**.
 
 > [!TIP]
-> **Selesai!** Sekarang semua obrolan (chat) yang kamu lakukan di Rynude AI akan otomatis diarahkan melalui 9router, sehingga kamu bisa menikmati model gratisan.
+> **Selesai!** Sekarang semua obrolan (chat) yang kamu lakukan di Rynude AI akan otomatis menggunakan otak dari model yang kamu pilih dan diarahkan gratis melalui 9router.
 
 ---
 
-## 💻 4. Jalankan Aplikasi Lebih Cepat (Global Command)
+## 💻 Cara Menjalankan Rynude
 
-Agar kamu tidak perlu masuk ke folder project tiap kali mau menjalankan aplikasi, project ini sudah dilengkapi dengan script untuk membuat perintah global `rynude`.
+Kini menjalankan project ini **jauh lebih mudah**! Anda tidak perlu repot membuka banyak terminal.
 
-Jika sudah di-setup, kamu hanya perlu mengetikkan perintah `rynude` di terminal mana saja, dan aplikasi akan langsung menyala!
+### Menjalankan secara Lokal di Folder Project
+Jika Anda berada di dalam folder project, Anda bisa langsung menjalankan perintah berikut tanpa perlu melakukan Setup Global:
 
-### Cara Install Perintah Global `rynude`
+**Untuk Pengguna Windows:**
+Cukup ketik perintah berikut di terminal:
+```bash
+rynude
+```
 
-**Untuk pengguna Windows:**
-1. Buka File Explorer dan masuk ke dalam folder project `rynude_ai`.
-2. Klik ganda (Double-click) pada file `setup-global.bat`.
-3. Selesai! Tutup terminal yang terbuka, buka terminal (CMD) baru, lalu ketik `rynude`.
+**Untuk Pengguna macOS / Linux:**
+Jalankan file *command* yang sudah disediakan:
+```bash
+./rynude.command
+```
+*(atau bisa juga dengan `npm run rynude`)*
 
-**Untuk pengguna Mac / Linux:**
-1. Buka terminal dan masuk ke folder project.
-2. Jalankan perintah instalasi berikut:
-   ```bash
-   bash setup-global.sh
-   ```
-3. Script akan otomatis memasang perintah `rynude` ke dalam folder bin di sistemmu. Buka tab terminal baru, lalu ketik `rynude`. *(Jika ada pesan "command not found", perhatikan pesan penting di layar saat instalasi selesai tentang PATH).*
+### 🌟 Menjalankan dari Luar Folder (Global Command)
+Jika Anda sudah melakukan **Setup Global (Langkah 2)**, Anda bisa membuka terminal baru dari folder **mana saja** (bahkan dari Desktop) dan cukup mengetik:
+```bash
+rynude
+```
+Sistem akan otomatis mencari folder project dan menyalakannya! 🚀
