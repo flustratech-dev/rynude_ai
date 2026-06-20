@@ -11,15 +11,32 @@ const REPO_URL = 'https://github.com/flustratech-dev/rynude_ai.git';
 const INSTALL_DIR = path.join(os.homedir(), '.rynude_ai');
 
 async function checkRequirements() {
-    const reqs = ['git', 'php', 'composer', 'npm'];
+    const reqs = [
+        { cmd: 'php', name: 'PHP', download: 'https://windows.php.net/download/' },
+        { cmd: 'composer', name: 'Composer', download: 'https://getcomposer.org/Composer-Setup.exe' },
+        { cmd: 'git', name: 'Git', download: 'https://git-scm.com/downloads' },
+        { cmd: 'npm', name: 'Node.js/NPM', download: 'https://nodejs.org/' }
+    ];
+    
+    let hasMissing = false;
+    let statusMessage = '\n';
+
     for (const req of reqs) {
         try {
-            execSync(`${req} --version`, { stdio: 'ignore' });
+            execSync(`${req.cmd} --version`, { stdio: 'ignore' });
+            statusMessage += chalk.green(`[✓] ${req.name} (Ditemukan)\n`);
         } catch (e) {
-            console.error(chalk.red(`\n❌ Error: Program '${req}' tidak ditemukan di sistem Anda.`));
-            console.error(chalk.yellow(`Silakan install ${req} terlebih dahulu sebelum menginstal Rynude AI.\n`));
-            process.exit(1);
+            hasMissing = true;
+            statusMessage += chalk.red(`[x] ${req.name} (Tidak Ditemukan) -> Download: ${req.download}\n`);
         }
+    }
+
+    if (hasMissing) {
+        console.error(chalk.red.bold('\n❌ Instalasi Dihentikan: Komponen Hilang!'));
+        console.error(chalk.white('Rynude AI membutuhkan beberapa alat tambahan di komputer Anda:'));
+        console.error(statusMessage);
+        console.error(chalk.yellow.bold('Silakan install aplikasi yang disilang merah, lalu BUKA TERMINAL/CMD BARU dan ketik ulang "npx install-rynude".\n'));
+        process.exit(1);
     }
 }
 
