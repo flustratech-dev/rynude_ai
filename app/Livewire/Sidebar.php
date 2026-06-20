@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class Sidebar extends Component
 {
@@ -21,6 +22,8 @@ class Sidebar extends Component
         $this->loadConversations();
     }
 
+    #[On('chatCreated')]
+    #[On('messageAdded')]
     public function loadConversations()
     {
         $userId = auth()->id();

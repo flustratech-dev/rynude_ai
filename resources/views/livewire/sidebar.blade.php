@@ -127,7 +127,7 @@
         <div class="mt-4 px-2 flex-1 overflow-hidden flex flex-col">
             <div class="flex items-center justify-between px-2 py-1">
                 <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400">Recents</span>
-                <button class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors">
+                <button wire:click="openPanel('chats')" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
                     <svg class="w-[14px] h-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
                     </svg>
@@ -173,7 +173,7 @@
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1"
                         @click.away="profileMenuOpen = false"
-                        class="absolute bottom-full left-2 mb-2 w-64 bg-white dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-2xl shadow-lg z-50 py-2"
+                        class="absolute bottom-full left-2 right-2 mb-2 w-auto max-h-[60vh] overflow-y-auto overflow-x-hidden custom-scrollbar bg-white dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-2xl shadow-lg z-50 py-2"
                         style="display: none;"
                     >
                         <div class="text-sm text-gray-500 dark:text-stone-400 font-medium px-4 py-2 mb-1">

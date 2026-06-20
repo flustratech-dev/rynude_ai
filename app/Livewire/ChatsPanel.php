@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ChatsPanel extends Component
@@ -18,6 +19,8 @@ class ChatsPanel extends Component
         $this->loadConversations();
     }
 
+    #[On('chatCreated')]
+    #[On('messageAdded')]
     public function loadConversations()
     {
         $userId = auth()->id();

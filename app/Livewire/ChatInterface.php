@@ -177,6 +177,7 @@ class ChatInterface extends Component
                 'title' => substr($text, 0, 30) . '...',
             ]);
             $this->conversationId = $conversation->id;
+            $this->dispatch('chatCreated');
         }
 
         // Add user message to DB

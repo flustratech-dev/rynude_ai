@@ -25,7 +25,7 @@ Sebelum melakukan *clone* dan instalasi, pastikan sistem Anda telah memiliki:
 
 ## 📦 Panduan Instalasi (Clone & Setup)
 
-Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi ini di komputer/laptop Anda:
+Ikuti langkah-langkah di bawah ini untuk menginstal aplikasi ini di komputer Anda:
 
 ### 1. Clone Repository
 Buka terminal/CMD Anda, lalu jalankan perintah berikut:
@@ -34,45 +34,32 @@ git clone https://github.com/flustratech-dev/rynude_ai.git
 cd claude-ui-clone
 ```
 
-### 2. Install Dependency PHP (Composer)
-Instal semua paket pendukung Laravel:
+### 2. Install Dependencies
+Instal semua paket pendukung backend (PHP) dan frontend (Node.js):
 ```bash
 composer install
-```
-
-### 3. Install Dependency Frontend (NPM)
-Instal Tailwind v4 dan *library* JavaScript lainnya:
-```bash
 npm install
 ```
 
-### 4. Setup File Konfigurasi (.env)
-Duplikat file `.env.example` menjadi `.env`:
+### 3. Setup Konfigurasi (.env)
+Duplikat file konfigurasi:
 ```bash
 cp .env.example .env
 ```
-*(Pengguna Windows/CMD bisa menggunakan copy .env.example .env)*
+*(Pengguna Windows/CMD bisa menggunakan `copy .env.example .env`)*
 
-Buka file `.env` di teks editor, lalu sesuaikan konfigurasi database Anda:
+Buka file `.env` dan sesuaikan koneksi database Anda (contoh menggunakan MySQL):
 ```env
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=db_bebas aja bos 
+DB_DATABASE=db_rynude
 DB_USERNAME=root
 DB_PASSWORD=
 ```
-*(Catatan: Jika Anda lebih suka SQLite, cukup ubah `DB_CONNECTION=sqlite` dan hapus variabel DB lainnya, lalu buat file kosong bernama `database.sqlite` di folder `database/`)*
 
-### 5. Generate Application Key
-Jalankan perintah ini untuk men-generate kunci enkripsi Laravel:
+### 4. Finalisasi Setup
+Generate application key dan jalankan migrasi database:
 ```bash
 php artisan key:generate
-```
-
-### 6. Jalankan Migrasi Database
-Buat tabel-tabel yang dibutuhkan ke dalam database:
-```bash
 php artisan migrate
 ```
 
@@ -80,19 +67,42 @@ php artisan migrate
 
 ## 💻 Cara Menjalankan Aplikasi
 
-Anda perlu menjalankan dua *service* secara bersamaan (buka 2 tab terminal):
+Kini menjalankan project ini **jauh lebih mudah**! Anda tidak perlu repot membuka banyak terminal.
 
-**Terminal 1 (Menjalankan server PHP):**
+### Menjalankan secara Lokal di Folder Project
+Cukup buka 1 terminal di folder project Anda, lalu jalankan perintah:
 ```bash
-php artisan serve
+.\rynude
 ```
+*(atau bisa juga dengan `npm run rynude`)*
 
-**Terminal 2 (Menjalankan Vite & Tailwind compiler):**
+### 🌟 Menjalankan secara Global (Windows / macOS / Linux)
+Anda bisa membuat perintah `rynude` tersedia di **seluruh komputer Anda**, sehingga Anda tidak perlu repot mencari folder project ini lagi!
+
+**Untuk Pengguna Windows:**
+1. Cari file **`setup-global.bat`** di dalam folder project ini.
+2. Klik dua kali (jalankan) file tersebut.
+
+**Untuk Pengguna macOS / Linux:**
+1. Buka terminal di dalam folder project ini.
+2. Jalankan perintah: `bash setup-global.sh`
+*(Jika perintah `rynude` belum dikenali, ikuti petunjuk di terminal untuk menambahkan path ke `.zshrc` atau `.bashrc` Anda)*
+
+🎉 **Selesai!** 
+Sekarang Anda bisa membuka terminal baru dari folder **mana saja** (bahkan di Desktop) dan cukup mengetik:
 ```bash
-npm run dev
+rynude
 ```
+Sistem akan otomatis berpindah ke folder project dan menyalakannya! 🚀
 
-Buka browser Anda dan akses: **http://127.0.0.1:8000**
+---
+
+### Akses Aplikasi
+Perintah `rynude` akan secara otomatis menjalankan backend (Laravel) di port **8080** dan frontend (Vite) di port **5180**. Port custom ini sengaja dibuat agar tidak bentrok dengan project Laravel Anda yang lain.
+
+Buka browser Anda dan akses:
+👉 **[http://localhost:8080](http://localhost:8080)**
+
 *(Pastikan Anda register/login terlebih dahulu untuk menggunakan fitur chat)*
 
 ---
