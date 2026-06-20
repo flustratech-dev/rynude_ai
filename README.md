@@ -83,3 +83,18 @@ npx 9router
 
 ---
 
+## 🚀 Cara Pakai Ratusan Model Keren (dengan Hugging Face)
+
+Anda juga bisa memanfaatkan server gratis **Hugging Face** yang menyimpan ribuan model open-source tercanggih di dunia (seperti Qwen, Llama 3, DeepSeek, Kimi, Gemma, dll).
+
+### Cara Menghubungkan:
+1. Buat akun gratis di [Hugging Face](https://huggingface.co).
+2. Buat **Access Token (API Key)** di menu *Settings -> Access Tokens*.
+3. Buka **Settings** di Rynude AI, lalu pergi ke tab **Hugging Face**.
+4. Masukkan *API Key* Anda dan klik **Simpan**.
+5. Tutup halaman *Settings*, lalu klik menu *dropdown* model di pojok kiri atas obrolan.
+6. Voila! Model-model dengan **akhiran "HG"** (seperti `HG Qwen3.6`, `HG DeepSeek-V4-Pro`, `HG Llama-3.1-8B-Instruct`) yang sebelumnya berwarna abu-abu kini akan **aktif dan bisa dipilih**!
+
+*(Sistem ini sepenuhnya otomatis, URL Router sudah diatur canggih di balik layar agar Anda tidak repot lagi!)*
+
+---
