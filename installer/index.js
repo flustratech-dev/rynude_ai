@@ -113,16 +113,20 @@ async function run() {
             // Auto add to PATH for Mac/Linux
             const bashrcPath = path.join(os.homedir(), '.bashrc');
             const zshrcPath = path.join(os.homedir(), '.zshrc');
+            const zprofilePath = path.join(os.homedir(), '.zprofile');
             const pathExport = `\nexport PATH="$HOME/.local/bin:$PATH"\n`;
 
-            if (fs.existsSync(bashrcPath)) {
-                const content = fs.readFileSync(bashrcPath, 'utf8');
-                if (!content.includes('.local/bin')) fs.appendFileSync(bashrcPath, pathExport);
-            }
-            if (fs.existsSync(zshrcPath)) {
-                const content = fs.readFileSync(zshrcPath, 'utf8');
-                if (!content.includes('.local/bin')) fs.appendFileSync(zshrcPath, pathExport);
-            }
+            [bashrcPath, zshrcPath, zprofilePath].forEach(profilePath => {
+                try {
+                    fs.ensureFileSync(profilePath);
+                    const content = fs.readFileSync(profilePath, 'utf8');
+                    if (!content.includes('.local/bin')) {
+                        fs.appendFileSync(profilePath, pathExport);
+                    }
+                } catch (err) {
+                    // ignore if permission denied
+                }
+            });
         }
         globalSpinner.succeed('Global command berhasil diatur.');
     } catch (e) {
