@@ -28,6 +28,42 @@ Rynude AI ships a pixel-perfect, lightning-fast chat interface — empowering yo
 
 ---
 
+## 📖 Apa itu Rynude AI?
+
+Rynude AI adalah antarmuka obrolan (Chat UI) *open-source* yang mereplika pengalaman premium dari Claude AI, namun memberikan Anda **kemerdekaan penuh** untuk mencolokkan ( *plug-in* ) berbagai mesin AI (LLM) dari seluruh dunia. 
+
+Daripada harus membuka banyak *tab* browser untuk ChatGPT, Claude, dan Hugging Face secara terpisah, Rynude menyatukan semuanya dalam satu aplikasi lokal milik Anda sendiri yang super cepat, aman, dan tanpa batasan!
+
+### 🏗️ Arsitektur Aplikasi (Cara Kerja)
+
+```mermaid
+graph TD
+    A[👨‍💻 Anda / User] -->|Ketik Pesan & Prompt| B[🖥️ Rynude UI<br>Tailwind + Alpine]
+    B -->|Livewire Requests| C[⚙️ Laravel Backend<br>Core Logic]
+    C --> D{🔀 AI Router Service}
+    
+    D -->|Anthropic API| E[🧠 Claude 3.5 Sonnet/Opus]
+    D -->|HuggingFace API| F[🦙 Llama 3 / Qwen / DeepSeek]
+    D -->|OpenAI API| G[🤖 GPT-4o / GPT-4]
+    D -->|9router Proxy| H[🔓 Free Premium Models]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#ddf,stroke:#333,stroke-width:2px
+    style D fill:#fdd,stroke:#333,stroke-width:2px
+```
+
+### 🏆 Komparasi Dukungan Provider AI
+
+| Provider Terdukung | Status Dukungan | Keunggulan Utama | Model Terbaik Saat Ini |
+| :--- | :---: | :--- | :--- |
+| **Hugging Face** | ✅ Native | Gratis, Ratusan Model Open-Source | `Llama-3.3-70B`, `DeepSeek-V4` |
+| **Anthropic** | ✅ Native | Resmi, Paling Cerdas (Coding & Logika) | `Claude 3.5 Sonnet` |
+| **OpenAI** | ✅ Native | Resmi, Ekosistem Terbesar | `GPT-4o` |
+| **9router Proxy** | ✅ Native | Akses model premium gratis (Bypass) | `Rynude Sonnet / Haiku` |
+
+---
+
 ## ✨ Fitur Unggulan
 - 🎨 **UI Premium & Responsif**: Desain *pixel-perfect* mirip Claude AI (mendukung Desktop & Mobile).
 - 🌗 **Dark/Light Mode**: Sinkronisasi otomatis dengan tema sistem atau atur manual sesuka hati.
