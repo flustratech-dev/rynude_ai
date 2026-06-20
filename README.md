@@ -1,6 +1,30 @@
-# 🌟 Rynude AI - Claude UI Clone
+<div align="center">
 
-Rynude adalah aplikasi web *clone* dari antarmuka Claude AI, dibangun menggunakan **Laravel 11/12**, **Livewire 3**, **Tailwind CSS v4**, dan **Alpine.js**. Nikmati pengalaman *chatting* dengan AI favorit Anda dalam balutan desain premium yang 100% mirip aslinya!
+# 🌟 Rynude AI
+
+**The ultimate open-source UI clone for the agentic coding era.**
+
+Rynude AI ships a pixel-perfect, lightning-fast chat interface — empowering you to chat with the world's most advanced AI models locally and for free.
+
+[![npm version](https://img.shields.io/npm/v/rynude?style=flat-square&color=2563EB)](https://npmjs.com/package/rynude)
+[![downloads](https://img.shields.io/npm/dt/rynude?style=flat-square&color=2D2825)](https://npmjs.com/package/rynude)
+[![php](https://img.shields.io/badge/php-%3E%3D8.2-success?style=flat-square)]()
+[![license](https://img.shields.io/badge/license-Apache%202.0-black?style=flat-square)]()
+[![Laravel](https://img.shields.io/badge/Laravel-11%2F12-FF2D20?style=flat-square&logo=laravel)]()
+[![Livewire](https://img.shields.io/badge/Livewire-3-FB70A9?style=flat-square&logo=livewire)]()
+
+<br />
+
+[![Website](https://img.shields.io/badge/RYNUDE.COM-10B981?style=for-the-badge)]()
+[![Docs](https://img.shields.io/badge/DOCS-BLACK?style=for-the-badge)]()
+[![Twitter](https://img.shields.io/badge/FOLLOW_ON_X-BLACK?style=for-the-badge&logo=x)]()
+[![Discord](https://img.shields.io/badge/JOIN_OUR_DISCORD-5865F2?style=for-the-badge&logo=discord)]()
+
+<br />
+
+*⭐ Help us reach more developers and grow the Rynude community. Star this repo! ⭐*
+
+</div>
 
 ---
 
