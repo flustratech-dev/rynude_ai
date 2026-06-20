@@ -203,3 +203,19 @@ Bosan dengan model standar? Mari manfaatkan server gratis **Hugging Face** yang 
 > ✨ **Voila!** Puluhan model tangguh berakhiran **"HG"** (seperti `HG Qwen3.6`, `HG DeepSeek-V4-Pro`) yang sebelumnya berwarna abu-abu terkunci, kini otomatis **menyala dan siap dieksekusi**!
 
 *(Seluruh routing URL ke server Hugging Face sudah diatur sangat canggih di balik layar agar Anda tinggal pakai tanpa repot coding!)*
+
+---
+
+## 💎 Fitur Utama & Sekilas Biaya (Key Features & Pricing)
+
+Mengapa Anda harus beralih ke Rynude AI? Tabel di bawah ini menunjukkan perbandingan masif antara menggunakan layanan langganan AI konvensional dibandingkan memiliki server Rynude lokal Anda sendiri.
+
+| Fitur / Komponen | Langganan Resmi (ChatGPT/Claude Pro) | <img src="public/images/logo_rynudee.png" height="15" style="vertical-align: middle;"/> Rynude AI (Self-Hosted) |
+| :--- | :--- | :--- |
+| 💵 **Biaya Antarmuka (UI)** | $20 / bulan (~Rp 320.000) | **GRATIS 100% (Open-Source)** |
+| 🧠 **Mesin AI Utama** | Terkunci pada 1 perusahaan | **Multi-Provider** (API Bebas Pilih) |
+| 🎁 **Akses Model Premium** | Berbayar Penuh | **Bisa Gratis** (via Proxy / HF) |
+| 🚦 **Batas Pesan (Limit)** | Ketat (Maks 40 pesan / 3 jam) | **Tanpa Batas** (Pay-as-you-go) |
+| 🛡️ **Privasi & Keamanan** | Disimpan di Cloud Perusahaan | **Data 100% di Komputer Anda** |
+| 🎨 **Personalisasi Tema** | Sangat Terbatas | **Bebas Kustomisasi** (Tailwind CSS) |
+| 📦 **Fitur Artifacts (Code Render)**| Hanya di Anthropic Claude | **Tersedia Penuh** di Rynude |
