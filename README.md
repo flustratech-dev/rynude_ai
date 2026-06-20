@@ -79,96 +79,127 @@ graph TD
 ---
 
 ## ✨ Fitur Unggulan
-- 🎨 **UI Premium & Responsif**: Desain *pixel-perfect* mirip Claude AI (mendukung Desktop & Mobile).
-- 🌗 **Dark/Light Mode**: Sinkronisasi otomatis dengan tema sistem atau atur manual sesuka hati.
-- ⚡ **Real-time AI Chat**: *Streaming* teks super cepat via Server-Sent Events (SSE).
-- 📦 **Artifacts Panel**: Panel cerdas untuk menampilkan baris kode, dokumen HTML, hingga *render* komponen UI.
-- ⚙️ **Dynamic API Config**: Ganti API Key dan Custom Provider bebas hambatan langsung dari menu Settings.
+
+<details>
+<summary><b>🎨 UI Premium & Responsif</b></summary>
+<br/>
+Desain <i>pixel-perfect</i> yang 100% mirip dengan Claude AI. Dirancang khusus untuk memberikan pengalaman premium baik saat Anda membukanya di Desktop maupun Smartphone.
+</details>
+
+<details>
+<summary><b>🌗 Dynamic Dark/Light Mode</b></summary>
+<br/>
+Sistem tema pintar yang tersinkronisasi otomatis dengan pengaturan sistem operasi Anda. Atau, atur manual sesuka hati untuk kenyamanan mata.
+</details>
+
+<details>
+<summary><b>⚡ Real-time AI Chat (SSE Streaming)</b></summary>
+<br/>
+Rasakan kecepatan tanpa batas. Teks dari AI akan mengalir seketika secara <i>streaming</i> menggunakan teknologi Server-Sent Events (SSE), tanpa perlu menunggu <i>loading</i> panjang.
+</details>
+
+<details>
+<summary><b>📦 Artifacts Panel Cerdas</b></summary>
+<br/>
+Bukan sekadar <i>chat</i> biasa. Rynude dilengkapi panel khusus untuk menampilkan <i>source code</i>, merender dokumen HTML, hingga memvisualisasikan komponen UI secara langsung layaknya IDE sungguhan.
+</details>
+
+<details>
+<summary><b>⚙️ Dynamic API Configuration</b></summary>
+<br/>
+Kemerdekaan di tangan Anda. Ganti API Key, ubah <i>Base URL</i>, dan tambahkan <i>Custom Provider</i> secara instan langsung dari menu Settings tanpa menyentuh <i>source code</i>.
+</details>
 
 ---
 
-## 🚀 Instalasi Super Cepat (One-Click Install)
+## 🚀 Instalasi "One-Click" Super Cepat
 
-Lupakan cara manual yang ribet! Sekarang Anda bisa menginstal keseluruhan project ini (termasuk otomatis mengatur *database*, dependensi, dan *global command*) hanya dengan **satu baris perintah**.
+Lupakan cara instalasi manual yang menyiksa! Kami telah merancang *Auto-Installer* tercanggih. Seluruh *setup* database, dependensi, dan perintah global akan ditangani oleh sistem secara otomatis.
 
-### 📋 Syarat (Pre-requisites)
-Pastikan komputer Anda sudah memiliki:
+### 📋 Prasyarat Sistem
+Sistem kami kini dilengkapi **Smart Dependency Detection**. Pastikan Anda menginstal komponen berikut, atau biarkan *installer* cerdas kami yang memberitahu Anda apa yang kurang:
 - **PHP** (>= 8.2) & **Composer**
 - **Node.js** & **NPM**
 - **Git**
 
 ### 💻 Mulai Instalasi
-Buka terminal/CMD Anda dari mana saja, lalu ketikkan perintah ajaib ini:
+Buka terminal/CMD di mana saja, lalu ketikkan mantra ajaib ini:
 
 ```bash
 npx install-rynude
 ```
 
-☕ *Duduk santai dan biarkan script otomatis kami bekerja. Sistem akan mengunduh source code ke dalam folder tersembunyi, menyiapkan segalanya, dan menyulap PC Anda!*
+> [!TIP]
+> ☕ **Duduk dan nikmati kopi Anda.** Sistem akan otomatis mengunduh *source code* ke folder tersembunyi yang aman, menyiapkan seluruh konfigurasi, dan menyulap PC Anda menjadi mesin AI dalam hitungan detik!
 
 ---
 
-## 🎮 Cara Menjalankan Aplikasi
+## 🎮 Menjalankan Aplikasi
 
-Kini menjalankan Rynude AI semudah menyalakan lampu! Anda tidak perlu lagi mencari di mana folder instalasinya berada.
+Menjalankan Rynude AI semudah menyalakan saklar lampu. Anda tidak perlu lagi repot-repot mencari letak direktori proyek. 
 
-Cukup buka terminal baru (dari Desktop, Documents, atau mana saja), dan ketik:
+Buka terminal **baru** dari mana saja (Desktop, Documents, dll), lalu ketik:
+
 ```bash
 rynude
 ```
-Sistem akan otomatis menyalakan *backend* dan *frontend*, lalu menyajikan aplikasinya ke browser Anda! 🚀
+
+> [!NOTE]
+> Sistem akan otomatis menghidupkan *backend* (Laravel) dan *frontend* (Vite), lalu seketika menyajikan antarmuka aplikasi super mulus ke *browser* favorit Anda! 🚀
 
 ---
 
-## 🔄 Cara Update Aplikasi
+## 🔄 Pembaruan (Update) Instan
 
-Jika ada fitur baru atau perbaikan *bug* dari kami, Anda cukup menjalankan perintah ini di terminal untuk memperbarui aplikasi Anda secara instan:
+Dapatkan fitur terbaru dan perbaikan *bug* tanpa pusing. Jalankan perintah ini untuk memperbarui aplikasi Anda secara instan:
 
 ```bash
 npx install-rynude@latest
 ```
-*(Script akan mendeteksi instalasi lama Anda dan otomatis melakukan update ke versi source code terbaru).*
+
+> [!IMPORTANT]
+> *Script akan cerdas mendeteksi instalasi lama Anda, melakukan **backup otomatis** pada database & konfigurasi, lalu melakukan update mulus ke versi terbaru tanpa menghilangkan sedikit pun data Anda.*
 
 ---
 
-## 🤖 Cara Pakai Model AI Gratis (dengan 9router)
+## 🤖 Menikmati Model AI Premium (Gratis via 9router)
 
-Rynude AI secara native mendukung API resmi (OpenAI, Anthropic, dll). Namun, jika Anda ingin menggunakan **model premium secara gratis** (via proxy 9router), ikuti trik kilat berikut:
+Rynude AI mendukung API resmi secara *native* (OpenAI, Anthropic, dll). Namun, jika Anda ingin merasakan kecerdasan model premium secara **gratis** (via proxy lokal `9router`), ikuti trik kilat ini:
 
-### 1. Jalankan 9router
-Buka **terminal baru** (biarkan aplikasi Rynude tetap jalan di terminal sebelumnya), lalu jalankan:
+### 1. Nyalakan Mesin Proxy
+Buka **terminal baru** (biarkan aplikasi Rynude tetap hidup di terminal sebelumnya), lalu jalankan:
 ```bash
 npx 9router
 ```
-*(Ingat: Biarkan terminal 9router ini selalu terbuka selama Anda chatting).*
+*(⚠️ Biarkan terminal 9router ini selalu terbuka selama Anda melakukan chatting).*
 
-### 2. Hubungkan 9router ke Rynude
-1. Buka Rynude di browser dan silakan **Login/Register** (akun lokal bebas).
-2. Klik nama/ikon profil Anda di pojok bawah untuk membuka **Settings Modal**.
+### 2. Hubungkan Proxy ke Rynude
+1. Buka Rynude di browser dan **Login/Register** (bebas buat akun lokal apapun).
+2. Buka menu **Settings** (klik ikon profil di pojok kiri bawah).
 3. Pilih tab **API Keys**.
-4. Gulir ke bagian **Proxy API Key / Proxy Settings**, lalu isi dengan:
-   - **Base URL (Custom Endpoint):** `http://localhost:20128/v1`
+4. Gulir ke bagian **Proxy API Key**, dan isikan data sakti berikut:
+   - **Base URL:** `http://localhost:20128/v1`
    - **API Key:** `sk-dummy-key`
-5. Klik **Simpan**.
-6. Tutup menu pengaturan, lalu kembali ke layar obrolan (*chat*).
-7. Pada *dropdown* pilihan model di atas layar, pilih **Rynude Sonnet** atau **Rynude Haiku**.
+5. Klik **Simpan** dan tutup *Settings*.
+6. Pada *dropdown* pilihan model di atas chat, pilih **Rynude Sonnet** atau **Rynude Haiku**.
 
-🎉 **Selesai!** Sekarang semua obrolan Anda akan direspons oleh kecerdasan model Claude secara gratis melalui 9router. Selamat menikmati!
-
----
-
-## 🚀 Cara Pakai Ratusan Model Keren (dengan Hugging Face)
-
-Anda juga bisa memanfaatkan server gratis **Hugging Face** yang menyimpan ribuan model open-source tercanggih di dunia (seperti Qwen, Llama 3, DeepSeek, Kimi, Gemma, dll).
-
-### Cara Menghubungkan:
-1. Buat akun gratis di [Hugging Face](https://huggingface.co).
-2. Buat **Access Token (API Key)** di menu *Settings -> Access Tokens*.
-3. Buka **Settings** di Rynude AI, lalu pergi ke tab **Hugging Face**.
-4. Masukkan *API Key* Anda dan klik **Simpan**.
-5. Tutup halaman *Settings*, lalu klik menu *dropdown* model di pojok kiri atas obrolan.
-6. Voila! Model-model dengan **akhiran "HG"** (seperti `HG Qwen3.6`, `HG DeepSeek-V4-Pro`, `HG Llama-3.1-8B-Instruct`) yang sebelumnya berwarna abu-abu kini akan **aktif dan bisa dipilih**!
-
-*(Sistem ini sepenuhnya otomatis, URL Router sudah diatur canggih di balik layar agar Anda tidak repot lagi!)*
+> [!TIP]
+> 🎉 **BOOM!** Semua obrolan Anda sekarang ditenagai oleh kecerdasan kelas atas secara gratis. Selamat berkreasi!
 
 ---
+
+## 🌌 Eksplorasi Ratusan Model Keren (Hugging Face)
+
+Bosan dengan model standar? Mari manfaatkan server gratis **Hugging Face** yang menyimpan ribuan mesin AI *open-source* tercanggih di dunia (Qwen, Llama 3, DeepSeek, Kimi, Gemma, dll).
+
+### Panduan Menghubungkan:
+1. Daftarkan akun gratis di [Hugging Face](https://huggingface.co).
+2. Buat **Access Token** di menu *Settings -> Access Tokens*.
+3. Buka **Settings** di Rynude AI, lalu navigasi ke tab **Hugging Face**.
+4. Masukkan *Token* rahasia Anda dan klik **Simpan**.
+5. Tutup *Settings*, lalu buka *dropdown* model di pojok kiri atas obrolan Anda.
+
+> [!TIP]
+> ✨ **Voila!** Puluhan model tangguh berakhiran **"HG"** (seperti `HG Qwen3.6`, `HG DeepSeek-V4-Pro`) yang sebelumnya berwarna abu-abu terkunci, kini otomatis **menyala dan siap dieksekusi**!
+
+*(Seluruh routing URL ke server Hugging Face sudah diatur sangat canggih di balik layar agar Anda tinggal pakai tanpa repot coding!)*
