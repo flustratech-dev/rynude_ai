@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('openrouter_api_key');
+            if (Schema::hasColumn('users', 'openrouter_api_key')) {
+                $table->dropColumn('openrouter_api_key');
+            }
             $table->text('nine_router_api_key')->nullable()->after('openai_api_key');
             $table->string('nine_router_base_url')->nullable()->after('nine_router_api_key');
         });
