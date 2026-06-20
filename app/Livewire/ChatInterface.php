@@ -202,7 +202,7 @@ class ChatInterface extends Component
             $this->conversationId = $conversation->id;
             
             // Dispatch job to generate title
-            \App\Jobs\GenerateChatTitle::dispatch($conversation, $text, $this->selectedModel ?? 'claude-haiku-4-5');
+            \App\Jobs\GenerateChatTitle::dispatch($conversation, $text, $this->selectedModel ?? 'claude-haiku-4-5', Auth::id());
             
             $this->dispatch('chatCreated');
         }
@@ -268,6 +268,9 @@ class ChatInterface extends Component
     #[On('generateResponse')]
     public function generateResponse()
     {
+        // Prevent PHP from killing the streaming process during long generations
+        set_time_limit(0);
+
         if (empty($this->messages) || end($this->messages)['role'] !== 'user') {
             return;
         }
@@ -292,7 +295,7 @@ class ChatInterface extends Component
         }
 
         // Prepend system prompt for Artifacts
-        $baseSystemPrompt = "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a PDF, you must generate a beautifully styled HTML document (language=\"html\") tailored for printing (e.g. A4 size css), and inform the user they can preview it in the panel and click the Download icon to save it as a PDF. Provide brief explanation outside the tag if needed.";
+        $baseSystemPrompt = "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, or PDF, you MUST generate a well-structured Markdown document (language=\"markdown\"). DO NOT EVER generate raw PDF byte streams or PostScript code. The system will automatically convert your Markdown into a downloadable PDF for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide brief explanation outside the tag if needed.";
 
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
             $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
@@ -302,34 +305,6 @@ class ChatInterface extends Component
             'role' => 'system',
             'content' => $baseSystemPrompt,
         ]);
-
-        // Limit Check for Rynude Models (per 2 hours)
-        $usage = $this->rynudeUsage;
-        if ($usage['is_rynude'] && $usage['reached']) {
-            $errorHtml = \Illuminate\Support\Str::markdown("**Batas Penggunaan Tercapai!**\n\nMaaf, Anda telah mencapai batas maksimal 50 pesan untuk sesi 2 jam ini. Silakan gunakan API Key pribadi Anda di menu Settings atau tunggu beberapa saat hingga kuota di-reset otomatis.");
-            
-            $this->messages[] = [
-                'role' => 'assistant',
-                'content' => $errorHtml,
-                'artifact' => null,
-            ];
-            
-            // Add to DB so it persists
-            Message::create([
-                'conversation_id' => $this->conversationId,
-                'role' => 'assistant',
-                'content' => "**Batas Penggunaan Tercapai!**\n\nMaaf, Anda telah mencapai batas maksimal 50 pesan untuk sesi 2 jam ini. Silakan gunakan API Key pribadi Anda di menu Settings atau tunggu beberapa saat hingga kuota di-reset otomatis.",
-            ]);
-            return;
-        }
-
-        if ($usage['is_rynude']) {
-            // Increment usage in cache for the 2-hour window
-            $window = date('Y-m-d') . '_' . floor(date('H') / 2);
-            $cacheKey = 'rynude_usage_' . Auth::id() . '_' . $window;
-            $usageCount = \Illuminate\Support\Facades\Cache::get($cacheKey, 0);
-            \Illuminate\Support\Facades\Cache::put($cacheKey, $usageCount + 1, now()->addHours(2));
-        }
 
         // Call AI Service
         $aiService = new AiService();
@@ -419,24 +394,6 @@ class ChatInterface extends Component
             'role' => 'assistant',
             'content' => $fullResponse,
             'artifact' => $artifactData,
-        ];
-    }
-
-    #[Livewire\Attributes\Computed]
-    public function getRynudeUsageProperty()
-    {
-        $selectedModelCode = $this->selectedModel ?? 'claude-haiku-4-5';
-        $isRynude = str_starts_with($selectedModelCode, 'kr/claude') || str_starts_with($selectedModelCode, 'mmf/mimo');
-        if (!$isRynude) return ['is_rynude' => false, 'reached' => false, 'remaining' => 50];
-
-        $window = date('Y-m-d') . '_' . floor(date('H') / 2);
-        $cacheKey = 'rynude_usage_' . \Illuminate\Support\Facades\Auth::id() . '_' . $window;
-        $usageCount = \Illuminate\Support\Facades\Cache::get($cacheKey, 0);
-
-        return [
-            'is_rynude' => true,
-            'reached' => $usageCount >= 50,
-            'remaining' => max(0, 50 - $usageCount)
         ];
     }
 

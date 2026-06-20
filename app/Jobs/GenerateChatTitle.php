@@ -5,8 +5,10 @@ namespace App\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use App\Models\Conversation;
+use App\Models\User;
 use App\Services\AI\AiService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class GenerateChatTitle implements ShouldQueue
 {
@@ -15,15 +17,17 @@ class GenerateChatTitle implements ShouldQueue
     public $conversation;
     public $prompt;
     public $model;
+    public $userId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Conversation $conversation, string $prompt, string $model = 'claude-haiku-4-5')
+    public function __construct(Conversation $conversation, string $prompt, string $model = 'claude-haiku-4-5', $userId = null)
     {
         $this->conversation = $conversation;
         $this->prompt = $prompt;
         $this->model = $model;
+        $this->userId = $userId;
     }
 
     /**
@@ -32,6 +36,10 @@ class GenerateChatTitle implements ShouldQueue
     public function handle(): void
     {
         try {
+            if ($this->userId) {
+                Auth::loginUsingId($this->userId);
+            }
+
             $aiService = new AiService();
             $messages = [
                 [

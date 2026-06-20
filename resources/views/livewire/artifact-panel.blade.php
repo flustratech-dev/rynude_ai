@@ -92,6 +92,14 @@
                             <div class="flex items-center justify-center w-full h-full bg-white">
                                 {!! $currentArtifact['content'] !!}
                             </div>
+                        @elseif(in_array(strtolower($currentArtifact['language']), ['markdown', 'md']))
+                            <div class="p-4 md:p-8 bg-[#F3F2F1] dark:bg-stone-900 overflow-y-auto">
+                                <div class="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-stone-800 p-[15mm] md:p-[25mm] shadow-lg rounded-sm border border-[#E5E5E5] dark:border-stone-700">
+                                    <div class="prose prose-stone text-justify max-w-none text-[#2D2825] dark:text-stone-200 dark:prose-invert prose-headings:font-bold prose-h1:text-center prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed prose-li:leading-relaxed">
+                                        {!! \Illuminate\Support\Str::markdown($currentArtifact['content']) !!}
+                                    </div>
+                                </div>
+                            </div>
                         @elseif($currentArtifact['type'] === 'code')
                             <div class="p-6 flex items-center justify-center h-full">
                                 <div class="text-center text-stone-500 dark:text-stone-400 w-full max-w-2xl mx-auto">
@@ -103,9 +111,9 @@
                                 </div>
                             </div>
                         @else
-                            <div class="p-6">
-                                <div class="w-full max-w-3xl mx-auto bg-white dark:bg-stone-800 p-8 shadow-sm rounded-lg border border-[#E5E5E5] dark:border-stone-700">
-                                    <div class="prose prose-sm text-left max-w-none text-[#2D2825] dark:text-stone-200 dark:prose-invert">
+                            <div class="p-4 md:p-8 bg-[#F3F2F1] dark:bg-stone-900 overflow-y-auto">
+                                <div class="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-stone-800 p-[15mm] md:p-[25mm] shadow-lg rounded-sm border border-[#E5E5E5] dark:border-stone-700">
+                                    <div class="prose prose-stone text-justify max-w-none text-[#2D2825] dark:text-stone-200 dark:prose-invert prose-headings:font-bold prose-h1:text-center prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed prose-li:leading-relaxed">
                                         {!! \Illuminate\Support\Str::markdown($currentArtifact['content']) !!}
                                     </div>
                                 </div>
@@ -171,23 +179,3 @@
     </div>
 </div>
 
-@script
-<script>
-    $wire.on('downloadPdf', (data) => {
-        const payload = Array.isArray(data) ? data[0] : data;
-        const content = payload.content || '';
-        const title = payload.title || 'Artifact';
-        const rendered = payload.rendered;
-        
-        const printWindow = window.open('', '_blank');
-        if (rendered) {
-            printWindow.document.write(rendered);
-        } else {
-            printWindow.document.write('<html><head><title>' + title + '</title></head><body><pre style="white-space: pre-wrap; font-family: monospace;">' + content + '</pre></body></html>');
-        }
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => { printWindow.print(); }, 250);
-    });
-</script>
-@endscript

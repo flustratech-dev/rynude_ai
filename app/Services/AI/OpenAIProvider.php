@@ -46,9 +46,80 @@ class OpenAIProvider implements LLMProviderInterface
         // Filter messages (OpenAI only supports system, user, assistant)
         $openAiMessages = [];
         foreach ($messages as $msg) {
+            if ($msg['role'] === 'system') {
+                $openAiMessages[] = [
+                    'role' => 'system',
+                    'content' => $msg['content'],
+                ];
+                continue;
+            }
+
+            $content = [];
+            
+            // Handle text content
+            if (!empty($msg['content'])) {
+                $content[] = [
+                    'type' => 'text',
+                    'text' => $msg['content']
+                ];
+            }
+            
+            // Handle attachment
+            if (!empty($msg['attachment']) && isset($msg['attachment']['file_path'])) {
+                $filePath = storage_path('app/public/' . $msg['attachment']['file_path']);
+                if (file_exists($filePath)) {
+                    $mimeType = $msg['attachment']['file_type'];
+                    
+                    if (str_starts_with($mimeType, 'image/')) {
+                        $content[] = [
+                            'type' => 'image_url',
+                            'image_url' => [
+                                'url' => 'data:' . $mimeType . ';base64,' . base64_encode(file_get_contents($filePath))
+                            ]
+                        ];
+                    } elseif ($mimeType === 'application/pdf') {
+                        try {
+                            $parser = new \Smalot\PdfParser\Parser();
+                            $pdf = $parser->parseFile($filePath);
+                            $text = $pdf->getText();
+                            $content[] = [
+                                'type' => 'text',
+                                'text' => "\n\n[Isi Dokumen PDF: {$msg['attachment']['file_name']}]\n" . $text . "\n[Akhir Isi Dokumen]"
+                            ];
+                        } catch (\Exception $e) {
+                            $content[] = [
+                                'type' => 'text',
+                                'text' => "\n\n[Gagal membaca file PDF: " . $e->getMessage() . "]"
+                            ];
+                        }
+                    } elseif ($mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || str_ends_with($msg['attachment']['file_name'], '.docx')) {
+                        try {
+                            $zip = new \ZipArchive();
+                            $text = "";
+                            if ($zip->open($filePath) === true) {
+                                if (($index = $zip->locateName('word/document.xml')) !== false) {
+                                    $contentXml = $zip->getFromIndex($index);
+                                    $text = strip_tags(str_replace('</w:p>', "\n", $contentXml));
+                                }
+                                $zip->close();
+                            }
+                            $content[] = [
+                                'type' => 'text',
+                                'text' => "\n\n[Isi Dokumen Word: {$msg['attachment']['file_name']}]\n" . trim($text) . "\n[Akhir Isi Dokumen]"
+                            ];
+                        } catch (\Exception $e) {
+                            $content[] = [
+                                'type' => 'text',
+                                'text' => "\n\n[Gagal membaca file Word: " . $e->getMessage() . "]"
+                            ];
+                        }
+                    }
+                }
+            }
+            
             $openAiMessages[] = [
                 'role' => $msg['role'],
-                'content' => $msg['content'],
+                'content' => count($content) === 1 && $content[0]['type'] === 'text' ? $content[0]['text'] : (count($content) > 0 ? $content : '')
             ];
         }
 
@@ -68,7 +139,7 @@ class OpenAIProvider implements LLMProviderInterface
                 'stream' => true,
                 'verify' => false,
                 'http_errors' => false,
-                'timeout' => 60,
+                'timeout' => 300,
             ]);
 
             if ($response->getStatusCode() === 429) {

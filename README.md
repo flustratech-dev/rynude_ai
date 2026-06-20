@@ -121,8 +121,6 @@ Sistem menyediakan 2 model bawaan: **Rynude Sonnet** dan **Rynude Haiku** (mengg
 3. Di bagian atas layar *chat*, klik *dropdown* model dan pilih **Rynude Sonnet** atau **Rynude Haiku**.
 4. Langsung mengobrol! Sistem akan otomatis mendeteksi koneksi 9Router Anda (`127.0.0.1:20128`). Anda tidak perlu memasukkan API Key atau mengubah pengaturan apa pun.
 
-> ⚠️ **Catatan Limit:** Karena menggunakan jalur *proxy* lokal, setiap pengguna dibatasi maksimal **50 pesan per sesi (di-reset setiap 2 jam)** untuk mencegah *spamming* pada akun AWS Anda jika aplikasi ini di-*hosting* secara publik.
-
 ---
 
 ### 2. Menggunakan Custom Proxy (Aivene, LM Studio, dll)
