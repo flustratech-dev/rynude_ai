@@ -1,14 +1,13 @@
 <?php
 
-namespace Database\Seeders;
-
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-class AiModelSeeder extends Seeder
+return new class extends Migration
 {
-    public function run(): void
+    public function up(): void
     {
         $models = [
             ['code' => 'kr/claude-sonnet-4.5', 'name' => 'Rynude Sonnet'],
@@ -121,4 +120,9 @@ class AiModelSeeder extends Seeder
             );
         }
     }
-}
+
+    public function down(): void
+    {
+        // Not reversing base models
+    }
+};
