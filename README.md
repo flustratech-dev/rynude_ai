@@ -57,10 +57,10 @@ DB_PASSWORD=
 ```
 
 ### 4. Finalisasi Setup
-Generate application key dan jalankan migrasi database:
+Generate application key dan jalankan migrasi database (beserta seeder untuk model AI bawaan):
 ```bash
 php artisan key:generate
-php artisan migrate
+php artisan migrate --seed
 ```
 
 ---
@@ -107,18 +107,40 @@ Buka browser Anda dan akses:
 
 ---
 
-## 🔑 Cara Memasukkan API Key
+## 🤖 Pilihan Model AI (Gratis & Berbayar)
 
-Aplikasi ini **tidak menyimpan API Key Anda di `.env`** secara kaku. Setiap pengguna (user) dapat memasukkan API Key-nya sendiri.
+Aplikasi ini mendukung berbagai macam model AI, baik yang resmi (berbayar) maupun yang gratis (lokal/proxy).
 
-Berikut cara memasukkannya agar Anda bisa mulai *chatting* dengan AI:
+### 1. Menggunakan Model Rynude (GRATIS via 9Router/Kiro)
+Aplikasi ini sudah diprogram dengan integrasi **100% otomatis** untuk pengguna **9Router/Kiro** (menggunakan trik AWS Builder ID). 
+Sistem menyediakan 2 model bawaan: **Rynude Sonnet** dan **Rynude Haiku** (menggunakan otak asli Claude 3.5).
 
-1. **Login** ke dalam aplikasi Rynude.
-2. Di pojok kiri bawah (Desktop) atau di Menu Sidebar (Mobile), klik **Profile/Nama Anda**.
-3. Pilih menu **Settings**.
-4. Pada *modal* Settings yang muncul, pilih tab **API Keys** (ikon kunci).
-5. Masukkan **Anthropic API Key** (untuk model Claude) atau **OpenAI API Key** (untuk model GPT) Anda di kolom yang tersedia.
-6. Klik di luar kolom, sistem akan menyimpannya secara otomatis ke database akun Anda.
-7. Sekarang, Anda sudah bisa mulai mengirim pesan ke AI!
+**Cara Pakai (Tanpa Setting):**
+1. Pastikan Anda sudah menjalankan Kiro/9Router di terminal/komputer lokal Anda.
+2. Login ke web Rynude.
+3. Di bagian atas layar *chat*, klik *dropdown* model dan pilih **Rynude Sonnet** atau **Rynude Haiku**.
+4. Langsung mengobrol! Sistem akan otomatis mendeteksi koneksi 9Router Anda (`127.0.0.1:20128`). Anda tidak perlu memasukkan API Key atau mengubah pengaturan apa pun.
 
-> **Catatan Ngrok:** Jika Anda melakukan *testing* aplikasi menggunakan `ngrok` untuk diakses via HP, sistem sudah dikonfigurasi untuk mem-*bypass* halaman peringatan bawaan ngrok. Pastikan koneksi internet stabil agar *streaming* teks AI tidak *timeout*.
+> ⚠️ **Catatan Limit:** Karena menggunakan jalur *proxy* lokal, setiap pengguna dibatasi maksimal **50 pesan per sesi (di-reset setiap 2 jam)** untuk mencegah *spamming* pada akun AWS Anda jika aplikasi ini di-*hosting* secara publik.
+
+---
+
+### 2. Menggunakan Custom Proxy (Aivene, LM Studio, dll)
+Jika Anda menggunakan *provider proxy* lain seperti **Aivene** yang memiliki puluhan model, Anda bisa menggunakannya dengan bebas!
+
+1. Klik menu **Settings** (dari nama profil Anda di sudut kiri bawah).
+2. Masuk ke tab **API Keys**.
+3. Centang **"Gunakan Custom Proxy API"**.
+4. Masukkan **Proxy Base URL** (contoh: `https://api.aivene.com/v1`).
+5. Masukkan **Proxy API Key** Aivene Anda.
+6. Pindah ke tab **AI Models** untuk menambahkan nama-nama model baru secara manual.
+7. Semua obrolan Anda akan diarahkan ke Aivene.
+
+---
+
+### 3. Menggunakan API Resmi (OpenAI / Anthropic)
+1. Matikan centang "Gunakan Custom Proxy API" di menu Settings.
+2. Masukkan **Anthropic API Key** (dimulai dengan `sk-ant-`) atau **OpenAI API Key** (dimulai dengan `sk-`) Anda yang asli.
+3. Obrolan akan langsung dikirim ke *server* resmi OpenAI/Anthropic tanpa hambatan.
+
+> **Tips Ngrok:** Jika Anda melakukan *testing* aplikasi menggunakan `ngrok` untuk diakses via HP, sistem sudah dikonfigurasi untuk mem-*bypass* halaman peringatan bawaan ngrok. Pastikan koneksi internet stabil agar *streaming* teks AI tidak terputus.
