@@ -65,6 +65,7 @@
                         ['id' => 'billing', 'label' => 'Billing', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"></path>'],
                         ['id' => 'capabilities', 'label' => 'Capabilities', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"></path>'],
                         ['id' => 'connectors', 'label' => 'Connectors', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z"></path>'],
+                        ['id' => 'huggingface', 'label' => 'Hugging Face', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"></path>'],
                         ['id' => 'models', 'label' => 'AI Models', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"></path>'],
                         ['id' => 'claude-code', 'label' => 'Claude Code', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"></path>'],
                         ['id' => 'api-keys', 'label' => 'API Keys', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"></path>'],
@@ -416,6 +417,72 @@
                     </div>
                 </div>
 
+                {{-- ========== HUGGING FACE TAB ========== --}}
+                <div x-show="$wire.activeTab === 'huggingface'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Hugging Face Serverless</h2>
+                    
+                    <div class="space-y-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Hugging Face API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key (Token) dari akun Hugging Face Anda.</p>
+                                <input type="password" wire:model="huggingfaceApiKey" placeholder="hf_..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                            </div>
+                            @if($hfStatus === 'saved')
+                                <div class="text-sm text-green-600 dark:text-green-400 mt-2">Pengaturan Hugging Face berhasil disimpan!</div>
+                            @endif
+
+                            <div class="flex justify-end mt-4 mb-8">
+                                <button type="button" wire:click="saveHuggingface" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Simpan Konfigurasi</button>
+                            </div>
+
+                            <div class="pt-6 border-t border-[#E5E5E5] dark:border-stone-700">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-bold text-[16px] text-[#2D2825] dark:text-stone-200">Custom Hugging Face Models</h3>
+                                    <button wire:click="createModel" class="px-3 py-1.5 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">+ Add HF Model</button>
+                                </div>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400 mb-4">Tambahkan model spesifik (contoh: <code>zai-org/GLM-4.7-Flash</code>, <code>meta-llama/Meta-Llama-3-8B-Instruct</code>).</p>
+                                
+                                <div class="overflow-x-auto border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
+                                    <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
+                                        <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
+                                            <tr>
+                                                <th class="px-4 py-3 font-medium">Model ID</th>
+                                                <th class="px-4 py-3 font-medium">Name</th>
+                                                <th class="px-4 py-3 font-medium text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-[#E5E5E5] dark:divide-stone-700">
+                                            @php $hasHf = false; @endphp
+                                            @foreach($aiModels as $model)
+                                                @php
+                                                    $isHf = is_array($model) ? (($model['provider'] ?? '') === 'huggingface') : (($model->provider ?? '') === 'huggingface');
+                                                @endphp
+                                                @if($isHf)
+                                                    @php $hasHf = true; @endphp
+                                                    <tr class="hover:bg-gray-50 dark:hover:bg-stone-700/30 transition-colors">
+                                                        <td class="px-4 py-3 font-mono text-[13px] text-gray-800 dark:text-stone-200">{{ is_array($model) ? $model['code'] : $model->code }}</td>
+                                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-stone-100">{{ is_array($model) ? $model['name'] : $model->name }}</td>
+                                                        <td class="px-4 py-3 text-right">
+                                                            <button wire:click="deleteModel({{ is_array($model) ? $model['id'] : $model->id }})" class="text-red-500 hover:text-red-700 font-medium text-[13px]" onclick="confirm('Delete this Hugging Face model?') || event.stopImmediatePropagation()">Delete</button>
+                                                        </td>
+                                                    </tr>
+                                                @endif
+                                            @endforeach
+                                            
+                                            @if(!$hasHf)
+                                                <tr>
+                                                    <td colspan="3" class="px-4 py-4 text-center text-gray-500">Belum ada model Hugging Face.</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- ========== AI MODELS TAB ========== --}}
                 <div x-show="$wire.activeTab === 'models'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <div class="flex items-center justify-between mb-6">
@@ -462,37 +529,7 @@
                         </table>
                     </div>
 
-                    <!-- Create/Edit Modal overlay (inside models tab) -->
-                    @if($isModelModalOpen)
-                        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                            <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-stone-700 overflow-hidden">
-                                <div class="p-5 border-b border-gray-200 dark:border-stone-700 flex justify-between items-center bg-[#F3F2EE] dark:bg-stone-800">
-                                    <h3 class="font-bold text-[#2D2825] dark:text-stone-100">{{ $editModelId ? 'Edit Model' : 'Add New Model' }}</h3>
-                                    <button wire:click="closeModelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-stone-300">&times;</button>
-                                </div>
-                                <div class="p-5">
-                                    <div class="mb-4">
-                                        <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Code</label>
-                                        <input type="text" wire:model="modelCode" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. claude-3-opus-20240229">
-                                        @error('modelCode') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Name</label>
-                                        <input type="text" wire:model="modelName" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. Claude 3 Opus">
-                                        @error('modelName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-                                    <div class="mb-6 flex items-center mt-6">
-                                        <input type="checkbox" id="modelIsActive" wire:model="modelIsActive" class="w-4 h-4 text-[#D97757] bg-gray-100 border-gray-300 rounded focus:ring-[#D97757] dark:bg-stone-700 dark:border-stone-600">
-                                        <label for="modelIsActive" class="ml-2 text-[14px] font-medium text-[#2D2825] dark:text-stone-300">Set as Active</label>
-                                    </div>
-                                    <div class="flex justify-end gap-3 pt-4 border-t border-[#E5E5E5] dark:border-stone-700">
-                                        <button wire:click="closeModelModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 dark:hover:bg-stone-700 transition-colors">Cancel</button>
-                                        <button wire:click="storeModel" class="px-4 py-2 text-sm font-medium text-white bg-[#D97757] rounded-lg hover:bg-[#c66547] transition-colors">Save</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
+
                 </div>
 
                 {{-- ========== CLAUDE CODE TAB ========== --}}
@@ -530,9 +567,41 @@
                 </div>
 
                 {{-- Fallback for any unknown tabs --}}
-                <div x-show="!['general', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
+                <div x-show="!['general', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code', 'huggingface'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
                     Content for <span x-text="$wire.activeTab" class="ml-1 font-medium text-gray-600 dark:text-stone-300"></span> will go here.
                 </div>
+
+                <!-- Create/Edit Modal overlay (Global) -->
+                @if($isModelModalOpen)
+                    <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-stone-700 overflow-hidden">
+                            <div class="p-5 border-b border-gray-200 dark:border-stone-700 flex justify-between items-center bg-[#F3F2EE] dark:bg-stone-800">
+                                <h3 class="font-bold text-[#2D2825] dark:text-stone-100">{{ $editModelId ? 'Edit Model' : 'Add New Model' }}</h3>
+                                <button wire:click="closeModelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-stone-300">&times;</button>
+                            </div>
+                            <div class="p-5">
+                                <div class="mb-4">
+                                    <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Code (ID)</label>
+                                    <input type="text" wire:model="modelCode" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. google/gemma-7b">
+                                    @error('modelCode') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Name (Display)</label>
+                                    <input type="text" wire:model="modelName" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. Gemma 7B">
+                                    @error('modelName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="mb-6 flex items-center mt-6">
+                                    <input type="checkbox" id="modelIsActive" wire:model="modelIsActive" class="w-4 h-4 text-[#D97757] bg-gray-100 border-gray-300 rounded focus:ring-[#D97757] dark:bg-stone-700 dark:border-stone-600">
+                                    <label for="modelIsActive" class="ml-2 text-[14px] font-medium text-[#2D2825] dark:text-stone-300">Set as Active</label>
+                                </div>
+                                <div class="flex justify-end gap-3 pt-4 border-t border-[#E5E5E5] dark:border-stone-700">
+                                    <button wire:click="closeModelModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 dark:hover:bg-stone-700 transition-colors">Cancel</button>
+                                    <button wire:click="storeModel" class="px-4 py-2 text-sm font-medium text-white bg-[#D97757] rounded-lg hover:bg-[#c66547] transition-colors">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
             </div>
         </div>

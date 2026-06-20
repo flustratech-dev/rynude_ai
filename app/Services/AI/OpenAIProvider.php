@@ -15,7 +15,34 @@ class OpenAIProvider implements LLMProviderInterface
         $isProxy = $user && $user->use_proxy;
         $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo');
         
-        if ($is9RouterAuto) {
+        $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
+
+        if ($isHuggingFace) {
+            $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
+            
+            // Auto-migrate the deprecated api-inference domain to the new router domain
+            $savedUrl = $user->huggingface_base_url;
+            if (!empty($savedUrl) && str_contains($savedUrl, 'api-inference.huggingface.co')) {
+                $savedUrl = str_replace('api-inference.huggingface.co', 'router.huggingface.co', $savedUrl);
+            }
+            
+            $hfBaseUrl = !empty($savedUrl) ? rtrim(trim($savedUrl), '/') : '';
+            
+            if (empty($hfBaseUrl)) {
+                $baseUrl = "https://router.huggingface.co/v1";
+            } else {
+                $baseUrl = $hfBaseUrl;
+                // Prepend https:// if no scheme is provided
+                if (!preg_match('~^https?://~i', $baseUrl)) {
+                    $baseUrl = "https://" . $baseUrl;
+                }
+                // Ensure OpenAI compatibility path is present
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+            }
+        } elseif ($is9RouterAuto) {
             $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
             $baseUrl = 'http://127.0.0.1:20128/v1';
         } elseif ($isProxy) {
@@ -126,7 +153,15 @@ class OpenAIProvider implements LLMProviderInterface
             ];
         }
 
-        $client = new \GuzzleHttp\Client();
+        $handler = new \GuzzleHttp\Handler\CurlHandler();
+        $stack = \GuzzleHttp\HandlerStack::create($handler);
+        
+        $client = new \GuzzleHttp\Client([
+            'handler' => $stack,
+            'curl' => [
+                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            ]
+        ]);
         
         try {
             $response = $client->post($baseUrl . '/chat/completions', [
@@ -206,9 +241,13 @@ class OpenAIProvider implements LLMProviderInterface
                 }
             }
         } catch (\GuzzleHttp\Exception\ConnectException $e) {
-            yield "\n[Error: Connection timeout. Please check your network and try again.]";
+            yield "\n[Error: Network Connection Failed. Details: " . $e->getMessage() . "]";
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $response = $e->getResponse();
+            $errorBody = json_decode($response->getBody()->getContents(), true);
+            yield "\n[API Error: " . ($errorBody['error']['message'] ?? $e->getMessage()) . "]";
         } catch (\Exception $e) {
-            yield "\n[Error communicating with API: " . $e->getMessage() . "]";
+            yield "\n[Error: " . $e->getMessage() . "]";
         }
     }
 }

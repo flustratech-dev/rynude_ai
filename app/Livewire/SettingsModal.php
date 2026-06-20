@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Illuminate\Database\Eloquent\Collection;
 
 class SettingsModal extends Component
 {
@@ -24,7 +25,10 @@ class SettingsModal extends Component
     public $useProxy = false;
     public $proxyBaseUrl = '';
     public $proxyApiKey = '';
+    public $huggingfaceApiKey = '';
+    public $huggingfaceBaseUrl = 'https://api-inference.huggingface.co/v1';
     public $apiKeyStatus = null; // null, 'saved', 'error'
+    public $hfStatus = null;
 
     // Billing fields
     public $plan = 'Free';
@@ -45,8 +49,11 @@ class SettingsModal extends Component
             $this->useProxy = $user->use_proxy ?? false;
             $this->proxyBaseUrl = $user->proxy_base_url ?? '';
             $this->proxyApiKey = $user->proxy_api_key ?? '';
+            $this->huggingfaceApiKey = $user->huggingface_api_key ?? '';
+            $this->huggingfaceBaseUrl = $user->huggingface_base_url ?? 'https://api-inference.huggingface.co/v1';
             $this->tokensLimit = $user->token_balance ?? 0;
         }
+        $this->loadModels();
     }
 
     #[\Livewire\Attributes\On('open-settings-modal')]
@@ -107,13 +114,29 @@ class SettingsModal extends Component
         $this->dispatch('apiKeysSaved');
     }
 
+    public function saveHuggingface()
+    {
+        if (!\Illuminate\Support\Facades\Auth::check()) {
+            return;
+        }
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $user->huggingface_api_key = $this->huggingfaceApiKey;
+        $user->huggingface_base_url = $this->huggingfaceBaseUrl;
+        $user->save();
+
+        $this->hfStatus = 'saved';
+        $this->dispatch('hfSaved');
+    }
+
     // Models Management
-    public $aiModels = [];
+    public Collection $aiModels;
     public $isModelModalOpen = false;
     public $editModelId = null;
     public $modelCode = '';
     public $modelName = '';
     public $modelIsActive = true;
+    public $modelProvider = 'huggingface';
 
     protected $rules = [
         'modelCode' => 'required|string',
@@ -143,6 +166,7 @@ class SettingsModal extends Component
         $this->modelCode = '';
         $this->modelName = '';
         $this->modelIsActive = true;
+        $this->modelProvider = 'huggingface';
         $this->resetValidation();
     }
 
@@ -161,6 +185,7 @@ class SettingsModal extends Component
             'code' => $this->modelCode,
             'name' => $this->modelName,
             'is_active' => $this->modelIsActive,
+            'provider' => $this->modelProvider,
         ]);
 
         session()->flash('modelMessage', $this->editModelId ? 'Model Updated Successfully.' : 'Model Created Successfully.');
@@ -175,6 +200,7 @@ class SettingsModal extends Component
         $this->modelCode = $model->code;
         $this->modelName = $model->name;
         $this->modelIsActive = $model->is_active;
+        $this->modelProvider = $model->provider ?? 'huggingface';
 
         $this->isModelModalOpen = true;
     }

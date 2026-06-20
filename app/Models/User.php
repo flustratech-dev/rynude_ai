@@ -29,6 +29,8 @@ class User extends Authenticatable
         'use_proxy',
         'proxy_base_url',
         'proxy_api_key',
+        'huggingface_api_key',
+        'huggingface_base_url',
         'role',
         'token_balance',
         'custom_instructions',
@@ -59,6 +61,7 @@ class User extends Authenticatable
             'nine_router_api_key' => 'encrypted',
             'use_proxy' => 'boolean',
             'proxy_api_key' => 'encrypted',
+            'huggingface_api_key' => 'encrypted',
         ];
     }
 

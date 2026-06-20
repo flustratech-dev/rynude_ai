@@ -36,8 +36,9 @@ class ChatInterface extends Component
         $hasOpenAI = $user && !empty($user->openai_api_key);
         $useProxy = $user && $user->use_proxy && !empty($user->proxy_base_url);
         $hasNineRouter = $user && !empty($user->nine_router_api_key);
+        $hasHuggingFace = $user && !empty($user->huggingface_api_key);
         
-        $available = $hasAnthropic || $useProxy || $hasNineRouter;
+        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace;
 
         $this->models = [
             (object)[
@@ -76,6 +77,8 @@ class ChatInterface extends Component
             if (str_starts_with($model->code, 'kr/claude')) {
                 $is_available = true;
             } elseif ($useProxy || $hasNineRouter) {
+                $is_available = true;
+            } elseif ($model->provider === 'huggingface' && $hasHuggingFace) {
                 $is_available = true;
             } elseif ($isAnthropic && $hasAnthropic) {
                 $is_available = true;

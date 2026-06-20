@@ -17,6 +17,12 @@ class AiService
             return new OpenAIProvider();
         }
 
+        // Check if the model is registered as a huggingface provider
+        $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        if ($aiModel && $aiModel->provider === 'huggingface') {
+            return new OpenAIProvider();
+        }
+
         // Hardcode Kiro/9Router models to always use OpenAI Provider (since 9Router uses OpenAI compatible endpoint)
         if (str_starts_with($model, 'kr/claude')) {
             return new OpenAIProvider();
