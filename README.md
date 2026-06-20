@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌟 Rynude AI
+# <img src="public/images/logo_rynudee.png" height="35" style="vertical-align: middle; margin-right: 5px;" /> Rynude AI
 
 **The ultimate open-source UI clone for the agentic coding era.**
 
