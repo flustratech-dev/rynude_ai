@@ -46,6 +46,17 @@ Sistem akan otomatis menyalakan *backend* dan *frontend*, lalu menyajikan aplika
 
 ---
 
+## 🔄 Cara Update Aplikasi
+
+Jika ada fitur baru atau perbaikan *bug* dari kami, Anda cukup menjalankan perintah ini di terminal untuk memperbarui aplikasi Anda secara instan:
+
+```bash
+npx install-rynude@latest
+```
+*(Script akan mendeteksi instalasi lama Anda dan otomatis melakukan update ke versi source code terbaru).*
+
+---
+
 ## 🤖 Cara Pakai Model AI Gratis (dengan 9router)
 
 Rynude AI secara native mendukung API resmi (OpenAI, Anthropic, dll). Namun, jika Anda ingin menggunakan **model premium secara gratis** (via proxy 9router), ikuti trik kilat berikut:

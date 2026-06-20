@@ -109,6 +109,20 @@ async function run() {
             execSync('cmd.exe /c setup-global.bat', { cwd: INSTALL_DIR, stdio: 'ignore' });
         } else {
             execSync('bash setup-global.sh', { cwd: INSTALL_DIR, stdio: 'ignore' });
+            
+            // Auto add to PATH for Mac/Linux
+            const bashrcPath = path.join(os.homedir(), '.bashrc');
+            const zshrcPath = path.join(os.homedir(), '.zshrc');
+            const pathExport = `\nexport PATH="$HOME/.local/bin:$PATH"\n`;
+
+            if (fs.existsSync(bashrcPath)) {
+                const content = fs.readFileSync(bashrcPath, 'utf8');
+                if (!content.includes('.local/bin')) fs.appendFileSync(bashrcPath, pathExport);
+            }
+            if (fs.existsSync(zshrcPath)) {
+                const content = fs.readFileSync(zshrcPath, 'utf8');
+                if (!content.includes('.local/bin')) fs.appendFileSync(zshrcPath, pathExport);
+            }
         }
         globalSpinner.succeed('Global command berhasil diatur.');
     } catch (e) {
@@ -117,8 +131,15 @@ async function run() {
     }
 
     console.log(chalk.green.bold('\n🎉 Instalasi Rynude AI Berhasil Selesai!\n'));
-    console.log(`Sekarang Anda tidak perlu lagi masuk ke folder project untuk menjalankan aplikasi.`);
-    console.log(`Silakan buka terminal baru dari folder mana saja (misal di Desktop), lalu ketik:`);
+    
+    if (os.platform() !== 'win32') {
+        console.log(chalk.bgYellow.black.bold(' ⚠️ PENTING UNTUK MAC/LINUX '));
+        console.log(chalk.yellow(`Harap TUTUP terminal ini sepenuhnya (Quit) lalu buka terminal yang baru, agar perintah dikenali.\n`));
+    } else {
+        console.log(`Sekarang Anda tidak perlu lagi masuk ke folder project untuk menjalankan aplikasi.`);
+    }
+
+    console.log(`Buka terminal baru dari folder mana saja (misal di Desktop), lalu ketik:`);
     console.log(chalk.magenta.bold('  rynude\n'));
 }
 

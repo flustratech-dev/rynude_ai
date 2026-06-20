@@ -1,11 +1,11 @@
 {
   "name": "install-rynude",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Auto-installer for Rynude AI",
   "main": "index.js",
   "type": "module",
   "bin": {
-    "install-rynude": "./index.js"
+    "install-rynude": "index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
