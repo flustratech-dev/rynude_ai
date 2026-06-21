@@ -14,7 +14,7 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
-                serif: ['Playfair Display', 'serif'],
+                serif: ['Newsreader', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
             },
             colors: {
                 border: 'hsl(var(--border))',

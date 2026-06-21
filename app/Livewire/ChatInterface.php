@@ -27,6 +27,11 @@ class ChatInterface extends Component
     public ?int $activeProjectId = null;
     public bool $webSearch = false;
 
+    // Memory viewer/editor state.
+    public bool $showMemory = false;
+    public string $memoryDraft = '';
+    public ?string $memoryUpdatedAt = null;
+
     public function mount()
     {
         $this->messages = [];
@@ -295,6 +300,64 @@ class ChatInterface extends Component
         }
     }
 
+    /**
+     * Open the memory panel for the current conversation, loading whatever durable
+     * memory has been recorded so the user can read or edit it.
+     */
+    public function openMemory()
+    {
+        if (!$this->conversationId) {
+            return;
+        }
+        $conv = Conversation::find($this->conversationId);
+        if ($conv && $conv->user_id === Auth::id()) {
+            $this->memoryDraft = (string) $conv->memory;
+            $this->memoryUpdatedAt = $conv->memory_updated_at?->diffForHumans();
+            $this->showMemory = true;
+        }
+    }
+
+    /**
+     * Persist the user's hand-edited memory. An empty draft clears the memory.
+     */
+    public function saveMemory()
+    {
+        if (!$this->conversationId) {
+            return;
+        }
+        $conv = Conversation::find($this->conversationId);
+        if ($conv && $conv->user_id === Auth::id()) {
+            $memory = trim($this->memoryDraft);
+            $conv->update([
+                'memory' => $memory !== '' ? $memory : null,
+                'memory_updated_at' => now(),
+            ]);
+            $this->memoryUpdatedAt = now()->diffForHumans();
+            $this->showMemory = false;
+        }
+    }
+
+    /**
+     * Clear the draft in the editor (does not persist until Save is pressed).
+     */
+    public function clearMemory()
+    {
+        $this->memoryDraft = '';
+    }
+
+    /**
+     * Push a short "what the assistant is doing right now" status to the UI. Uses a
+     * dedicated wire:stream target so it updates live, mid-request, independent of the
+     * answer text. Keeps the user informed during web search, generation, etc.
+     */
+    private function streamActivity(string $label): void
+    {
+        $html = '<span class="inline-flex items-center gap-2">'
+            . '<span class="w-1.5 h-1.5 rounded-full bg-[#D97757] animate-pulse"></span>'
+            . e($label) . '</span>';
+        $this->stream(to: 'activity-status', content: $html, replace: true);
+    }
+
     #[On('sendPromptFromArtifact')]
     public function sendPromptFromArtifact($prompt)
     {
@@ -415,6 +478,14 @@ class ChatInterface extends Component
         // Prepend system prompt for Artifacts
         $baseSystemPrompt = "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, or PDF, you MUST generate a well-structured Markdown document (language=\"markdown\"). DO NOT EVER generate raw PDF byte streams or PostScript code. The system will automatically convert your Markdown into a downloadable PDF for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide brief explanation outside the tag if needed.";
 
+        // Response-quality principles: structured reasoning, sourcing, and honesty.
+        $baseSystemPrompt .= "\n\nResponse principles (apply to every answer):\n"
+            . "- For non-trivial questions, reason through the problem step by step before answering, then present a clear, well-structured response (use short headings or lists when they aid clarity).\n"
+            . "- Accuracy first: if you are unsure or lack the information, say so plainly instead of inventing facts, and separate what you know from what you are inferring.\n"
+            . "- When web search results are provided below, ground your answer in them and cite the relevant source titles or links inline.\n"
+            . "- Stay consistent with the Persistent Conversation Memory below when it is present.\n"
+            . "- Keep answers focused — concise for simple asks, thorough for complex ones — and match the user's language.";
+
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
             $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
         }
@@ -470,6 +541,18 @@ class ChatInterface extends Component
             }
         }
 
+        // Persistent conversation memory: durable facts distilled from this chat,
+        // injected every turn so context survives the sliding window above AND
+        // survives switching models mid-conversation (memory lives in the DB, not
+        // in any single model's context).
+        $conversation = $this->conversationId
+            ? Conversation::find($this->conversationId)
+            : null;
+        $memoryService = app(\App\Services\AI\ConversationMemoryService::class);
+        if ($conversation) {
+            $baseSystemPrompt .= $memoryService->formatForPrompt($conversation);
+        }
+
         // Web search: ground the answer in current information when enabled.
         if ($this->webSearch) {
             $lastUserPrompt = '';
@@ -480,6 +563,7 @@ class ChatInterface extends Component
                 }
             }
             if ($lastUserPrompt !== '') {
+                $this->streamActivity('Searching the web…');
                 $searchService = new \App\Services\WebSearchService();
                 $results = $searchService->search($lastUserPrompt, 5);
                 if (!empty($results)) {
@@ -501,8 +585,11 @@ class ChatInterface extends Component
         $aiService = app(AiService::class);
         $stream = $aiService->streamResponse($messagesForAi, $this->selectedModel ?? 'claude-haiku-4-5');
 
+        $this->streamActivity('Generating response…');
+
         $fullResponse = '';
         $stopped = false;
+        $artifactAnnounced = false;
         foreach ($stream as $chunk) {
             // Stop generation requested by the user
             if (\Illuminate\Support\Facades\Cache::get($stopKey)) {
@@ -532,6 +619,10 @@ class ChatInterface extends Component
 
             if (($pos = strpos($displayContent, '<antArtifact')) !== false) {
                 $displayContent = substr($displayContent, 0, $pos) . $loadingHtml;
+                if (!$artifactAnnounced) {
+                    $this->streamActivity('Writing artifact…');
+                    $artifactAnnounced = true;
+                }
             }
 
             $htmlDisplay = \Illuminate\Support\Str::markdown($displayContent);
@@ -599,6 +690,18 @@ class ChatInterface extends Component
             'content' => $fullResponse,
             'artifact' => $artifactData,
         ];
+
+        // Refresh the durable conversation memory once enough new messages have
+        // accumulated. Runs after the answer has streamed so it never delays output,
+        // and uses the currently selected model so it always hits an available provider.
+        if ($conversation && $memoryService->shouldRefresh($conversation, count($this->messages))) {
+            $this->streamActivity('Updating memory…');
+            $memoryService->refresh(
+                $conversation,
+                $this->messages,
+                $this->selectedModel ?? 'claude-haiku-4-5'
+            );
+        }
 
         // Generate a title for new chats. This runs after the answer has already
         // streamed, so it doesn't block visible output. Done inline (not queued) so
