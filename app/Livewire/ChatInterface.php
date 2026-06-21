@@ -105,11 +105,31 @@ class ChatInterface extends Component
             }
         }
 
-        // Set default model if possible
-        $this->selectedModel = count($this->models) > 0 ? $this->models[3]->code : 'claude-haiku-4-5';
+        // Restore the user's last-used model so it survives a page refresh.
+        // Fall back to the default (Haiku) only when nothing valid is stored.
+        $validCodes = array_merge(
+            array_map(fn ($m) => $m->code, $this->models),
+            array_map(fn ($m) => $m->code, $this->moreModels)
+        );
+        $remembered = session('chat_selected_model');
+        if ($remembered && in_array($remembered, $validCodes, true)) {
+            $this->selectedModel = $remembered;
+        } else {
+            $this->selectedModel = count($this->models) > 0 ? $this->models[3]->code : 'claude-haiku-4-5';
+        }
 
         if ($this->conversationId) {
             $this->loadConversation();
+        }
+    }
+
+    /**
+     * Remember the chosen model so it persists across page refreshes / re-mounts.
+     */
+    public function updatedSelectedModel($value)
+    {
+        if (!empty($value)) {
+            session(['chat_selected_model' => $value]);
         }
     }
 
@@ -191,7 +211,10 @@ class ChatInterface extends Component
 
     public function openArtifact($id)
     {
-        $artifact = \App\Models\MessageArtifact::find($id);
+        $artifact = \App\Models\MessageArtifact::whereHas(
+            'message.conversation',
+            fn ($q) => $q->where('user_id', Auth::id())
+        )->find($id);
         if ($artifact) {
             $artifactData = [
                 'id' => $artifact->id,
@@ -396,6 +419,24 @@ class ChatInterface extends Component
             $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
         }
 
+        // Force the assistant to reply in the user's preferred language.
+        if (Auth::check()) {
+            $languageNames = [
+                'en' => 'English',
+                'id' => 'Bahasa Indonesia',
+                'es' => 'Spanish (Español)',
+                'fr' => 'French (Français)',
+                'de' => 'German (Deutsch)',
+                'ja' => 'Japanese (日本語)',
+                'zh' => 'Chinese (中文)',
+                'ar' => 'Arabic (العربية)',
+            ];
+            $lang = Auth::user()->preferences['language'] ?? 'en';
+            if ($lang !== 'en' && isset($languageNames[$lang])) {
+                $baseSystemPrompt .= "\n\nIMPORTANT: Always respond to the user in {$languageNames[$lang]}, regardless of the language the user writes in, unless the user explicitly asks for another language.";
+            }
+        }
+
         // Inject the user's active Skills so the behaviour configured in the
         // Customize panel actually shapes the assistant's responses.
         if (Auth::check()) {
@@ -559,19 +600,36 @@ class ChatInterface extends Component
             'artifact' => $artifactData,
         ];
 
-        // Generate a title for new chats asynchronously so the response isn't
-        // blocked by an extra AI call. Requires a queue worker (see README).
+        // Generate a title for new chats. This runs after the answer has already
+        // streamed, so it doesn't block visible output. Done inline (not queued) so
+        // the title — and the sidebar refresh — appear immediately without depending
+        // on a running queue worker.
         if ($this->conversationId) {
             $conversation = \App\Models\Conversation::find($this->conversationId);
             if ($conversation && $conversation->title === 'New Chat') {
                 $userMsg = collect($this->messages)->firstWhere('role', 'user');
                 if ($userMsg) {
-                    \App\Jobs\GenerateChatTitle::dispatch(
-                        $conversation,
-                        $userMsg['content'],
-                        $this->selectedModel ?? 'claude-haiku-4-5',
-                        Auth::id()
-                    );
+                    try {
+                        $titleAi = app(AiService::class);
+                        $titleStream = $titleAi->streamResponse([
+                            [
+                                'role' => 'user',
+                                'content' => "Provide a short, concise title (1-4 words max) for a chat that starts with this prompt: \"{$userMsg['content']}\". Reply ONLY with the title, no quotes, no extra text."
+                            ]
+                        ], $this->selectedModel ?? 'claude-haiku-4-5');
+
+                        $title = '';
+                        foreach ($titleStream as $chunk) {
+                            $title .= $chunk;
+                        }
+                        $title = trim(str_replace('"', '', $title));
+                        if (!empty($title)) {
+                            $conversation->update(['title' => $title]);
+                            $this->dispatch('chatCreated');
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Inline Title Gen Failed: ' . $e->getMessage());
+                    }
                 }
             }
         }

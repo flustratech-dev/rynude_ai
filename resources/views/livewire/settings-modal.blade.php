@@ -183,6 +183,27 @@
                             </div>
                         </div>
                         
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 block">Response language</label>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400">The language Rynude will reply in.</p>
+                            </div>
+                            <select
+                                wire:model="language"
+                                wire:change="saveLanguage"
+                                class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500"
+                            >
+                                <option value="en">English</option>
+                                <option value="id">Bahasa Indonesia</option>
+                                <option value="es">Español</option>
+                                <option value="fr">Français</option>
+                                <option value="de">Deutsch</option>
+                                <option value="ja">日本語</option>
+                                <option value="zh">中文</option>
+                                <option value="ar">العربية</option>
+                            </select>
+                        </div>
+
                         <div class="flex items-center justify-between pb-8">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Chat font</label>
                             <button class="flex items-center gap-1.5 text-[15px] text-[#2D2825] dark:text-stone-300 hover:text-gray-600 dark:hover:text-stone-400">

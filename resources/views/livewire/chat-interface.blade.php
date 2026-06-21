@@ -84,7 +84,7 @@
                         ></textarea>
 
                         {{-- Bottom Action Bar --}}
-                        <div class="flex items-center justify-between px-3 pb-3 pt-1">
+                        <div x-data="{ webSearch: @entangle('webSearch') }" class="flex items-center justify-between px-3 pb-3 pt-1">
                             {{-- Left: Plus Icon --}}
                             <div x-data="{ openPlus: false }" class="relative">
                                 <button @click="openPlus = !openPlus" type="button" class="p-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" :class="openPlus ? 'bg-stone-100 dark:bg-stone-700 text-stone-800 dark:text-stone-200' : 'hover:bg-stone-100 dark:hover:bg-stone-700'">
@@ -140,26 +140,22 @@
                                         <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
                                     </button>
-                                    <button type="button" wire:click="$toggle('webSearch')" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                    <button type="button" @click="webSearch = !webSearch" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
-                                            <svg class="w-4 h-4 {{ $webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+                                            <svg class="w-4 h-4" :class="webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
                                             <span class="text-[13px] text-stone-800 dark:text-stone-200">Web search</span>
                                         </div>
-                                        @if($webSearch)
-                                            <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                        @endif
+                                        <svg x-show="webSearch" x-cloak class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                     </button>
                                 </div>
                             </div>
 
                             {{-- Right: Model Selector & Action Icons --}}
                             <div class="flex items-center gap-1 md:gap-1.5 text-stone-500">
-                                @if($webSearch)
-                                    <span class="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#D97757]/10 text-[#D97757] text-[12px] font-medium">
-                                        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
-                                        Web
-                                    </span>
-                                @endif
+                                <span x-show="webSearch" x-cloak class="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#D97757]/10 text-[#D97757] text-[12px] font-medium">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
+                                    Web
+                                </span>
                                 {{-- Model Dropdown --}}
                                 <div x-data="{ open: false, selectedModel: @entangle('selectedModel'), extendedMode: true, moreModelsOpen: false, closeTimer: null }" class="relative">
                                     <button @click="open = !open" type="button" class="flex items-center gap-1.5 cursor-pointer focus:outline-none bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-2.5 py-1.5 rounded-lg transition-colors">
@@ -360,7 +356,7 @@
                                         </svg>
                                     </div>
                                     <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full prose-p:leading-relaxed prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors">
-                                        {!! Illuminate\Support\Str::markdown($msg['content']) !!}
+                                        {!! Illuminate\Support\Str::markdown($msg['content'] ?? '', ['html_input' => 'strip']) !!}
 
                                         @if(isset($msg['artifact']) && $msg['artifact'])
                                             <div wire:click="openArtifact({{ $msg['artifact']['id'] }})" class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group">
@@ -525,7 +521,7 @@
                         placeholder="How can I help you today?"></textarea>
 
                     {{-- Bottom Action Bar --}}
-                    <div class="flex items-center justify-between px-3 pb-3 pt-1">
+                    <div x-data="{ webSearch: @entangle('webSearch') }" class="flex items-center justify-between px-3 pb-3 pt-1">
                         {{-- Left: Plus Icon --}}
                         <div x-data="{ openPlus: false }" class="relative">
                             <button @click="openPlus = !openPlus" type="button" class="p-2 text-stone-500 hover:text-stone-800 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" :class="openPlus ? 'bg-stone-100 text-stone-800' : 'hover:bg-stone-100'">
@@ -582,14 +578,12 @@
                                     <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
                                     <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
                                 </button>
-                                <button type="button" wire:click="$toggle('webSearch')" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                <button type="button" @click="webSearch = !webSearch" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                     <div class="flex items-center gap-2.5">
-                                        <svg class="w-4 h-4 {{ $webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+                                        <svg class="w-4 h-4" :class="webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Web search</span>
                                     </div>
-                                    @if($webSearch)
-                                        <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                    @endif
+                                    <svg x-show="webSearch" x-cloak class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                 </button>
                             </div>
                         </div>

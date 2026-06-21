@@ -23,19 +23,24 @@ class FakeAiService extends AiService
         yield $this->cannedResponse;
     }
 
-    /** The combined system prompt content from the most recent call. */
+    /**
+     * The combined system prompt content from the most recent call that actually
+     * carried one. Auxiliary calls (e.g. the title-generation prompt) have no
+     * system message, so we skip them and report the real generation prompt.
+     */
     public function lastSystemPrompt(): string
     {
-        $last = end($this->calls);
-        if (!$last) {
-            return '';
-        }
-        $system = '';
-        foreach ($last['messages'] as $m) {
-            if (($m['role'] ?? '') === 'system') {
-                $system .= $m['content'] . "\n";
+        foreach (array_reverse($this->calls) as $call) {
+            $system = '';
+            foreach ($call['messages'] as $m) {
+                if (($m['role'] ?? '') === 'system') {
+                    $system .= $m['content'] . "\n";
+                }
+            }
+            if ($system !== '') {
+                return $system;
             }
         }
-        return $system;
+        return '';
     }
 }

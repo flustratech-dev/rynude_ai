@@ -62,7 +62,8 @@ class WebSearchService
     private function client(): \GuzzleHttp\Client
     {
         return new \GuzzleHttp\Client([
-            'timeout' => 15,
+            'timeout' => 8,
+            'connect_timeout' => 4,
             'http_errors' => false,
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (compatible; RynudeBot/1.0; +https://localhost)',

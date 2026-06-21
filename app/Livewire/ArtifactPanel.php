@@ -54,19 +54,24 @@ class ArtifactPanel extends Component
         $this->currentArtifact = collect($this->artifacts)->firstWhere('id', $id);
         if (!$this->currentArtifact) {
             $model = \App\Models\MessageArtifact::find($id);
-            if ($model) {
+            if ($model && $this->ownsArtifact($model)) {
                 $this->currentArtifact = $model->toArray();
+            } else {
+                return;
             }
         }
-        
+
         $this->isOpen = true;
         $this->loadVersions($id);
     }
-    
+
     public function loadVersions($id)
     {
         $this->versions = [];
         $model = \App\Models\MessageArtifact::find($id);
+        if (!$model || !$this->ownsArtifact($model)) {
+            return;
+        }
         if ($model && $model->identifier) {
             $allVersions = \App\Models\MessageArtifact::where('identifier', $model->identifier)
                 ->orderBy('created_at', 'asc')
@@ -88,7 +93,7 @@ class ArtifactPanel extends Component
     public function switchVersion($id)
     {
         $model = \App\Models\MessageArtifact::find($id);
-        if ($model) {
+        if ($model && $this->ownsArtifact($model)) {
             $this->currentArtifact = $model->toArray();
             $this->isOpen = true;
             $this->loadVersions($id);

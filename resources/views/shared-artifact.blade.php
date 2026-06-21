@@ -44,7 +44,7 @@
                     srcdoc="{{ $artifact->content }}"></iframe>
         @elseif ($isMarkdown)
             <article class="prose prose-stone dark:prose-invert max-w-none">
-                {!! \Illuminate\Support\Str::markdown($artifact->content ?? '') !!}
+                {!! \Illuminate\Support\Str::markdown($artifact->content ?? '', ['html_input' => 'strip']) !!}
             </article>
         @else
             <pre class="rounded-xl overflow-x-auto bg-[#1E1E1E] border border-stone-700 p-4 text-[13px]"><code class="language-{{ $lang ?: 'text' }}">{{ $artifact->content }}</code></pre>

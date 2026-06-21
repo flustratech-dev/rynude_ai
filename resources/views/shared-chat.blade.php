@@ -44,7 +44,7 @@
                     <div class="flex gap-3">
                         <div class="w-7 h-7 shrink-0 rounded-md bg-[#D97757] flex items-center justify-center text-white font-semibold text-xs mt-0.5">R</div>
                         <div class="prose prose-stone dark:prose-invert max-w-none text-[15px] leading-relaxed">
-                            {!! \Illuminate\Support\Str::markdown($msg->content ?? '') !!}
+                            {!! \Illuminate\Support\Str::markdown($msg->content ?? '', ['html_input' => 'strip']) !!}
                         </div>
                     </div>
                 @endif

@@ -70,6 +70,7 @@ class SettingsModal extends Component
             $this->fontSize = $prefs['font_size'] ?? 'medium';
             $this->accentColor = $prefs['accent_color'] ?? '#D97757';
             $this->compactMode = (bool) ($prefs['compact_mode'] ?? false);
+            $this->language = $prefs['language'] ?? 'en';
 
             // Real billing usage: prefer tracked token usage, fall back to estimate.
             $this->loadTokenUsage($user->id);
@@ -139,6 +140,18 @@ class SettingsModal extends Component
             $user = \Illuminate\Support\Facades\Auth::user();
             $user->name = $this->name;
             $user->custom_instructions = $this->customInstructions;
+            $user->save();
+        }
+        $this->dispatch('profileSaved');
+    }
+
+    public function saveLanguage()
+    {
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $user = \Illuminate\Support\Facades\Auth::user();
+            $prefs = $user->preferences ?? [];
+            $prefs['language'] = $this->language;
+            $user->preferences = $prefs;
             $user->save();
         }
         $this->dispatch('profileSaved');
