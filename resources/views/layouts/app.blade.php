@@ -128,6 +128,14 @@
                     initCodeBlocks();
                 });
 
+                // Copy content dispatched from server components (share links, artifacts)
+                Livewire.on('copyToClipboard', (event) => {
+                    const content = Array.isArray(event) ? event[0]?.content : event?.content;
+                    if (content && navigator.clipboard) {
+                        navigator.clipboard.writeText(content).catch(() => {});
+                    }
+                });
+
                 // Add Ngrok bypass header to all Livewire requests to prevent iframe warning interception
                 Livewire.hook('request', ({ options }) => {
                     if (!options.headers) options.headers = {};

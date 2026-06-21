@@ -35,12 +35,29 @@ return [
         ],
     ],
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1/messages'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+    ],
+
     'google' => [
         'key' => env('GOOGLE_API_KEY'),
+        'base_url' => env('GOOGLE_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
     ],
 
     'mistral' => [
         'key' => env('MISTRAL_API_KEY'),
+        'base_url' => env('MISTRAL_BASE_URL', 'https://api.mistral.ai/v1'),
+    ],
+
+    'search' => [
+        'provider' => env('SEARCH_PROVIDER', 'duckduckgo'),
+        'key' => env('SEARCH_API_KEY'),
     ],
 
 ];

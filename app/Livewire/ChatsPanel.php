@@ -48,6 +48,8 @@ class ChatsPanel extends Component
                 'preview' => $preview,
                 'updated_at' => $c->updated_at->format('Y-m-d'),
                 'archived' => $c->archived_at !== null,
+                'shared' => !empty($c->share_token),
+                'share_url' => $c->share_token ? route('chat.shared', $c->share_token) : null,
                 'group' => $this->determineGroup($c->updated_at)
             ];
         })->toArray();
@@ -164,6 +166,35 @@ class ChatsPanel extends Component
             $conversation->archived_at = $conversation->archived_at ? null : now();
             $conversation->save();
             $this->loadConversations();
+        }
+    }
+
+    public function shareConversation($id)
+    {
+        $conversation = \App\Models\Conversation::where('user_id', auth()->id())->find($id);
+        if (!$conversation) {
+            return;
+        }
+
+        if (empty($conversation->share_token)) {
+            $conversation->share_token = \Illuminate\Support\Str::random(32);
+            $conversation->save();
+        }
+
+        $this->loadConversations();
+        $url = route('chat.shared', $conversation->share_token);
+        $this->dispatch('copyToClipboard', content: $url);
+        session()->flash('shareMessage', 'Share link copied to clipboard.');
+    }
+
+    public function unshareConversation($id)
+    {
+        $conversation = \App\Models\Conversation::where('user_id', auth()->id())->find($id);
+        if ($conversation && $conversation->share_token) {
+            $conversation->share_token = null;
+            $conversation->save();
+            $this->loadConversations();
+            session()->flash('shareMessage', 'Sharing disabled for this chat.');
         }
     }
 

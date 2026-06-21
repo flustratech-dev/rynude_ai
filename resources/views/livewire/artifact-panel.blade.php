@@ -95,6 +95,21 @@
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                         @endif
                     </button>
+                    {{-- Publish / share artifact --}}
+                    @if(!empty($currentArtifact['id']))
+                        @if(!empty($currentArtifact['is_public']))
+                            <button wire:click="publishArtifact({{ $currentArtifact['id'] }})" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-green-600 dark:text-green-500" title="Published — copy public link">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            </button>
+                            <button wire:click="unpublishArtifact({{ $currentArtifact['id'] }})" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300" title="Unpublish">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                            </button>
+                        @else
+                            <button wire:click="publishArtifact({{ $currentArtifact['id'] }})" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300" title="Publish to public link">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            </button>
+                        @endif
+                    @endif
                     <div class="w-px h-4 bg-[#E5E5E5] dark:bg-stone-700 mx-1 hidden md:block"></div>
                 @endif
                 
@@ -223,8 +238,8 @@
                 @if(count($versions) > 1)
                     <div class="absolute bottom-4 right-4 flex items-center bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg shadow-sm p-1 z-20">
                         @foreach($versions as $v)
-                            <button 
-                                wire:click="openArtifact({{ $v['id'] }})"
+                            <button
+                                wire:click="switchVersion({{ $v['id'] }})"
                                 class="px-3 py-1 text-xs font-medium rounded-md transition-colors {{ $v['is_current'] ? 'bg-[#F3F2F1] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200' : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200' }}"
                             >
                                 V{{ $v['version_number'] }}

@@ -20,7 +20,7 @@ class MistralProvider implements LLMProviderInterface
             return;
         }
 
-        $baseUrl = rtrim(env('MISTRAL_BASE_URL', 'https://api.mistral.ai/v1'), '/');
+        $baseUrl = rtrim(config('services.mistral.base_url', 'https://api.mistral.ai/v1'), '/');
 
         // Mistral uses the OpenAI-compatible chat format.
         $mistralMessages = [];

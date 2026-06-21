@@ -82,6 +82,70 @@ class ArtifactPanel extends Component
         }
     }
 
+    /**
+     * Load a specific version of the currently open artifact (same identifier).
+     */
+    public function switchVersion($id)
+    {
+        $model = \App\Models\MessageArtifact::find($id);
+        if ($model) {
+            $this->currentArtifact = $model->toArray();
+            $this->isOpen = true;
+            $this->loadVersions($id);
+        }
+    }
+
+    /**
+     * Publish the current artifact to a public, read-only URL and copy the link.
+     */
+    public function publishArtifact($id)
+    {
+        $model = \App\Models\MessageArtifact::find($id);
+        if (!$model || !$this->ownsArtifact($model)) {
+            return;
+        }
+
+        if (empty($model->public_token)) {
+            $model->public_token = \Illuminate\Support\Str::random(32);
+        }
+        $model->is_public = true;
+        $model->save();
+
+        if ($this->currentArtifact && ($this->currentArtifact['id'] ?? null) == $id) {
+            $this->currentArtifact['is_public'] = true;
+            $this->currentArtifact['public_token'] = $model->public_token;
+        }
+
+        $this->dispatch('copyToClipboard', content: route('artifact.shared', $model->public_token));
+    }
+
+    public function unpublishArtifact($id)
+    {
+        $model = \App\Models\MessageArtifact::find($id);
+        if (!$model || !$this->ownsArtifact($model)) {
+            return;
+        }
+
+        $model->is_public = false;
+        $model->save();
+
+        if ($this->currentArtifact && ($this->currentArtifact['id'] ?? null) == $id) {
+            $this->currentArtifact['is_public'] = false;
+        }
+    }
+
+    /** Ensure the artifact belongs to the authenticated user's conversation. */
+    private function ownsArtifact(\App\Models\MessageArtifact $artifact): bool
+    {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            return false;
+        }
+        return \App\Models\MessageArtifact::where('id', $artifact->id)
+            ->whereHas('message.conversation', fn ($q) => $q->where('user_id', $userId))
+            ->exists();
+    }
+
     public function closeArtifact()
     {
         $this->isOpen = false;

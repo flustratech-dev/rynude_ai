@@ -35,6 +35,24 @@ Route::post('/chat-stop', function (\Illuminate\Http\Request $request) {
     return response()->noContent();
 })->middleware('auth')->name('chat.stop');
 
+// Public, read-only shared conversation. No auth required.
+Route::get('/share/{token}', function (string $token) {
+    $conversation = \App\Models\Conversation::with(['messages' => fn ($q) => $q->orderBy('id')])
+        ->where('share_token', $token)
+        ->firstOrFail();
+
+    return view('shared-chat', ['conversation' => $conversation]);
+})->name('chat.shared');
+
+// Public, read-only published artifact. No auth required.
+Route::get('/artifact/{token}', function (string $token) {
+    $artifact = \App\Models\MessageArtifact::where('public_token', $token)
+        ->where('is_public', true)
+        ->firstOrFail();
+
+    return view('shared-artifact', ['artifact' => $artifact]);
+})->name('artifact.shared');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

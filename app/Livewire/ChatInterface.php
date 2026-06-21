@@ -25,6 +25,7 @@ class ChatInterface extends Component
     public $moreModels = [];
     public $selectedModel = null;
     public ?int $activeProjectId = null;
+    public bool $webSearch = false;
 
     public function mount()
     {
@@ -395,6 +396,20 @@ class ChatInterface extends Component
             $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
         }
 
+        // Inject the user's active Skills so the behaviour configured in the
+        // Customize panel actually shapes the assistant's responses.
+        if (Auth::check()) {
+            $activeSkills = \App\Models\Skill::where('user_id', Auth::id())
+                ->where('is_active', true)
+                ->get();
+            if ($activeSkills->isNotEmpty()) {
+                $baseSystemPrompt .= "\n\nActive Skills (apply these behaviours):";
+                foreach ($activeSkills as $skill) {
+                    $baseSystemPrompt .= "\n\n[Skill: {$skill->name}]\n" . $skill->instructions;
+                }
+            }
+        }
+
         if ($this->activeProjectId) {
             $project = \App\Models\Project::with('files')->find($this->activeProjectId);
             if ($project) {
@@ -414,6 +429,24 @@ class ChatInterface extends Component
             }
         }
 
+        // Web search: ground the answer in current information when enabled.
+        if ($this->webSearch) {
+            $lastUserPrompt = '';
+            for ($i = count($messagesForAi) - 1; $i >= 0; $i--) {
+                if (($messagesForAi[$i]['role'] ?? '') === 'user') {
+                    $lastUserPrompt = $messagesForAi[$i]['content'];
+                    break;
+                }
+            }
+            if ($lastUserPrompt !== '') {
+                $searchService = new \App\Services\WebSearchService();
+                $results = $searchService->search($lastUserPrompt, 5);
+                if (!empty($results)) {
+                    $baseSystemPrompt .= $searchService->formatForPrompt($results);
+                }
+            }
+        }
+
         array_unshift($messagesForAi, [
             'role' => 'system',
             'content' => $baseSystemPrompt,
@@ -423,8 +456,8 @@ class ChatInterface extends Component
         $stopKey = 'chat_stop_' . $this->conversationId;
         \Illuminate\Support\Facades\Cache::forget($stopKey);
 
-        // Call AI Service
-        $aiService = new AiService();
+        // Call AI Service (resolved from the container so it can be faked in tests)
+        $aiService = app(AiService::class);
         $stream = $aiService->streamResponse($messagesForAi, $this->selectedModel ?? 'claude-haiku-4-5');
 
         $fullResponse = '';
@@ -526,33 +559,19 @@ class ChatInterface extends Component
             'artifact' => $artifactData,
         ];
 
-        // Generate title dynamically if it's a new chat
+        // Generate a title for new chats asynchronously so the response isn't
+        // blocked by an extra AI call. Requires a queue worker (see README).
         if ($this->conversationId) {
             $conversation = \App\Models\Conversation::find($this->conversationId);
             if ($conversation && $conversation->title === 'New Chat') {
                 $userMsg = collect($this->messages)->firstWhere('role', 'user');
                 if ($userMsg) {
-                    try {
-                        $titleAi = new \App\Services\AI\AiService();
-                        $titleStream = $titleAi->streamResponse([
-                            [
-                                'role' => 'user',
-                                'content' => "Provide a short, concise title (1-4 words max) for a chat that starts with this prompt: \"{$userMsg['content']}\". Reply ONLY with the title, no quotes, no extra text."
-                            ]
-                        ], $this->selectedModel ?? 'claude-haiku-4-5');
-                        
-                        $title = '';
-                        foreach ($titleStream as $chunk) {
-                            $title .= $chunk;
-                        }
-                        $title = trim(str_replace('"', '', $title));
-                        if (!empty($title)) {
-                            $conversation->update(['title' => $title]);
-                            $this->dispatch('chatCreated');
-                        }
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error('Inline Title Gen Failed: ' . $e->getMessage());
-                    }
+                    \App\Jobs\GenerateChatTitle::dispatch(
+                        $conversation,
+                        $userMsg['content'],
+                        $this->selectedModel ?? 'claude-haiku-4-5',
+                        Auth::id()
+                    );
                 }
             }
         }

@@ -13,6 +13,12 @@ class MessageArtifact extends Model
         'language',
         'title',
         'content',
+        'is_public',
+        'public_token',
+    ];
+
+    protected $casts = [
+        'is_public' => 'boolean',
     ];
 
     public function message()

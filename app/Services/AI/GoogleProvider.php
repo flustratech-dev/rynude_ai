@@ -72,7 +72,7 @@ class GoogleProvider implements LLMProviderInterface
             ];
         }
 
-        $baseUrl = rtrim(env('GOOGLE_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+        $baseUrl = rtrim(config('services.google.base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/');
         $url = $baseUrl . '/models/' . $model . ':streamGenerateContent?alt=sse&key=' . $apiKey;
 
         $payload = ['contents' => $contents];

@@ -140,18 +140,26 @@
                                         <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
                                     </button>
-                                    <button class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                    <button type="button" wire:click="$toggle('webSearch')" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
-                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+                                            <svg class="w-4 h-4 {{ $webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
                                             <span class="text-[13px] text-stone-800 dark:text-stone-200">Web search</span>
                                         </div>
-                                        <svg class="w-4 h-4 text-[#2563EB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        @if($webSearch)
+                                            <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                        @endif
                                     </button>
                                 </div>
                             </div>
 
                             {{-- Right: Model Selector & Action Icons --}}
                             <div class="flex items-center gap-1 md:gap-1.5 text-stone-500">
+                                @if($webSearch)
+                                    <span class="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#D97757]/10 text-[#D97757] text-[12px] font-medium">
+                                        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
+                                        Web
+                                    </span>
+                                @endif
                                 {{-- Model Dropdown --}}
                                 <div x-data="{ open: false, selectedModel: @entangle('selectedModel'), extendedMode: true, moreModelsOpen: false, closeTimer: null }" class="relative">
                                     <button @click="open = !open" type="button" class="flex items-center gap-1.5 cursor-pointer focus:outline-none bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-2.5 py-1.5 rounded-lg transition-colors">
@@ -215,34 +223,19 @@
                                     </div>
                                 </div>
 
-                                {{-- Mic Icon --}}
-                                <div class="relative group flex items-center justify-center">
-                                    <button type="button" class="hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                {{-- Mic Icon (speech-to-text dictation) --}}
+                                <div x-data="voiceInput" x-show="supported" class="relative group flex items-center justify-center">
+                                    <button type="button" @click="toggle()" :class="listening ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700'" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="listening ? 'animate-pulse' : ''">
                                             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
                                             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                             <line x1="12" x2="12" y1="19" y2="22"/>
                                         </svg>
                                     </button>
                                     <!-- Tooltip -->
-                                    <div class="absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap bg-[#1E1E1E] text-white text-[13px] font-medium px-3 py-1.5 rounded-lg shadow-sm z-50">
-                                        Press and hold to record
-                                    </div>
+                                    <div class="absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap bg-[#1E1E1E] text-white text-[13px] font-medium px-3 py-1.5 rounded-lg shadow-sm z-50" x-text="listening ? 'Listening… click to stop' : 'Dictate with your voice'"></div>
                                 </div>
 
-                                {{-- Voice Mode Icon --}}
-                                <div class="relative group flex items-center justify-center">
-                                    <button type="button" class="hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 4v16M8 8v8M16 8v8M4 11v2M20 11v2"/>
-                                        </svg>
-                                    </button>
-                                    <!-- Tooltip -->
-                                    <div class="absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap bg-[#1E1E1E] text-white text-[13px] font-medium px-3 py-1.5 rounded-lg shadow-sm z-50">
-                                        Use voice mode
-                                    </div>
-                                </div>
-                                
                                 {{-- Send Button --}}
                                 <button type="submit" x-data :disabled="!$wire.prompt.trim()" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse" :class="$wire.prompt.trim() ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-all duration-200 p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
                                     <svg wire:loading.remove wire:target="sendMessage, generateResponse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -395,6 +388,27 @@
                                             >
                                                 <svg x-show="!copied" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                                                 <svg x-show="copied" x-cloak class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                            {{-- Read aloud (text-to-speech) --}}
+                                            <button
+                                                x-data="{ speaking: false }"
+                                                x-show="'speechSynthesis' in window"
+                                                @click="
+                                                    if (speaking) { window.speechSynthesis.cancel(); speaking = false; }
+                                                    else {
+                                                        window.speechSynthesis.cancel();
+                                                        const u = new SpeechSynthesisUtterance(@js($msg['content']));
+                                                        u.onend = () => speaking = false;
+                                                        u.onerror = () => speaking = false;
+                                                        speaking = true;
+                                                        window.speechSynthesis.speak(u);
+                                                    }
+                                                "
+                                                class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                :title="speaking ? 'Stop' : 'Read aloud'"
+                                            >
+                                                <svg x-show="!speaking" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg>
+                                                <svg x-show="speaking" x-cloak class="w-3.5 h-3.5 text-[#D97757]" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
                                             </button>
                                             <button
                                                 wire:click="rateMessage({{ $loop->index }}, 'up')"
@@ -568,12 +582,14 @@
                                     <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
                                     <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
                                 </button>
-                                <button class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                <button type="button" wire:click="$toggle('webSearch')" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                     <div class="flex items-center gap-2.5">
-                                        <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+                                        <svg class="w-4 h-4 {{ $webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Web search</span>
                                     </div>
-                                    <svg class="w-4 h-4 text-[#2563EB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                    @if($webSearch)
+                                        <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                    @endif
                                 </button>
                             </div>
                         </div>
@@ -644,32 +660,17 @@
                                 </div>
                             </div>
 
-                            {{-- Mic Icon --}}
-                            <div class="relative group flex items-center justify-center">
-                                <button type="button" class="hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            {{-- Mic Icon (speech-to-text dictation) --}}
+                            <div x-data="voiceInput" x-show="supported" class="relative group flex items-center justify-center">
+                                <button type="button" @click="toggle()" :class="listening ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700'" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="listening ? 'animate-pulse' : ''">
                                         <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
                                         <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                         <line x1="12" x2="12" y1="19" y2="22"/>
                                     </svg>
                                 </button>
                                 <!-- Tooltip -->
-                                <div class="absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap bg-[#1E1E1E] text-white text-[13px] font-medium px-3 py-1.5 rounded-lg shadow-sm z-50">
-                                    Press and hold to record
-                                </div>
-                            </div>
-
-                            {{-- Voice Mode Icon --}}
-                            <div class="relative group flex items-center justify-center">
-                                <button type="button" class="hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 4v16M8 8v8M16 8v8M4 11v2M20 11v2"/>
-                                    </svg>
-                                </button>
-                                <!-- Tooltip -->
-                                <div class="absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap bg-[#1E1E1E] text-white text-[13px] font-medium px-3 py-1.5 rounded-lg shadow-sm z-50">
-                                    Use voice mode
-                                </div>
+                                <div class="absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap bg-[#1E1E1E] text-white text-[13px] font-medium px-3 py-1.5 rounded-lg shadow-sm z-50" x-text="listening ? 'Listening… click to stop' : 'Dictate with your voice'"></div>
                             </div>
 
                             {{-- Send Button --}}

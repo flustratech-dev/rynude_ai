@@ -153,6 +153,19 @@ class ClaudeCodeApp extends Component
 
         $systemPrompt = "You are Rynude Code, an autonomous CLI agent and expert software engineer. You specialize in reading, writing, and analyzing code. When providing code blocks, shell commands, or configurations, format them appropriately using markdown. Act as an advanced developer tool directly integrated into the user's environment. You can assume you are operating in 'Simulated Agentic Mode'. Always give concise, professional, and accurate technical responses. Avoid unnecessary pleasantries.";
 
+        // Apply the user's active Skills so configured behaviours carry over here too.
+        if (Auth::check()) {
+            $activeSkills = \App\Models\Skill::where('user_id', Auth::id())
+                ->where('is_active', true)
+                ->get();
+            if ($activeSkills->isNotEmpty()) {
+                $systemPrompt .= "\n\nActive Skills (apply these behaviours):";
+                foreach ($activeSkills as $skill) {
+                    $systemPrompt .= "\n\n[Skill: {$skill->name}]\n" . $skill->instructions;
+                }
+            }
+        }
+
         array_unshift($messagesForAi, [
             'role' => 'system',
             'content' => $systemPrompt,

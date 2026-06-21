@@ -60,7 +60,7 @@ class OpenAIProvider implements LLMProviderInterface
             if (empty($apiKey)) {
                 $apiKey = config('services.openai.key');
             }
-            $baseUrl = env('OPENAI_BASE_URL', 'https://api.openai.com/v1');
+            $baseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
         }
 
         if (empty($apiKey)) {

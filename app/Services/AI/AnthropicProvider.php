@@ -108,7 +108,7 @@ class AnthropicProvider implements LLMProviderInterface
         $outputTokens = 0;
         
         try {
-            $response = $client->post(env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1/messages'), [
+            $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
                 'headers' => [
                     'x-api-key' => $apiKey,
                     'anthropic-version' => '2023-06-01',

@@ -147,6 +147,22 @@ rynude
 > [!NOTE]
 > Sistem akan otomatis menghidupkan *backend* (Laravel) dan *frontend* (Vite), lalu seketika menyajikan antarmuka aplikasi super mulus ke *browser* favorit Anda! 🚀
 
+> [!IMPORTANT]
+> **Queue worker.** Judul chat dibuat otomatis di *background* (asinkron) agar balasan AI tidak tertunda. Perintah `rynude` **sudah otomatis menyalakan queue worker** untuk Anda (dan mematikannya saat keluar), jadi Anda tidak perlu menjalankan apa pun secara manual. Skrip `composer dev` juga sudah menyertakan `queue:listen`. Hanya jika Anda menjalankan `php artisan serve` sendiri tanpa keduanya, barulah jalankan worker terpisah:
+> ```bash
+> php artisan queue:work
+> ```
+
+### 🆕 Fitur Terbaru
+
+| Fitur | Cara Pakai |
+| :--- | :--- |
+| 🧩 **Skills aktif** | Skill yang Anda aktifkan di panel *Customize* kini benar-benar memengaruhi jawaban AI (disisipkan ke *system prompt*). |
+| 🔗 **Share chat** | Menu titik-tiga pada sebuah chat → **Share**. Tautan publik *read-only* otomatis tersalin ke clipboard. |
+| 🌐 **Web search** | Tombol **+** pada kotak input → **Web search**. AI akan mengutip hasil pencarian terkini (keyless DuckDuckGo, atau set `SEARCH_API_KEY`). |
+| 🎤 **Dikte suara & baca lantang** | Ikon mikrofon untuk dikte; ikon speaker pada balasan untuk membacakannya (Web Speech API). |
+| 🎨 **Artifact: versi & publish** | Berpindah antar-versi artifact, lalu **Publish** untuk membuat tautan publik. |
+
 ---
 
 ## 🔄 Pembaruan (Update) Instan
@@ -159,6 +175,22 @@ npx install-rynude@latest
 
 > [!IMPORTANT]
 > *Script akan cerdas mendeteksi instalasi lama Anda, melakukan **backup otomatis** pada database & konfigurasi, lalu melakukan update mulus ke versi terbaru tanpa menghilangkan sedikit pun data Anda.*
+
+### 🛡️ Database Anda Aman Saat Update
+
+Update mengganti **kode** di folder project. Agar data Anda tidak ikut ter-reset, perintah `rynude` kini **otomatis menyimpan database di luar folder project** — di folder home Anda:
+
+```
+~/.rynude/database.sqlite      ← database asli (tidak pernah disentuh update)
+~/.rynude/backups/             ← 15 backup ber-timestamp terbaru
+```
+
+Setiap kali Anda menjalankan `rynude`, sistem akan:
+1. Memindahkan database ke `~/.rynude/` (sekali, pada run pertama) dan mengarahkan `.env` ke sana.
+2. Membuat **backup ber-timestamp** baru.
+3. Menjalankan `php artisan migrate` (additif — hanya menambah tabel/kolom baru, tidak menghapus data).
+
+Jadi walau folder project ditimpa update, data Anda tetap utuh. Untuk memulihkan manual, cukup salin salah satu file dari `~/.rynude/backups/` menjadi `~/.rynude/database.sqlite`.
 
 ---
 
@@ -219,3 +251,27 @@ Mengapa Anda harus beralih ke Rynude AI? Tabel di bawah ini menunjukkan perbandi
 | 🛡️ **Privasi & Keamanan** | Disimpan di Cloud Perusahaan | **Data 100% di Komputer Anda** |
 | 🎨 **Personalisasi Tema** | Sangat Terbatas | **Bebas Kustomisasi** (Tailwind CSS) |
 | 📦 **Fitur Artifacts (Code Render)**| Hanya di Anthropic Claude | **Tersedia Penuh** di Rynude |
+
+---
+
+## 🧪 Menjalankan Test
+
+```bash
+php artisan test
+```
+
+> [!TIP]
+> Jika test rute publik (`/share`, `/artifact`) gagal dengan *Route not defined*, bersihkan cache lebih dulu: `php artisan optimize:clear` (startup menjalankan `php artisan optimize` yang men-*cache* rute).
+
+---
+
+## 🚢 Catatan Produksi (saat deploy ke VPS / Cloud)
+
+Aplikasi ini dioptimalkan untuk pemakaian lokal. Saat memindahkannya ke server publik, lakukan *hardening* berikut:
+
+- Set `APP_ENV=production` dan `APP_DEBUG=false` di `.env`.
+- Jalankan `php artisan config:cache route:cache view:cache` untuk performa.
+- Pastikan **queue worker** berjalan sebagai *daemon* (mis. via `supervisor`) untuk pembuatan judul chat.
+- Ganti `MAIL_MAILER=log` dengan *driver* email sungguhan agar verifikasi email berfungsi.
+- Streaming AI berjalan di dalam *request* PHP; di belakang Nginx naikkan `fastcgi_read_timeout` agar respons panjang tidak terputus.
+- Pertimbangkan *rate limiting* pada endpoint chat untuk mencegah penyalahgunaan.
