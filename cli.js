@@ -42,7 +42,11 @@ async function run() {
     console.log(chalk.magenta('===================================================================\n'));
 
     // Menjalankan server di background
-    const phpServer = spawn(`php artisan serve --port=${laravelPort}`, { stdio: 'ignore', shell: true });
+    const phpServer = spawn(`php artisan serve --port=${laravelPort}`, { 
+        stdio: 'ignore', 
+        shell: true,
+        env: { ...process.env, PHP_CLI_SERVER_WORKERS: '10' }
+    });
     const viteServer = spawn(`npx vite --port=${vitePort}`, { stdio: 'ignore', shell: true });
 
     // Fungsi untuk mematikan server
