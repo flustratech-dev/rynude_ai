@@ -1,8 +1,9 @@
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import prompts from 'prompts';
 import chalk from 'chalk';
 import net from 'net';
 import os from 'os';
+import fs from 'fs';
 
 // Fungsi untuk mencari port yang kosong (agar tidak bentrok)
 async function getFreePort(startPort) {
@@ -30,10 +31,22 @@ function openBrowser(url) {
 
 async function run() {
     console.clear();
-    console.log(chalk.gray('Mencari port yang tersedia...'));
+    console.log(chalk.gray('Menyiapkan lingkungan Rynude AI...'));
 
+    if (!fs.existsSync('./public/build')) {
+        console.log(chalk.yellow('Melakukan build aset pertama kali (hanya sekali ini saja)...'));
+        spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
+    }
+    
+    if (fs.existsSync('./public/hot')) {
+        fs.unlinkSync('./public/hot');
+    }
+    
+    console.log(chalk.green('Mengoptimalkan sistem untuk performa maksimal...'));
+    spawnSync('php', ['artisan', 'optimize'], { stdio: 'ignore', shell: true });
+
+    console.log(chalk.gray('Mencari port yang tersedia...'));
     const laravelPort = await getFreePort(8080);
-    const vitePort = await getFreePort(5180);
 
     console.clear();
     console.log(chalk.magenta('==================================================================='));
@@ -47,21 +60,18 @@ async function run() {
         shell: true,
         env: { ...process.env, PHP_CLI_SERVER_WORKERS: '10' }
     });
-    const viteServer = spawn(`npx vite --port=${vitePort}`, { stdio: 'ignore', shell: true });
 
     // Fungsi untuk mematikan server
     const killServers = () => {
         console.log(chalk.yellow('\nMenutup server Rynude AI... Sampai jumpa! 👋'));
         if (os.platform() === 'win32') {
             import('child_process').then(cp => {
-                cp.exec(`taskkill /pid ${phpServer.pid} /T /F`, () => {});
-                cp.exec(`taskkill /pid ${viteServer.pid} /T /F`, () => {
+                cp.exec(`taskkill /pid ${phpServer.pid} /T /F`, () => {
                     process.exit(0);
                 });
             });
         } else {
             phpServer.kill('SIGINT');
-            viteServer.kill('SIGINT');
             process.exit(0);
         }
     };
