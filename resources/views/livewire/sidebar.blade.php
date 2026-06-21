@@ -1,5 +1,5 @@
 <div
-    x-data="{ open: true }"
+    x-data="{ open: {{ Js::from($sidebarOpen) }} }"
     @sidebar-toggle.window="open = $event.detail.open"
     class="h-full flex flex-col bg-[#F9F8F6] dark:bg-stone-900"
 >
@@ -7,7 +7,7 @@
     <div x-show="open" x-cloak class="h-full flex flex-col">
         {{-- Top Header --}}
         <div class="flex items-center justify-between px-3 py-2.5 mt-0.5">
-            <h1 class="font-serif text-[20px] font-medium text-[#2D2825] dark:text-stone-200">Rynude</h1>
+            <button wire:click="startNewChat()" class="font-serif text-[20px] font-medium text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
             <div class="flex items-center gap-1">
                 <button class="p-1 text-gray-400 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">
                     <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -109,16 +109,15 @@
             </div>
             
             <div class="space-y-0.5 mt-0.5">
-                <button
-                    @click="activePanel = activePanel === 'code' ? null : 'code'; artifactPanelOpen = false"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
-                    :class="activePanel === 'code' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                <a
+                    href="{{ route('code') }}"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
                     </svg>
                     <span>Code</span>
-                </button>
+                </a>
 
                 <button
                     @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
@@ -353,26 +352,27 @@
                         </form>
                     </div>
 
-                    <button @click="profileMenuOpen = !profileMenuOpen" class="w-full flex items-center justify-between gap-2.5 hover:bg-gray-50 dark:hover:bg-stone-800 rounded-xl p-1.5 transition-colors">
-                        <div class="w-8 h-8 bg-[#2D2825] rounded-full flex items-center justify-center flex-shrink-0 text-white font-medium text-[13px]">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                    <button @click="profileMenuOpen = !profileMenuOpen" class="w-full flex items-center justify-between px-2 py-2 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 rounded-lg transition-colors">
+                        <div class="flex items-center gap-2.5">
+                            <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="8" cy="8" r="8" fill="#5C92D1"/>
+                                <rect x="6" y="6" width="4" height="4" fill="#DBE0ED"/>
+                                <rect x="7" y="3" width="2" height="3" fill="#DBE0ED"/>
+                                <rect x="7" y="10" width="2" height="3" fill="#DBE0ED"/>
+                                <rect x="3" y="7" width="3" height="2" fill="#DBE0ED"/>
+                                <rect x="10" y="7" width="3" height="2" fill="#DBE0ED"/>
+                                <rect x="4" y="4" width="2" height="2" fill="#DBE0ED"/>
+                                <rect x="10" y="4" width="2" height="2" fill="#DBE0ED"/>
+                                <rect x="4" y="10" width="2" height="2" fill="#DBE0ED"/>
+                                <rect x="10" y="10" width="2" height="2" fill="#DBE0ED"/>
+                            </svg>
+                            <span class="text-[13px] text-[#2D2825] dark:text-stone-200 font-medium">
+                                {{ auth()->user()->name }} <span class="text-stone-400 font-normal">· Max</span>
+                            </span>
                         </div>
-                        <div class="flex-1 min-w-0 text-left">
-                            <div class="text-[14px] font-bold text-[#2D2825] dark:text-stone-200 truncate">{{ auth()->user()->name }}</div>
-                            <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate mt-0.5">Free plan</div>
-                        </div>
-                        <div class="flex items-center gap-1 pl-1">
-                            <div class="relative w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50">
-                                <svg class="w-[16px] h-[16px] text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                </svg>
-                                <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 border-2 border-white rounded-full"></span>
-                            </div>
-                            <div class="text-gray-400 flex flex-col items-center">
-                                <svg class="w-3 h-3 -mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/></svg>
-                                <svg class="w-3 h-3 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
-                            </div>
-                        </div>
+                        <svg class="w-3.5 h-3.5 text-stone-400 transition-transform duration-200" :class="profileMenuOpen ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
                 </div>
             @else
@@ -468,16 +468,15 @@
 
         <div class="w-6 border-t border-gray-200 my-1"></div>
 
-        <button
-            @click="activePanel = activePanel === 'code' ? null : 'code'; artifactPanelOpen = false"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
-            :class="activePanel === 'code' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
+        <a
+            href="{{ route('code') }}"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]"
             title="Code"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
             </svg>
-        </button>
+        </a>
 
         <button
             @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
@@ -509,9 +508,18 @@
 
         @auth
             <button class="p-1.5 hover:bg-[#EAE9E5]/60 rounded-xl transition-colors w-full flex items-center justify-center mb-2" title="{{ auth()->user()->name }}">
-                <div class="w-8 h-8 bg-[#2D2825] rounded-full flex items-center justify-center flex-shrink-0 text-white font-medium text-xs">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                </div>
+                <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="8" fill="#5C92D1"/>
+                    <rect x="6" y="6" width="4" height="4" fill="#DBE0ED"/>
+                    <rect x="7" y="3" width="2" height="3" fill="#DBE0ED"/>
+                    <rect x="7" y="10" width="2" height="3" fill="#DBE0ED"/>
+                    <rect x="3" y="7" width="3" height="2" fill="#DBE0ED"/>
+                    <rect x="10" y="7" width="3" height="2" fill="#DBE0ED"/>
+                    <rect x="4" y="4" width="2" height="2" fill="#DBE0ED"/>
+                    <rect x="10" y="4" width="2" height="2" fill="#DBE0ED"/>
+                    <rect x="4" y="10" width="2" height="2" fill="#DBE0ED"/>
+                    <rect x="10" y="10" width="2" height="2" fill="#DBE0ED"/>
+                </svg>
             </button>
         @else
             <a href="{{ route('login') }}" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-2" title="Log in">

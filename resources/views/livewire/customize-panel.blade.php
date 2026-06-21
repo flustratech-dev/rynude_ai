@@ -1,6 +1,6 @@
 <div class="flex w-full h-full bg-[#F9F8F6] dark:bg-stone-900">
     {{-- Customize Sidebar --}}
-    <div class="w-[260px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-stone-900 flex flex-col hidden md:flex">
+    <div class="w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-stone-900 flex flex-col hidden md:flex">
         <div class="px-4 py-5 flex items-center">
             <button @click="$dispatch('close-customize')" class="mr-2 text-stone-500 hover:text-stone-800 transition-colors">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -28,7 +28,7 @@
             </div>
             
             <div class="text-center mt-6">
-                <p class="text-[13px] text-stone-500 mb-4 px-2 leading-relaxed">Give Claude role-level expertise with plugins</p>
+                <p class="text-[13px] text-stone-500 mb-4 px-2 leading-relaxed">Give Rynude role-level expertise with plugins</p>
                 <button wire:click="$set('activeTab', 'dashboard')" class="w-full py-1.5 px-3 border border-[#E5E5E5] bg-white text-[#2D2825] rounded-lg text-[13px] font-medium hover:bg-stone-50 transition-colors shadow-sm">
                     Browse plugins
                 </button>
@@ -51,8 +51,8 @@
                     </svg>
                 </div>
                 
-                <h1 class="font-serif text-[28px] font-medium text-[#2D2825] dark:text-stone-200 mb-2">Customize Claude</h1>
-                <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-10 text-center">Skills, connectors, and plugins shape how Claude works with you.</p>
+                <h1 class="font-serif text-[28px] font-medium text-[#2D2825] dark:text-stone-200 mb-2">Customize Rynude</h1>
+                <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-10 text-center">Skills, connectors, and plugins shape how Rynude works with you.</p>
                 
                 <div class="w-full space-y-4">
                     {{-- Connect your apps --}}
@@ -62,7 +62,7 @@
                         </div>
                         <div>
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Connect your apps</h3>
-                            <p class="text-[13.5px] text-stone-500 mt-0.5">Let Claude read and write to the tools you already use.</p>
+                            <p class="text-[13.5px] text-stone-500 mt-0.5">Let Rynude read and write to the tools you already use.</p>
                         </div>
                     </button>
                     
@@ -73,7 +73,7 @@
                         </div>
                         <div>
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Create new skills</h3>
-                            <p class="text-[13.5px] text-stone-500 mt-0.5">Teach Claude your processes, team norms, and expertise.</p>
+                            <p class="text-[13.5px] text-stone-500 mt-0.5">Teach Rynude your processes, team norms, and expertise.</p>
                         </div>
                     </button>
                     

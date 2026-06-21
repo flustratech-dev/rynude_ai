@@ -82,7 +82,7 @@
                                 ['id' => 'byok', 'question' => 'What is BYOK (Bring Your Own Key)?', 'answer' => 'BYOK allows you to use your own Anthropic API key instead of the system-provided quota. This gives you direct access to Rynude with your own billing and higher rate limits.'],
                                 ['id' => 'artifacts', 'question' => 'What are Artifacts?', 'answer' => 'Artifacts are self-contained pieces of content that Rynude creates for you — code snippets, documents, analyses, and more. They appear in a side panel and can be copied, downloaded, or referenced in follow-up messages.'],
                                 ['id' => 'projects', 'question' => 'What are Projects?', 'answer' => 'Projects let you organize related chats together. Create a project for a specific topic or task, and all associated conversations will be grouped in one place.'],
-                                ['id' => 'models', 'question' => 'Which Claude models are available?', 'answer' => 'Rynude supports Claude Opus 4, Claude Sonnet 4, and Claude Haiku 3.5. Each model offers different capabilities — Opus for the most complex tasks, Sonnet for balanced performance, and Haiku for fast responses.'],
+                                ['id' => 'models', 'question' => 'Which Rynude models are available?', 'answer' => 'Rynude supports Rynude Opus 4, Rynude Sonnet 4, and Rynude Haiku 3.5. Each model offers different capabilities — Opus for the most complex tasks, Sonnet for balanced performance, and Haiku for fast responses.'],
                             ];
                         @endphp
 

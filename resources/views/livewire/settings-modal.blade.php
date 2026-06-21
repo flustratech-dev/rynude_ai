@@ -315,10 +315,10 @@
                             </div>
                             <span class="px-3 py-1 bg-gray-100 dark:bg-stone-700 text-gray-600 dark:text-stone-300 text-xs font-medium rounded-full">Current</span>
                         </div>
-                        <button class="w-full py-2.5 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Upgrade to Pro</button>
+                        <button class="w-full py-2.5 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Upgrade to Max</button>
                     </div>
 
-                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-4">Pro features include:</h3>
+                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-4">Max features include:</h3>
                     <ul class="space-y-3">
                         <li class="flex items-center gap-3 text-[14px] text-gray-600 dark:text-stone-300">
                             <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>

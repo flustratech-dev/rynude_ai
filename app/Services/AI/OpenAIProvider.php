@@ -101,10 +101,11 @@ class OpenAIProvider implements LLMProviderInterface
                     $mimeType = $msg['attachment']['file_type'];
                     
                     if (str_starts_with($mimeType, 'image/')) {
+                        $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
                         $content[] = [
                             'type' => 'image_url',
                             'image_url' => [
-                                'url' => 'data:' . $mimeType . ';base64,' . base64_encode(file_get_contents($filePath))
+                                'url' => 'data:' . $processedImage['mime_type'] . ';base64,' . $processedImage['data']
                             ]
                         ];
                     } elseif ($mimeType === 'application/pdf') {

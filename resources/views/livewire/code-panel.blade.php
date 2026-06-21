@@ -4,7 +4,7 @@
         <div class="flex items-center gap-3">
             <h2 class="font-serif text-2xl text-claude-800 dark:text-stone-200">Code</h2>
             @if(!$isPremium)
-                <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-claude-300 text-claude-500">Pro</span>
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-claude-300 text-claude-500">Max</span>
             @endif
         </div>
         <button
@@ -30,7 +30,7 @@
                 </div>
                 <h3 class="text-xl font-medium text-claude-800 dark:text-stone-200 mb-2">Upgrade to access Code</h3>
                 <p class="text-sm text-claude-500 dark:text-stone-400 max-w-sm mb-6 leading-relaxed">
-                    Get access to advanced code generation, code review, refactoring tools, and more with a Pro subscription.
+                    Get access to advanced code generation, code review, refactoring tools, and more with a Max subscription.
                 </p>
                 <div class="space-y-3 w-full max-w-xs">
                     <div class="flex items-center gap-3 text-sm text-claude-600 dark:text-stone-300">
@@ -62,7 +62,7 @@
                     wire:click="openUpgradeModal"
                     class="mt-8 px-8 py-3 rounded-xl bg-claude-800 text-white text-[15px] font-medium hover:bg-claude-900 transition-colors"
                 >
-                    Upgrade to Pro
+                    Upgrade to Max
                 </button>
             </div>
         @else

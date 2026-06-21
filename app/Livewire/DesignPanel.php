@@ -8,6 +8,6 @@ class DesignPanel extends Component
 {
     public function render()
     {
-        return view('livewire.design-panel');
+        return view('livewire.design-panel')->layout('layouts.app');
     }
 }

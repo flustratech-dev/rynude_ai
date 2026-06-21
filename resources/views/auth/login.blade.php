@@ -74,7 +74,7 @@
                     <!-- Banner -->
                     <div class="pt-5 pb-7 px-4 text-center flex items-center justify-center gap-2">
                         <span class="bg-[#C6DCFF] text-[#1D4ED8] text-[12px] font-semibold px-2.5 py-0.5 rounded-md">New</span>
-                        <span class="text-[14px] text-[#2563EB] font-medium">rynude Design: available for Pro and Max plans</span>
+                        <span class="text-[14px] text-[#2563EB] font-medium">rynude Design: available for Max plans</span>
                     </div>
 
                     <div class="bg-[#FFFDF9] rounded-t-[32px] p-8 border-t border-[#E5E7EB] shadow-[0_-4px_10px_rgba(0,0,0,0.02)] flex flex-col">

@@ -47,12 +47,13 @@ class AnthropicProvider implements LLMProviderInterface
                         $mimeType = $msg['attachment']['file_type'];
                         
                         if (str_starts_with($mimeType, 'image/')) {
+                            $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
                             $content[] = [
                                 'type' => 'image',
                                 'source' => [
                                     'type' => 'base64',
-                                    'media_type' => $mimeType,
-                                    'data' => base64_encode(file_get_contents($filePath))
+                                    'media_type' => $processedImage['mime_type'],
+                                    'data' => $processedImage['data']
                                 ]
                             ];
                         } elseif ($mimeType === 'application/pdf') {

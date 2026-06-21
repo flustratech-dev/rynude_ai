@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\Url;
 
 class ChatLayout extends Component
 {
@@ -11,7 +12,18 @@ class ChatLayout extends Component
     public $artifactPanelOpen = false;
     public $settingsOpen = false;
 
+    #[Url(as: 'panel')]
     public ?string $activePanel = null; // null | 'chats' | 'projects' | 'code'
+
+    public function mount()
+    {
+        if (request()->has('panel')) {
+            $this->activePanel = request()->query('panel');
+        }
+        if ($this->activePanel === 'customize') {
+            $this->sidebarOpen = false;
+        }
+    }
 
     public function toggleArtifactPanel()
     {

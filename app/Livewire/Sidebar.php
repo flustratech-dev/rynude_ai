@@ -15,11 +15,13 @@ class Sidebar extends Component
     public ?string $activePanel = null;
     public bool $artifactPanelOpen = false;
     public bool $hasUpdate = false;
+    public bool $sidebarOpen = true;
 
-    public function mount(?string $activePanel = null, bool $artifactPanelOpen = false)
+    public function mount(?string $activePanel = null, bool $artifactPanelOpen = false, bool $sidebarOpen = true)
     {
         $this->activePanel = $activePanel;
         $this->artifactPanelOpen = $artifactPanelOpen;
+        $this->sidebarOpen = $sidebarOpen;
         $this->loadConversations();
         $this->checkForUpdates();
     }

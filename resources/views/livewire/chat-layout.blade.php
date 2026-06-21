@@ -50,7 +50,7 @@
             x-transition:leave-end="-translate-x-full"
             class="fixed inset-y-0 left-0 z-40 w-[300px] shadow-2xl bg-[#F9F8F6] dark:bg-stone-900"
         >
-            <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" key="mobile-sidebar" />
+            <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="mobile-sidebar" />
         </div>
     </div>
 
@@ -58,10 +58,10 @@
     <div
         x-show="!isMobile"
         x-cloak
-        :class="sidebarOpen ? 'w-[260px]' : 'w-[60px]'"
+        :class="sidebarOpen ? 'w-[280px]' : 'w-[60px]'"
         class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 hidden md:block"
     >
-        <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" key="desktop-sidebar" />
+        <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
     </div>
 
     {{-- ========== MAIN CONTENT ========== --}}
