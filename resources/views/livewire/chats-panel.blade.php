@@ -91,8 +91,11 @@
                                 @else
                                     <div
                                         class="flex items-center flex-1 min-w-0 pr-4 cursor-pointer"
-                                        @click="{{ $isSelectMode ? '' : 'activePanel = null; artifactPanelOpen = false' }}"
-                                        wire:click="{{ $isSelectMode ? 'toggleChatSelection('.$conversation['id'].')' : 'selectConversation('.$conversation['id'].')' }}"
+                                        @if($isSelectMode)
+                                            wire:click="toggleChatSelection({{ $conversation['id'] }})"
+                                        @else
+                                            @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; Livewire.dispatch('selectConversation', { conversationId: {{ $conversation['id'] }} })"
+                                        @endif
                                     >
                                         @if($isSelectMode)
                                             <div class="mr-3 w-5 h-5 rounded border flex-shrink-0 {{ in_array($conversation['id'], $selectedChats) ? 'bg-[#2D2825] border-[#2D2825] text-white dark:bg-stone-200 dark:border-stone-200 dark:text-stone-900' : 'border-gray-300 dark:border-stone-600 bg-white dark:bg-stone-800' }} flex items-center justify-center transition-colors">

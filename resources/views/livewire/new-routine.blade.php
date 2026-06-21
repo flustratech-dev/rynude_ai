@@ -26,7 +26,7 @@
         <div>
             <label class="block text-[13px] text-stone-500 font-medium mb-1.5">Instructions</label>
             <div class="border border-[#E5E5E5] dark:border-stone-800 rounded-xl bg-white dark:bg-stone-900 shadow-sm flex flex-col overflow-hidden focus-within:ring-1 focus-within:ring-stone-300 focus-within:border-stone-300 dark:focus-within:ring-stone-700">
-                <textarea rows="6" placeholder="Describe what Claude should do in each session" class="w-full bg-transparent border-0 outline-none text-[14px] text-stone-800 dark:text-stone-200 placeholder:text-stone-400 p-4 resize-y min-h-[150px]"></textarea>
+                <textarea rows="6" placeholder="Describe what Rynude should do in each session" class="w-full bg-transparent border-0 outline-none text-[14px] text-stone-800 dark:text-stone-200 placeholder:text-stone-400 p-4 resize-y min-h-[150px]"></textarea>
                 
                 {{-- Textarea Footer --}}
                 <div class="bg-white dark:bg-stone-900 border-t border-[#E5E5E5] dark:border-stone-800 px-3 py-2 flex items-center justify-between">
@@ -106,7 +106,7 @@
 
             <div x-show="tab === 'connectors'">
                 <h3 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 mb-1">Connectors</h3>
-                <p class="text-[13px] text-stone-500 mb-4">Integrations available to Claude during each run.</p>
+                <p class="text-[13px] text-stone-500 mb-4">Integrations available to Rynude during each run.</p>
                 <button class="px-3 py-1.5 border border-dashed border-[#E5E5E5] dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500 text-stone-500 rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-colors">
                     <span class="font-normal">+</span> Add connector
                 </button>

@@ -43,7 +43,7 @@
                             <textarea 
                                 wire:model="customInstructions"
                                 class="w-full bg-transparent resize-none text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none min-h-[120px]" 
-                                placeholder="How should Claude respond in this project? E.g., 'Always output responses in JSON format' or 'Adopt the persona of a senior engineer'."
+                                placeholder="How should Rynude respond in this project? E.g., 'Always output responses in JSON format' or 'Adopt the persona of a senior engineer'."
                             ></textarea>
                             <div class="absolute bottom-3 right-3 opacity-0 group-focus-within:opacity-100 transition-opacity">
                                 <button wire:click="saveInstructions" class="px-3 py-1.5 bg-[#EAE9E5] hover:bg-stone-300 dark:bg-stone-700 dark:hover:bg-stone-600 rounded-lg text-[12px] font-medium text-stone-700 dark:text-stone-200 transition-colors">
@@ -75,7 +75,7 @@
                                     <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                                 </div>
                                 <p class="text-[14px] font-medium text-[#1a1a1a] dark:text-stone-200 mb-1">Add content</p>
-                                <p class="text-[13px] text-stone-500">Upload documents, text files, or code to give Claude context.</p>
+                                <p class="text-[13px] text-stone-500">Upload documents, text files, or code to give Rynude context.</p>
                             </div>
 
                             <div wire:loading wire:target="newKnowledgeFiles">

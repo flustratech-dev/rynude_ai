@@ -1,15 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
     :root {
-        /* Claude-inspired warm neutral theme (tweakcn-style) */
-        --background: 0 0% 99%;
+        /* Claude-inspired warm neutral theme */
+        --background: 17 41% 98%; /* #fdf8f6 */
         --foreground: 30 10% 12%;
-        --card: 0 0% 98%;
+        --card: 17 41% 98%;
         --card-foreground: 30 10% 12%;
-        --popover: 30 10% 98%;
+        --popover: 17 41% 98%;
         --popover-foreground: 30 10% 12%;
         --primary: 30 8% 46%;
         --primary-foreground: 0 0% 100%;
@@ -45,11 +47,11 @@
     }
 
     .dark {
-        --background: 0 0% 6%;
+        --background: 220 5% 15%; /* #242528 */
         --foreground: 30 6% 90%;
-        --card: 0 0% 9%;
+        --card: 220 5% 15%;
         --card-foreground: 30 6% 90%;
-        --popover: 30 6% 12%;
+        --popover: 220 5% 15%;
         --popover-foreground: 30 6% 90%;
         --primary: 30 8% 60%;
         --primary-foreground: 30 6% 10%;

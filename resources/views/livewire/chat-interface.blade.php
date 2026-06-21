@@ -1,18 +1,35 @@
-<div class="flex flex-col h-full bg-[#F9F8F6] dark:bg-stone-900">
+<div class="flex flex-col h-full bg-background dark:bg-background relative">
+    {{-- Full-screen Loading Overlay --}}
+    <div wire:loading wire:target="loadSelectedConversation, startProjectChat" class="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-background/90 dark:bg-background/90 backdrop-blur-sm">
+        <div class="w-12 h-12 rounded-2xl bg-[#F9F8F6] dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 flex items-center justify-center mb-4 shadow-sm">
+            <svg class="w-6 h-6 text-[#D97757] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+            </svg>
+        </div>
+        <p class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">Loading conversation...</p>
+    </div>
+
     <input type="file" wire:model="attachment" id="file-upload" class="hidden" accept="image/*,.pdf,.doc,.docx,.txt">
 
     {{-- Empty State: Greeting + Form centered vertically --}}
     @if(empty($messages))
         <div class="flex-1 flex flex-col justify-center items-center px-4 -mt-16 md:-mt-32">
             <div class="text-center mb-8">
-                <div class="flex items-center justify-center gap-3">
-                    <svg class="w-8 h-8 md:w-10 md:h-10 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
+                <div class="flex items-center justify-center gap-3 md:gap-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-8 h-8 md:w-10 md:h-10 text-[#D97757] fill-current shrink-0">
+                        <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path>
                     </svg>
                     @auth
-                        <h1 class="font-serif text-3xl md:text-[2.75rem] bg-clip-text text-transparent bg-gradient-to-r from-[#2D2825] to-[#7a7a75] dark:from-stone-200 dark:to-stone-400 tracking-tight">{{ strtolower(auth()->user()->name) }} returns!</h1>
+                        <h1 class="font-serif text-[#2D2825] dark:text-[#E8E8E6] tracking-tight" style="font-size: clamp(1.875rem, 1.2rem + 2vw, 2.5rem); line-height: 1.5;">Welcome back, {{ explode(' ', auth()->user()->name)[0] }}</h1>
                     @else
-                        <h1 class="font-serif text-3xl md:text-[2.75rem] bg-clip-text text-transparent bg-gradient-to-r from-[#2D2825] to-[#7a7a75] dark:from-stone-200 dark:to-stone-400 tracking-tight">Golden hour thinking</h1>
+                        <h1 class="font-serif text-[#2D2825] dark:text-[#E8E8E6] tracking-tight" style="font-size: clamp(1.875rem, 1.2rem + 2vw, 2.5rem); line-height: 1.5;">Welcome back</h1>
                     @endauth
                 </div>
             </div>
@@ -279,10 +296,10 @@
                     </button>
 
                     <button wire:click="sendMessage" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
-                        <svg class="w-3.5 h-3.5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="w-3.5 h-3.5 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
                         </svg>
-                        Rynude's choice
+                        Surprise me
                     </button>
                 </div>
             </div>
@@ -345,8 +362,8 @@
                                 <!-- Assistant Message -->
                                 <div class="flex justify-start w-full gap-3 md:gap-4">
                                     <div class="flex-shrink-0 mt-1">
-                                        <svg class="w-7 h-7 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
+                                        <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757]" viewBox="0 0 100 100" fill="currentColor">
+                                            <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path>
                                         </svg>
                                     </div>
                                     <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full prose-p:leading-relaxed prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors">
@@ -415,13 +432,12 @@
                     <div wire:loading wire:target="sendMessage, generateResponse" class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 mt-1">
                         <div class="flex justify-start w-full gap-3 md:gap-4">
                             <div class="flex-shrink-0 mt-1">
-                                <svg class="w-7 h-7 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
-                                </svg>
+                                        <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757] animate-spin" viewBox="0 0 100 100" fill="currentColor">
+                                            <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path>
+                                        </svg>
                             </div>
-                            <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full prose-p:leading-relaxed prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors" wire:stream="message-stream">
-                                <div class="text-stone-400 text-sm flex items-center gap-2 mt-1">
-                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full prose-p:leading-relaxed prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors [&::after]:hidden" wire:stream="message-stream">
+                                <div class="text-stone-400 text-[15px] flex items-center gap-3 mt-1 font-medium">
                                     <span>Rynude is thinking...</span>
                                 </div>
                             </div>
@@ -446,7 +462,7 @@
         </div>
 
         {{-- Bottom-anchored Form --}}
-        <div class="shrink-0 h-fit bg-[#F9F8F6] dark:bg-stone-900" wire:key="active-state-form-container">
+        <div class="shrink-0 h-fit bg-background dark:bg-background" wire:key="active-state-form-container">
             <form wire:submit.prevent="sendMessage" class="w-full max-w-[42rem] mx-auto pb-4 md:pb-6 px-3 md:px-4 pt-3 md:pt-4" wire:key="active-state-form">
                 {{-- Prompt Box Container --}}
                 <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">

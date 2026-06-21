@@ -75,7 +75,7 @@
                     <span class="text-[#D97757]">works the way you think</span>
                 </h1>
                 <p class="fadeup text-[16px] md:text-[18px] text-stone-500 dark:text-stone-400 max-w-2xl mx-auto mt-6 leading-relaxed">
-                    Chat, build artifacts, hand off tasks, and design — all in one place. Bring your own keys for Claude, GPT, Gemini, and Mistral.
+                    Chat, build artifacts, hand off tasks, and design — all in one place. Bring your own keys for Rynude, GPT, Gemini, and Mistral.
                 </p>
                 <div class="fadeup flex flex-col sm:flex-row items-center justify-center gap-3 mt-9">
                     <a href="{{ auth()->check() ? route('chat') : route('register') }}" class="w-full sm:w-auto px-6 py-3 bg-[#D97757] hover:bg-[#c56647] text-white rounded-xl text-[15px] font-medium transition-colors shadow-sm">
@@ -127,7 +127,7 @@
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 @php
                     $features = [
-                        ['title' => 'Multi-model chat', 'desc' => 'Claude, GPT, Gemini, and Mistral side by side. Bring your own API keys.', 'color' => 'text-[#D97757]', 'bg' => 'bg-[#D97757]/10', 'path' => 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
+                        ['title' => 'Multi-model chat', 'desc' => 'Rynude, GPT, Gemini, and Mistral side by side. Bring your own API keys.', 'color' => 'text-[#D97757]', 'bg' => 'bg-[#D97757]/10', 'path' => 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
                         ['title' => 'Live artifacts', 'desc' => 'Generate code and HTML with syntax highlighting, live preview, and versions.', 'color' => 'text-blue-600 dark:text-blue-400', 'bg' => 'bg-blue-500/10', 'path' => 'M16 18l6-6-6-6M8 6l-6 6 6 6'],
                         ['title' => 'Cowork tasks', 'desc' => 'Hand off complex work, assign a model, and come back to a finished result.', 'color' => 'text-emerald-600 dark:text-emerald-400', 'bg' => 'bg-emerald-500/10', 'path' => 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
                         ['title' => 'Design generation', 'desc' => 'Describe what you want and get a ready-to-use, live-previewed design.', 'color' => 'text-fuchsia-600 dark:text-fuchsia-400', 'bg' => 'bg-fuchsia-500/10', 'path' => 'M3 3h18v18H3zM3 9h18M9 21V9'],
@@ -153,7 +153,7 @@
                 <h2 class="font-serif text-[34px] font-medium tracking-tight">Your favorite models, one interface</h2>
                 <p class="text-stone-500 dark:text-stone-400 mt-3 text-[15.5px] max-w-2xl mx-auto">Switch providers without switching tools. Add your keys in Settings and start chatting.</p>
                 <div class="flex flex-wrap items-center justify-center gap-3 mt-10">
-                    @foreach(['Claude Opus 4.8', 'Claude Sonnet 4.6', 'GPT', 'Gemini 2.5 Pro', 'Mistral Large', 'Codestral'] as $m)
+                    @foreach(['Rynude Opus 4.8', 'Rynude Sonnet 4.6', 'GPT', 'Gemini 2.5 Pro', 'Mistral Large', 'Codestral'] as $m)
                         <span class="px-5 py-2.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-[14px] font-medium shadow-sm">{{ $m }}</span>
                     @endforeach
                 </div>

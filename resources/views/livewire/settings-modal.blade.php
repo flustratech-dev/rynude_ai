@@ -510,7 +510,7 @@
                         </li>
                         <li class="flex items-center gap-3 text-[14px] text-gray-600 dark:text-stone-300">
                             <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Access to our most capable model, Claude 3.5 Sonnet
+                            Access to our most capable model, Rynude 3.5 Sonnet
                         </li>
                         <li class="flex items-center gap-3 text-[14px] text-gray-600 dark:text-stone-300">
                             <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -727,7 +727,7 @@
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Install via npm</h3>
                         </div>
                         <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between">
-                            <span>npm install -g @anthropic-ai/claude-code</span>
+                            <span>npm install -g @anthropic-ai/rynude-code</span>
                             <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
@@ -738,7 +738,7 @@
                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-4">Run the following command in your terminal to authenticate with your Anthropic account:</p>
                     
                     <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between mb-6">
-                        <span>claude auth login</span>
+                        <span>rynude auth login</span>
                         <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         </button>

@@ -1,7 +1,7 @@
 <div
     x-data="{ open: {{ Js::from($sidebarOpen) }} }"
     @sidebar-toggle.window="open = $event.detail.open"
-    class="h-full flex flex-col bg-[#F9F8F6] dark:bg-stone-900"
+    class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-[#1E1E1E]"
 >
     {{-- ========== EXPANDED MODE ========== --}}
     <div x-show="open" x-cloak class="h-full flex flex-col" x-data="{ searchOpen: false }">
@@ -73,10 +73,10 @@
             </button>
             @endif
 
-            <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors">
-                <div class="w-[20px] h-[20px] flex items-center justify-center bg-[#E5E5E5] dark:bg-stone-700 rounded-full text-gray-600 dark:text-stone-300">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            <button @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.startNewChat(), 10);" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
+                <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
+                    <svg class="w-[18px] h-[18px] text-gray-500 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
                     </svg>
                 </div>
                 <span>New chat</span>
@@ -85,7 +85,7 @@
             <button
                 @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
-                :class="activePanel === 'chats' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                :class="activePanel === 'chats' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path class="chat-bubble-1" stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
@@ -96,7 +96,7 @@
             <button
                 @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
-                :class="activePanel === 'projects' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                :class="activePanel === 'projects' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
@@ -108,7 +108,7 @@
             <button
                 @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
-                :class="activePanel === 'artifacts' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                :class="activePanel === 'artifacts' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path class="artifact-triangle" d="M12 3l4 7H8z" />
@@ -119,7 +119,7 @@
             </button>
 
             <button
-                @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: false } })); }"
+                @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                 :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50'"
             >
@@ -192,10 +192,9 @@
             <div class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1">
                 @forelse($groups as $period => $items)
                     @foreach($items as $conversation)
-                        <div class="relative group flex items-center w-full rounded-lg transition-colors {{ $selectedConversation === $conversation['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-gray-700 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200' }}">
+                        <div class="relative group flex items-center w-full rounded-lg transition-colors {{ $selectedConversation === $conversation['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200 hover:font-medium' }}">
                             <button
-                                @click="activePanel = null; artifactPanelOpen = false"
-                                wire:click="selectConversation({{ $conversation['id'] }})"
+                                @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.selectConversation({{ $conversation['id'] }}), 10);"
                                 class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
                             >
                                 {{ $conversation['title'] }}
@@ -236,8 +235,7 @@
                             {{ auth()->user()->email }}
                         </div>
                         <button
-                            @click="profileMenuOpen = false"
-                            wire:click="openSettingsModal('general')"
+                            @click="profileMenuOpen = false; setTimeout(() => $wire.openSettingsModal('general'), 10);"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
@@ -287,8 +285,7 @@
                             </div>
                         </div>
                         <button
-                            @click="profileMenuOpen = false"
-                            wire:click="openHelpModal('help')"
+                            @click="profileMenuOpen = false; setTimeout(() => $wire.openHelpModal('help'), 10);"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
@@ -300,8 +297,7 @@
                         </button>
                         <div class="border-t border-gray-100 dark:border-stone-800 my-1"></div>
                         <button
-                            @click="profileMenuOpen = false"
-                            wire:click="openSettingsModal('billing')"
+                            @click="profileMenuOpen = false; setTimeout(() => $wire.openSettingsModal('billing'), 10);"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
@@ -312,8 +308,7 @@
                             </span>
                         </button>
                         <button
-                            @click="profileMenuOpen = false"
-                            wire:click="openHelpModal('apps')"
+                            @click="profileMenuOpen = false; setTimeout(() => $wire.openHelpModal('apps'), 10);"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
@@ -439,7 +434,7 @@
     </div>
 
     {{-- ========== COLLAPSED MODE (icons only) ========== --}}
-    <div x-show="!open" x-cloak class="h-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-stone-900">
+    <div x-show="!open" x-cloak class="h-full w-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-[#1E1E1E]">
         <button
             @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
             class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"
@@ -466,9 +461,11 @@
         </button>
         @endif
 
-        <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center" title="New chat">
-            <div class="w-6 h-6 flex items-center justify-center bg-[#E5E5E5] dark:bg-stone-700 rounded-full text-gray-600 dark:text-stone-300">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        <button @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.startNewChat(), 10);" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
+            <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
+                <svg class="w-[20px] h-[20px] text-gray-500 dark:text-stone-400 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
+                </svg>
             </div>
         </button>
 
@@ -511,7 +508,7 @@
         </button>
 
         <button
-            @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: false } })); }"
+            @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Customize"

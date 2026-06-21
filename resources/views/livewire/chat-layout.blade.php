@@ -102,7 +102,7 @@
         x-show="!isMobile"
         x-cloak
         :class="sidebarOpen ? 'w-[280px]' : 'w-[60px]'"
-        class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 hidden md:block"
+        class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 hidden md:block bg-[#F9F8F6] dark:bg-[#1E1E1E]"
     >
         <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
     </div>
