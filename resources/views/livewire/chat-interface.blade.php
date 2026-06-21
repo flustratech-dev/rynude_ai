@@ -259,10 +259,10 @@
                         Learn
                     </button>
 
-                    <button wire:click="$set('prompt', 'Write a code to ')" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
+                    <button wire:click="$set('prompt', 'Write a code to ')" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0 group">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="16 18 22 12 16 6"/>
-                            <polyline points="8 6 2 12 8 18"/>
+                            <polyline class="code-bracket-right" points="16 18 22 12 16 6"/>
+                            <polyline class="code-bracket-left" points="8 6 2 12 8 18"/>
                         </svg>
                         Code
                     </button>
@@ -622,9 +622,15 @@
         
         Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
             succeed(({ snapshot, effect }) => {
-                queueMicrotask(() => scrollToBottom());
+                queueMicrotask(() => {
+                    scrollToBottom();
+                    enhanceCodeBlocks();
+                });
             })
         });
+
+        // Initial setup
+        enhanceCodeBlocks();
     });
     
     function scrollToBottom() {
@@ -632,5 +638,50 @@
         if(container) {
             container.scrollTop = container.scrollHeight;
         }
+    }
+
+    function enhanceCodeBlocks() {
+        document.querySelectorAll('.prose pre').forEach((pre) => {
+            if(pre.hasAttribute('data-enhanced')) return;
+            pre.setAttribute('data-enhanced', 'true');
+            
+            pre.classList.add('code-block-enter', 'relative', 'group/code');
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'absolute top-2 right-2 p-1.5 rounded-lg bg-stone-700/80 text-stone-300 opacity-0 group-hover/code:opacity-100 transition-all hover:bg-stone-600 flex items-center gap-1.5 text-xs font-medium border border-stone-600/50 shadow-sm backdrop-blur-sm z-10';
+            copyBtn.innerHTML = `
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>Copy</span>
+            `;
+            
+            copyBtn.addEventListener('click', async () => {
+                // Ensure we don't copy the copy button's own text
+                const codeNode = pre.querySelector('code');
+                const code = codeNode ? codeNode.innerText : pre.innerText.replace('Copy', '').trim();
+                
+                try {
+                    await navigator.clipboard.writeText(code);
+                    copyBtn.classList.add('copy-pop', '!text-green-400', '!border-green-500/50', '!bg-stone-800');
+                    copyBtn.classList.remove('text-stone-300', 'bg-stone-700/80', 'border-stone-600/50');
+                    copyBtn.innerHTML = `
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Copied!</span>
+                    `;
+                    
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copy-pop', '!text-green-400', '!border-green-500/50', '!bg-stone-800');
+                        copyBtn.classList.add('text-stone-300', 'bg-stone-700/80', 'border-stone-600/50');
+                        copyBtn.innerHTML = `
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            <span>Copy</span>
+                        `;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy', err);
+                }
+            });
+            
+            pre.appendChild(copyBtn);
+        });
     }
 </script>

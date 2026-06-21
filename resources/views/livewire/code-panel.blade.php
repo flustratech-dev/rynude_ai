@@ -23,9 +23,11 @@
         @if(!$isPremium)
             {{-- Upgrade Gate --}}
             <div class="flex flex-col items-center justify-center h-full px-6 text-center">
-                <div class="w-20 h-20 rounded-2xl bg-claude-100 dark:bg-stone-800 flex items-center justify-center mb-6">
+                <div class="w-20 h-20 rounded-2xl bg-claude-100 dark:bg-stone-800 flex items-center justify-center mb-6 group cursor-pointer">
                     <svg class="w-10 h-10 text-claude-600 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+                        <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
+                        <path class="code-bracket-left" stroke-linecap="round" stroke-linejoin="round" d="M6.75 17.25L1.5 12l5.25-5.25"/>
+                        <path class="code-slash" stroke-linecap="round" stroke-linejoin="round" d="M14.25 3.75l-4.5 16.5"/>
                     </svg>
                 </div>
                 <h3 class="text-xl font-medium text-claude-800 dark:text-stone-200 mb-2">Upgrade to access Code</h3>
@@ -68,9 +70,11 @@
         @else
             {{-- Premium Content (future) --}}
             <div class="flex flex-col items-center justify-center h-full px-6 text-center">
-                <div class="w-16 h-16 rounded-full bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 flex items-center justify-center mb-4">
+                <div class="w-16 h-16 rounded-full bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 flex items-center justify-center mb-4 group cursor-pointer">
                     <svg class="w-8 h-8 text-claude-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+                        <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
+                        <path class="code-bracket-left" stroke-linecap="round" stroke-linejoin="round" d="M6.75 17.25L1.5 12l5.25-5.25"/>
+                        <path class="code-slash" stroke-linecap="round" stroke-linejoin="round" d="M14.25 3.75l-4.5 16.5"/>
                     </svg>
                 </div>
                 <p class="text-claude-500 dark:text-stone-400 text-sm">No code snippets yet</p>

@@ -10,30 +10,30 @@
                 <span class="text-[10px] font-medium px-1.5 py-0.5 bg-[#EAE9E5] dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-[4px] whitespace-nowrap">Research preview</span>
             </div>
             <div class="flex items-center gap-1 text-stone-400">
-                <button @click="sidebarOpen = false" class="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors">
-                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                <button @click="sidebarOpen = false" class="group p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors">
+                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line class="transition-transform duration-300 group-hover:-translate-x-0.5" x1="9" y1="3" x2="9" y2="21"></line></svg>
                 </button>
-                <button class="p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors">
-                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <button class="group p-1 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-md transition-colors">
+                    <svg class="w-[18px] h-[18px] transition-transform duration-300 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </button>
             </div>
         </div>
 
         {{-- Sidebar Menu --}}
         <div class="px-2 mt-2 space-y-0.5">
-            <button wire:click="$set('currentView', 'chat'); $set('isStarted', false)" class="w-full flex items-center gap-2.5 px-2 py-1.5 bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 rounded-lg text-[13px] font-medium transition-colors">
-                <span class="text-stone-500 font-normal">+</span> New session
+            <button wire:click="$set('currentView', 'chat'); $set('isStarted', false)" class="group w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] font-medium transition-colors hover:bg-[#EAE9E5] dark:hover:bg-stone-800 {{ $currentView === 'chat' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-stone-600 dark:text-stone-400' }}">
+                <span class="{{ $currentView === 'chat' ? 'text-stone-500' : 'text-stone-400' }} font-normal inline-block transition-transform duration-300 group-hover:rotate-90">+</span> New session
             </button>
-            <button wire:click="$set('currentView', 'routines')" class="w-full flex items-center gap-2.5 px-2 py-1.5 text-stone-600 dark:text-stone-400 hover:bg-[#EAE9E5] dark:hover:bg-stone-800 rounded-lg text-[13px] transition-colors {{ $currentView === 'routines' || $currentView === 'new-routine' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : '' }}">
-                <svg class="w-3.5 h-3.5 {{ $currentView === 'routines' || $currentView === 'new-routine' ? 'text-[#2D2825] dark:text-stone-200' : 'text-stone-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Routines
+            <button wire:click="$set('currentView', 'routines')" class="group w-full flex items-center gap-2.5 px-2 py-1.5 text-stone-600 dark:text-stone-400 hover:bg-[#EAE9E5] dark:hover:bg-stone-800 rounded-lg text-[13px] transition-colors {{ $currentView === 'routines' || $currentView === 'new-routine' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : '' }}">
+                <svg class="w-3.5 h-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110 {{ $currentView === 'routines' || $currentView === 'new-routine' ? 'text-[#2D2825] dark:text-stone-200' : 'text-stone-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Routines
             </button>
-            <a href="{{ route('chat', ['panel' => 'customize']) }}" class="w-full flex items-center gap-2.5 px-2 py-1.5 text-stone-600 dark:text-stone-400 hover:bg-[#EAE9E5] dark:hover:bg-stone-800 rounded-lg text-[13px] transition-colors">
-                <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M16 12h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"></path></svg> Customize
+            <a href="{{ route('chat', ['panel' => 'customize']) }}" class="group w-full flex items-center gap-2.5 px-2 py-1.5 text-stone-600 dark:text-stone-400 hover:bg-[#EAE9E5] dark:hover:bg-stone-800 rounded-lg text-[13px] transition-colors">
+                <svg class="w-3.5 h-3.5 text-stone-400 transition-transform duration-500 group-hover:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M16 12h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"></path></svg> Customize
             </a>
             
             <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                <button @click="open = !open" class="w-full flex items-center gap-2.5 px-2 py-1.5 text-stone-600 dark:text-stone-400 hover:bg-[#EAE9E5] dark:hover:bg-stone-800 rounded-lg text-[13px] transition-colors">
-                    <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg> More
+                <button @click="open = !open" class="group w-full flex items-center gap-2.5 px-2 py-1.5 text-stone-600 dark:text-stone-400 hover:bg-[#EAE9E5] dark:hover:bg-stone-800 rounded-lg text-[13px] transition-colors">
+                    <svg class="w-3.5 h-3.5 text-stone-400 transition-transform duration-300 group-hover:translate-y-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg> More
                 </button>
                 
                 <div x-show="open" style="display: none;" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 rounded-xl shadow-lg z-50 py-1">

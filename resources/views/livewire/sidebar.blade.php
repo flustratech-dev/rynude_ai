@@ -16,11 +16,11 @@
                 </button>
                 <button
                     @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
-                    class="p-1 text-gray-400 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors"
+                    class="p-1 text-gray-400 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors group"
                 >
                     <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line class="sidebar-line-shift" x1="9" y1="3" x2="9" y2="21"></line>
                     </svg>
                 </button>
             </div>
@@ -57,45 +57,46 @@
 
             <button
                 @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                 :class="activePanel === 'chats' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                    <path class="chat-bubble-1" stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
                 </svg>
                 <span>Chats</span>
             </button>
 
             <button
                 @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                 :class="activePanel === 'projects' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                    <path class="project-arrow" stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6.75m0 0l-3-3m3 3l3-3" />
                 </svg>
                 <span>Projects</span>
             </button>
 
             <button
                 @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                 :class="activePanel === 'artifacts' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 3l4 7H8z" />
-                    <circle cx="16" cy="16" r="3" />
-                    <rect x="5" y="13" width="6" height="6" rx="1" />
+                    <path class="artifact-triangle" d="M12 3l4 7H8z" />
+                    <circle class="artifact-circle" cx="16" cy="16" r="3" />
+                    <rect class="artifact-square" x="5" y="13" width="6" height="6" rx="1" />
                 </svg>
                 <span>Artifacts</span>
             </button>
 
             <button
                 @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: false } })); }"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                 :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50'"
             >
-                <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <svg class="w-[18px] h-[18px] flex-shrink-0 customize-gear" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
                 </svg>
                 <span>Customize</span>
@@ -111,36 +112,39 @@
             <div class="space-y-0.5 mt-0.5">
                 <a
                     href="{{ route('code') }}"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80 group"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+                        <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
+                        <path class="code-bracket-left" stroke-linecap="round" stroke-linejoin="round" d="M6.75 17.25L1.5 12l5.25-5.25"/>
+                        <path class="code-slash" stroke-linecap="round" stroke-linejoin="round" d="M14.25 3.75l-4.5 16.5"/>
                     </svg>
                     <span>Code</span>
                 </a>
 
                 <button
                     @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                     :class="activePanel === 'cowork' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 6h11M9 12h11M9 18h11M5 6l1 1 2-2M5 12l1 1 2-2M5 18l1 1 2-2"/>
+                        <path class="cowork-line" d="M9 6h11M9 12h11M9 18h11"/>
+                        <path class="cowork-check" d="M5 6l1 1 2-2M5 12l1 1 2-2M5 18l1 1 2-2"/>
                     </svg>
                     <span>Cowork</span>
                 </button>
 
                 <button
                     @click="activePanel = activePanel === 'design' ? null : 'design'; artifactPanelOpen = false"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
                     :class="activePanel === 'design' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
-                        <circle cx="7.5" cy="10.5" r="1.5"/>
-                        <circle cx="10.5" cy="6.5" r="1.5"/>
-                        <circle cx="14.5" cy="6.5" r="1.5"/>
-                        <circle cx="17.5" cy="10.5" r="1.5"/>
+                        <path class="design-palette" d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
+                        <circle class="design-dot-1" cx="7.5" cy="10.5" r="1.5"/>
+                        <circle class="design-dot-2" cx="10.5" cy="6.5" r="1.5"/>
+                        <circle class="design-dot-3" cx="14.5" cy="6.5" r="1.5"/>
+                        <circle class="design-dot-4" cx="17.5" cy="10.5" r="1.5"/>
                     </svg>
                     <span>Design</span>
                 </button>
@@ -388,11 +392,11 @@
     <div x-show="!open" x-cloak class="h-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-stone-900">
         <button
             @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
-            class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4"
+            class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"
         >
             <svg class="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line class="sidebar-line-shift" x1="9" y1="3" x2="9" y2="21"></line>
             </svg>
         </button>
 
@@ -422,46 +426,47 @@
 
         <button
             @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'chats' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Chats"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                <path class="chat-bubble-1" stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
             </svg>
         </button>
 
         <button
             @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'projects' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Projects"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                <path class="project-arrow" stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6.75m0 0l-3-3m3 3l3-3" />
             </svg>
         </button>
 
         <button
             @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'artifacts' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Artifacts"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3l4 7H8z" />
-                <circle cx="16" cy="16" r="3" />
-                <rect x="5" y="13" width="6" height="6" rx="1" />
+                <path class="artifact-triangle" d="M12 3l4 7H8z" />
+                <circle class="artifact-circle" cx="16" cy="16" r="3" />
+                <rect class="artifact-square" x="5" y="13" width="6" height="6" rx="1" />
             </svg>
         </button>
 
         <button
             @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: false } })); }"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Customize"
         >
-            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <svg class="w-[18px] h-[18px] customize-gear" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
             </svg>
         </button>
@@ -470,37 +475,40 @@
 
         <a
             href="{{ route('code') }}"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] group"
             title="Code"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+                <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
+                <path class="code-bracket-left" stroke-linecap="round" stroke-linejoin="round" d="M6.75 17.25L1.5 12l5.25-5.25"/>
+                <path class="code-slash" stroke-linecap="round" stroke-linejoin="round" d="M14.25 3.75l-4.5 16.5"/>
             </svg>
         </a>
 
         <button
             @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
             title="Cowork"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 6h11M9 12h11M9 18h11M5 6l1 1 2-2M5 12l1 1 2-2M5 18l1 1 2-2"/>
+                <path class="cowork-line" d="M9 6h11M9 12h11M9 18h11"/>
+                <path class="cowork-check" d="M5 6l1 1 2-2M5 12l1 1 2-2M5 18l1 1 2-2"/>
             </svg>
         </button>
 
         <button
             @click="activePanel = activePanel === 'design' ? null : 'design'"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'design' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
             title="Design"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
-                <circle cx="7.5" cy="10.5" r="1.5"/>
-                <circle cx="10.5" cy="6.5" r="1.5"/>
-                <circle cx="14.5" cy="6.5" r="1.5"/>
-                <circle cx="17.5" cy="10.5" r="1.5"/>
+                <path class="design-palette" d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
+                <circle class="design-dot-1" cx="7.5" cy="10.5" r="1.5"/>
+                <circle class="design-dot-2" cx="10.5" cy="6.5" r="1.5"/>
+                <circle class="design-dot-3" cx="14.5" cy="6.5" r="1.5"/>
+                <circle class="design-dot-4" cx="17.5" cy="10.5" r="1.5"/>
             </svg>
         </button>
 

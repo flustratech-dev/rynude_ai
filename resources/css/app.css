@@ -132,6 +132,126 @@
     }
 }
 
+/* Sidebar & Micro Animations */
+.sidebar-line-shift { transition: transform 0.3s ease; }
+.group:hover .sidebar-line-shift {
+    transform: translateX(-2px);
+}
+
+.group:hover .chat-bubble-1 {
+    animation: chat-bounce 0.8s ease infinite;
+}
+.group:hover .chat-bubble-2 {
+    animation: chat-bounce 0.8s ease infinite 0.2s;
+}
+@keyframes chat-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+
+.group:hover .project-arrow {
+    animation: arrow-bounce 1s ease infinite;
+}
+@keyframes arrow-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.group:hover .artifact-triangle {
+    animation: spin-slow 3s linear infinite;
+    transform-origin: center;
+}
+.group:hover .artifact-circle {
+    animation: pulse-slow 2s ease infinite;
+    transform-origin: center;
+}
+.group:hover .artifact-square {
+    animation: wiggle 2s ease infinite;
+    transform-origin: center;
+}
+@keyframes spin-slow { 100% { transform: rotate(360deg); } }
+@keyframes pulse-slow { 50% { transform: scale(1.2); } }
+@keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+.group:hover .customize-gear {
+    animation: spin-slow 4s linear infinite;
+    transform-origin: center;
+}
+
+.code-bracket-left, .code-bracket-right, .code-slash {
+    transition: transform 0.3s ease;
+}
+.group:hover .code-bracket-left {
+    transform: translateX(-3px);
+}
+.group:hover .code-bracket-right {
+    transform: translateX(3px);
+}
+.group:hover .code-slash {
+    transform: rotate(15deg);
+    transform-origin: center;
+}
+
+.cowork-line { transition: transform 0.3s ease; }
+.group:hover .cowork-check {
+    animation: wiggle-check 0.5s ease;
+    transform-origin: center;
+}
+.group:hover .cowork-line {
+    transform: translateX(2px);
+}
+@keyframes wiggle-check {
+    0%, 100% { transform: rotate(0) scale(1); }
+    50% { transform: rotate(-15deg) scale(1.2); }
+}
+
+.group:hover .design-palette {
+    animation: wiggle 2s ease infinite;
+    transform-origin: center;
+}
+.group:hover .design-dot-1 { animation: pop 1s ease infinite; transform-origin: center; }
+.group:hover .design-dot-2 { animation: pop 1s ease infinite 0.2s; transform-origin: center; }
+.group:hover .design-dot-3 { animation: pop 1s ease infinite 0.4s; transform-origin: center; }
+.group:hover .design-dot-4 { animation: pop 1s ease infinite 0.6s; transform-origin: center; }
+@keyframes pop { 50% { transform: scale(1.5); } }
+
+/* Blinking Cursor & Code Block */
+.cursor-blink, [wire\:stream="message-stream"]::after {
+    animation: blink 1s step-end infinite;
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background-color: #D97757;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+[wire\:stream="message-stream"]::after {
+    content: '';
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.code-block-enter {
+    animation: slide-up-fade 0.4s ease forwards;
+}
+@keyframes slide-up-fade {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.copy-pop {
+    animation: pop-scale 0.3s ease;
+}
+@keyframes pop-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
 @layer utilities {
     .shadow-glow {
         box-shadow: 0 0 15px -3px rgba(0, 0, 0, 0.05), 0 0 6px -2px rgba(0, 0, 0, 0.025);
