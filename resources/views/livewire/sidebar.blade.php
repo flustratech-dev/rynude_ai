@@ -235,7 +235,7 @@
                             {{ auth()->user()->email }}
                         </div>
                         <button
-                            @click="profileMenuOpen = false; setTimeout(() => $wire.openSettingsModal('general'), 10);"
+                            @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'general' }));"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
@@ -297,7 +297,7 @@
                         </button>
                         <div class="border-t border-gray-100 dark:border-stone-800 my-1"></div>
                         <button
-                            @click="profileMenuOpen = false; setTimeout(() => $wire.openSettingsModal('billing'), 10);"
+                            @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'billing' }));"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">

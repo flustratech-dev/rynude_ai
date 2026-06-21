@@ -40,7 +40,7 @@
             // Cmd/Ctrl + Shift + , → Open settings
             if (e.key === ',' && e.shiftKey) {
                 e.preventDefault();
-                Livewire.dispatch('open-settings-modal');
+                window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'general' }));
                 return;
             }
             // Cmd/Ctrl + / → Show shortcuts reference

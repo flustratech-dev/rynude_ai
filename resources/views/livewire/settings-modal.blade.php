@@ -1,5 +1,5 @@
 <div
-    x-data="{ open: $wire.entangle('isOpen') }"
+    x-data="{ open: $wire.entangle('isOpen'), activeTab: $wire.entangle('activeTab') }"
     x-init="
         $watch('open', value => {
             if (value) {
@@ -9,7 +9,8 @@
             }
         });
     "
-    @keydown.escape.window="open = false; $wire.closeModal()"
+    @keydown.escape.window="open = false"
+    @open-settings-ui.window="open = true; activeTab = $event.detail || 'general'"
     x-show="open"
     x-cloak
     class="fixed inset-0 z-50"
@@ -25,7 +26,7 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         class="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
-        @click="$wire.closeModal()"
+        @click="open = false"
     ></div>
 
     {{-- Modal Container --}}
@@ -40,7 +41,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            @click.away="$wire.closeModal()"
+            @click.away="open = false"
             class="bg-claude-bg-light dark:bg-claude-bg-dark w-full max-w-[900px] h-[95vh] md:h-[85vh] max-h-[700px] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden border border-claude-border-light dark:border-claude-border-dark relative"
         >
             {{-- Modal Sidebar (Tabs) --}}
@@ -77,10 +78,11 @@
 
                 @foreach($navItems as $item)
                     <button
-                        wire:click="switchTab('{{ $item['id'] }}')"
-                        class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap {{ $activeTab === $item['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200' }}"
+                        @click="activeTab = '{{ $item['id'] }}'"
+                        class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap"
+                        :class="activeTab === '{{ $item['id'] }}' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
                     >
-                        <svg class="w-[18px] h-[18px] flex-shrink-0 {{ $activeTab === $item['id'] ? 'text-[#2D2825] dark:text-stone-200' : 'text-[#6B6B6B] dark:text-stone-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-[18px] h-[18px] flex-shrink-0" :class="activeTab === '{{ $item['id'] }}' ? 'text-[#2D2825] dark:text-stone-200' : 'text-[#6B6B6B] dark:text-stone-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {!! $item['icon'] !!}
                         </svg>
                         <span>{{ $item['label'] }}</span>
@@ -92,7 +94,7 @@
             <div class="flex-1 bg-claude-bg-light dark:bg-claude-bg-dark p-6 md:p-10 overflow-y-auto relative">
                 {{-- Close Button --}}
                 <button
-                    @click="$wire.closeModal()"
+                    @click="open = false"
                     class="absolute top-6 right-6 z-10 p-1.5 rounded-lg text-gray-500 dark:text-stone-400 hover:text-gray-800 dark:hover:text-stone-200 transition-colors"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -101,7 +103,7 @@
                 </button>
 
                 {{-- ========== GENERAL TAB ========== --}}
-                <div x-show="$wire.activeTab === 'general'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     
                     {{-- Profile Section --}}
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Profile</h2>
@@ -192,7 +194,7 @@
                 </div>
 
                 {{-- ========== APPEARANCE TAB ========== --}}
-                <div x-show="$wire.activeTab === 'appearance'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'appearance'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Appearance</h2>
 
                     <div class="space-y-8">
@@ -253,7 +255,7 @@
                 </div>
 
                 {{-- ========== DATA & PRIVACY TAB ========== --}}
-                <div x-show="$wire.activeTab === 'data'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'data'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Data & Privacy</h2>
 
                     @if (session()->has('dataMessage'))
@@ -293,7 +295,7 @@
                 </div>
 
                 {{-- ========== SHORTCUTS TAB ========== --}}
-                <div x-show="$wire.activeTab === 'shortcuts'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'shortcuts'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Keyboard Shortcuts</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
                         @php
@@ -322,7 +324,7 @@
                 </div>
 
                 {{-- ========== API KEYS TAB ========== --}}
-                <div x-show="$wire.activeTab === 'api-keys'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'api-keys'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">API Keys & Quota</h2>
                     
                     <div class="space-y-6">
@@ -401,7 +403,7 @@
                 </div>
 
                 {{-- ========== ACCOUNT TAB ========== --}}
-                <div x-show="$wire.activeTab === 'account'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'account'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Account</h2>
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
@@ -419,7 +421,7 @@
                 </div>
 
                 {{-- ========== PRIVACY TAB ========== --}}
-                <div x-show="$wire.activeTab === 'privacy'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'privacy'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Privacy</h2>
                     <div class="space-y-8">
                         <div>
@@ -447,7 +449,7 @@
                 </div>
 
                 {{-- ========== BILLING TAB ========== --}}
-                <div x-show="$wire.activeTab === 'billing'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'billing'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Billing</h2>
 
                     {{-- Real usage --}}
@@ -520,7 +522,7 @@
                 </div>
 
                 {{-- ========== CAPABILITIES TAB ========== --}}
-                <div x-show="$wire.activeTab === 'capabilities'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'capabilities'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Capabilities</h2>
                     <div class="space-y-8">
                         <div>
@@ -563,7 +565,7 @@
                 </div>
 
                 {{-- ========== CONNECTORS TAB ========== --}}
-                <div x-show="$wire.activeTab === 'connectors'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'connectors'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Connectors</h2>
                     <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Connect Rynude to your tools to let it read context and perform actions on your behalf.</p>
                     
@@ -602,7 +604,7 @@
                 </div>
 
                 {{-- ========== HUGGING FACE TAB ========== --}}
-                <div x-show="$wire.activeTab === 'huggingface'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'huggingface'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Hugging Face Serverless</h2>
                     
                     <div class="space-y-6">
@@ -668,7 +670,7 @@
                 </div>
 
                 {{-- ========== AI MODELS TAB ========== --}}
-                <div x-show="$wire.activeTab === 'models'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'models'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200">AI Models Management</h2>
                         <button wire:click="createModel" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">+ Add Model</button>
@@ -717,7 +719,7 @@
                 </div>
 
                 {{-- ========== RYNUDE CODE TAB ========== --}}
-                <div x-show="$wire.activeTab === 'claude-code'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div x-show="activeTab === 'claude-code'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Rynude Code</h2>
                     <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Rynude Code is an AI coding assistant that lives in your terminal. It understands your codebase and helps you write code faster.</p>
                     
@@ -751,8 +753,8 @@
                 </div>
 
                 {{-- Fallback for any unknown tabs --}}
-                <div x-show="!['general', 'appearance', 'data', 'shortcuts', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code', 'huggingface'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
-                    Content for <span x-text="$wire.activeTab" class="ml-1 font-medium text-gray-600 dark:text-stone-300"></span> will go here.
+                <div x-show="!['general', 'appearance', 'data', 'shortcuts', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code', 'huggingface'].includes(activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
+                    Content for <span x-text="activeTab" class="ml-1 font-medium text-gray-600 dark:text-stone-300"></span> will go here.
                 </div>
 
                 <!-- Create/Edit Modal overlay (Global) -->
