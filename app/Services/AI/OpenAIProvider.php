@@ -174,6 +174,7 @@ class OpenAIProvider implements LLMProviderInterface
                     'model' => $model,
                     'messages' => $openAiMessages,
                     'stream' => true,
+                    'max_tokens' => 4096,
                 ],
                 'stream' => true,
                 'verify' => false,
