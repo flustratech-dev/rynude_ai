@@ -107,7 +107,7 @@
 
                 {{-- Right Column: Chats --}}
                 <div class="lg:w-[360px] flex flex-col">
-                    <button wire:click="startNewChatInProject" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#2D2825] dark:bg-stone-100 text-white dark:text-stone-900 text-[14px] font-medium hover:bg-black dark:hover:bg-white transition-colors active:scale-95 shadow-sm mb-6">
+                    <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChatInProject" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#2D2825] dark:bg-stone-100 text-white dark:text-stone-900 text-[14px] font-medium hover:bg-black dark:hover:bg-white transition-colors active:scale-95 shadow-sm mb-6">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                         New chat in project
                     </button>
@@ -125,7 +125,7 @@
                         @else
                             <div class="space-y-1">
                                 @foreach($projectChats as $chat)
-                                    <button wire:click="openProjectChat({{ $chat['id'] }})" class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 text-left transition-colors group">
+                                    <button @click="activePanel = null; artifactPanelOpen = false" wire:click="openProjectChat({{ $chat['id'] }})" class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 text-left transition-colors group">
                                         <div class="flex items-center gap-2 truncate">
                                             <svg class="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.43 3 11.996c0 2.29.81 4.385 2.146 6.012.35.433.52 1.016.326 1.547l-.547 1.492c-.22.602.32 1.196.903.953l1.838-.76c.46-.191.98-.18 1.433.025.753.338 1.58.534 2.451.534z"/></svg>
                                             <span class="text-[13px] text-[#1a1a1a] dark:text-stone-200 truncate">{{ $chat['title'] ?? 'Untitled chat' }}</span>

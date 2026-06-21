@@ -74,6 +74,7 @@
                 
                 {{-- Close panel button --}}
                 <button
+                    @click="artifactPanelOpen = false"
                     wire:click="closeArtifact"
                     class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 flex items-center justify-center hover:text-stone-800 dark:hover:text-stone-300"
                     title="Close"

@@ -7,7 +7,7 @@
     <div x-show="open" x-cloak class="h-full flex flex-col">
         {{-- Top Header --}}
         <div class="flex items-center justify-between px-3 py-2.5 mt-0.5">
-            <button wire:click="startNewChat()" class="font-serif text-[20px] font-medium text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
+            <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="font-serif text-[20px] font-medium text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
             <div class="flex items-center gap-1">
                 <button class="p-1 text-gray-400 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">
                     <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -46,7 +46,7 @@
             </button>
             @endif
 
-            <button wire:click="startNewChat()" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors">
+            <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors">
                 <div class="w-[20px] h-[20px] flex items-center justify-center bg-[#E5E5E5] dark:bg-stone-700 rounded-full text-gray-600 dark:text-stone-300">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -167,6 +167,7 @@
                     @foreach($items as $conversation)
                         <div class="relative group flex items-center w-full rounded-lg transition-colors {{ $selectedConversation === $conversation['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-gray-700 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200' }}">
                             <button
+                                @click="activePanel = null; artifactPanelOpen = false"
                                 wire:click="selectConversation({{ $conversation['id'] }})"
                                 class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
                             >
@@ -416,7 +417,7 @@
         </button>
         @endif
 
-        <button wire:click="startNewChat()" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center" title="New chat">
+        <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center" title="New chat">
             <div class="w-6 h-6 flex items-center justify-center bg-[#E5E5E5] dark:bg-stone-700 rounded-full text-gray-600 dark:text-stone-300">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
             </div>

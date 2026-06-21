@@ -30,7 +30,7 @@
                         <span class="hidden sm:inline">Select chats</span>
                         <span class="sm:hidden">Select</span>
                     </button>
-                    <button wire:click="startNewChat()" class="px-3 sm:px-4 py-2 rounded-xl bg-[#2D2825] dark:bg-stone-100 text-white dark:text-stone-900 text-[13px] sm:text-[14px] font-medium hover:bg-black dark:hover:bg-white transition-colors active:scale-95">
+                    <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="px-3 sm:px-4 py-2 rounded-xl bg-[#2D2825] dark:bg-stone-100 text-white dark:text-stone-900 text-[13px] sm:text-[14px] font-medium hover:bg-black dark:hover:bg-white transition-colors active:scale-95">
                         New chat
                     </button>
                 @endif
@@ -64,6 +64,7 @@
                         @foreach($items as $conversation)
                             <div
                                 class="group flex items-center justify-between py-4 border-b border-[#E5E5E5] dark:border-stone-800 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-stone-800/50 transition-colors"
+                                @click="{{ $isSelectMode ? '' : 'activePanel = null; artifactPanelOpen = false' }}"
                                 wire:click="{{ $isSelectMode ? 'toggleChatSelection('.$conversation['id'].')' : 'selectConversation('.$conversation['id'].')' }}"
                             >
                                 <div class="flex items-center flex-1 min-w-0 pr-4">
