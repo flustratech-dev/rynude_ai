@@ -19,19 +19,38 @@ class ProjectsPanel extends Component
     public bool $showCreateForm = false;
     public string $newProjectName = '';
     public string $newProjectDescription = '';
+    public string $newProjectColor = '#D97757';
+    public string $newProjectIcon = '📁';
 
     public ?int $selectedProjectId = null;
     public ?array $selectedProject = null;
-    
+
     // Project View States
     public string $customInstructions = '';
     public $newKnowledgeFiles = [];
     public array $projectFiles = [];
     public array $projectChats = [];
-    
+
     public string $sortBy = 'updated_at';
+    public string $searchQuery = '';
+
+    /** Predefined color palette for project icons. */
+    public array $projectColors = [
+        '#D97757', '#5E72E4', '#11998E', '#E0529C',
+        '#F5A623', '#8B5CF6', '#0EA5E9', '#64748B',
+    ];
+
+    /** Emoji choices for project icons. */
+    public array $projectIcons = [
+        '📁', '🚀', '💡', '📊', '✍️', '🎨', '🔬', '💻', '📚', '🎯',
+    ];
 
     public function mount()
+    {
+        $this->loadProjects();
+    }
+
+    public function updatedSearchQuery()
     {
         $this->loadProjects();
     }
@@ -46,7 +65,18 @@ class ProjectsPanel extends Component
     {
         if (Auth::check()) {
             $query = Auth::user()->projects()->withCount('conversations as chat_count');
-            
+
+            if (!empty(trim($this->searchQuery))) {
+                $search = trim($this->searchQuery);
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            // Starred projects always float to the top.
+            $query->orderByDesc('is_starred');
+
             if ($this->sortBy === 'name') {
                 $query->orderBy('name', 'asc');
             } else {
@@ -59,6 +89,9 @@ class ProjectsPanel extends Component
                         'id' => $project->id,
                         'name' => $project->name,
                         'description' => $project->description,
+                        'color' => $project->color ?: '#D97757',
+                        'icon' => $project->icon ?: '📁',
+                        'is_starred' => (bool) $project->is_starred,
                         'chat_count' => $project->chat_count ?? 0,
                         'created_at' => $project->updated_at->diffForHumans(),
                     ];
@@ -79,6 +112,9 @@ class ProjectsPanel extends Component
                 'id' => $project->id,
                 'name' => $project->name,
                 'description' => $project->description,
+                'color' => $project->color ?: '#D97757',
+                'icon' => $project->icon ?: '📁',
+                'is_starred' => (bool) $project->is_starred,
                 'chat_count' => $project->conversations->count(),
             ];
             $this->customInstructions = $project->custom_instructions ?? '';
@@ -116,14 +152,61 @@ class ProjectsPanel extends Component
         $project = Auth::user()->projects()->create([
             'name' => $this->newProjectName,
             'description' => $this->newProjectDescription,
+            'color' => $this->newProjectColor,
+            'icon' => $this->newProjectIcon,
         ]);
 
         $this->newProjectName = '';
         $this->newProjectDescription = '';
+        $this->newProjectColor = '#D97757';
+        $this->newProjectIcon = '📁';
         $this->showCreateForm = false;
-        
+
         $this->loadProjects();
         $this->selectProject($project->id);
+    }
+
+    public function starProject($id)
+    {
+        $project = Project::where('id', $id)->where('user_id', Auth::id())->first();
+        if ($project) {
+            $project->is_starred = !$project->is_starred;
+            $project->save();
+            $this->loadProjects();
+        }
+    }
+
+    public function duplicateProject($id)
+    {
+        $project = Project::with('files')->where('id', $id)->where('user_id', Auth::id())->first();
+        if (!$project) {
+            return;
+        }
+
+        $copy = Auth::user()->projects()->create([
+            'name' => $project->name . ' (Copy)',
+            'description' => $project->description,
+            'custom_instructions' => $project->custom_instructions,
+            'color' => $project->color,
+            'icon' => $project->icon,
+        ]);
+
+        foreach ($project->files as $file) {
+            $newPath = null;
+            if ($file->file_path && Storage::exists($file->file_path)) {
+                $newPath = 'project_knowledge/' . \Illuminate\Support\Str::random(40);
+                Storage::copy($file->file_path, $newPath);
+            }
+            ProjectFile::create([
+                'project_id' => $copy->id,
+                'file_name' => $file->file_name,
+                'file_path' => $newPath ?? $file->file_path,
+                'mime_type' => $file->mime_type,
+                'size' => $file->size,
+            ]);
+        }
+
+        $this->loadProjects();
     }
 
     public function deleteProject($id)

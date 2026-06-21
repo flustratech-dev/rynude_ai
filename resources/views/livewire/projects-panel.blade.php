@@ -11,7 +11,13 @@
                 <button wire:click="backToList" class="flex items-center justify-center p-2 rounded-lg text-[#2D2825] hover:text-black dark:text-stone-400 dark:hover:text-stone-200 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
                     <svg class="w-5 h-5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
                 </button>
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-[20px] shrink-0" style="background-color: {{ ($selectedProject['color'] ?? '#D97757') }}1A;">
+                    {{ $selectedProject['icon'] ?? '📁' }}
+                </div>
                 <h2 class="font-serif text-[28px] sm:text-[32px] text-[#2D2825] dark:text-stone-200">{{ $selectedProject['name'] }}</h2>
+                <button wire:click="starProject({{ $selectedProject['id'] }})" class="p-1.5 rounded-lg transition-colors {{ ($selectedProject['is_starred'] ?? false) ? 'text-[#F5A623]' : 'text-stone-300 dark:text-stone-600 hover:text-[#F5A623]' }}" title="Star project">
+                    <svg class="w-5 h-5" fill="{{ ($selectedProject['is_starred'] ?? false) ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+                </button>
             </div>
 
             {{-- Main Two-Column Layout --}}
@@ -188,6 +194,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                 </svg>
                 <input
+                    wire:model.live.debounce.300ms="searchQuery"
                     type="text"
                     placeholder="Search projects..."
                     class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-[#2C2A29] text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#D97757]/30 focus:border-[#D97757] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
@@ -218,6 +225,31 @@
                                 placeholder="What is this project about?"
                                 class="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-transparent text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#D97757]/30 focus:border-[#D97757] transition-all resize-none"
                             ></textarea>
+                        </div>
+
+                        {{-- Icon & Color picker --}}
+                        <div class="flex flex-col sm:flex-row gap-6">
+                            <div>
+                                <label class="block text-[13px] font-semibold text-[#1a1a1a] dark:text-stone-300 mb-1.5">Icon</label>
+                                <div class="flex flex-wrap gap-1.5">
+                                    @foreach($projectIcons as $icon)
+                                        <button type="button" wire:click="$set('newProjectIcon', '{{ $icon }}')"
+                                            class="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] border transition-all {{ $newProjectIcon === $icon ? 'border-[#D97757] ring-2 ring-[#D97757]/30 bg-[#D97757]/5' : 'border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800' }}">
+                                            {{ $icon }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[13px] font-semibold text-[#1a1a1a] dark:text-stone-300 mb-1.5">Color</label>
+                                <div class="flex flex-wrap gap-2 items-center h-9">
+                                    @foreach($projectColors as $color)
+                                        <button type="button" wire:click="$set('newProjectColor', '{{ $color }}')"
+                                            class="w-7 h-7 rounded-full transition-all {{ $newProjectColor === $color ? 'ring-2 ring-offset-2 ring-stone-400 dark:ring-offset-[#2C2A29]' : 'hover:scale-110' }}"
+                                            style="background-color: {{ $color }}"></button>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-2 pt-2">
                             <button wire:click="createProject" class="px-4 py-2 rounded-xl bg-[#2D2825] hover:bg-black dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white text-white text-[13px] sm:text-[14px] font-medium transition-colors active:scale-95 shadow-sm">
@@ -256,19 +288,40 @@
                 @elseif(!empty($projects))
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in">
                         @foreach($projects as $project)
-                            <div wire:click="selectProject({{ $project['id'] }})" class="group relative p-5 rounded-2xl bg-white dark:bg-[#2C2A29] border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-500 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md transition-all cursor-pointer">
+                            <div wire:click="selectProject({{ $project['id'] }})" x-data="{ menuOpen: false }" class="group relative p-5 rounded-2xl bg-white dark:bg-[#2C2A29] border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-500 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md transition-all cursor-pointer">
+                                {{-- Star button --}}
                                 <button
-                                    wire:click.stop="deleteProject({{ $project['id'] }})"
-                                    class="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all text-stone-400 hover:text-red-600 dark:hover:text-red-400"
-                                    title="Delete project"
+                                    wire:click.stop="starProject({{ $project['id'] }})"
+                                    class="absolute top-3 right-10 p-1.5 rounded-lg transition-all {{ $project['is_starred'] ? 'text-[#F5A623]' : 'text-stone-300 dark:text-stone-600 opacity-0 group-hover:opacity-100 hover:text-[#F5A623]' }}"
+                                    title="{{ $project['is_starred'] ? 'Unstar project' : 'Star project' }}"
                                 >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
-                                    </svg>
+                                    <svg class="w-4 h-4" fill="{{ $project['is_starred'] ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
                                 </button>
-                                <div class="mb-4">
-                                    <h3 class="text-[15px] font-semibold tracking-tight text-[#1a1a1a] dark:text-stone-200 truncate pr-6">{{ $project['name'] }}</h3>
-                                    <p class="text-[12px] text-stone-500 mt-0.5">Updated {{ $project['created_at'] }}</p>
+
+                                {{-- Options menu --}}
+                                <button @click.stop="menuOpen = !menuOpen" @click.away="menuOpen = false" class="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-stone-100 dark:hover:bg-stone-700 transition-all text-stone-400 hover:text-stone-600 dark:hover:text-stone-300" title="Options">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                </button>
+                                <div x-show="menuOpen" x-cloak style="display:none" class="absolute top-10 right-3 w-40 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-30">
+                                    <button @click.stop="menuOpen = false" wire:click.stop="duplicateProject({{ $project['id'] }})" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        Duplicate
+                                    </button>
+                                    <div class="h-px w-full bg-stone-200 dark:bg-stone-700 my-1"></div>
+                                    <button @click.stop="menuOpen = false; if(confirm('Delete this project?')) { @this.deleteProject({{ $project['id'] }}) }" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        Delete
+                                    </button>
+                                </div>
+
+                                <div class="mb-4 flex items-start gap-3 pr-14">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-[20px] shrink-0" style="background-color: {{ $project['color'] }}1A;">
+                                        {{ $project['icon'] }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h3 class="text-[15px] font-semibold tracking-tight text-[#1a1a1a] dark:text-stone-200 truncate">{{ $project['name'] }}</h3>
+                                        <p class="text-[12px] text-stone-500 mt-0.5">Updated {{ $project['created_at'] }}</p>
+                                    </div>
                                 </div>
                                 <p class="text-[13px] text-stone-600 dark:text-stone-400 line-clamp-2 mb-5 leading-relaxed h-[38px]">{{ $project['description'] ?: 'No description provided.' }}</p>
                                 <div class="flex items-center gap-1.5 text-[12px] text-stone-500 font-medium">

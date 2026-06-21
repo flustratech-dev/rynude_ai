@@ -1,4 +1,4 @@
-<div class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-stone-900 overflow-hidden shadow-2xl md:shadow-none">
+<div class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-stone-900 overflow-hidden shadow-2xl md:shadow-none {{ $fullscreen ? 'fixed inset-0 z-[60] !shadow-2xl' : '' }}">
     @if($isOpen && $currentArtifact)
         {{-- Panel Header --}}
         <div class="px-4 py-3 flex items-center justify-between bg-transparent shrink-0 z-10 relative">
@@ -66,8 +66,34 @@
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         @endif
                     </button>
-                    <button wire:click="downloadAsPdf" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300" title="Download">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    {{-- Download dropdown --}}
+                    <div x-data="{ openDl: false }" class="relative">
+                        <button @click="openDl = !openDl" @click.away="openDl = false" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300 flex items-center gap-0.5" title="Download">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div x-show="openDl" x-cloak x-transition.opacity.duration.200ms style="display: none;" class="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-50">
+                            <button @click="openDl = false" wire:click="downloadAsFile" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                Download as file
+                            </button>
+                            <button @click="openDl = false" wire:click="downloadAsPdf" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                                Download as PDF
+                            </button>
+                            <button @click="openDl = false" wire:click="copyCode" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                Copy all
+                            </button>
+                        </div>
+                    </div>
+                    {{-- Fullscreen toggle --}}
+                    <button wire:click="toggleFullscreen" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300" title="{{ $fullscreen ? 'Exit fullscreen' : 'Fullscreen' }}">
+                        @if($fullscreen)
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
+                        @else
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                        @endif
                     </button>
                     <div class="w-px h-4 bg-[#E5E5E5] dark:bg-stone-700 mx-1 hidden md:block"></div>
                 @endif
@@ -227,14 +253,15 @@
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                             <svg class="w-[18px] h-[18px] text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
-                        <input type="text" placeholder="Search artifacts..." class="block w-full pl-10 pr-3 py-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-stone-600 transition-all shadow-sm">
+                        <input wire:model.live.debounce.300ms="searchQuery" type="text" placeholder="Search artifacts..." class="block w-full pl-10 pr-3 py-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-stone-600 transition-all shadow-sm">
                     </div>
                 </div>
 
-                @if(count($artifacts) > 0)
+                @php $visibleArtifacts = $this->filteredArtifacts; @endphp
+                @if(count($visibleArtifacts) > 0)
                     {{-- Grid of Artifacts --}}
                     <div class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
-                        @foreach($artifacts as $artifact)
+                        @foreach($visibleArtifacts as $artifact)
                             <div class="relative group h-[140px]" x-data="{ menuOpen: false }">
                                 <button
                                     wire:click="openArtifact({{ $artifact['id'] }})"
@@ -276,6 +303,15 @@
                                 </div>
                             </div>
                         @endforeach
+                    </div>
+                @elseif(!empty(trim($searchQuery)))
+                    {{-- No search results --}}
+                    <div class="flex-1 flex flex-col items-center justify-center text-center pb-20">
+                        <div class="w-12 h-12 rounded-2xl bg-[#F3F2F1] dark:bg-stone-800 flex items-center justify-center text-stone-400 mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <h2 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-1">No artifacts found</h2>
+                        <p class="text-[13px] text-gray-500 dark:text-stone-400">No artifacts match "{{ $searchQuery }}".</p>
                     </div>
                 @else
                     {{-- Empty State --}}

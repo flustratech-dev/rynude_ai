@@ -200,24 +200,26 @@ class OpenAIProvider implements LLMProviderInterface
             $buffer = '';
             $fullBody = '';
             $hasDataChunks = false;
-            
+            $inputTokens = 0;
+            $outputTokens = 0;
+
             while (!$body->eof()) {
                 $chunk = $body->read(1024);
                 $buffer .= $chunk;
                 $fullBody .= $chunk;
-                
+
                 while (($pos = strpos($buffer, "\n")) !== false) {
                     $line = substr($buffer, 0, $pos);
                     $buffer = substr($buffer, $pos + 1);
-                    
+
                     $line = trim($line);
                     if (empty($line)) continue;
-                    
+
                     if (str_starts_with($line, 'data: ')) {
                         $hasDataChunks = true;
                         $jsonStr = trim(substr($line, 6));
                         if (empty($jsonStr) || $jsonStr === '[DONE]') continue;
-                        
+
                         $data = json_decode($jsonStr, true);
                         if ($data && isset($data['choices'][0]['delta']['content'])) {
                             yield $data['choices'][0]['delta']['content'];
@@ -225,8 +227,19 @@ class OpenAIProvider implements LLMProviderInterface
                             $errorMsg = is_string($data['error']) ? $data['error'] : ($data['error']['message'] ?? 'Unknown error');
                             yield "\n[Error from API: " . $errorMsg . "]";
                         }
+                        // Some OpenAI-compatible endpoints include a final usage object.
+                        if ($data && isset($data['usage'])) {
+                            $inputTokens = $data['usage']['prompt_tokens'] ?? $inputTokens;
+                            $outputTokens = $data['usage']['completion_tokens'] ?? $outputTokens;
+                        }
                     }
                 }
+            }
+
+            // Record any usage the endpoint reported.
+            if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
+                $providerLabel = $isHuggingFace ? 'huggingface' : ($isProxy ? 'proxy' : 'openai');
+                \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens);
             }
 
             // Fallback: If no streaming chunks were received, maybe the API returned a flat JSON object

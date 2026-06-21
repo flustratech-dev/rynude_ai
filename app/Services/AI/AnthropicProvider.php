@@ -168,8 +168,9 @@ class AnthropicProvider implements LLMProviderInterface
                 }
             }
             
-            // Deduct tokens
+            // Deduct tokens and record usage
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
+                \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
             }
             

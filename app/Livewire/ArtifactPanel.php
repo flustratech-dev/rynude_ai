@@ -13,6 +13,8 @@ class ArtifactPanel extends Component
     public $copied = false;
     public $activeTab = 'code'; // 'code' or 'preview'
     public $versions = [];
+    public $fullscreen = false;
+    public $searchQuery = '';
 
     public function mount()
     {
@@ -159,6 +161,58 @@ class ArtifactPanel extends Component
                 echo $pdf->stream();
             }, $filename);
         }
+    }
+
+    public function toggleFullscreen()
+    {
+        $this->fullscreen = !$this->fullscreen;
+    }
+
+    /**
+     * Map an artifact language to a real file extension.
+     */
+    private function extensionForLanguage(string $language): string
+    {
+        $map = [
+            'html' => 'html', 'javascript' => 'js', 'js' => 'js', 'jsx' => 'jsx',
+            'typescript' => 'ts', 'ts' => 'ts', 'tsx' => 'tsx', 'react' => 'jsx',
+            'python' => 'py', 'py' => 'py', 'php' => 'php', 'css' => 'css',
+            'json' => 'json', 'markdown' => 'md', 'md' => 'md', 'svg' => 'svg',
+            'sql' => 'sql', 'java' => 'java', 'go' => 'go', 'rust' => 'rs',
+            'ruby' => 'rb', 'c' => 'c', 'cpp' => 'cpp', 'csharp' => 'cs',
+            'bash' => 'sh', 'shell' => 'sh', 'yaml' => 'yaml', 'xml' => 'xml',
+        ];
+
+        return $map[strtolower($language)] ?? 'txt';
+    }
+
+    public function downloadAsFile()
+    {
+        if (!$this->currentArtifact) {
+            return;
+        }
+
+        $ext = $this->extensionForLanguage($this->currentArtifact['language'] ?? 'txt');
+        $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'artifact') . '.' . $ext;
+        $content = $this->currentArtifact['content'] ?? '';
+
+        return response()->streamDownload(function () use ($content) {
+            echo $content;
+        }, $filename, ['Content-Type' => 'text/plain; charset=utf-8']);
+    }
+
+    public function getFilteredArtifactsProperty(): array
+    {
+        if (empty(trim($this->searchQuery))) {
+            return $this->artifacts;
+        }
+
+        $search = strtolower(trim($this->searchQuery));
+
+        return array_values(array_filter($this->artifacts, function ($a) use ($search) {
+            return str_contains(strtolower($a['title'] ?? ''), $search)
+                || str_contains(strtolower($a['language'] ?? ''), $search);
+        }));
     }
 
     public function render()

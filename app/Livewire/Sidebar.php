@@ -52,12 +52,17 @@ class Sidebar extends Component
     public function loadConversations()
     {
         $userId = auth()->id();
-        $query = \App\Models\Conversation::query();
+        $query = \App\Models\Conversation::query()->whereNull('archived_at');
         if ($userId) {
             $query->where('user_id', $userId);
         }
-        
-        $conversations = $query->orderByDesc('updated_at')->take(30)->get()->map(function($c) {
+
+        $search = trim($this->searchQuery);
+        if ($search !== '') {
+            $query->where('title', 'like', '%' . $search . '%');
+        }
+
+        $conversations = $query->orderByDesc('updated_at')->take($search !== '' ? 100 : 30)->get()->map(function($c) {
             return [
                 'id' => $c->id,
                 'title' => $c->title ?? 'New Chat',
@@ -72,6 +77,11 @@ class Sidebar extends Component
         }
         
         $this->flattenConversations();
+    }
+
+    public function updatedSearchQuery()
+    {
+        $this->loadConversations();
     }
 
     private function determineGroup($date)

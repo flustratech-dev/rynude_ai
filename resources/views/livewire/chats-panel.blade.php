@@ -6,6 +6,9 @@
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                 @if($isSelectMode)
                     @if(count($selectedChats) > 0)
+                        <button wire:click="archiveSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors bg-white dark:bg-stone-900 active:scale-95">
+                            {{ $showArchived ? 'Unarchive' : 'Archive' }} ({{ count($selectedChats) }})
+                        </button>
                         <button wire:click="deleteSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-red-200 text-[13px] sm:text-[14px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors bg-white dark:bg-stone-900 active:scale-95">
                             Delete ({{ count($selectedChats) }})
                         </button>
@@ -14,6 +17,10 @@
                         Cancel
                     </button>
                 @else
+                    <button wire:click="toggleShowArchived()" class="px-3 sm:px-4 py-2 rounded-xl border text-[13px] sm:text-[14px] font-medium transition-colors active:scale-95 {{ $showArchived ? 'border-[#D97757] text-[#D97757] bg-[#D97757]/5' : 'border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-stone-800 bg-white dark:bg-stone-900' }}">
+                        <span class="hidden sm:inline">{{ $showArchived ? 'Active chats' : 'Archived' }}</span>
+                        <span class="sm:hidden">{{ $showArchived ? 'Active' : 'Archive' }}</span>
+                    </button>
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" @click.away="open = false" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] text-gray-500 dark:text-stone-400 hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors bg-white dark:bg-stone-900 active:scale-95">
                             <span class="hidden sm:inline">Filter by <strong class="font-medium text-[#2D2825] dark:text-stone-200">{{ $filterType === 'all' ? 'All' : ($filterType === 'today' ? 'Today' : 'Past 7 days') }}</strong></span>
@@ -61,23 +68,80 @@
             @else
                 <div class="flex flex-col">
                     @foreach($grouped as $period => $items)
+                        <div class="text-[12px] font-semibold text-gray-400 dark:text-stone-500 uppercase tracking-wider pt-5 pb-2">{{ $period }}</div>
                         @foreach($items as $conversation)
                             <div
-                                class="group flex items-center justify-between py-4 border-b border-[#E5E5E5] dark:border-stone-800 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-stone-800/50 transition-colors"
-                                @click="{{ $isSelectMode ? '' : 'activePanel = null; artifactPanelOpen = false' }}"
-                                wire:click="{{ $isSelectMode ? 'toggleChatSelection('.$conversation['id'].')' : 'selectConversation('.$conversation['id'].')' }}"
+                                class="group flex items-center justify-between py-4 border-b border-[#E5E5E5] dark:border-stone-800 hover:bg-gray-50/50 dark:hover:bg-stone-800/50 transition-colors"
+                                x-data="{ menuOpen: false }"
                             >
-                                <div class="flex items-center flex-1 min-w-0 pr-4">
-                                    @if($isSelectMode)
-                                        <div class="mr-3 w-5 h-5 rounded border flex-shrink-0 {{ in_array($conversation['id'], $selectedChats) ? 'bg-[#2D2825] border-[#2D2825] text-white dark:bg-stone-200 dark:border-stone-200 dark:text-stone-900' : 'border-gray-300 dark:border-stone-600 bg-white dark:bg-stone-800' }} flex items-center justify-center transition-colors">
-                                            @if(in_array($conversation['id'], $selectedChats))
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                @if($renamingId === $conversation['id'])
+                                    {{-- Inline rename --}}
+                                    <div class="flex items-center flex-1 gap-2 pr-4" @click.stop>
+                                        <input
+                                            type="text"
+                                            wire:model="renameTitle"
+                                            wire:keydown.enter="renameConversation({{ $conversation['id'] }})"
+                                            wire:keydown.escape="cancelRename"
+                                            autofocus
+                                            class="flex-1 px-3 py-1.5 rounded-lg border border-[#D97757] bg-white dark:bg-stone-800 text-[14.5px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-[#D97757]/20"
+                                        >
+                                        <button wire:click="renameConversation({{ $conversation['id'] }})" class="px-3 py-1.5 rounded-lg bg-[#2D2825] dark:bg-stone-200 text-white dark:text-stone-900 text-[13px] font-medium">Save</button>
+                                        <button wire:click="cancelRename" class="px-3 py-1.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 text-[13px] font-medium text-stone-500">Cancel</button>
+                                    </div>
+                                @else
+                                    <div
+                                        class="flex items-center flex-1 min-w-0 pr-4 cursor-pointer"
+                                        @click="{{ $isSelectMode ? '' : 'activePanel = null; artifactPanelOpen = false' }}"
+                                        wire:click="{{ $isSelectMode ? 'toggleChatSelection('.$conversation['id'].')' : 'selectConversation('.$conversation['id'].')' }}"
+                                    >
+                                        @if($isSelectMode)
+                                            <div class="mr-3 w-5 h-5 rounded border flex-shrink-0 {{ in_array($conversation['id'], $selectedChats) ? 'bg-[#2D2825] border-[#2D2825] text-white dark:bg-stone-200 dark:border-stone-200 dark:text-stone-900' : 'border-gray-300 dark:border-stone-600 bg-white dark:bg-stone-800' }} flex items-center justify-center transition-colors">
+                                                @if(in_array($conversation['id'], $selectedChats))
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        <div class="min-w-0">
+                                            <span class="text-[14.5px] font-medium text-[#2D2825] dark:text-stone-200 truncate block">{{ $conversation['title'] }}</span>
+                                            @if(!empty($conversation['preview']))
+                                                <span class="text-[13px] text-gray-400 dark:text-stone-500 truncate block mt-0.5">{{ $conversation['preview'] }}</span>
                                             @endif
                                         </div>
-                                    @endif
-                                    <span class="text-[14.5px] font-medium text-[#2D2825] dark:text-stone-200 truncate">{{ $conversation['title'] }}</span>
-                                </div>
-                                <span class="text-[13.5px] text-gray-400 dark:text-stone-500 flex-shrink-0">{{ $conversation['updated_at'] }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <span class="text-[13.5px] text-gray-400 dark:text-stone-500">{{ $conversation['updated_at'] }}</span>
+                                        @unless($isSelectMode)
+                                            <div class="relative">
+                                                <button @click.stop="menuOpen = !menuOpen" @click.away="menuOpen = false" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 opacity-0 group-hover:opacity-100 transition-all" title="Options">
+                                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                </button>
+                                                <div x-show="menuOpen" x-cloak x-transition.opacity class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-50">
+                                                    <button @click.stop="menuOpen = false" wire:click="startRename({{ $conversation['id'] }})" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                        Rename
+                                                    </button>
+                                                    <button @click.stop="menuOpen = false" wire:click="archiveConversation({{ $conversation['id'] }})" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                                                        {{ $conversation['archived'] ? 'Unarchive' : 'Archive' }}
+                                                    </button>
+                                                    <button @click.stop="menuOpen = false" wire:click="exportConversation({{ $conversation['id'] }}, 'md')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                        Export Markdown
+                                                    </button>
+                                                    <button @click.stop="menuOpen = false" wire:click="exportConversation({{ $conversation['id'] }}, 'json')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-[#F9F8F6] dark:hover:bg-stone-700 flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                        Export JSON
+                                                    </button>
+                                                    <div class="h-px w-full bg-[#E5E5E5] dark:bg-stone-700 my-1"></div>
+                                                    <button @click.stop="menuOpen = false; if(confirm('Delete this chat?')) { @this.deleteConversation({{ $conversation['id'] }}) }" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endunless
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     @endforeach

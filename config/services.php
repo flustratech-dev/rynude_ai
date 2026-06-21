@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'google' => [
+        'key' => env('GOOGLE_API_KEY'),
+    ],
+
+    'mistral' => [
+        'key' => env('MISTRAL_API_KEY'),
+    ],
+
 ];

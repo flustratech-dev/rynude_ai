@@ -38,8 +38,10 @@ class ChatInterface extends Component
         $useProxy = $user && $user->use_proxy && !empty($user->proxy_base_url);
         $hasNineRouter = $user && !empty($user->nine_router_api_key);
         $hasHuggingFace = $user && !empty($user->huggingface_api_key);
+        $hasGoogle = $user && !empty($user->google_api_key);
+        $hasMistral = $user && !empty($user->mistral_api_key);
         
-        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace;
+        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace || $hasGoogle || $hasMistral;
 
         $this->models = [
             (object)[
@@ -80,6 +82,10 @@ class ChatInterface extends Component
             } elseif ($useProxy || $hasNineRouter) {
                 $is_available = true;
             } elseif ($model->provider === 'huggingface' && $hasHuggingFace) {
+                $is_available = true;
+            } elseif ($model->provider === 'google' && $hasGoogle) {
+                $is_available = true;
+            } elseif ($model->provider === 'mistral' && $hasMistral) {
                 $is_available = true;
             } elseif ($isAnthropic && $hasAnthropic) {
                 $is_available = true;
@@ -136,6 +142,7 @@ class ChatInterface extends Component
                 $this->messages[] = [
                     'role' => $msg->role,
                     'content' => $msg->content,
+                    'rating' => $msg->rating,
                     'artifact' => $artifactData,
                     'attachment' => $attachmentData,
                 ];
@@ -199,6 +206,69 @@ class ChatInterface extends Component
     public function removeAttachment()
     {
         $this->attachment = null;
+    }
+
+    /**
+     * Signal the running stream to stop. The cache flag is polled inside
+     * generateResponse(). This works even mid-stream because Laravel's session
+     * does not block concurrent requests for the same user.
+     */
+    public function stopGeneration()
+    {
+        if ($this->conversationId) {
+            \Illuminate\Support\Facades\Cache::put('chat_stop_' . $this->conversationId, true, 120);
+        }
+    }
+
+    /**
+     * Edit a previous user message: pull its content back into the input and
+     * drop that message (and everything after it) so the user can resend.
+     */
+    public function editMessage($index)
+    {
+        if (!isset($this->messages[$index]) || $this->messages[$index]['role'] !== 'user') {
+            return;
+        }
+
+        $content = $this->messages[$index]['content'];
+
+        if ($this->conversationId) {
+            $dbMessages = Message::where('conversation_id', $this->conversationId)
+                ->orderBy('id')
+                ->get();
+            foreach ($dbMessages->slice($index) as $dbMsg) {
+                MessageArtifact::where('message_id', $dbMsg->id)->delete();
+                $dbMsg->delete();
+            }
+        }
+
+        $this->messages = array_slice($this->messages, 0, $index);
+        $this->prompt = $content;
+        $this->dispatch('focusPromptInput');
+    }
+
+    /**
+     * Toggle a thumbs up/down rating on an assistant message.
+     */
+    public function rateMessage($index, $rating)
+    {
+        if (!isset($this->messages[$index]) || $this->messages[$index]['role'] !== 'assistant') {
+            return;
+        }
+
+        // Toggle off if the same rating is clicked again
+        $current = $this->messages[$index]['rating'] ?? null;
+        $newRating = $current === $rating ? null : $rating;
+        $this->messages[$index]['rating'] = $newRating;
+
+        if ($this->conversationId) {
+            $dbMessages = Message::where('conversation_id', $this->conversationId)
+                ->orderBy('id')
+                ->get();
+            if (isset($dbMessages[$index]) && $dbMessages[$index]->role === 'assistant') {
+                $dbMessages[$index]->update(['rating' => $newRating]);
+            }
+        }
     }
 
     #[On('sendPromptFromArtifact')]
@@ -349,12 +419,24 @@ class ChatInterface extends Component
             'content' => $baseSystemPrompt,
         ]);
 
+        // Clear any stale stop flag before we begin streaming
+        $stopKey = 'chat_stop_' . $this->conversationId;
+        \Illuminate\Support\Facades\Cache::forget($stopKey);
+
         // Call AI Service
         $aiService = new AiService();
         $stream = $aiService->streamResponse($messagesForAi, $this->selectedModel ?? 'claude-haiku-4-5');
 
         $fullResponse = '';
+        $stopped = false;
         foreach ($stream as $chunk) {
+            // Stop generation requested by the user
+            if (\Illuminate\Support\Facades\Cache::get($stopKey)) {
+                \Illuminate\Support\Facades\Cache::forget($stopKey);
+                $stopped = true;
+                break;
+            }
+
             $fullResponse .= $chunk;
             
             $displayContent = $fullResponse;
@@ -385,6 +467,11 @@ class ChatInterface extends Component
                 content: $htmlDisplay,
                 replace: true
             );
+        }
+
+        // If the user stopped an empty generation, store a small placeholder
+        if ($stopped && trim($fullResponse) === '') {
+            $fullResponse = '_Generation stopped._';
         }
 
         // After stream is done, parse artifact if present

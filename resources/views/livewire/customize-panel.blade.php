@@ -13,6 +13,10 @@
                 <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                 Skills
             </button>
+            <button wire:click="openTemplates" class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors {{ $activeTab === 'templates' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-200 hover:bg-[#EAE9E5] dark:hover:bg-stone-800' }}">
+                <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Templates
+            </button>
             <button wire:click="$set('activeTab', 'dashboard')" class="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#2D2825] dark:text-stone-200 rounded-lg hover:bg-[#EAE9E5] dark:hover:bg-stone-800 transition-colors">
                 <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 Connectors
@@ -77,14 +81,14 @@
                         </div>
                     </button>
                     
-                    {{-- Browse plugins --}}
-                    <button class="w-full flex items-center gap-5 p-5 bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                    {{-- Start from a template --}}
+                    <button wire:click="openTemplates" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
                         <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v6M12 16v6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M16 12h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"></path></svg>
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                         </div>
                         <div>
-                            <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Browse plugins</h3>
-                            <p class="text-[13.5px] text-stone-500 mt-0.5">Add pre-built knowledge for your field.</p>
+                            <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Start from a template</h3>
+                            <p class="text-[13.5px] text-stone-500 mt-0.5">Pick a pre-built skill and customize it in seconds.</p>
                         </div>
                     </button>
                 </div>
@@ -94,18 +98,28 @@
             <div class="max-w-[700px] w-full flex flex-col h-full items-start justify-start py-8">
                 <div class="flex items-center justify-between w-full mb-8">
                     <h1 class="font-serif text-[28px] font-medium text-[#2D2825] dark:text-stone-200">Skills</h1>
-                    <button wire:click="openCreateSkill" class="px-4 py-2 bg-[#2D2825] hover:bg-black text-white dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white rounded-xl text-sm font-medium transition-colors shadow-sm">
-                        Create skill
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button wire:click="openTemplates" class="px-4 py-2 bg-white border border-[#E5E5E5] dark:bg-stone-800 dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 rounded-xl text-sm font-medium transition-colors shadow-sm">
+                            Templates
+                        </button>
+                        <button wire:click="openCreateSkill" class="px-4 py-2 bg-[#2D2825] hover:bg-black text-white dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white rounded-xl text-sm font-medium transition-colors shadow-sm">
+                            Create skill
+                        </button>
+                    </div>
                 </div>
                 
                 @if(count($skills) > 0)
                     <div class="w-full space-y-3">
                         @foreach($skills as $skill)
                             <div class="w-full p-4 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-sm flex items-center justify-between">
-                                <div>
-                                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">{{ $skill['name'] }}</h3>
-                                    <p class="text-[13px] text-stone-500 mt-1 line-clamp-1">{{ $skill['description'] ?: 'No description provided.' }}</p>
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-xl bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-[20px] shrink-0">
+                                        {{ $skill['icon'] ?? '🛠️' }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 truncate">{{ $skill['name'] }}</h3>
+                                        <p class="text-[13px] text-stone-500 mt-1 line-clamp-1">{{ $skill['description'] ?: 'No description provided.' }}</p>
+                                    </div>
                                 </div>
                                 <div class="flex items-center gap-4">
                                     <label class="relative inline-flex items-center cursor-pointer">
@@ -133,6 +147,37 @@
                 @endif
             </div>
 
+        @elseif($activeTab === 'templates')
+            <div class="max-w-[760px] w-full flex flex-col h-full items-start justify-start py-8">
+                <button wire:click="openSkillsList" class="flex items-center gap-2 text-stone-500 hover:text-stone-800 text-sm font-medium mb-6 transition-colors">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Back to Skills
+                </button>
+
+                <h1 class="font-serif text-[28px] font-medium text-[#2D2825] dark:text-stone-200 mb-2">Skill templates</h1>
+                <p class="text-[14px] text-stone-500 mb-8">Start from a pre-built skill and tweak the instructions to fit your needs.</p>
+
+                <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    @foreach($skillTemplates as $index => $template)
+                        <div class="p-5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shadow-sm flex flex-col">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-xl bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-[20px] shrink-0">
+                                    {{ $template['icon'] }}
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 truncate">{{ $template['name'] }}</h3>
+                                    <span class="text-[11px] font-medium text-stone-500 uppercase tracking-wider">{{ $template['category'] }}</span>
+                                </div>
+                            </div>
+                            <p class="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed mb-4 flex-1">{{ $template['description'] }}</p>
+                            <button wire:click="useTemplate({{ $index }})" class="w-full py-2 px-3 bg-[#2D2825] hover:bg-black text-white dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white rounded-lg text-[13px] font-medium transition-colors shadow-sm">
+                                Use this template
+                            </button>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
         @elseif($activeTab === 'create_skill')
             <div class="max-w-[700px] w-full flex flex-col h-full items-start justify-start py-8">
                 <button wire:click="openSkillsList" class="flex items-center gap-2 text-stone-500 hover:text-stone-800 text-sm font-medium mb-6 transition-colors">
@@ -144,6 +189,18 @@
                 <p class="text-[14px] text-stone-500 mb-8">Define custom instructions to shape how the AI behaves.</p>
                 
                 <form wire:submit.prevent="saveSkill" class="w-full space-y-5">
+                    <div>
+                        <label class="block text-[13px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Icon</label>
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach($skillIcons as $icon)
+                                <button type="button" wire:click="$set('skillIcon', '{{ $icon }}')"
+                                    class="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] border transition-all {{ $skillIcon === $icon ? 'border-[#D97757] ring-2 ring-[#D97757]/30 bg-[#D97757]/5' : 'border-[#E5E5E5] dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800' }}">
+                                    {{ $icon }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-[13px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Skill name *</label>
                         <input type="text" wire:model="skillName" placeholder="e.g. Code Reviewer" class="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-[#D97757]/20 focus:border-[#D97757]" required>

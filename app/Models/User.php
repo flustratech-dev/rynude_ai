@@ -31,9 +31,12 @@ class User extends Authenticatable
         'proxy_api_key',
         'huggingface_api_key',
         'huggingface_base_url',
+        'google_api_key',
+        'mistral_api_key',
         'role',
         'token_balance',
         'custom_instructions',
+        'preferences',
     ];
 
     /**
@@ -62,6 +65,9 @@ class User extends Authenticatable
             'use_proxy' => 'boolean',
             'proxy_api_key' => 'encrypted',
             'huggingface_api_key' => 'encrypted',
+            'google_api_key' => 'encrypted',
+            'mistral_api_key' => 'encrypted',
+            'preferences' => 'array',
         ];
     }
 
@@ -73,5 +79,20 @@ class User extends Authenticatable
     public function projects()
     {
         return $this->hasMany(Project::class);
+    }
+
+    public function coworkTasks()
+    {
+        return $this->hasMany(CoworkTask::class);
+    }
+
+    public function designs()
+    {
+        return $this->hasMany(Design::class);
+    }
+
+    public function tokenUsages()
+    {
+        return $this->hasMany(TokenUsage::class);
     }
 }

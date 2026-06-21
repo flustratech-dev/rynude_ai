@@ -60,7 +60,10 @@
                 @php
                     $navItems = [
                         ['id' => 'general', 'label' => 'General', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>'],
+                        ['id' => 'appearance', 'label' => 'Appearance', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z"></path>'],
                         ['id' => 'account', 'label' => 'Account', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path>'],
+                        ['id' => 'data', 'label' => 'Data & Privacy', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75"></path>'],
+                        ['id' => 'shortcuts', 'label' => 'Shortcuts', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 6.878V6a2.25 2.25 0 012.25-2.25h7.5A2.25 2.25 0 0118 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 004.5 9v.878m13.5-3A2.25 2.25 0 0119.5 9v.878m0 0a2.246 2.246 0 00-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0121 12v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6c0-.98.626-1.813 1.5-2.122"></path>'],
                         ['id' => 'privacy', 'label' => 'Privacy', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"></path>'],
                         ['id' => 'billing', 'label' => 'Billing', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"></path>'],
                         ['id' => 'capabilities', 'label' => 'Capabilities', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"></path>'],
@@ -188,6 +191,136 @@
                     </div>
                 </div>
 
+                {{-- ========== APPEARANCE TAB ========== --}}
+                <div x-show="$wire.activeTab === 'appearance'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Appearance</h2>
+
+                    <div class="space-y-8">
+                        {{-- Theme --}}
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Theme</label>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400">Choose how Rynude looks to you.</p>
+                            </div>
+                            <div class="flex items-center border border-[#E5E5E5] dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                                <button @click="setTheme('light')" :class="theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-[#E5E5E5] dark:border-stone-700 transition-colors">Light</button>
+                                <button @click="setTheme('dark')" :class="theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-[#E5E5E5] dark:border-stone-700 transition-colors">Dark</button>
+                                <button @click="setTheme('system')" :class="theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm transition-colors">System</button>
+                            </div>
+                        </div>
+
+                        {{-- Font size --}}
+                        <div class="flex items-center justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Font size</label>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400">Adjust the text size in chats.</p>
+                            </div>
+                            <div class="flex items-center border border-[#E5E5E5] dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                                @foreach(['small' => 'A', 'medium' => 'A', 'large' => 'A'] as $size => $label)
+                                    <button wire:click="$set('fontSize', '{{ $size }}')" class="px-3 py-1.5 transition-colors {{ $fontSize === $size ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }} {{ !$loop->last ? 'border-r border-[#E5E5E5] dark:border-stone-700' : '' }}" style="font-size: {{ $size === 'small' ? '12px' : ($size === 'medium' ? '15px' : '18px') }}">{{ $label }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Accent color --}}
+                        <div class="flex items-center justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Accent color</label>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400">Used for highlights and buttons.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                @foreach($accentColors as $color)
+                                    <button wire:click="$set('accentColor', '{{ $color }}')" class="w-7 h-7 rounded-full transition-all {{ $accentColor === $color ? 'ring-2 ring-offset-2 ring-stone-400 dark:ring-offset-stone-900' : 'hover:scale-110' }}" style="background-color: {{ $color }}"></button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Compact mode --}}
+                        <div class="flex items-center justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Compact mode</label>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400">Reduce spacing to fit more on screen.</p>
+                            </div>
+                            <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer" :class="$wire.compactMode ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" wire:click="$toggle('compactMode')">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.compactMode ? 'translate-x-5' : 'translate-x-[2px]'"></span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                            <button wire:click="saveAppearance" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Save appearance</button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ========== DATA & PRIVACY TAB ========== --}}
+                <div x-show="$wire.activeTab === 'data'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Data & Privacy</h2>
+
+                    @if (session()->has('dataMessage'))
+                        <div class="p-3 mb-6 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-stone-800 dark:text-green-400 border border-green-200 dark:border-stone-700">
+                            {{ session('dataMessage') }}
+                        </div>
+                    @endif
+
+                    <div class="space-y-8">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export all chats</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Download a complete copy of all your conversations as a JSON file.</p>
+                            </div>
+                            <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors flex-shrink-0">Export JSON</button>
+                        </div>
+
+                        <div class="flex items-start justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on your conversations</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Allow Rynude to use your conversations to improve the models.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer mt-1 flex-shrink-0">
+                                <input type="checkbox" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#D97757]"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-start justify-between border-t border-red-100 dark:border-red-900/40 pt-6">
+                            <div>
+                                <label class="text-[15px] text-red-600 dark:text-red-400 font-medium block mb-1">Delete all chats</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Permanently delete all of your conversations. This action cannot be undone.</p>
+                            </div>
+                            <button wire:click="deleteAllChats" wire:confirm="Are you sure? This will permanently delete ALL your chats." class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors flex-shrink-0">Delete all</button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ========== SHORTCUTS TAB ========== --}}
+                <div x-show="$wire.activeTab === 'shortcuts'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Keyboard Shortcuts</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                        @php
+                            $shortcuts = [
+                                ['New chat', ['Ctrl', 'K']],
+                                ['Send message', ['Ctrl', 'Enter']],
+                                ['New line', ['Shift', 'Enter']],
+                                ['Toggle sidebar', ['Ctrl', 'Shift', 'S']],
+                                ['Open settings', ['Ctrl', 'Shift', ',']],
+                                ['Show shortcuts', ['Ctrl', '/']],
+                                ['Search chats', ['Ctrl', 'F']],
+                                ['Close panel / modal', ['Esc']],
+                            ];
+                        @endphp
+                        @foreach($shortcuts as [$label, $keys])
+                            <div class="flex items-center justify-between py-2 border-b border-[#E5E5E5] dark:border-stone-700">
+                                <span class="text-[14px] text-[#2D2825] dark:text-stone-300">{{ $label }}</span>
+                                <div class="flex items-center gap-1">
+                                    @foreach($keys as $key)
+                                        <kbd class="px-2 py-1 bg-[#F3F2EE] dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-md text-[12px] font-mono text-gray-600 dark:text-stone-300 shadow-sm">{{ $key }}</kbd>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 {{-- ========== API KEYS TAB ========== --}}
                 <div x-show="$wire.activeTab === 'api-keys'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">API Keys & Quota</h2>
@@ -210,9 +343,19 @@
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">OpenAI API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key OpenAI Anda untuk model GPT.</p>
-                                <input type="password" wire:model="openaiApiKey" placeholder="sk-proj-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
+                                <input type="password" wire:model="openaiApiKey" placeholder="sk-proj-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
                             </div>
-                            
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Google AI API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Google AI Anda untuk model Gemini.</p>
+                                <input type="password" wire:model="googleApiKey" placeholder="AIza..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                            </div>
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Mistral API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Mistral Anda untuk model Mistral.</p>
+                                <input type="password" wire:model="mistralApiKey" placeholder="..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
+                            </div>
+
                             <div class="pt-2 border-t border-[#E5E5E5] dark:border-stone-700"></div>
                             
                             <div>
@@ -297,7 +440,7 @@
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export data</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Request an export of your account data. You will receive an email when it's ready.</p>
                                 </div>
-                                <button class="px-4 py-2 border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors">Export data</button>
+                                <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors">Export data</button>
                             </div>
                         </div>
                     </div>
@@ -306,7 +449,48 @@
                 {{-- ========== BILLING TAB ========== --}}
                 <div x-show="$wire.activeTab === 'billing'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Billing</h2>
-                    
+
+                    {{-- Real usage --}}
+                    @php
+                        $usageTotal = max(($tokensUsed + $tokensLimit), 1);
+                        $usagePercent = min(100, round(($tokensUsed / $usageTotal) * 100));
+                    @endphp
+                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Token usage</h3>
+                            <span class="text-[13px] text-gray-500 dark:text-stone-400">{{ number_format($tokensUsed) }} used · {{ number_format($tokensLimit) }} remaining</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#D97757] rounded-full transition-all" style="width: {{ $usagePercent }}%"></div>
+                        </div>
+                        <p class="text-[12px] text-gray-400 dark:text-stone-500 mt-2">
+                            {{ $trackedTokens > 0 ? 'Tracked from real model usage.' : 'Estimated from your conversation history.' }}
+                        </p>
+                    </div>
+
+                    {{-- Per-model usage breakdown --}}
+                    @if(count($tokenBreakdown) > 0)
+                        <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
+                            <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-3">Usage by model</h3>
+                            <div class="space-y-2.5">
+                                @foreach($tokenBreakdown as $row)
+                                    <div class="flex items-center justify-between text-[13px]">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="font-medium text-[#2D2825] dark:text-stone-200 truncate">{{ $row['model'] }}</span>
+                                            @if($row['provider'])
+                                                <span class="text-[10.5px] uppercase tracking-wide px-1.5 py-0.5 bg-gray-100 dark:bg-stone-700 text-gray-500 dark:text-stone-400 rounded">{{ $row['provider'] }}</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-gray-500 dark:text-stone-400 flex-shrink-0">
+                                            {{ number_format($row['total']) }}
+                                            <span class="text-gray-400 dark:text-stone-500 text-[11.5px]">({{ number_format($row['input']) }} in / {{ number_format($row['output']) }} out)</span>
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
                         <div class="flex items-center justify-between mb-4">
                             <div>
@@ -567,7 +751,7 @@
                 </div>
 
                 {{-- Fallback for any unknown tabs --}}
-                <div x-show="!['general', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code', 'huggingface'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
+                <div x-show="!['general', 'appearance', 'data', 'shortcuts', 'api-keys', 'account', 'privacy', 'billing', 'capabilities', 'connectors', 'models', 'claude-code', 'huggingface'].includes($wire.activeTab)" x-cloak style="display: none;" class="flex items-center justify-center h-full text-gray-400 dark:text-stone-500">
                     Content for <span x-text="$wire.activeTab" class="ml-1 font-medium text-gray-600 dark:text-stone-300"></span> will go here.
                 </div>
 

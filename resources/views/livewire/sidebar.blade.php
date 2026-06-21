@@ -4,12 +4,17 @@
     class="h-full flex flex-col bg-[#F9F8F6] dark:bg-stone-900"
 >
     {{-- ========== EXPANDED MODE ========== --}}
-    <div x-show="open" x-cloak class="h-full flex flex-col">
+    <div x-show="open" x-cloak class="h-full flex flex-col" x-data="{ searchOpen: false }">
         {{-- Top Header --}}
         <div class="flex items-center justify-between px-3 py-2.5 mt-0.5">
             <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="font-serif text-[20px] font-medium text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
             <div class="flex items-center gap-1">
-                <button class="p-1 text-gray-400 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">
+                <button
+                    @click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.sidebarSearch?.focus())"
+                    class="p-1 transition-colors"
+                    :class="searchOpen ? 'text-[#D97757]' : 'text-gray-400 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'"
+                    title="Search chats"
+                >
                     <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                     </svg>
@@ -23,6 +28,28 @@
                         <line class="sidebar-line-shift" x1="9" y1="3" x2="9" y2="21"></line>
                     </svg>
                 </button>
+            </div>
+        </div>
+
+        {{-- Inline Search --}}
+        <div x-show="searchOpen" x-cloak x-transition class="px-3 pb-1">
+            <div class="relative">
+                <svg class="w-4 h-4 text-gray-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                </svg>
+                <input
+                    x-ref="sidebarSearch"
+                    type="text"
+                    wire:model.live.debounce.300ms="searchQuery"
+                    @keydown.escape="searchOpen = false; $wire.set('searchQuery', '')"
+                    placeholder="Search chats..."
+                    class="w-full bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg pl-8 pr-8 py-1.5 text-[13px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-[#D97757] dark:focus:border-[#D97757] transition-colors"
+                >
+                @if($searchQuery !== '')
+                    <button wire:click="$set('searchQuery', '')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-stone-300">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                @endif
             </div>
         </div>
 
@@ -222,21 +249,43 @@
                             </span>
                             <span class="text-xs text-gray-400 font-light">Ctrl ⇧ ,</span>
                         </button>
-                        <button
-                            @click="profileMenuOpen = false"
-                            wire:click="openSettingsModal('general')"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
-                        >
-                            <span class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"/>
-                                </svg>
-                                <span>Language</span>
-                            </span>
-                            <svg class="w-4 h-4 text-gray-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-                            </svg>
-                        </button>
+                        <div x-data="{ languageOpen: false, currentLang: localStorage.getItem('rynude_lang') || 'English' }" class="relative">
+                            <button
+                                @click="languageOpen = !languageOpen"
+                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                            >
+                                <span class="flex items-center gap-3">
+                                    <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"/>
+                                    </svg>
+                                    <span>Language</span>
+                                </span>
+                                <span class="flex items-center gap-1.5">
+                                    <span class="text-xs text-gray-400 dark:text-stone-500" x-text="currentLang"></span>
+                                    <svg class="w-4 h-4 text-gray-400 dark:text-stone-500 transition-transform duration-200" :class="languageOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                                    </svg>
+                                </span>
+                            </button>
+                            <div
+                                x-show="languageOpen"
+                                x-cloak
+                                x-transition:enter="transition ease-out duration-150"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                class="pl-8 pr-4 pb-1 space-y-0.5"
+                            >
+                                <template x-for="lang in ['English', 'Bahasa Indonesia']" :key="lang">
+                                    <button
+                                        @click="currentLang = lang; localStorage.setItem('rynude_lang', lang); languageOpen = false"
+                                        class="flex items-center justify-between w-full px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-stone-800 rounded-lg transition-colors"
+                                    >
+                                        <span x-text="lang"></span>
+                                        <svg x-show="currentLang === lang" class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
                         <button
                             @click="profileMenuOpen = false"
                             wire:click="openHelpModal('help')"

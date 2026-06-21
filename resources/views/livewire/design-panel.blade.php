@@ -1,179 +1,165 @@
-<style>
-    .scrollbar-none::-webkit-scrollbar {
-        display: none;
-    }
-    .scrollbar-none {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-</style>
-
-<div class="min-h-screen bg-[#F9F8F6] dark:bg-stone-900 flex flex-col font-sans" x-data="{ currentTab: 'recent' }">
+<div class="min-h-screen h-full bg-[#F9F8F6] dark:bg-stone-900 flex flex-col font-sans">
+    <style>
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
     {{-- Header --}}
-    <div class="w-full bg-[#F9F8F6] dark:bg-stone-900 border-b border-[#E5E5E5] dark:border-stone-800/80 px-8 py-3 flex items-center justify-between">
-        {{-- Logo --}}
+    <div class="w-full bg-[#F9F8F6] dark:bg-stone-900 border-b border-[#E5E5E5] dark:border-stone-800/80 px-8 py-3 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-2">
             <a href="{{ route('home') }}" class="font-serif text-[17px] font-medium text-[#2D2825] dark:text-stone-100 whitespace-nowrap hover:opacity-80 transition-opacity">Rynude Design</a>
             <span class="text-[9px] font-semibold tracking-wider uppercase px-1.5 py-0.5 bg-[#EAE9E5] dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-[4px] whitespace-nowrap">Beta</span>
         </div>
 
-        {{-- Tabs --}}
         <div class="flex items-center gap-1">
-            <button @click="currentTab = 'recent'" :class="currentTab === 'recent' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'" class="px-3 py-1 rounded-lg text-[13px] transition-all">Recent</button>
-            <button @click="currentTab = 'yours'" :class="currentTab === 'yours' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'" class="px-3 py-1 rounded-lg text-[13px] transition-all">Your designs</button>
-            <button @click="currentTab = 'systems'" :class="currentTab === 'systems' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'" class="px-3 py-1 rounded-lg text-[13px] transition-all">Design systems</button>
-            <button @click="currentTab = 'examples'" :class="currentTab === 'examples' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'" class="px-3 py-1 rounded-lg text-[13px] transition-all">Examples</button>
+            @foreach(['recent' => 'Recent', 'yours' => 'Your designs', 'examples' => 'Examples'] as $key => $label)
+                <button wire:click="$set('currentTab', '{{ $key }}')" class="px-3 py-1 rounded-lg text-[13px] transition-all {{ $currentTab === $key ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200' }}">{{ $label }}</button>
+            @endforeach
         </div>
 
-        {{-- Right Controls --}}
         <div class="flex items-center gap-3">
             <div class="relative flex items-center">
                 <svg class="w-3.5 h-3.5 text-stone-400 absolute left-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" placeholder="Search designs" class="pl-8 pr-3 py-1 bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-lg text-[13px] placeholder-stone-400 text-stone-850 dark:text-stone-200 focus:outline-none w-44 focus:w-52 transition-all">
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search designs" class="pl-8 pr-3 py-1 bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-lg text-[13px] placeholder-stone-400 text-stone-850 dark:text-stone-200 focus:outline-none w-44 focus:w-52 transition-all">
             </div>
-            <svg class="w-7 h-7 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8" cy="8" r="8" fill="#5C92D1"/>
-                <rect x="6" y="6" width="4" height="4" fill="#DBE0ED"/>
-                <rect x="7" y="3" width="2" height="3" fill="#DBE0ED"/>
-                <rect x="7" y="10" width="2" height="3" fill="#DBE0ED"/>
-                <rect x="3" y="7" width="3" height="2" fill="#DBE0ED"/>
-                <rect x="10" y="7" width="3" height="2" fill="#DBE0ED"/>
-                <rect x="4" y="4" width="2" height="2" fill="#DBE0ED"/>
-                <rect x="10" y="4" width="2" height="2" fill="#DBE0ED"/>
-                <rect x="4" y="10" width="2" height="2" fill="#DBE0ED"/>
-                <rect x="10" y="10" width="2" height="2" fill="#DBE0ED"/>
-            </svg>
         </div>
     </div>
 
     {{-- Main Container --}}
     <div class="max-w-6xl w-full mx-auto px-8 py-8 flex-1 flex flex-col gap-6 overflow-y-auto">
+        @if (session('designMessage'))
+            <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-lg text-[13px]">
+                {{ session('designMessage') }}
+            </div>
+        @endif
         {{-- Section: Make something new --}}
         <div>
             <div class="flex items-center gap-2 mb-3">
                 <span class="text-[13px] font-semibold text-[#2D2825] dark:text-stone-200">Make something new</span>
-                <div class="flex items-center gap-1 text-[11.5px] text-stone-400 hover:text-stone-600 cursor-pointer">
-                    <span>Design system: None</span>
-                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
             </div>
 
-            {{-- Row of Cards --}}
             <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-none select-none">
-                {{-- 1. Start with a file --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-dashed border-stone-300 dark:border-stone-700 flex items-center justify-center hover:border-[#D97757] dark:hover:border-[#D97757] hover:bg-stone-50 dark:hover:bg-stone-850/40 transition-all">
-                        <svg class="w-7 h-7 text-stone-400 group-hover:text-[#D97757] transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m0 0l-3-3m3 3l3-3m-9-3h12a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
-                        </svg>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Start with a file</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Turn it into a design</div>
-                </div>
-
-                {{-- 2. Slides --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-stone-300 dark:hover:border-stone-700 shadow-sm transition-all relative overflow-hidden">
-                        <div class="w-14 h-10 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex flex-col p-1 gap-1">
-                            <div class="h-1.5 w-1/2 bg-stone-300 dark:bg-stone-600 rounded-sm"></div>
-                            <div class="h-1.5 w-full bg-stone-200 dark:bg-stone-700 rounded-sm"></div>
-                        </div>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Slides</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Presentations & pitch decks</div>
-                </div>
-
-                {{-- 3. Product prototype --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-stone-300 dark:hover:border-stone-700 shadow-sm transition-all relative overflow-hidden">
-                        <div class="w-14 h-10 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex flex-col p-1 gap-1 relative">
-                            <div class="flex gap-1">
-                                <div class="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600"></div>
-                                <div class="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600"></div>
-                            </div>
-                            <div class="h-2 w-3/4 bg-stone-200 dark:bg-stone-700 rounded-sm mt-0.5"></div>
-                            <div class="h-2 w-1/2 bg-[#D97757]/80 rounded-sm absolute bottom-1 right-1"></div>
-                        </div>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Product prototype</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Interactive app mockups</div>
-                </div>
-
-                {{-- 4. Product wireframe --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-stone-300 dark:hover:border-stone-700 shadow-sm transition-all relative overflow-hidden">
-                        <div class="w-14 h-10 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex flex-col p-1 justify-center items-center">
-                            <div class="w-10 h-6 border border-dashed border-stone-300 dark:border-stone-600 relative flex items-center justify-center">
-                                <svg class="w-full h-full text-stone-300 dark:text-stone-600" viewBox="0 0 100 60" preserveAspectRatio="none"><line x1="0" y1="0" x2="100" y2="60" stroke="currentColor" stroke-width="1.5"/><line x1="100" y1="0" x2="0" y2="60" stroke="currentColor" stroke-width="1.5"/></svg>
+                @php
+                    $typeIcons = [
+                        'slides' => '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+                        'prototype' => '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>',
+                        'wireframe' => '<rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/><path d="M3 9h18M9 9v12"/>',
+                        'document' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+                        'animation' => '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
+                        'blank' => '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+                    ];
+                @endphp
+                @foreach($designTypes as $type => $meta)
+                    <button wire:click="openDialog('{{ $type }}')" class="w-[145px] shrink-0 flex flex-col group text-left">
+                        <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-[#D97757] dark:hover:border-[#D97757] shadow-sm transition-all">
+                            <div class="w-12 h-9 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-400 group-hover:text-[#D97757] transition-colors">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{!! $typeIcons[$type] ?? $typeIcons['blank'] !!}</svg>
                             </div>
                         </div>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Product wireframe</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Lo-fi screens & flows</div>
-                </div>
-
-                {{-- 5. Document --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-stone-300 dark:hover:border-stone-700 shadow-sm transition-all relative overflow-hidden">
-                        <div class="w-10 h-12 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex flex-col p-1.5 gap-1.5">
-                            <div class="h-1 w-full bg-stone-300 dark:bg-stone-600 rounded-sm"></div>
-                            <div class="h-1 w-full bg-stone-200 dark:bg-stone-700 rounded-sm"></div>
-                            <div class="h-1 w-2/3 bg-stone-200 dark:bg-stone-700 rounded-sm"></div>
-                        </div>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Document</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Resumes, PDFs, etc</div>
-                </div>
-
-                {{-- 6. Animation --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-stone-300 dark:hover:border-stone-700 shadow-sm transition-all relative overflow-hidden">
-                        <div class="w-14 h-10 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex flex-col justify-between p-1">
-                            <div class="flex-1 flex flex-col items-center justify-center gap-0.5">
-                                <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
-                            <div class="h-1 w-full bg-stone-300 dark:bg-stone-600 rounded-sm"></div>
-                        </div>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Animation</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Motion graphics & loops</div>
-                </div>
-
-                {{-- 7. Blank canvas --}}
-                <div class="w-[145px] shrink-0 flex flex-col group cursor-pointer">
-                    <div class="h-[95px] w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white dark:bg-stone-850 flex items-center justify-center hover:border-stone-300 dark:hover:border-stone-700 shadow-sm transition-all relative overflow-hidden">
-                        <div class="w-10 h-12 rounded border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 flex flex-col">
-                            <!-- Folded corner effect -->
-                            <div class="self-end w-3 h-3 bg-stone-200 dark:bg-stone-700 border-l border-b border-stone-300 dark:border-stone-600"></div>
-                        </div>
-                    </div>
-                    <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">Blank canvas</div>
-                    <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Start from scratch</div>
-                </div>
+                        <div class="text-[12.5px] font-semibold text-[#2D2825] dark:text-stone-200 mt-2">{{ $meta['label'] }}</div>
+                        <div class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">{{ $meta['sub'] }}</div>
+                    </button>
+                @endforeach
             </div>
         </div>
 
-        {{-- Design System Setup Banner --}}
-        <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl p-5 flex flex-col items-center justify-center text-center shadow-sm">
-            <span class="text-[13px] text-stone-500 dark:text-stone-400">Set up your design system so anyone can create consistent designs and assets.</span>
-            <button class="px-4 py-1.5 bg-[#191919] hover:bg-black dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white text-white rounded-xl text-[13px] font-medium transition-colors mt-3 shadow-sm focus:outline-none">
-                Set up design system
-            </button>
-        </div>
-
-        {{-- Designs List Section --}}
+        {{-- Designs Gallery --}}
         <div>
             <h3 class="text-[13.5px] font-semibold text-[#2D2825] dark:text-stone-200 mb-3">Designs</h3>
 
-            <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl overflow-hidden shadow-sm py-12 flex flex-col items-center justify-center text-center">
-                <div class="w-12 h-12 rounded-xl bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-400 mb-3 border border-stone-200 dark:border-stone-700">
-                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
+            @php $designs = $this->designs; @endphp
+            @if($designs->isEmpty())
+                <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl py-12 flex flex-col items-center justify-center text-center shadow-sm">
+                    <div class="w-12 h-12 rounded-xl bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-400 mb-3 border border-stone-200 dark:border-stone-700">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                    <p class="text-stone-500 dark:text-stone-400 text-[13.5px] font-medium">No designs yet</p>
+                    <p class="text-stone-400 dark:text-stone-500 text-xs mt-1">Pick a type above and describe what you want Rynude to design.</p>
                 </div>
-                <p class="text-stone-500 dark:text-stone-400 text-[13.5px] font-medium">No designs yet</p>
-                <p class="text-stone-400 dark:text-stone-500 text-xs mt-1">Start a chat and ask Rynude to generate designs</p>
-            </div>
+            @else
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    @foreach($designs as $design)
+                        <div class="group bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-xl overflow-hidden shadow-sm hover:border-stone-300 dark:hover:border-stone-700 hover:shadow transition-all">
+                            <div wire:click="viewDesign({{ $design->id }})" class="h-[140px] bg-stone-50 dark:bg-stone-800 relative cursor-pointer overflow-hidden border-b border-stone-100 dark:border-stone-800">
+                                @if($design->status === 'ready' && $design->content)
+                                    <iframe srcdoc="{{ $design->content }}" class="w-[200%] h-[280px] origin-top-left scale-50 pointer-events-none border-0" sandbox="allow-scripts"></iframe>
+                                @elseif($design->status === 'generating')
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center text-stone-400 gap-2">
+                                        <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                                        <span class="text-[11px]">Generating…</span>
+                                    </div>
+                                @else
+                                    <div class="absolute inset-0 flex items-center justify-center text-red-400 text-[11px]">Generation failed</div>
+                                @endif
+                            </div>
+                            <div class="p-3 flex items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="text-[12.5px] font-medium text-[#2D2825] dark:text-stone-100 truncate">{{ $design->title }}</div>
+                                    <div class="text-[10.5px] text-stone-400 mt-0.5">{{ $designTypes[$design->type]['label'] ?? ucfirst($design->type) }} · {{ $design->created_at->diffForHumans() }}</div>
+                                </div>
+                                <div class="flex items-center gap-0.5 flex-shrink-0">
+                                    <button wire:click="toggleStar({{ $design->id }})" class="p-1 transition-colors {{ $design->is_starred ? 'text-amber-400' : 'text-stone-300 hover:text-amber-400' }}" title="Star">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="{{ $design->is_starred ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    </button>
+                                    <button wire:click="deleteDesign({{ $design->id }})" class="p-1 text-stone-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Delete">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
+
+    {{-- ============ GENERATION DIALOG ============ --}}
+    @if($showDialog)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" wire:click.self="closeDialog">
+            <div class="bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-2xl w-full max-w-lg p-6">
+                <h3 class="font-serif text-[18px] font-medium text-[#2D2825] dark:text-stone-100 mb-1">Generate {{ $designTypes[$dialogType]['label'] ?? 'design' }}</h3>
+                <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mb-4">{{ $designTypes[$dialogType]['sub'] ?? '' }}</p>
+
+                <textarea wire:model="dialogPrompt" rows="4" placeholder="Describe the design you want… e.g. A pricing page for a SaaS product with three tiers"
+                    class="w-full px-3 py-2.5 bg-[#F9F8F6] dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-[13.5px] text-stone-800 dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:border-[#D97757] resize-none"></textarea>
+                @error('dialogPrompt') <span class="text-red-500 text-[11.5px] mt-1 block">{{ $message }}</span> @enderror
+
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <button wire:click="closeDialog" class="px-4 py-2 text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 text-[13px] font-medium transition-colors">Cancel</button>
+                    <button wire:click="generate" wire:loading.attr="disabled" wire:target="generate" class="flex items-center gap-1.5 px-4 py-2 bg-[#D97757] hover:bg-[#c56647] text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm disabled:opacity-50">
+                        <svg wire:loading wire:target="generate" class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                        <span wire:loading.remove wire:target="generate">Generate</span>
+                        <span wire:loading wire:target="generate">Generating…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ============ VIEWER ============ --}}
+    @if($this->viewing)
+        @php $v = $this->viewing; @endphp
+        <div class="fixed inset-0 z-50 flex flex-col bg-stone-900/60 backdrop-blur-sm" wire:click.self="closeViewer">
+            <div class="flex items-center justify-between px-6 py-3 bg-white dark:bg-stone-850 border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
+                <div class="min-w-0">
+                    <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-100 truncate">{{ $v->title }}</div>
+                    <div class="text-[11px] text-stone-400">{{ $designTypes[$v->type]['label'] ?? ucfirst($v->type) }}</div>
+                </div>
+                <button wire:click="closeViewer" class="p-2 text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="flex-1 bg-white">
+                @if($v->status === 'ready' && $v->content)
+                    <iframe srcdoc="{{ $v->content }}" class="w-full h-full border-0" sandbox="allow-scripts allow-same-origin"></iframe>
+                @elseif($v->status === 'generating')
+                    <div class="h-full flex flex-col items-center justify-center text-stone-400 gap-3">
+                        <svg class="w-7 h-7 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                        <span class="text-[13px]">Rynude is generating your design…</span>
+                    </div>
+                @else
+                    <div class="h-full flex items-center justify-center text-red-400 text-[13px] px-8 text-center">{{ $v->content ?: 'Generation failed. Please try again.' }}</div>
+                @endif
+            </div>
+        </div>
+    @endif
 </div>

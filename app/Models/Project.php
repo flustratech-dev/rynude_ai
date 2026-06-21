@@ -9,7 +9,11 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'description', 'custom_instructions'];
+    protected $fillable = ['user_id', 'name', 'description', 'custom_instructions', 'color', 'icon', 'is_starred'];
+
+    protected $casts = [
+        'is_starred' => 'boolean',
+    ];
 
     public function user()
     {

@@ -295,7 +295,7 @@
             <div class="max-w-3xl mx-auto w-full py-4 md:py-6 px-3 md:px-4">
                 <div class="space-y-1">
                     @foreach($messages as $msg)
-                        <div class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4">
+                        <div class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 group/msg">
                             @if($msg['role'] === 'user')
                                 <!-- User Message -->
                                 <div class="flex justify-end w-full">
@@ -318,6 +318,25 @@
                                         @if(!empty($msg['content']))
                                             <div class="bg-[#F3F2EE] dark:bg-stone-800 border border-transparent dark:border-stone-700/50 text-[#2D2825] dark:text-stone-200 px-4 md:px-[22px] py-2.5 md:py-3 rounded-[1.5rem] text-[15px] leading-relaxed shadow-sm break-words w-full">
                                                 {{ $msg['content'] }}
+                                            </div>
+                                            {{-- User message actions --}}
+                                            <div class="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
+                                                <button
+                                                    x-data="{ copied: false }"
+                                                    @click="navigator.clipboard.writeText(@js($msg['content'])); copied = true; setTimeout(() => copied = false, 1500)"
+                                                    class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                    title="Copy"
+                                                >
+                                                    <svg x-show="!copied" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                                    <svg x-show="copied" x-cloak class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                </button>
+                                                <button
+                                                    wire:click="editMessage({{ $loop->index }})"
+                                                    class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                                                </button>
                                             </div>
                                         @endif
                                     </div>
@@ -348,6 +367,42 @@
                                                 </div>
                                             </div>
                                         @endif
+
+                                        {{-- Assistant message actions --}}
+                                        <div class="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 not-prose">
+                                            <button
+                                                x-data="{ copied: false }"
+                                                @click="navigator.clipboard.writeText(@js($msg['content'])); copied = true; setTimeout(() => copied = false, 1500)"
+                                                class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                title="Copy"
+                                            >
+                                                <svg x-show="!copied" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                                <svg x-show="copied" x-cloak class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                            <button
+                                                wire:click="rateMessage({{ $loop->index }}, 'up')"
+                                                class="p-1.5 rounded-lg transition-colors {{ ($msg['rating'] ?? null) === 'up' ? 'text-green-600 bg-green-50 dark:bg-green-500/10' : 'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800' }}"
+                                                title="Good response"
+                                            >
+                                                <svg class="w-3.5 h-3.5" fill="{{ ($msg['rating'] ?? null) === 'up' ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14 9.5V5.25"/></svg>
+                                            </button>
+                                            <button
+                                                wire:click="rateMessage({{ $loop->index }}, 'down')"
+                                                class="p-1.5 rounded-lg transition-colors {{ ($msg['rating'] ?? null) === 'down' ? 'text-red-500 bg-red-50 dark:bg-red-500/10' : 'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800' }}"
+                                                title="Bad response"
+                                            >
+                                                <svg class="w-3.5 h-3.5" fill="{{ ($msg['rating'] ?? null) === 'down' ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 15h2.25m8.024-9.75c.011.05.028.1.052.148.591 1.2.924 2.55.924 3.977a8.96 8.96 0 01-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398C20.613 14.547 19.833 15 19 15h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 00.303-.54m.023-8.25H16.48a4.5 4.5 0 01-1.423-.23l-3.114-1.04a4.5 4.5 0 00-1.423-.23H6.504c-.618 0-1.217.247-1.605.729A11.95 11.95 0 002.25 12c0 .434.023.863.068 1.285C2.427 14.306 3.346 15 4.372 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 007.5 19.5a2.25 2.25 0 002.25 2.25.75.75 0 00.75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 002.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/></svg>
+                                            </button>
+                                            @if($loop->last)
+                                            <button
+                                                wire:click="$dispatch('regenerateResponse')"
+                                                class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                                                title="Regenerate"
+                                            >
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                            </button>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             @endif
@@ -372,11 +427,17 @@
                             </div>
                         </div>
                         <div class="mt-4 flex justify-center w-full">
-                            <button type="button" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">
+                            <button
+                                type="button"
+                                x-data="{ stopping: false }"
+                                @click="stopping = true; fetch('{{ route('chat.stop') }}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ conversation_id: $wire.get('conversationId') }) })"
+                                class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm disabled:opacity-60"
+                                :disabled="stopping"
+                            >
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                                     <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
                                 </svg>
-                                Stop generating
+                                <span x-text="stopping ? 'Stopping...' : 'Stop generating'"></span>
                             </button>
                         </div>
                     </div>
@@ -629,6 +690,19 @@
             })
         });
 
+        // Focus the prompt input after editing a message
+        Livewire.on('focusPromptInput', () => {
+            queueMicrotask(() => {
+                const ta = document.querySelector('textarea[wire\\:model="prompt"]');
+                if (ta) {
+                    ta.focus();
+                    const len = ta.value.length;
+                    ta.setSelectionRange(len, len);
+                    ta.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+
         // Initial setup
         enhanceCodeBlocks();
     });
@@ -642,9 +716,17 @@
 
     function enhanceCodeBlocks() {
         document.querySelectorAll('.prose pre').forEach((pre) => {
+            // Apply syntax highlighting to the inner <code> element
+            const codeEl = pre.querySelector('code');
+            if (codeEl && !codeEl.hasAttribute('data-highlighted') && window.hljs) {
+                try {
+                    hljs.highlightElement(codeEl);
+                } catch (e) { /* hljs sets data-highlighted itself */ }
+            }
+
             if(pre.hasAttribute('data-enhanced')) return;
             pre.setAttribute('data-enhanced', 'true');
-            
+
             pre.classList.add('code-block-enter', 'relative', 'group/code');
             
             const copyBtn = document.createElement('button');
