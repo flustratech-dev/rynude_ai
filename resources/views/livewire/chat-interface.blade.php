@@ -1,7 +1,7 @@
-<div class="flex flex-col h-full bg-background dark:bg-background relative">
+<div class="flex flex-col h-full bg-transparent dark:bg-claude-bg-dark relative">
     {{-- Full-screen Loading Overlay --}}
     <div wire:loading wire:target="loadSelectedConversation, startProjectChat" class="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-background/90 dark:bg-background/90 backdrop-blur-sm">
-        <div class="w-12 h-12 rounded-2xl bg-[#F9F8F6] dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 flex items-center justify-center mb-4 shadow-sm">
+        <div class="w-12 h-12 rounded-2xl bg-claude-bg-light dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark flex items-center justify-center mb-4 shadow-sm">
             <svg class="w-6 h-6 text-[#D97757] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="2" x2="12" y2="6"></line>
                 <line x1="12" y1="18" x2="12" y2="22"></line>
@@ -38,10 +38,10 @@
             <div class="w-full max-w-full md:max-w-[42rem] mx-auto" wire:key="empty-state-form-container">
                 <form wire:submit.prevent="sendMessage" wire:key="empty-state-form">
                     {{-- Prompt Box Container --}}
-                    <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
+                    <div class="relative w-full mx-auto bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-2xl md:rounded-3xl shadow-md flex flex-col focus-within:shadow-lg focus-within:border-claude-accent/50 dark:focus-within:border-claude-accent/50 animate-smooth transition-all duration-200">
                         {{-- Uploading State --}}
                         <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
-                            <div class="w-16 h-16 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                            <div class="w-16 h-16 rounded-xl border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                                 <svg class="animate-spin w-6 h-6 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             </div>
                             <div class="flex flex-col">
@@ -54,14 +54,14 @@
                         @if($attachment)
                             <div wire:loading.remove wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
                                 <div class="relative group">
-                                    <div class="w-16 h-16 rounded-xl overflow-hidden border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                                    <div class="w-16 h-16 rounded-xl overflow-hidden border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                                         @if(str_starts_with($attachment->getMimeType(), 'image/'))
                                             <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
                                         @else
                                             <svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                         @endif
                                     </div>
-                                    <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
                                 </div>
@@ -93,7 +93,7 @@
                                     </svg>
                                 </button>
 
-                                <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute top-full left-0 mt-2 w-[240px] bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
+                                <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute top-full left-0 mt-2 w-[240px] bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
                                     <button type="button" onclick="document.getElementById('file-upload').click();" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
                                             <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -162,7 +162,7 @@
                                         </svg>
                                     </button>
 
-                                    <div x-show="open" @click.away="open = false" x-cloak class="absolute top-full right-0 mt-2 w-[240px] bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
+                                    <div x-show="open" @click.away="open = false" x-cloak class="absolute top-full right-0 mt-2 w-[240px] bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
                                         @foreach($models as $model)
                                         <button wire:click="$set('selectedModel', '{{ $model->code }}')" @click="open = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group {{ !$model->is_available ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !$model->is_available ? 'disabled' : '' }}>
                                             <div>
@@ -189,7 +189,7 @@
                                                 <p class="text-[12px] text-stone-400 dark:text-stone-500 font-medium mt-0.5">Always uses deep reasoning</p>
                                             </div>
                                             <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ease-in-out" :class="extendedMode ? 'bg-[#2563EB]' : 'bg-gray-200'">
-                                                <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white dark:bg-stone-800 shadow transition duration-200 ease-in-out" :class="extendedMode ? 'translate-x-4' : 'translate-x-[3px]'"></span>
+                                                <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-claude-bg-light dark:bg-claude-bg-dark shadow transition duration-200 ease-in-out" :class="extendedMode ? 'translate-x-4' : 'translate-x-[3px]'"></span>
                                             </div>
                                         </div>
                                         <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
@@ -202,7 +202,7 @@
                                             </button>
                                             
                                             <!-- Sub-menu -->
-                                            <div x-show="moreModelsOpen" x-cloak class="absolute left-0 sm:left-auto sm:right-full sm:-mr-1 bottom-full mb-1 sm:mb-0 sm:bottom-[-8px] sm:top-auto mt-2 sm:mt-0 w-[200px] bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] py-1.5 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                            <div x-show="moreModelsOpen" x-cloak class="absolute left-0 sm:left-auto sm:right-full sm:-mr-1 bottom-full mb-1 sm:mb-0 sm:bottom-[-8px] sm:top-auto mt-2 sm:mt-0 w-[200px] bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] py-1.5 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
                                                 @foreach($moreModels as $mModel)
                                                 <button wire:click="$set('selectedModel', '{{ $mModel->code }}')" @click="open = false; moreModelsOpen = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group {{ !$mModel->is_available ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !$mModel->is_available ? 'disabled' : '' }}>
                                                     <span class="text-[13px] text-stone-800 dark:text-stone-200" style="font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;">{{ $mModel->name }}</span>
@@ -260,7 +260,7 @@
 
                 {{-- Suggestion Chips --}}
                 <div class="flex items-center justify-center gap-2 mt-4 overflow-x-auto md:overflow-visible px-2 md:px-0 -mx-2 md:mx-0 scrollbar-hide">
-                    <button wire:click="$set('prompt', 'Write a ')" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
+                    <button wire:click="$set('prompt', 'Write a ')" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                             <path d="m15 5 4 4"/>
@@ -268,7 +268,7 @@
                         Write
                     </button>
 
-                    <button wire:click="$set('prompt', 'Explain to me ')" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
+                    <button wire:click="$set('prompt', 'Explain to me ')" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                             <path d="M6 12v5c3 3 9 3 12 0v-5"/>
@@ -276,7 +276,7 @@
                         Learn
                     </button>
 
-                    <button wire:click="$set('prompt', 'Write a code to ')" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0 group">
+                    <button wire:click="$set('prompt', 'Write a code to ')" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0 group">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline class="code-bracket-right" points="16 18 22 12 16 6"/>
                             <polyline class="code-bracket-left" points="8 6 2 12 8 18"/>
@@ -284,7 +284,7 @@
                         Code
                     </button>
 
-                    <button wire:click="$set('prompt', 'Give me advice on ')" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
+                    <button wire:click="$set('prompt', 'Give me advice on ')" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
                             <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
@@ -295,7 +295,7 @@
                         Life stuff
                     </button>
 
-                    <button wire:click="sendMessage" class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
+                    <button wire:click="sendMessage" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex-shrink-0">
                         <svg class="w-3.5 h-3.5 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
                         </svg>
@@ -309,18 +309,18 @@
     @else
         {{-- Scrollable Messages --}}
         <div class="flex-1 overflow-y-auto" id="chat-scroll-container">
-            <div class="max-w-3xl mx-auto w-full py-4 md:py-6 px-3 md:px-4">
-                <div class="space-y-1">
+            <div class="max-w-[42rem] mx-auto w-full py-4 md:py-6 px-3 md:px-4">
+                <div class="space-y-6">
                     @foreach($messages as $msg)
-                        <div class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 group/msg">
+                        <div class="w-full mx-auto flex flex-col group/msg">
                             @if($msg['role'] === 'user')
                                 <!-- User Message -->
                                 <div class="flex justify-end w-full">
                                     <div class="flex flex-col items-end gap-2 max-w-[85%] md:max-w-[75%]">
                                         @if(isset($msg['attachment']) && $msg['attachment'])
-                                            <div class="bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl p-2 shadow-sm flex items-center gap-3">
+                                            <div class="bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-2xl p-2 shadow-sm flex items-center gap-3">
                                                 @if(str_starts_with($msg['attachment']['file_type'], 'image/'))
-                                                    <img src="{{ Storage::url($msg['attachment']['file_path']) }}" class="w-20 h-20 object-cover rounded-xl border border-[#E5E5E5] dark:border-stone-700" alt="Attachment">
+                                                    <img src="{{ Storage::url($msg['attachment']['file_path']) }}" class="w-20 h-20 object-cover rounded-xl border border-claude-border-light dark:border-claude-border-dark" alt="Attachment">
                                                 @else
                                                     <div class="w-12 h-12 bg-stone-100 dark:bg-stone-700 rounded-xl flex items-center justify-center shrink-0">
                                                         <svg class="w-6 h-6 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
@@ -333,7 +333,7 @@
                                             </div>
                                         @endif
                                         @if(!empty($msg['content']))
-                                            <div class="bg-[#F3F2EE] dark:bg-stone-800 border border-transparent dark:border-stone-700/50 text-[#2D2825] dark:text-stone-200 px-4 md:px-[22px] py-2.5 md:py-3 rounded-[1.5rem] text-[15px] leading-relaxed shadow-sm break-words w-full">
+                                            <div class="bg-stone-100 dark:bg-stone-800 border border-transparent text-stone-900 dark:text-stone-100 px-5 md:px-6 py-3 md:py-4 rounded-2xl md:rounded-3xl text-[15px] leading-relaxed break-words w-full">
                                                 {{ $msg['content'] }}
                                             </div>
                                             {{-- User message actions --}}
@@ -370,8 +370,8 @@
                                         {!! Illuminate\Support\Str::markdown($msg['content']) !!}
 
                                         @if(isset($msg['artifact']) && $msg['artifact'])
-                                            <div wire:click="openArtifact({{ $msg['artifact']['id'] }})" class="mt-3 inline-flex items-center gap-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl p-2 pr-4 bg-white dark:bg-stone-800 shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group">
-                                                <div class="w-10 h-10 bg-[#F9F8F6] dark:bg-stone-700 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-[#F3F2EE] dark:group-hover:bg-stone-600 transition-colors">
+                                            <div wire:click="openArtifact({{ $msg['artifact']['id'] }})" class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group">
+                                                <div class="w-10 h-10 bg-claude-bg-light dark:bg-stone-700 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-[#F3F2EE] dark:group-hover:bg-stone-600 transition-colors">
                                                     @if($msg['artifact']['language'] === 'php' || $msg['artifact']['type'] === 'code')
                                                         <svg class="w-5 h-5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
                                                     @else
@@ -429,7 +429,7 @@
 
 
                     {{-- Loading Indicator / Streaming Target --}}
-                    <div wire:loading wire:target="sendMessage, generateResponse" class="w-full max-w-[49rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 mt-1">
+                    <div wire:loading wire:target="sendMessage, generateResponse" class="w-full max-w-[42rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 mt-1">
                         <div class="flex justify-start w-full gap-3 md:gap-4">
                             <div class="flex-shrink-0 mt-1">
                                         <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757] animate-spin" viewBox="0 0 100 100" fill="currentColor">
@@ -447,7 +447,7 @@
                                 type="button"
                                 x-data="{ stopping: false }"
                                 @click="stopping = true; fetch('{{ route('chat.stop') }}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ conversation_id: $wire.get('conversationId') }) })"
-                                class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm disabled:opacity-60"
+                                class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm disabled:opacity-60"
                                 :disabled="stopping"
                             >
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -465,11 +465,11 @@
         <div class="shrink-0 h-fit bg-background dark:bg-background" wire:key="active-state-form-container">
             <form wire:submit.prevent="sendMessage" class="w-full max-w-[42rem] mx-auto pb-4 md:pb-6 px-3 md:px-4 pt-3 md:pt-4" wire:key="active-state-form">
                 {{-- Prompt Box Container --}}
-                <div class="relative w-full mx-auto bg-white dark:bg-stone-800/80 border border-[#E5E5E5] dark:border-stone-700/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
+                <div class="relative w-full mx-auto bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
                     
                     {{-- Uploading State --}}
                     <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
-                        <div class="w-16 h-16 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                        <div class="w-16 h-16 rounded-xl border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                             <svg class="animate-spin w-6 h-6 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         </div>
                         <div class="flex flex-col">
@@ -482,14 +482,14 @@
                     @if($attachment)
                         <div wire:loading.remove wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
                             <div class="relative group">
-                                <div class="w-16 h-16 rounded-xl overflow-hidden border border-[#E5E5E5] dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
+                                <div class="w-16 h-16 rounded-xl overflow-hidden border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                                     @if(str_starts_with($attachment->getMimeType(), 'image/'))
                                         <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
                                     @else
                                         <svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                     @endif
                                 </div>
-                                <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
@@ -521,7 +521,7 @@
                                 </svg>
                             </button>
 
-                            <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute bottom-full left-0 mb-2 w-[240px] bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
+                            <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute bottom-full left-0 mb-2 w-[240px] bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="display: none;">
                                 <button type="button" onclick="document.getElementById('file-upload').click();" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                     <div class="flex items-center gap-2.5">
                                         <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>

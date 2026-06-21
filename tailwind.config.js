@@ -14,7 +14,7 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
-                serif: ['Newsreader', 'serif'],
+                serif: ['Playfair Display', 'serif'],
             },
             colors: {
                 border: 'hsl(var(--border))',
@@ -22,6 +22,12 @@ export default {
                 ring: 'hsl(var(--ring))',
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',
+                // Claude specific exact colors
+                'claude-bg-light': '#FDFCFB',
+                'claude-bg-dark': '#1A1A1A',
+                'claude-border-light': '#E5E5E5',
+                'claude-border-dark': '#333333',
+                'claude-accent': '#D97757', // Typical terracotta accent
                 primary: {
                     DEFAULT: 'hsl(var(--primary))',
                     foreground: 'hsl(var(--primary-foreground))',

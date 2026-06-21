@@ -1,7 +1,7 @@
 <div
     x-data="{ open: {{ Js::from($sidebarOpen) }} }"
     @sidebar-toggle.window="open = $event.detail.open"
-    class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-[#1E1E1E]"
+    class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark"
 >
     {{-- ========== EXPANDED MODE ========== --}}
     <div x-show="open" x-cloak class="h-full flex flex-col" x-data="{ searchOpen: false }">
@@ -139,7 +139,7 @@
             <div class="space-y-0.5 mt-0.5">
                 <a
                     href="{{ route('code') }}"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80 group"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50 group"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
@@ -152,7 +152,7 @@
                 <button
                     @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
-                    :class="activePanel === 'cowork' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                    :class="activePanel === 'cowork' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path class="cowork-line" d="M9 6h11M9 12h11M9 18h11"/>
@@ -164,7 +164,7 @@
                 <button
                     @click="activePanel = activePanel === 'design' ? null : 'design'; artifactPanelOpen = false"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[14px] transition-all duration-200 group"
-                    :class="activePanel === 'design' ? 'bg-white dark:bg-stone-800 shadow-sm text-[#D97757] dark:text-[#D97757] font-semibold' : 'text-[#2D2825] dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800/80'"
+                    :class="activePanel === 'design' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path class="design-palette" d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
@@ -216,7 +216,7 @@
         </div>
 
         {{-- Bottom Profile --}}
-        <div class="border-t border-[#E5E5E5] dark:border-stone-700 px-2 py-2 relative bg-[#F9F8F6] dark:bg-stone-900">
+        <div class="border-t border-claude-border-light dark:border-claude-border-dark px-2 py-2 relative bg-[#F9F8F6] dark:bg-claude-bg-dark">
             @auth
                 <div x-data="{ profileMenuOpen: false }">
                     <div
@@ -403,7 +403,7 @@
 
                     <button @click="profileMenuOpen = !profileMenuOpen" class="w-full flex items-center justify-between px-2 py-2 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 rounded-lg transition-colors">
                         <div class="flex items-center gap-2.5">
-                            <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="8" cy="8" r="8" fill="#5C92D1"/>
                                 <rect x="6" y="6" width="4" height="4" fill="#DBE0ED"/>
                                 <rect x="7" y="3" width="2" height="3" fill="#DBE0ED"/>
@@ -415,7 +415,7 @@
                                 <rect x="4" y="10" width="2" height="2" fill="#DBE0ED"/>
                                 <rect x="10" y="10" width="2" height="2" fill="#DBE0ED"/>
                             </svg>
-                            <span class="text-[13px] text-[#2D2825] dark:text-stone-200 font-medium">
+                            <span class="text-[15px] text-[#2D2825] dark:text-stone-200 font-medium">
                                 {{ auth()->user()->name }} <span class="text-stone-400 font-normal">· Max</span>
                             </span>
                         </div>
@@ -434,7 +434,7 @@
     </div>
 
     {{-- ========== COLLAPSED MODE (icons only) ========== --}}
-    <div x-show="!open" x-cloak class="h-full w-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-[#1E1E1E]">
+    <div x-show="!open" x-cloak class="h-full w-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-claude-bg-dark">
         <button
             @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
             class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"
@@ -522,7 +522,7 @@
 
         <a
             href="{{ route('code') }}"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] group"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200 group"
             title="Code"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -535,7 +535,7 @@
         <button
             @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
+            :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Cowork"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -547,7 +547,7 @@
         <button
             @click="activePanel = activePanel === 'design' ? null : 'design'"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'design' ? 'bg-[#EAE9E5] text-[#2D2825]' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825]'"
+            :class="activePanel === 'design' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Design"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -563,7 +563,7 @@
 
         @auth
             <button class="p-1.5 hover:bg-[#EAE9E5]/60 rounded-xl transition-colors w-full flex items-center justify-center mb-2" title="{{ auth()->user()->name }}">
-                <svg class="w-6 h-6 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="8" cy="8" r="8" fill="#5C92D1"/>
                     <rect x="6" y="6" width="4" height="4" fill="#DBE0ED"/>
                     <rect x="7" y="3" width="2" height="3" fill="#DBE0ED"/>

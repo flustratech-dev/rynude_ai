@@ -24,7 +24,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="absolute inset-0 bg-[#1F1E1B]/40 backdrop-blur-sm"
+        class="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
         @click="$wire.closeModal()"
     ></div>
 
@@ -41,16 +41,16 @@
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
             @click.away="$wire.closeModal()"
-            class="bg-white dark:bg-stone-900 w-full max-w-[900px] h-[95vh] md:h-[85vh] max-h-[700px] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden border border-[#E5E5E5] dark:border-stone-700 relative"
+            class="bg-claude-bg-light dark:bg-claude-bg-dark w-full max-w-[900px] h-[95vh] md:h-[85vh] max-h-[700px] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden border border-claude-border-light dark:border-claude-border-dark relative"
         >
             {{-- Modal Sidebar (Tabs) --}}
-            <div class="w-full md:w-[260px] bg-white dark:bg-stone-900 border-b md:border-b-0 md:border-r border-[#E5E5E5] dark:border-stone-700 p-3 md:p-4 flex md:flex-col gap-2 md:gap-1 flex-shrink-0 overflow-x-auto scrollbar-hide">
+            <div class="w-full md:w-[260px] bg-claude-bg-light dark:bg-claude-bg-dark border-b md:border-b-0 md:border-r border-claude-border-light dark:border-claude-border-dark p-3 md:p-4 flex md:flex-col gap-2 md:gap-1 flex-shrink-0 overflow-x-auto scrollbar-hide">
                 {{-- Search --}}
                 <div class="relative hidden md:block mb-4">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                    <input type="text" placeholder="Search" class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500 text-gray-800 dark:text-stone-200">
+                    <input type="text" placeholder="Search" class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-sm focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500 text-gray-800 dark:text-stone-200">
                 </div>
 
                 <div class="px-3 py-1 hidden md:block mb-1">
@@ -78,7 +78,7 @@
                 @foreach($navItems as $item)
                     <button
                         wire:click="switchTab('{{ $item['id'] }}')"
-                        class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap {{ $activeTab === $item['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-[#F3F2EE] dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200' }}"
+                        class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap {{ $activeTab === $item['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200' }}"
                     >
                         <svg class="w-[18px] h-[18px] flex-shrink-0 {{ $activeTab === $item['id'] ? 'text-[#2D2825] dark:text-stone-200' : 'text-[#6B6B6B] dark:text-stone-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {!! $item['icon'] !!}
@@ -89,7 +89,7 @@
             </div>
 
             {{-- Modal Main Content --}}
-            <div class="flex-1 bg-white dark:bg-stone-900 p-6 md:p-10 overflow-y-auto relative">
+            <div class="flex-1 bg-claude-bg-light dark:bg-claude-bg-dark p-6 md:p-10 overflow-y-auto relative">
                 {{-- Close Button --}}
                 <button
                     @click="$wire.closeModal()"
@@ -114,12 +114,12 @@
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Full name</label>
-                            <input wire:model="name" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <input wire:model="name" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What should Rynude call you?</label>
-                            <input type="text" value="ryan" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <input type="text" value="ryan" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
@@ -142,7 +142,7 @@
                         <textarea 
                             wire:model="customInstructions"
                             wire:change="saveProfile"
-                            class="w-full h-24 p-3 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" 
+                            class="w-full h-24 p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" 
                             placeholder="e.g. keep explanations brief and to the point"
                         ></textarea>
                     </div>
@@ -153,11 +153,11 @@
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Appearance</label>
-                            <div class="flex items-center border border-[#E5E5E5] dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
                                 <button 
                                     @click="setTheme('system')"
                                     :class="theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400'"
-                                    class="p-1.5 px-3 border-r border-[#E5E5E5] dark:border-stone-700 transition-colors"
+                                    class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors"
                                     title="System Theme"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
@@ -165,7 +165,7 @@
                                 <button 
                                     @click="setTheme('light')"
                                     :class="theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400'"
-                                    class="p-1.5 px-3 border-r border-[#E5E5E5] dark:border-stone-700 transition-colors"
+                                    class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors"
                                     title="Light Theme"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"></path></svg>
@@ -202,28 +202,28 @@
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Theme</label>
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">Choose how Rynude looks to you.</p>
                             </div>
-                            <div class="flex items-center border border-[#E5E5E5] dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
-                                <button @click="setTheme('light')" :class="theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-[#E5E5E5] dark:border-stone-700 transition-colors">Light</button>
-                                <button @click="setTheme('dark')" :class="theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-[#E5E5E5] dark:border-stone-700 transition-colors">Dark</button>
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                                <button @click="setTheme('light')" :class="theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors">Light</button>
+                                <button @click="setTheme('dark')" :class="theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors">Dark</button>
                                 <button @click="setTheme('system')" :class="theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm transition-colors">System</button>
                             </div>
                         </div>
 
                         {{-- Font size --}}
-                        <div class="flex items-center justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div>
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Font size</label>
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">Adjust the text size in chats.</p>
                             </div>
-                            <div class="flex items-center border border-[#E5E5E5] dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
                                 @foreach(['small' => 'A', 'medium' => 'A', 'large' => 'A'] as $size => $label)
-                                    <button wire:click="$set('fontSize', '{{ $size }}')" class="px-3 py-1.5 transition-colors {{ $fontSize === $size ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }} {{ !$loop->last ? 'border-r border-[#E5E5E5] dark:border-stone-700' : '' }}" style="font-size: {{ $size === 'small' ? '12px' : ($size === 'medium' ? '15px' : '18px') }}">{{ $label }}</button>
+                                    <button wire:click="$set('fontSize', '{{ $size }}')" class="px-3 py-1.5 transition-colors {{ $fontSize === $size ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }} {{ !$loop->last ? 'border-r border-claude-border-light dark:border-claude-border-dark' : '' }}" style="font-size: {{ $size === 'small' ? '12px' : ($size === 'medium' ? '15px' : '18px') }}">{{ $label }}</button>
                                 @endforeach
                             </div>
                         </div>
 
                         {{-- Accent color --}}
-                        <div class="flex items-center justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div>
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Accent color</label>
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">Used for highlights and buttons.</p>
@@ -236,7 +236,7 @@
                         </div>
 
                         {{-- Compact mode --}}
-                        <div class="flex items-center justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div>
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Compact mode</label>
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">Reduce spacing to fit more on screen.</p>
@@ -246,7 +246,7 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="flex justify-end border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <button wire:click="saveAppearance" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Save appearance</button>
                         </div>
                     </div>
@@ -268,10 +268,10 @@
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export all chats</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Download a complete copy of all your conversations as a JSON file.</p>
                             </div>
-                            <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors flex-shrink-0">Export JSON</button>
+                            <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors flex-shrink-0">Export JSON</button>
                         </div>
 
-                        <div class="flex items-start justify-between border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="flex items-start justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div>
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on your conversations</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Allow Rynude to use your conversations to improve the models.</p>
@@ -309,11 +309,11 @@
                             ];
                         @endphp
                         @foreach($shortcuts as [$label, $keys])
-                            <div class="flex items-center justify-between py-2 border-b border-[#E5E5E5] dark:border-stone-700">
+                            <div class="flex items-center justify-between py-2 border-b border-claude-border-light dark:border-claude-border-dark">
                                 <span class="text-[14px] text-[#2D2825] dark:text-stone-300">{{ $label }}</span>
                                 <div class="flex items-center gap-1">
                                     @foreach($keys as $key)
-                                        <kbd class="px-2 py-1 bg-[#F3F2EE] dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-md text-[12px] font-mono text-gray-600 dark:text-stone-300 shadow-sm">{{ $key }}</kbd>
+                                        <kbd class="px-2 py-1 bg-[#F3F2EE] dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-md text-[12px] font-mono text-gray-600 dark:text-stone-300 shadow-sm">{{ $key }}</kbd>
                                     @endforeach
                                 </div>
                             </div>
@@ -326,7 +326,7 @@
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">API Keys & Quota</h2>
                     
                     <div class="space-y-6">
-                        <div class="p-4 bg-[#FBFBFA] dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
+                        <div class="p-4 bg-[#FBFBFA] dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
                             <h3 class="text-sm font-medium text-gray-900 dark:text-stone-100 mb-1">Status Kuota</h3>
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-500 dark:text-stone-400">Sisa Kuota Token Anda:</span>
@@ -338,33 +338,33 @@
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Anthropic API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Anthropic Anda untuk model Rynude.</p>
-                                <input type="password" wire:model="anthropicApiKey" placeholder="sk-ant-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                                <input type="password" wire:model="anthropicApiKey" placeholder="sk-ant-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
                             </div>
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">OpenAI API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key OpenAI Anda untuk model GPT.</p>
-                                <input type="password" wire:model="openaiApiKey" placeholder="sk-proj-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                                <input type="password" wire:model="openaiApiKey" placeholder="sk-proj-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
                             </div>
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Google AI API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Google AI Anda untuk model Gemini.</p>
-                                <input type="password" wire:model="googleApiKey" placeholder="AIza..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                                <input type="password" wire:model="googleApiKey" placeholder="AIza..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
                             </div>
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Mistral API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Mistral Anda untuk model Mistral.</p>
-                                <input type="password" wire:model="mistralApiKey" placeholder="..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
+                                <input type="password" wire:model="mistralApiKey" placeholder="..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
                             </div>
 
-                            <div class="pt-2 border-t border-[#E5E5E5] dark:border-stone-700"></div>
+                            <div class="pt-2 border-t border-claude-border-light dark:border-claude-border-dark"></div>
                             
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">9Router API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key 9Router Anda.</p>
-                                <input type="password" wire:model="nineRouterApiKey" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
+                                <input type="password" wire:model="nineRouterApiKey" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-6">
                             </div>
 
-                            <div class="pt-4 border-t border-[#E5E5E5] dark:border-stone-700">
+                            <div class="pt-4 border-t border-claude-border-light dark:border-claude-border-dark">
                                 <label class="flex items-center gap-3 cursor-pointer mb-4">
                                     <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ease-in-out" :class="$wire.useProxy ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" wire:click="$toggle('useProxy')">
                                         <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition duration-200 ease-in-out" :class="$wire.useProxy ? 'translate-x-4' : 'translate-x-[3px]'"></span>
@@ -379,11 +379,11 @@
                                     <div class="space-y-4 pt-2">
                                         <div>
                                             <label class="block text-[14px] text-[#2D2825] dark:text-stone-200 font-medium mb-1.5">Proxy Base URL</label>
-                                            <input type="url" wire:model="proxyBaseUrl" placeholder="https://openrouter.ai/api/v1" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                            <input type="url" wire:model="proxyBaseUrl" placeholder="https://openrouter.ai/api/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                                         </div>
                                         <div>
                                             <label class="block text-[14px] text-[#2D2825] dark:text-stone-200 font-medium mb-1.5">Proxy API Key</label>
-                                            <input type="password" wire:model="proxyApiKey" placeholder="sk-or-..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                            <input type="password" wire:model="proxyApiKey" placeholder="sk-or-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                                         </div>
                                     </div>
                                 </div>
@@ -434,13 +434,13 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export data</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Request an export of your account data. You will receive an email when it's ready.</p>
                                 </div>
-                                <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors">Export data</button>
+                                <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors">Export data</button>
                             </div>
                         </div>
                     </div>
@@ -455,7 +455,7 @@
                         $usageTotal = max(($tokensUsed + $tokensLimit), 1);
                         $usagePercent = min(100, round(($tokensUsed / $usageTotal) * 100));
                     @endphp
-                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
+                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Token usage</h3>
                             <span class="text-[13px] text-gray-500 dark:text-stone-400">{{ number_format($tokensUsed) }} used · {{ number_format($tokensLimit) }} remaining</span>
@@ -470,7 +470,7 @@
 
                     {{-- Per-model usage breakdown --}}
                     @if(count($tokenBreakdown) > 0)
-                        <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
+                        <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-3">Usage by model</h3>
                             <div class="space-y-2.5">
                                 @foreach($tokenBreakdown as $row)
@@ -491,7 +491,7 @@
                         </div>
                     @endif
 
-                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-[#E5E5E5] dark:border-stone-700 rounded-xl mb-6">
+                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-[16px] font-medium text-[#2D2825] dark:text-stone-200">Free Plan</h3>
@@ -535,7 +535,7 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Artifacts</label>
@@ -547,7 +547,7 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="border-t border-[#E5E5E5] dark:border-stone-700 pt-6">
+                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Code Execution (Beta)</label>
@@ -568,7 +568,7 @@
                     <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Connect Rynude to your tools to let it read context and perform actions on your behalf.</p>
                     
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
+                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-lg bg-[#F3F2EE] dark:bg-stone-700 flex items-center justify-center">
                                     <svg class="w-6 h-6 text-gray-700 dark:text-stone-300" viewBox="0 0 24 24" fill="currentColor">
@@ -584,7 +584,7 @@
                             <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">Connect</button>
                         </div>
                         
-                        <div class="flex items-center justify-between p-4 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
+                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-lg bg-[#F3F2EE] dark:bg-stone-700 flex items-center justify-center">
                                     <svg class="w-6 h-6 text-gray-700 dark:text-stone-300" viewBox="0 0 24 24" fill="currentColor">
@@ -610,7 +610,7 @@
                             <div>
                                 <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Hugging Face API Key</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key (Token) dari akun Hugging Face Anda.</p>
-                                <input type="password" wire:model="huggingfaceApiKey" placeholder="hf_..." class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                                <input type="password" wire:model="huggingfaceApiKey" placeholder="hf_..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
                             </div>
                             @if($hfStatus === 'saved')
                                 <div class="text-sm text-green-600 dark:text-green-400 mt-2">Pengaturan Hugging Face berhasil disimpan!</div>
@@ -620,14 +620,14 @@
                                 <button type="button" wire:click="saveHuggingface" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Simpan Konfigurasi</button>
                             </div>
 
-                            <div class="pt-6 border-t border-[#E5E5E5] dark:border-stone-700">
+                            <div class="pt-6 border-t border-claude-border-light dark:border-claude-border-dark">
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="font-bold text-[16px] text-[#2D2825] dark:text-stone-200">Custom Hugging Face Models</h3>
                                     <button wire:click="createModel" class="px-3 py-1.5 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">+ Add HF Model</button>
                                 </div>
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400 mb-4">Tambahkan model spesifik (contoh: <code>zai-org/GLM-4.7-Flash</code>, <code>meta-llama/Meta-Llama-3-8B-Instruct</code>).</p>
                                 
-                                <div class="overflow-x-auto border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
+                                <div class="overflow-x-auto border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
                                     <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
                                         <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
                                             <tr>
@@ -680,7 +680,7 @@
                         </div>
                     @endif
 
-                    <div class="overflow-x-auto border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800/50">
+                    <div class="overflow-x-auto border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
                         <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
                             <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
                                 <tr>
@@ -721,7 +721,7 @@
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Rynude Code</h2>
                     <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Rynude Code is an AI coding assistant that lives in your terminal. It understands your codebase and helps you write code faster.</p>
                     
-                    <div class="p-6 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-gray-50 dark:bg-stone-800/30 mb-8">
+                    <div class="p-6 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-gray-50 dark:bg-stone-800/30 mb-8">
                         <div class="flex items-center gap-3 mb-4">
                             <div class="w-8 h-8 rounded-lg bg-[#2D2825] dark:bg-stone-900 text-white flex items-center justify-center font-mono text-sm">$&gt;</div>
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Install via npm</h3>
@@ -758,7 +758,7 @@
                 <!-- Create/Edit Modal overlay (Global) -->
                 @if($isModelModalOpen)
                     <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                        <div class="bg-white dark:bg-stone-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-stone-700 overflow-hidden">
+                        <div class="bg-claude-bg-light dark:bg-claude-bg-dark w-full max-w-sm rounded-xl shadow-2xl border border-gray-200 dark:border-stone-700 overflow-hidden">
                             <div class="p-5 border-b border-gray-200 dark:border-stone-700 flex justify-between items-center bg-[#F3F2EE] dark:bg-stone-800">
                                 <h3 class="font-bold text-[#2D2825] dark:text-stone-100">{{ $editModelId ? 'Edit Model' : 'Add New Model' }}</h3>
                                 <button wire:click="closeModelModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-stone-300">&times;</button>
@@ -766,19 +766,19 @@
                             <div class="p-5">
                                 <div class="mb-4">
                                     <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Code (ID)</label>
-                                    <input type="text" wire:model="modelCode" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. google/gemma-7b">
+                                    <input type="text" wire:model="modelCode" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. google/gemma-7b">
                                     @error('modelCode') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="mb-4">
                                     <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Model Name (Display)</label>
-                                    <input type="text" wire:model="modelName" class="w-full px-3 py-2.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. Gemma 7B">
+                                    <input type="text" wire:model="modelName" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. Gemma 7B">
                                     @error('modelName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="mb-6 flex items-center mt-6">
                                     <input type="checkbox" id="modelIsActive" wire:model="modelIsActive" class="w-4 h-4 text-[#D97757] bg-gray-100 border-gray-300 rounded focus:ring-[#D97757] dark:bg-stone-700 dark:border-stone-600">
                                     <label for="modelIsActive" class="ml-2 text-[14px] font-medium text-[#2D2825] dark:text-stone-300">Set as Active</label>
                                 </div>
-                                <div class="flex justify-end gap-3 pt-4 border-t border-[#E5E5E5] dark:border-stone-700">
+                                <div class="flex justify-end gap-3 pt-4 border-t border-claude-border-light dark:border-claude-border-dark">
                                     <button wire:click="closeModelModal" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600 dark:hover:bg-stone-700 transition-colors">Cancel</button>
                                     <button wire:click="storeModel" class="px-4 py-2 text-sm font-medium text-white bg-[#D97757] rounded-lg hover:bg-[#c66547] transition-colors">Save</button>
                                 </div>

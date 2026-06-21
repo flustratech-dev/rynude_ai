@@ -67,7 +67,7 @@
             }
         }
     }"
-    class="h-[100dvh] flex bg-[#F9F8F6] dark:bg-stone-900 overflow-hidden"
+    class="h-[100dvh] flex bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-hidden"
     x-init="init()"
     @keydown.window="handleShortcut($event)"
     @show-shortcuts.window="shortcutsOpen = true"
@@ -91,7 +91,7 @@
             x-transition:leave="transition-transform ease-in duration-300"
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="-translate-x-full"
-            class="fixed inset-y-0 left-0 z-40 w-[300px] shadow-2xl bg-[#F9F8F6] dark:bg-stone-900"
+            class="fixed inset-y-0 left-0 z-40 w-[300px] shadow-2xl bg-[#F9F8F6] dark:bg-claude-bg-dark"
         >
             <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="mobile-sidebar" />
         </div>
@@ -102,7 +102,7 @@
         x-show="!isMobile"
         x-cloak
         :class="sidebarOpen ? 'w-[280px]' : 'w-[60px]'"
-        class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 hidden md:block bg-[#F9F8F6] dark:bg-[#1E1E1E]"
+        class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:block bg-[#F9F8F6] dark:bg-claude-bg-dark"
     >
         <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
     </div>
@@ -128,23 +128,23 @@
         <div class="flex-1 flex overflow-hidden relative">
             <div class="flex-1 flex flex-col min-w-0 relative">
                 <!-- SPA Pre-mounted panels managed by AlpineJS -->
-                <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:chats-panel key="panel-chats" />
                 </div>
-                <div x-show="activePanel === 'projects'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                <div x-show="activePanel === 'projects'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:projects-panel key="panel-projects" />
                 </div>
-                <div x-show="activePanel === 'code'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                <div x-show="activePanel === 'code'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:code-panel key="panel-code" />
                 </div>
-                <div x-show="activePanel === 'cowork'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                <div x-show="activePanel === 'cowork'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:cowork-panel key="panel-cowork" />
                 </div>
-                <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-stone-900 h-full overflow-hidden">
+                <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:design-panel key="panel-design" />
                 </div>
                 
-                <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#FAFAFA] dark:bg-stone-900 h-full overflow-hidden">
+                <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:customize-panel key="panel-customize" />
                 </div>
                 

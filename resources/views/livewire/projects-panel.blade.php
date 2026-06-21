@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col bg-[#F9F8F6] dark:bg-[#1C1A1A] overflow-y-auto relative">
+<div class="h-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-y-auto relative">
     
     @if($selectedProjectId && $selectedProject)
         {{-- ==========================================
