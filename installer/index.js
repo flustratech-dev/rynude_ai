@@ -71,6 +71,11 @@ async function run() {
         
         fs.removeSync(INSTALL_DIR);
         spinner.succeed('Data lama dibackup dan siap diupdate.');
+    } else if (fs.existsSync(path.join(backupDir, '.env'))) {
+        // Jika instalasi sebelumnya gagal di tengah jalan (folder utama sudah terhapus
+        // tapi backup masih ada di folder tmp), gunakan backup tersebut agar APP_KEY tidak hilang.
+        hasBackup = true;
+        console.log(chalk.green('Backup dari instalasi yang terputus ditemukan, akan dilanjutkan.'));
     }
 
     console.log(chalk.gray(`\nMenginstal Rynude AI ke folder tersembunyi: ${INSTALL_DIR}`));
