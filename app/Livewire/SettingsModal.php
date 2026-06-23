@@ -231,21 +231,6 @@ class SettingsModal extends Component
         session()->flash('dataMessage', 'All chats have been deleted.');
     }
 
-    public function buildDesktopApp()
-    {
-        if (!\Illuminate\Support\Facades\Auth::check()) return;
-
-        $batPath = base_path('build-exe.bat');
-        if (file_exists($batPath) && strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // Jalankan tanpa terminal (hidden) tapi tetap meminta akses Administrator (UAC)
-            $command = 'powershell.exe Start-Process -FilePath "' . $batPath . '" -Verb RunAs -WindowStyle Hidden';
-            pclose(popen('start /B ' . $command, 'r'));
-            session()->flash('dataMessage', 'Proses Build berjalan secara gaib di latar belakang! Silakan klik "Yes" jika muncul pop-up Windows. Anda akan mendapat notifikasi saat selesai (± 3 menit).');
-        } else {
-            session()->flash('dataMessage', 'File build-exe.bat tidak ditemukan.');
-        }
-    }
-
     public function saveApiKeys()
     {
         if (!\Illuminate\Support\Facades\Auth::check()) {
