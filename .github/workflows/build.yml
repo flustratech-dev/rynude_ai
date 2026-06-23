@@ -1,0 +1,51 @@
+name: Build Rynude Desktop Apps
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger build hanya saat Anda merilis tag versi baru (misal: v1.0.0)
+  workflow_dispatch: # Memungkinkan Anda memicu build secara manual di GitHub
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite3, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Composer Dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install NPM Dependencies
+        run: npm install
+
+      - name: Build Frontend Assets
+        run: npm run build
+
+      - name: Build NativePHP App
+        run: php artisan native:build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rynude-Desktop-${{ runner.os }}
+          path: dist/*

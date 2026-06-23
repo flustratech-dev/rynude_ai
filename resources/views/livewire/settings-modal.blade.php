@@ -212,6 +212,28 @@
                             </button>
                         </div>
                     </div>
+
+                    {{-- Desktop Application Section --}}
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6 border-t border-claude-border-light dark:border-claude-border-dark pt-8">Desktop Application</h2>
+                    
+                    <div class="space-y-6">
+                        @if (session()->has('dataMessage'))
+                            <div class="p-3 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-stone-800 dark:text-green-400 border border-green-200 dark:border-stone-700">
+                                {{ session('dataMessage') }}
+                            </div>
+                        @endif
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Desktop Application</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Install Rynude AI as a native application on your Windows PC. Administrators can compile new versions instantly without opening the terminal.</p>
+                            </div>
+                            <div class="flex items-center gap-3 flex-shrink-0">
+                                <a href="/downloads/Rynude-Portable.zip" download class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">
+                                    Download .zip
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- ========== APPEARANCE TAB ========== --}}
