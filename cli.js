@@ -159,6 +159,11 @@ async function run() {
     console.log(chalk.gray('   Local Web UI  : ') + chalk.green(`http://localhost:${laravelPort}`));
     console.log(chalk.magenta('===================================================================\n'));
 
+    // Tulis port ke file sementara agar bisa dibaca oleh script PowerShell
+    try {
+        fs.writeFileSync(path.join(process.cwd(), '.rynude-port'), laravelPort.toString());
+    } catch (err) {}
+
     // Menjalankan server di background
     const phpServer = spawn(`php artisan serve --port=${laravelPort}`, {
         stdio: 'ignore',
@@ -221,8 +226,16 @@ async function run() {
         }
     }
 
-    // Tampilkan menu interaktif
-    showMenu();
+    // Cek apakah dijalankan dalam mode silent (oleh PowerShell)
+    const isSilent = process.argv.includes('--silent');
+
+    if (isSilent) {
+        console.log(chalk.gray('Berjalan di mode silent (Background). Gunakan icon Taskbar untuk menutup.'));
+        // JANGAN panggil showMenu() agar proses tidak tertahan menunggu input pengguna.
+    } else {
+        // Tampilkan menu interaktif
+        showMenu();
+    }
 }
 
 run().catch(e => {
