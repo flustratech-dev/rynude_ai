@@ -159,6 +159,11 @@ async function run() {
     console.log(chalk.gray('   Local Web UI  : ') + chalk.green(`http://localhost:${laravelPort}`));
     console.log(chalk.magenta('===================================================================\n'));
 
+    // Tulis port ke file sementara agar bisa dibaca oleh script background
+    try {
+        fs.writeFileSync(path.join(process.cwd(), '.rynude-port'), laravelPort.toString());
+    } catch (err) {}
+
     // Menjalankan server di background
     const phpServer = spawn(`php artisan serve --port=${laravelPort}`, {
         stdio: 'ignore',
@@ -221,11 +226,26 @@ async function run() {
         }
     }
 
-    // Tampilkan menu interaktif
-    showMenu();
+    // Cek apakah dijalankan dalam mode silent (oleh Background Launcher)
+    const isSilent = process.argv.includes('--silent');
+
+    if (isSilent) {
+        console.log(chalk.gray('Berjalan di mode silent (Background). Gunakan icon Taskbar untuk menutup.'));
+        
+        // Buka browser otomatis setelah beberapa saat menunggu server PHP siap
+        setTimeout(() => {
+            console.log(chalk.blue('Membuka browser otomatis...'));
+            spawn('cmd', ['/c', 'start', `http://localhost:${laravelPort}`], { stdio: 'ignore' });
+        }, 2000);
+        
+        // JANGAN panggil showMenu() agar proses tidak tertahan menunggu input pengguna.
+    } else {
+        // Tampilkan menu interaktif
+        showMenu();
+    }
 }
 
 run().catch(e => {
-    console.error(chalk.red('Gagal memulai server:'), e);
+    console.error(chalk.red('Gagal memulai Rynude AI:'), e);
     process.exit(1);
 });
