@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    // Guests land on the marketing page; signed-in users go straight to the app.
-    return auth()->check() ? view('chat') : view('welcome');
+    // Guests land on the login page; signed-in users go straight to the app.
+    return auth()->check() ? view('chat') : redirect()->route('login');
 })->name('home');
 
 Route::get('/dashboard', function () {
