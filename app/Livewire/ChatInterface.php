@@ -18,7 +18,7 @@ class ChatInterface extends Component
     use WithFileUploads;
 
     public string $prompt = '';
-    public $attachment;
+    public $attachments = [];
     public array $messages = [];
     public ?int $conversationId = null;
     public $models = [];
@@ -140,7 +140,7 @@ class ChatInterface extends Component
 
     public function loadConversation()
     {
-        $conversation = Conversation::with(['messages.artifacts', 'messages.attachment'])->find($this->conversationId);
+        $conversation = Conversation::with(['messages.artifacts', 'messages.attachments'])->find($this->conversationId);
         if ($conversation && $conversation->user_id === Auth::id()) {
             $this->messages = [];
             foreach ($conversation->messages as $msg) {
@@ -156,21 +156,23 @@ class ChatInterface extends Component
                     ];
                 }
                 
-                $attachmentData = null;
-                if ($msg->attachment) {
-                    $attachmentData = [
-                        'file_path' => $msg->attachment->file_path,
-                        'file_type' => $msg->attachment->file_type,
-                        'file_name' => $msg->attachment->file_name,
-                    ];
+                $attachmentData = [];
+                if ($msg->attachments) {
+                    foreach ($msg->attachments as $att) {
+                        $attachmentData[] = [
+                            'file_path' => $att->file_path,
+                            'file_type' => $att->file_type,
+                            'file_name' => $att->file_name,
+                        ];
+                    }
                 }
                 
                 $this->messages[] = [
                     'role' => $msg->role,
                     'content' => $msg->content,
                     'rating' => $msg->rating,
-                    'artifact' => $artifactData,
-                    'attachment' => $attachmentData,
+                    'artifacts' => $artifactData,
+                    'attachments' => $attachmentData,
                 ];
             }
             $this->activeProjectId = $conversation->project_id;
@@ -182,16 +184,27 @@ class ChatInterface extends Component
     {
         $this->messages = [];
         $this->prompt = '';
-        $this->attachment = null;
+        $this->attachments = [];
         $this->conversationId = null;
         $this->activeProjectId = null;
     }
 
     #[On('startProjectChat')]
-    public function startProjectChat($projectId)
+    public function startProjectChat($projectId, $initialPrompt = null, $initialModel = null, $webSearch = false)
     {
         $this->resetChat();
         $this->activeProjectId = $projectId;
+        
+        if ($initialModel) {
+            $this->selectedModel = $initialModel;
+        }
+        
+        $this->webSearch = $webSearch;
+        
+        if (!empty($initialPrompt)) {
+            $this->prompt = $initialPrompt;
+            $this->sendMessage();
+        }
     }
 
     #[On('openChat')]
@@ -232,9 +245,12 @@ class ChatInterface extends Component
         }
     }
 
-    public function removeAttachment()
+    public function removeAttachment($index)
     {
-        $this->attachment = null;
+        if (isset($this->attachments[$index])) {
+            unset($this->attachments[$index]);
+            $this->attachments = array_values($this->attachments);
+        }
     }
 
     /**
@@ -373,7 +389,7 @@ class ChatInterface extends Component
 
         $text = trim($this->prompt);
 
-        if (empty($text) && empty($this->attachment)) {
+        if (empty($text) && empty($this->attachments)) {
             return;
         }
 
@@ -395,31 +411,33 @@ class ChatInterface extends Component
             'content' => $text,
         ]);
 
-        $attachmentData = null;
-        if ($this->attachment) {
-            $path = $this->attachment->store('attachments', 'public');
-            $attModel = \App\Models\MessageAttachment::create([
-                'message_id' => $userMessage->id,
-                'file_path' => $path,
-                'file_type' => $this->attachment->getMimeType(),
-                'file_name' => $this->attachment->getClientOriginalName(),
-            ]);
+        $attachmentData = [];
+        if (!empty($this->attachments)) {
+            foreach ($this->attachments as $att) {
+                $path = $att->store('attachments', 'public');
+                $attModel = \App\Models\MessageAttachment::create([
+                    'message_id' => $userMessage->id,
+                    'file_path' => $path,
+                    'file_type' => $att->getMimeType(),
+                    'file_name' => $att->getClientOriginalName(),
+                ]);
 
-            $attachmentData = [
-                'file_path' => $path,
-                'file_type' => $this->attachment->getMimeType(),
-                'file_name' => $this->attachment->getClientOriginalName(),
-            ];
+                $attachmentData[] = [
+                    'file_path' => $path,
+                    'file_type' => $att->getMimeType(),
+                    'file_name' => $att->getClientOriginalName(),
+                ];
+            }
         }
 
         $this->messages[] = [
             'role' => 'user',
             'content' => $text,
-            'attachment' => $attachmentData,
+            'attachments' => $attachmentData,
         ];
 
         $this->prompt = '';
-        $this->attachment = null;
+        $this->attachments = [];
         
         $this->dispatch('messageAdded');
     }
@@ -458,7 +476,7 @@ class ChatInterface extends Component
 
         // Prepare sliding window context
         $messagesForAi = [];
-        $historySize = 10;
+        $historySize = 100;
         
         $userMessages = array_filter($this->messages, fn($m) => $m['role'] !== 'system');
         $userMessages = array_values($userMessages);
@@ -525,6 +543,9 @@ class ChatInterface extends Component
         if ($this->activeProjectId) {
             $project = \App\Models\Project::with('files')->find($this->activeProjectId);
             if ($project) {
+                if ($project->description) {
+                    $baseSystemPrompt .= "\n\nProject Context (Memory):\n" . $project->description;
+                }
                 if ($project->custom_instructions) {
                     $baseSystemPrompt .= "\n\nProject Custom Instructions:\n" . $project->custom_instructions;
                 }
@@ -532,9 +553,9 @@ class ChatInterface extends Component
                     $baseSystemPrompt .= "\n\nProject Knowledge Files:\n";
                     foreach ($project->files as $file) {
                         if (\Illuminate\Support\Facades\Storage::exists($file->file_path)) {
-                            // Basic extraction, limit size to prevent massive context explosion
+                            // Extract document text, increase limit for large context
                             $content = \Illuminate\Support\Facades\Storage::get($file->file_path);
-                            $baseSystemPrompt .= "\n--- Document: {$file->file_name} ---\n" . substr($content, 0, 50000) . "\n";
+                            $baseSystemPrompt .= "\n--- Document: {$file->file_name} ---\n" . substr($content, 0, 2000000) . "\n";
                         }
                     }
                 }

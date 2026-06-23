@@ -10,7 +10,7 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -24,14 +24,18 @@
 
         <!-- Theme Initialization -->
         <script>
+            // Force dark mode on /code route (Claude Code terminal page)
+            var _isCodePage = window.location.pathname.startsWith('/code');
+
             function getTheme() {
+                if (_isCodePage) return 'dark';
                 if (localStorage.getItem('theme') === 'dark') return 'dark';
                 if (localStorage.getItem('theme') === 'light') return 'light';
                 return 'system';
             }
 
             function applyTheme(theme) {
-                if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                if (_isCodePage || theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
                 } else {
                     document.documentElement.classList.remove('dark');
@@ -49,16 +53,18 @@
                     theme: getTheme(),
                     init() {
                         this.$watch('theme', value => {
-                            localStorage.setItem('theme', value);
-                            applyTheme(value);
+                            if (!_isCodePage) {
+                                localStorage.setItem('theme', value);
+                                applyTheme(value);
+                            }
                         });
                         
                         window.addEventListener('theme-changed', (e) => {
-                            this.theme = e.detail;
+                            if (!_isCodePage) this.theme = e.detail;
                         });
                     },
                     setTheme(newTheme) {
-                        this.theme = newTheme;
+                        if (!_isCodePage) this.theme = newTheme;
                     }
                 }));
             });

@@ -16,7 +16,7 @@
         <p class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">Loading conversation...</p>
     </div>
 
-    <input type="file" wire:model="attachment" id="file-upload" class="hidden" accept="image/*,.pdf,.doc,.docx,.txt">
+    <input type="file" wire:model="attachments" id="file-upload" class="hidden" multiple accept="image/*,.pdf,.doc,.docx,.txt">
 
     {{-- Conversation Memory viewer / editor --}}
     @if($showMemory)
@@ -81,7 +81,8 @@
                     {{-- Prompt Box Container --}}
                     <div class="relative w-full mx-auto bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-2xl md:rounded-3xl shadow-md flex flex-col focus-within:shadow-lg focus-within:border-claude-accent/50 dark:focus-within:border-claude-accent/50 animate-smooth transition-all duration-200">
                         {{-- Uploading State --}}
-                        <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
+                        {{-- Uploading State --}}
+                        <div wire:loading wire:target="attachments" class="px-4 pt-4 pb-2 flex items-center gap-3">
                             <div class="w-16 h-16 rounded-xl border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                                 <svg class="animate-spin w-6 h-6 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             </div>
@@ -92,24 +93,35 @@
                         </div>
 
                         {{-- Attachment Preview Area --}}
-                        @if($attachment)
-                            <div wire:loading.remove wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
-                                <div class="relative group">
-                                    <div class="w-16 h-16 rounded-xl overflow-hidden border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
-                                        @if(str_starts_with($attachment->getMimeType(), 'image/'))
-                                            <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
-                                        @else
-                                            <svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                        @endif
-                                    </div>
-                                    <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                        @if(!empty($attachments))
+                            <div wire:loading.remove wire:target="attachments" class="px-4 pt-4 pb-2 flex flex-wrap items-center gap-3" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px;">
+                                @foreach($attachments as $index => $attachment)
+                                <div class="relative group bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm" style="width: 112px; height: 128px; min-width: 112px; flex-shrink: 0;">
+                                    @if(str_starts_with($attachment->getMimeType(), 'image/'))
+                                        <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
+                                        <div class="absolute bottom-2 left-2">
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-bold bg-white/90 dark:bg-stone-800/90 text-stone-600 dark:text-stone-300 uppercase border border-stone-200 dark:border-stone-600 backdrop-blur-sm shadow-sm" style="font-size: 10px;">
+                                                {{ strtoupper($attachment->getClientOriginalExtension()) }}
+                                            </span>
+                                        </div>
+                                    @else
+                                        <div class="flex flex-col h-full justify-between bg-white dark:bg-stone-800" style="padding: 10px;">
+                                            <p class="text-xs text-stone-800 dark:text-stone-200 font-medium leading-snug line-clamp-4 break-words">
+                                                {{ $attachment->getClientOriginalName() }}
+                                            </p>
+                                            <div class="mt-auto">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-bold bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 uppercase border border-stone-200 dark:border-stone-600" style="font-size: 10px;">
+                                                    {{ strtoupper($attachment->getClientOriginalExtension()) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                    
+                                    <button type="button" wire:click="removeAttachment({{ $index }})" class="absolute top-1.5 right-1.5 bg-black/40 hover:bg-black/60 dark:bg-black/60 dark:hover:bg-black/80 rounded-full p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 backdrop-blur-sm">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
                                 </div>
-                                <div class="flex flex-col">
-                                    <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate max-w-[200px]">{{ $attachment->getClientOriginalName() }}</span>
-                                    <span class="text-[11px] text-stone-500">{{ round($attachment->getSize() / 1024) }} KB</span>
-                                </div>
+                                @endforeach
                             </div>
                         @endif
 
@@ -118,7 +130,7 @@
                             x-init="$watch('$wire.prompt', value => { if(!value) { $el.style.height = 'auto'; } else { resize(); } }); resize()"
                             @input="resize()"
                         wire:model="prompt"
-                            @keydown.enter.prevent="if(!$event.shiftKey) { $wire.sendMessage() }"
+                            @keydown.enter="if(!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage() }"
                             rows="1"
                             class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto"
                             placeholder="How can I help you today?"
@@ -358,19 +370,31 @@
                                 <!-- User Message -->
                                 <div class="flex justify-end w-full">
                                     <div class="flex flex-col items-end gap-2 max-w-[85%] md:max-w-[75%]">
-                                        @if(isset($msg['attachment']) && $msg['attachment'])
-                                            <div class="bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-2xl p-2 shadow-sm flex items-center gap-3">
-                                                @if(str_starts_with($msg['attachment']['file_type'], 'image/'))
-                                                    <img src="{{ Storage::url($msg['attachment']['file_path']) }}" class="w-20 h-20 object-cover rounded-xl border border-claude-border-light dark:border-claude-border-dark" alt="Attachment">
-                                                @else
-                                                    <div class="w-12 h-12 bg-stone-100 dark:bg-stone-700 rounded-xl flex items-center justify-center shrink-0">
-                                                        <svg class="w-6 h-6 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                        @if(isset($msg['attachments']) && !empty($msg['attachments']))
+                                            <div class="flex flex-wrap gap-2 justify-end w-full" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; justify-content: flex-end; width: 100%;">
+                                                @foreach($msg['attachments'] as $att)
+                                                    <div class="relative group bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm" style="width: 112px; height: 128px; min-width: 112px; flex-shrink: 0;">
+                                                        @if(str_starts_with($att['file_type'], 'image/'))
+                                                            <img src="{{ Storage::url($att['file_path']) }}" class="w-full h-full object-cover" alt="Attachment">
+                                                            <div class="absolute bottom-2 left-2">
+                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-bold bg-white/90 dark:bg-stone-800/90 text-stone-600 dark:text-stone-300 uppercase border border-stone-200 dark:border-stone-600 backdrop-blur-sm shadow-sm" style="font-size: 10px;">
+                                                                    {{ strtoupper(pathinfo($att['file_name'], PATHINFO_EXTENSION)) }}
+                                                                </span>
+                                                            </div>
+                                                        @else
+                                                            <div class="flex flex-col h-full justify-between bg-white dark:bg-stone-800" style="padding: 10px;">
+                                                                <p class="text-xs text-stone-800 dark:text-stone-200 font-medium leading-snug line-clamp-4 break-words">
+                                                                    {{ $att['file_name'] }}
+                                                                </p>
+                                                                <div class="mt-auto">
+                                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-bold bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 uppercase border border-stone-200 dark:border-stone-600" style="font-size: 10px;">
+                                                                        {{ strtoupper(pathinfo($att['file_name'], PATHINFO_EXTENSION)) }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        @endif
                                                     </div>
-                                                @endif
-                                                <div class="pr-2">
-                                                    <p class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate max-w-[150px]">{{ $msg['attachment']['file_name'] }}</p>
-                                                    <p class="text-[11px] text-stone-500 uppercase">{{ explode('/', $msg['attachment']['file_type'])[1] ?? 'FILE' }}</p>
-                                                </div>
+                                                @endforeach
                                             </div>
                                         @endif
                                         @if(!empty($msg['content']))
@@ -534,7 +558,7 @@
                 <div class="relative w-full mx-auto bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark/80 rounded-[1.25rem] shadow-sm flex flex-col focus-within:shadow-glow focus-within:border-stone-300 dark:focus-within:border-stone-500 animate-smooth transition-all duration-200">
                     
                     {{-- Uploading State --}}
-                    <div wire:loading wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
+                    <div wire:loading wire:target="attachments" class="px-4 pt-4 pb-2 flex items-center gap-3">
                         <div class="w-16 h-16 rounded-xl border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                             <svg class="animate-spin w-6 h-6 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         </div>
@@ -545,24 +569,35 @@
                     </div>
 
                     {{-- Attachment Preview Area --}}
-                    @if($attachment)
-                        <div wire:loading.remove wire:target="attachment" class="px-4 pt-4 pb-2 flex items-center gap-3">
-                            <div class="relative group">
-                                <div class="w-16 h-16 rounded-xl overflow-hidden border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
-                                    @if(str_starts_with($attachment->getMimeType(), 'image/'))
-                                        <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
-                                    @else
-                                        <svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                    @endif
-                                </div>
-                                <button type="button" wire:click="removeAttachment" class="absolute -top-2 -right-2 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full p-1 text-stone-500 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    @if(!empty($attachments))
+                        <div wire:loading.remove wire:target="attachments" class="px-4 pt-4 pb-2 flex flex-wrap items-center gap-3" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px;">
+                            @foreach($attachments as $index => $attachment)
+                            <div class="relative group bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm" style="width: 112px; height: 128px; min-width: 112px; flex-shrink: 0;">
+                                @if(str_starts_with($attachment->getMimeType(), 'image/'))
+                                    <img src="{{ $attachment->temporaryUrl() }}" class="w-full h-full object-cover" alt="Preview">
+                                    <div class="absolute bottom-2 left-2">
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-bold bg-white/90 dark:bg-stone-800/90 text-stone-600 dark:text-stone-300 uppercase border border-stone-200 dark:border-stone-600 backdrop-blur-sm shadow-sm" style="font-size: 10px;">
+                                            {{ strtoupper($attachment->getClientOriginalExtension()) }}
+                                        </span>
+                                    </div>
+                                @else
+                                    <div class="flex flex-col h-full justify-between bg-white dark:bg-stone-800" style="padding: 10px;">
+                                        <p class="text-xs text-stone-800 dark:text-stone-200 font-medium leading-snug line-clamp-4 break-words">
+                                            {{ $attachment->getClientOriginalName() }}
+                                        </p>
+                                        <div class="mt-auto">
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-bold bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 uppercase border border-stone-200 dark:border-stone-600" style="font-size: 10px;">
+                                                {{ strtoupper($attachment->getClientOriginalExtension()) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                @endif
+                                
+                                <button type="button" wire:click="removeAttachment({{ $index }})" class="absolute top-1.5 right-1.5 bg-black/40 hover:bg-black/60 dark:bg-black/60 dark:hover:bg-black/80 rounded-full p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 backdrop-blur-sm">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate max-w-[200px]">{{ $attachment->getClientOriginalName() }}</span>
-                                <span class="text-[11px] text-stone-500">{{ round($attachment->getSize() / 1024) }} KB</span>
-                            </div>
+                            @endforeach
                         </div>
                     @endif
 
@@ -571,7 +606,7 @@
                         x-init="$watch('$wire.prompt', value => { if(!value) { $el.style.height = 'auto'; } else { resize(); } }); resize()"
                         @input="resize()"
                         wire:model="prompt" 
-                        @keydown.enter.prevent="if(!$event.shiftKey) { $wire.sendMessage() }" 
+                        @keydown.enter="if(!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage() }" 
                         rows="1" 
                         class="w-full bg-transparent border-0 focus:ring-0 px-3 md:px-4 pt-3 md:pt-4 pb-2 resize-none text-[#2D2825] dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto" 
                         placeholder="How can I help you today?"></textarea>
@@ -724,11 +759,11 @@
                             </div>
 
                             {{-- Send Button --}}
-                            <button type="submit" x-data :disabled="!$wire.prompt.trim() && !$wire.attachment" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse, attachment" :class="($wire.prompt.trim() || $wire.attachment) ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-colors p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed">
-                                <svg wire:loading.remove wire:target="sendMessage, generateResponse, attachment" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <button type="submit" x-data :disabled="!$wire.prompt.trim() && $wire.attachments.length === 0" wire:loading.attr="disabled" wire:target="sendMessage, generateResponse, attachments" :class="($wire.prompt.trim() || $wire.attachments.length > 0) ? 'bg-[#D97757] text-white hover:bg-[#c96646]' : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500'" class="rounded-lg transition-colors p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed">
+                                <svg wire:loading.remove wire:target="sendMessage, generateResponse, attachments" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M12 19V5M5 12l7-7 7 7"/>
                                 </svg>
-                                <svg wire:loading wire:target="sendMessage, generateResponse, attachment" class="animate-spin w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <svg wire:loading wire:target="sendMessage, generateResponse, attachments" class="animate-spin w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>

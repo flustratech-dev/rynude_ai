@@ -3,207 +3,616 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\MessageAttachment;
+use App\Models\AiModel;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class ClaudeCodeApp extends Component
 {
-    public $message = '';
-    public $conversation = null;
-    public $messages = [];
-    public $isStarted = false;
-    public $currentView = 'chat'; // 'chat', 'routines', 'new-routine'
-    public $selectedModel = 'claude-sonnet-4-6';
-    public $models = [];
-    public $moreModels = [];
+    use WithFileUploads;
 
-    public function mount()
+    // ── Chat State ─────────────────────────────────────
+    public string $message = '';
+    public ?Conversation $conversation = null;
+    public array $messages = [];
+    public bool $isStarted = false;
+    public bool $isStreaming = false;
+
+    // ── Navigation ─────────────────────────────────────
+    public string $currentView = 'chat'; // 'chat' | 'routines' | 'new-routine'
+
+    // ── Models ─────────────────────────────────────────
+    public string $selectedModel = 'claude-sonnet-4-6';
+    public array $models = [];
+    public array $moreModels = [];
+
+    // ── File Attachments ───────────────────────────────
+    public array $attachments = [];       // uploaded Livewire temp files
+    public array $attachmentPreviews = []; // [{name, type, path}]
+
+    // ── Repository ─────────────────────────────────────
+    public string $repoUrl = '';
+    public string $repoConnected = ''; // display name once connected
+    public bool $repoModalOpen = false;
+    public string $repoError = '';
+    public array $repoTree = []; // [ ['type'=>'dir|file', 'name'=>'...', 'path'=>'...', 'size'=>0, 'depth'=>0] ]
+
+    // ── File Explorer & Context ────────────────────────
+    public array $localFilesTree = []; // similar structure for uploaded files
+    public array $selectedFilesContext = []; // [ ['name'=>'...', 'content'=>'...'] ]
+
+    // ── Mode ───────────────────────────────────────────
+    // accept = writes code directly, plan = outlines first, auto = autonomous
+    public string $selectedMode = 'accept';
+
+    // ── Session History ────────────────────────────────
+    public array $recentSessions = [];
+
+    // ── Token Counter ──────────────────────────────────
+    public int $sessionTokens = 0;
+
+    public function mount(): void
     {
-        $this->messages = [];
-        $this->models = [];
-        $this->moreModels = [];
+        $this->buildModelList();
+        $this->restoreSelectedModel();
+        $this->loadRecentSessions();
+    }
 
-        $user = auth()->user();
-        $hasAnthropic = $user && !empty($user->anthropic_api_key);
-        $hasOpenAI = $user && !empty($user->openai_api_key);
-        $useProxy = $user && $user->use_proxy && !empty($user->proxy_base_url);
+    // ═══════════════════════════════════════
+    //  MODEL LIST  (mirrors ChatInterface)
+    // ═══════════════════════════════════════
+    private function buildModelList(): void
+    {
+        $user = Auth::user();
+        $hasAnthropic  = $user && !empty($user->anthropic_api_key);
+        $hasOpenAI     = $user && !empty($user->openai_api_key);
+        $useProxy      = $user && $user->use_proxy && !empty($user->proxy_base_url);
         $hasNineRouter = $user && !empty($user->nine_router_api_key);
-        $hasHuggingFace = $user && !empty($user->huggingface_api_key);
-        
-        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace;
+        $hasHuggingFace= $user && !empty($user->huggingface_api_key);
+        $hasGoogle     = $user && !empty($user->google_api_key);
+        $hasMistral    = $user && !empty($user->mistral_api_key);
+
+        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace || $hasGoogle || $hasMistral;
 
         $this->models = [
-            (object)[
-                'code' => 'fable-5',
-                'name' => 'Fable 5',
-                'description' => 'For your toughest challenges',
-                'is_available' => false,
-            ],
-            (object)[
-                'code' => 'claude-opus-4-8',
-                'name' => 'Opus 4.8',
-                'description' => 'For complex tasks',
-                'is_available' => $available,
-            ],
-            (object)[
-                'code' => 'claude-sonnet-4-6',
-                'name' => 'Sonnet 4.6',
-                'description' => 'Most efficient for everyday tasks',
-                'is_available' => $available,
-            ],
-            (object)[
-                'code' => 'claude-haiku-4-5',
-                'name' => 'Haiku 4.5',
-                'description' => 'Fastest for quick answers',
-                'is_available' => $available,
-            ]
+            (object)['code'=>'fable-5',           'name'=>'Fable 5',    'description'=>'For your toughest challenges', 'is_available'=>false],
+            (object)['code'=>'claude-opus-4-8',   'name'=>'Opus 4.8',   'description'=>'For complex tasks',             'is_available'=>$available],
+            (object)['code'=>'claude-sonnet-4-6', 'name'=>'Sonnet 4.6', 'description'=>'Most efficient for everyday',   'is_available'=>$available],
+            (object)['code'=>'claude-haiku-4-5',  'name'=>'Haiku 4.5',  'description'=>'Fastest for quick answers',     'is_available'=>$available],
         ];
 
-        // Restore moreModels from DB
-        $allModels = \App\Models\AiModel::where('is_active', true)->get();
-        foreach ($allModels as $model) {
-            $isAnthropic = str_starts_with($model->code, 'claude');
-            $isOpenAI = str_starts_with($model->code, 'gpt');
+        $pinned = ['fable-5','claude-opus-4-8','claude-sonnet-4-6','claude-haiku-4-5'];
+        foreach (AiModel::where('is_active', true)->get() as $m) {
+            if (in_array($m->code, $pinned)) continue;
 
-            $is_available = false;
-            if (str_starts_with($model->code, 'kr/claude')) {
-                $is_available = true;
-            } elseif ($useProxy || $hasNineRouter) {
-                $is_available = true;
-            } elseif ($model->provider === 'huggingface' && $hasHuggingFace) {
-                $is_available = true;
-            } elseif ($isAnthropic && $hasAnthropic) {
-                $is_available = true;
-            } elseif ($hasOpenAI && !$isAnthropic) {
-                $is_available = true;
-            }
+            $isAnthropic = str_starts_with($m->code, 'claude');
+            $isOpenAI    = str_starts_with($m->code, 'gpt');
+            $avail = false;
+            if (str_starts_with($m->code, 'kr/claude'))                        $avail = true;
+            elseif ($useProxy || $hasNineRouter)                               $avail = true;
+            elseif ($m->provider === 'huggingface'  && $hasHuggingFace)        $avail = true;
+            elseif ($m->provider === 'google'        && $hasGoogle)             $avail = true;
+            elseif ($m->provider === 'mistral'       && $hasMistral)            $avail = true;
+            elseif ($isAnthropic                     && $hasAnthropic)          $avail = true;
+            elseif ($hasOpenAI                       && !$isAnthropic)          $avail = true;
 
-            // Exclude models already in $this->models
-            if (!in_array($model->code, ['fable-5', 'claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5'])) {
-                $this->moreModels[] = (object)[
-                    'code' => $model->code,
-                    'name' => $model->name,
-                    'description' => $model->name,
-                    'is_available' => $is_available,
-                ];
-            }
+            $this->moreModels[] = (object)['code'=>$m->code,'name'=>$m->name,'description'=>$m->name,'is_available'=>$avail];
         }
     }
 
-    public function sendMessage()
+    private function restoreSelectedModel(): void
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
-
-        if (trim($this->message) === '') return;
-
-        // Create conversation if it doesn't exist
-        if (!$this->conversation) {
-            $this->conversation = Conversation::create([
-                'user_id' => Auth::id(),
-                'title' => substr($this->message, 0, 30) . '...',
-            ]);
-            $this->dispatch('chatCreated');
-        }
-
-        // Save user message
-        $userMessage = Message::create([
-            'conversation_id' => $this->conversation->id,
-            'role' => 'user',
-            'content' => $this->message,
-        ]);
-        
-        $this->messages[] = $userMessage->toArray();
-
-        $this->isStarted = true;
-        $this->message = '';
-        
-        // Dispatch event to scroll to bottom
-        $this->dispatch('message-added');
+        $valid = array_merge(
+            array_map(fn($m) => $m->code, $this->models),
+            array_map(fn($m) => $m->code, $this->moreModels)
+        );
+        $remembered = session('code_selected_model');
+        $this->selectedModel = ($remembered && in_array($remembered, $valid))
+            ? $remembered
+            : 'claude-sonnet-4-6';
     }
 
-    #[\Livewire\Attributes\On('generateResponse')]
-    public function generateResponse()
+    public function updatedSelectedModel($value): void
     {
-        set_time_limit(0);
+        if (!empty($value)) session(['code_selected_model' => $value]);
+    }
 
-        if (empty($this->messages) || end($this->messages)['role'] !== 'user') {
-            return;
-        }
+    // ═══════════════════════════════════════
+    //  SESSION HISTORY
+    // ═══════════════════════════════════════
+    private function loadRecentSessions(): void
+    {
+        if (!Auth::check()) return;
+        $this->recentSessions = Conversation::where('user_id', Auth::id())
+            ->whereNull('archived_at')
+            ->orderByDesc('updated_at')
+            ->limit(25)
+            ->get(['id','title','updated_at'])
+            ->map(fn($c) => [
+                'id'    => $c->id,
+                'title' => $c->title ?? 'Untitled session',
+                'ago'   => $c->updated_at->diffForHumans(short: true),
+            ])
+            ->toArray();
+    }
 
-        $messagesForAi = [];
-        $historySize = 10;
-        
-        $userMessages = array_filter($this->messages, fn($m) => $m['role'] !== 'system');
-        $userMessages = array_values($userMessages);
-        $totalMsgs = count($userMessages);
-        
-        if ($totalMsgs > $historySize) {
-            $firstMessage = $userMessages[0] ?? null;
-            $recentMessages = array_slice($userMessages, -($historySize - 1));
-            if ($firstMessage) {
-                $messagesForAi[] = $firstMessage;
-            }
-            $messagesForAi = array_merge($messagesForAi, $recentMessages);
-        } else {
-            $messagesForAi = $userMessages;
-        }
+    public function loadSession(int $conversationId): void
+    {
+        $conv = Conversation::with('messages')->find($conversationId);
+        if (!$conv || $conv->user_id !== Auth::id()) return;
 
-        $systemPrompt = "You are Rynude Code, an autonomous CLI agent and expert software engineer. You specialize in reading, writing, and analyzing code. When providing code blocks, shell commands, or configurations, format them appropriately using markdown. Act as an advanced developer tool directly integrated into the user's environment. You can assume you are operating in 'Simulated Agentic Mode'. Always give concise, professional, and accurate technical responses. Avoid unnecessary pleasantries.";
+        $this->conversation = $conv;
+        $this->messages = [];
+        $this->sessionTokens = 0;
 
-        // Apply the user's active Skills so configured behaviours carry over here too.
-        if (Auth::check()) {
-            $activeSkills = \App\Models\Skill::where('user_id', Auth::id())
-                ->where('is_active', true)
-                ->get();
-            if ($activeSkills->isNotEmpty()) {
-                $systemPrompt .= "\n\nActive Skills (apply these behaviours):";
-                foreach ($activeSkills as $skill) {
-                    $systemPrompt .= "\n\n[Skill: {$skill->name}]\n" . $skill->instructions;
-                }
-            }
-        }
-
-        array_unshift($messagesForAi, [
-            'role' => 'system',
-            'content' => $systemPrompt,
-        ]);
-
-        $aiService = new \App\Services\AI\AiService();
-        $stream = $aiService->streamResponse($messagesForAi, $this->selectedModel);
-
-        $fullResponse = '';
-        
-        foreach ($stream as $chunk) {
-            $fullResponse .= $chunk;
-            
-            $htmlDisplay = \Illuminate\Support\Str::markdown($fullResponse);
-            
-            $this->stream(
-                to: 'message-stream',
-                content: $htmlDisplay,
-                replace: true
-            );
-        }
-
-        if (!empty($fullResponse)) {
-            Message::create([
-                'conversation_id' => $this->conversation->id,
-                'role' => 'assistant',
-                'content' => $fullResponse,
-            ]);
-            
+        foreach ($conv->messages as $msg) {
             $this->messages[] = [
-                'role' => 'assistant',
-                'content' => $fullResponse,
+                'role'    => $msg->role,
+                'content' => $msg->content,
+            ];
+            $this->sessionTokens += (int)(strlen($msg->content) / 4);
+        }
+
+        $this->isStarted    = !empty($this->messages);
+        
+        $meta = $conv->metadata ?? [];
+        $this->repoConnected = $meta['repo'] ?? '';
+        $this->repoTree = $meta['repoTree'] ?? [];
+        $this->selectedFilesContext = $meta['selectedFilesContext'] ?? [];
+        
+        $this->currentView  = 'chat';
+
+        $this->dispatch('scroll-to-bottom');
+    }
+
+    public function deleteSession(int $conversationId): void
+    {
+        $conv = Conversation::find($conversationId);
+        if (!$conv || $conv->user_id !== Auth::id()) return;
+
+        if ($this->conversation?->id === $conversationId) {
+            $this->newSession();
+        }
+        $conv->messages()->delete();
+        $conv->delete();
+        $this->loadRecentSessions();
+    }
+
+    public function newSession(): void
+    {
+        $this->conversation     = null;
+        $this->messages         = [];
+        $this->message          = '';
+        $this->attachments      = [];
+        $this->attachmentPreviews = [];
+        $this->isStarted        = false;
+        $this->isStreaming       = false;
+        $this->sessionTokens    = 0;
+        $this->repoConnected    = '';
+        $this->repoTree         = [];
+        $this->selectedFilesContext = [];
+        $this->currentView      = 'chat';
+    }
+
+    // ═══════════════════════════════════════
+    //  FILE UPLOADS
+    // ═══════════════════════════════════════
+    public function updatedAttachments(): void
+    {
+        $this->attachmentPreviews = [];
+        $this->localFilesTree = [];
+        
+        foreach ($this->attachments as $file) {
+            $name = $file->getClientOriginalName();
+            $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'txt';
+            
+            $this->attachmentPreviews[] = [
+                'name' => $name,
+                'type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ];
+            
+            $this->localFilesTree[] = [
+                'type' => 'file',
+                'name' => $name,
+                'path' => $name, // local files don't have deep paths in temp
+                'depth' => 0,
+                'extra' => strtolower($ext)
             ];
         }
     }
 
+    public function removeAttachment(int $index): void
+    {
+        array_splice($this->attachments, $index, 1);
+        array_splice($this->attachmentPreviews, $index, 1);
+    }
+
+    // ═══════════════════════════════════════
+    //  REPOSITORY CONNECTION
+    // ═══════════════════════════════════════
+    public function connectRepo(): void
+    {
+        $url = trim($this->repoUrl);
+        if (empty($url)) {
+            $this->repoError = 'Please enter a repository URL.';
+            return;
+        }
+
+        // Parse owner and repo name from URL
+        $parsed = \App\Services\GitHubService::parseUrl($url);
+        if (!$parsed) {
+            $this->repoError = 'Only GitHub repository URLs are supported currently.';
+            return;
+        }
+
+        $token = Auth::user()->github_token ?? null;
+        $github = new \App\Services\GitHubService($token);
+
+        // Optional: verify access
+        $info = $github->getRepoInfo($parsed['owner'], $parsed['repo']);
+        if (!$info) {
+            $this->repoError = 'Repository not found or requires a GitHub token in Settings.';
+            return;
+        }
+
+        // Fetch tree
+        $tree = $github->fetchTree($parsed['owner'], $parsed['repo'], $info['default_branch']);
+        
+        // Transform the flat tree into depth-based list for rendering
+        $this->repoTree = [];
+        foreach ($tree as $item) {
+            $depth = substr_count($item['path'], '/');
+            $name = basename($item['path']);
+            $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'txt';
+            $this->repoTree[] = [
+                'type' => $item['type'] === 'tree' ? 'dir' : 'file',
+                'name' => $name,
+                'path' => $item['path'],
+                'depth' => $depth,
+                'extra' => $item['type'] === 'tree' ? false : strtolower($ext) // dir expanded=false, file=extension
+            ];
+        }
+
+        $this->repoConnected = $parsed['owner'] . '/' . $parsed['repo'];
+        $this->repoModalOpen = false;
+        $this->repoError     = '';
+        $this->repoUrl       = '';
+
+        if ($this->conversation) {
+            $meta = $this->conversation->metadata ?? [];
+            $meta['repo'] = $this->repoConnected;
+            $meta['repoTree'] = $this->repoTree;
+            $this->conversation->update(['metadata' => $meta]);
+        }
+    }
+
+    public function disconnectRepo(): void
+    {
+        $this->repoConnected = '';
+        $this->repoTree = [];
+        $this->selectedFilesContext = [];
+
+        if ($this->conversation) {
+            $meta = $this->conversation->metadata ?? [];
+            $meta['repo'] = '';
+            $meta['repoTree'] = [];
+            $meta['selectedFilesContext'] = [];
+            $this->conversation->update(['metadata' => $meta]);
+        }
+    }
+
+    public function loadFileFromRepo(string $path): void
+    {
+        if (!$this->repoConnected) return;
+
+        // Check if already loaded
+        foreach ($this->selectedFilesContext as $f) {
+            if ($f['path'] === $path) return;
+        }
+
+        $parts = explode('/', $this->repoConnected);
+        if (count($parts) !== 2) return;
+
+        $token = Auth::user()->github_token ?? null;
+        $github = new \App\Services\GitHubService($token);
+        
+        $content = $github->fetchFileContent($parts[0], $parts[1], $path);
+        
+        if ($content) {
+            $this->selectedFilesContext[] = [
+                'name' => basename($path),
+                'path' => $path,
+                'content' => $content,
+            ];
+            
+            // Re-calculate token count just for UI display
+            $this->sessionTokens += (int)(strlen($content) / 4);
+
+            if ($this->conversation) {
+                $meta = $this->conversation->metadata ?? [];
+                $meta['selectedFilesContext'] = $this->selectedFilesContext;
+                $this->conversation->update(['metadata' => $meta]);
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════
+    //  SEND MESSAGE
+    // ═══════════════════════════════════════
+    public function sendMessage(): void
+    {
+        if (!Auth::check()) {
+            redirect()->route('login');
+            return;
+        }
+
+        $text = trim($this->message);
+        if (empty($text) && empty($this->attachments)) return;
+
+        // Create conversation if needed
+        if (!$this->conversation) {
+            $this->conversation = Conversation::create([
+                'user_id' => Auth::id(),
+                'title'   => $this->generateTitle($text),
+                'metadata' => [
+                    'repo' => $this->repoConnected,
+                    'repoTree' => $this->repoTree,
+                    'selectedFilesContext' => $this->selectedFilesContext
+                ]
+            ]);
+            $this->dispatch('chatCreated');
+            $this->loadRecentSessions();
+        } else {
+            // Ensure metadata is updated on new messages if state changed
+            $meta = $this->conversation->metadata ?? [];
+            $meta['repo'] = $this->repoConnected;
+            $meta['repoTree'] = $this->repoTree;
+            $meta['selectedFilesContext'] = $this->selectedFilesContext;
+            $this->conversation->update(['metadata' => $meta]);
+        }
+
+        // Persist user message
+        $userMsg = Message::create([
+            'conversation_id' => $this->conversation->id,
+            'role'            => 'user',
+            'content'         => $text,
+        ]);
+
+        // Handle file attachments
+        $attachmentData = [];
+        foreach ($this->attachments as $file) {
+            $path = $file->store('code-attachments', 'public');
+            MessageAttachment::create([
+                'message_id' => $userMsg->id,
+                'file_path'  => $path,
+                'file_type'  => $file->getMimeType(),
+                'file_name'  => $file->getClientOriginalName(),
+            ]);
+            $attachmentData[] = [
+                'file_path' => $path,
+                'file_type' => $file->getMimeType(),
+                'file_name' => $file->getClientOriginalName(),
+            ];
+        }
+
+        // Append repo context to first message if connected
+        $messageContent = $text;
+        if ($this->repoConnected && count($this->messages) === 0) {
+            $messageContent = "[Repository context: {$this->repoConnected}]\n\n{$text}";
+        }
+
+        $this->messages[] = [
+            'role'        => 'user',
+            'content'     => $messageContent,
+            'attachments' => $attachmentData,
+        ];
+
+        $this->sessionTokens += (int)(strlen($messageContent) / 4);
+        $this->message         = '';
+        $this->attachments     = [];
+        $this->attachmentPreviews = [];
+        $this->isStarted       = true;
+        $this->isStreaming     = true;
+
+        $this->dispatch('message-added');
+    }
+
+    // ═══════════════════════════════════════
+    //  STOP STREAMING
+    // ═══════════════════════════════════════
+    public function stopGeneration(): void
+    {
+        if ($this->conversation) {
+            Cache::put('chat_stop_' . $this->conversation->id, true, 120);
+        }
+        $this->isStreaming = false;
+    }
+
+    // ═══════════════════════════════════════
+    //  GENERATE AI RESPONSE
+    // ═══════════════════════════════════════
+    #[\Livewire\Attributes\On('generateResponse')]
+    public function generateResponse(): void
+    {
+        set_time_limit(0);
+
+        if (empty($this->messages) || end($this->messages)['role'] !== 'user') {
+            $this->isStreaming = false;
+            return;
+        }
+
+        // Clear any previous stop flag
+        if ($this->conversation) {
+            Cache::forget('chat_stop_' . $this->conversation->id);
+        }
+
+        // Build context window (last 20 messages)
+        $userMessages = array_values(array_filter($this->messages, fn($m) => $m['role'] !== 'system'));
+        $total        = count($userMessages);
+        $messagesForAi = $total > 20
+            ? array_merge([$userMessages[0]], array_slice($userMessages, -19))
+            : $userMessages;
+
+        // Build messages for AI — strip attachment data, add file content hint
+        $aiMessages = [];
+        foreach ($messagesForAi as $m) {
+            $content = $m['content'];
+            if (!empty($m['attachments'])) {
+                $names = array_column($m['attachments'], 'file_name');
+                $content .= "\n\n[Attached files: " . implode(', ', $names) . "]";
+            }
+            $aiMessages[] = ['role' => $m['role'], 'content' => $content];
+        }
+
+        // ── System prompt — mode-aware, deeply code-specific ──────────────
+        $modeInstructions = match($this->selectedMode) {
+            'plan' =>
+                "CURRENT MODE: Plan Mode.\n"
+                . "When the user asks you to implement or change anything, you MUST first output a structured implementation plan BEFORE writing any code. "
+                . "Format the plan as numbered steps with file paths and a brief description of each change. "
+                . "End the plan with a line: '---\nReady to implement. Reply **go** to proceed.' "
+                . "Only write actual code after the user confirms. "
+                . "If the user is just asking a question (not asking for implementation), answer directly without a plan.",
+
+            'auto' =>
+                "CURRENT MODE: Auto Mode (Autonomous).\n"
+                . "You operate as a fully autonomous coding agent. "
+                . "You DO NOT ask for confirmation before making changes. "
+                . "When given a task, immediately produce all required code changes, shell commands, and file modifications. "
+                . "Structure your output as a series of action blocks: first list what you're doing, then show the complete implementation. "
+                . "Think step-by-step but execute all steps in one response without pausing for user input. "
+                . "If something is ambiguous, make a reasonable assumption and state it clearly.",
+
+            default => // 'accept'
+                "CURRENT MODE: Accept Edits Mode.\n"
+                . "Write code directly and completely. "
+                . "When modifying a file, show the full relevant code block with the change applied (not just the diff). "
+                . "Use code fences with the exact language. "
+                . "After showing code, briefly explain what changed and why. "
+                . "Do NOT ask 'shall I proceed?' — just do it.",
+        };
+
+        $systemPrompt = "You are Rynude Code, an expert autonomous AI coding agent built into the Rynude platform.\n"
+            . "You are NOT a general-purpose chatbot. You are a specialized coding agent.\n"
+            . "Your purpose: help developers read, write, debug, refactor, and understand code across ALL languages and frameworks.\n\n"
+            . "CORE BEHAVIOR:\n"
+            . "- Always respond as an expert engineer, not as a helpful assistant.\n"
+            . "- Be concise, precise, and technical. Skip pleasantries.\n"
+            . "- Format ALL code in fenced code blocks with the language specified: ```php, ```js, ```bash, etc.\n"
+            . "- Reference files using backtick paths: `app/Http/Controllers/UserController.php`\n"
+            . "- Format shell commands with a $ prefix inside a ```bash block.\n"
+            . "- When explaining architecture, use clear structure: numbered steps, bullet points, or tables.\n"
+            . "- Assume the user is an experienced developer unless stated otherwise.\n"
+            . "- If asked about the codebase structure, reference Laravel/PHP conventions as the default stack.\n\n"
+            . $modeInstructions;
+
+        if ($this->repoConnected) {
+            $systemPrompt .= "\n\nCONNECTED REPOSITORY: {$this->repoConnected}\n"
+                . "Reference this repository when the user asks about code, files, or implementation details. "
+                . "Assume the repo follows standard conventions for its detected tech stack.";
+        }
+
+        // Inject selected files content
+        if (!empty($this->selectedFilesContext)) {
+            $systemPrompt .= "\n\n=== SELECTED FILES CONTEXT ===\n";
+            $systemPrompt .= "The user has selected the following files from the repository to be included in your context. "
+                . "Use this actual source code to answer their questions or implement changes:\n\n";
+            
+            foreach ($this->selectedFilesContext as $f) {
+                $systemPrompt .= "--- FILE: {$f['path']} ---\n";
+                $systemPrompt .= "```\n" . $f['content'] . "\n```\n\n";
+            }
+        }
+
+        // Apply active skills
+        if (Auth::check()) {
+            $skills = \App\Models\Skill::where('user_id', Auth::id())->where('is_active', true)->get();
+            if ($skills->isNotEmpty()) {
+                $systemPrompt .= "\n\nACTIVE SKILLS:";
+                foreach ($skills as $skill) {
+                    $systemPrompt .= "\n\n[Skill: {$skill->name}]\n{$skill->instructions}";
+                }
+            }
+        }
+
+        array_unshift($aiMessages, ['role' => 'system', 'content' => $systemPrompt]);
+
+        // Stream response
+        $aiService   = new \App\Services\AI\AiService();
+        $stream      = $aiService->streamResponse($aiMessages, $this->selectedModel);
+        $fullResponse = '';
+
+        foreach ($stream as $chunk) {
+            // Check stop flag
+            if ($this->conversation && Cache::get('chat_stop_' . $this->conversation->id)) {
+                Cache::forget('chat_stop_' . $this->conversation->id);
+                break;
+            }
+
+            $fullResponse .= $chunk;
+            $this->stream(
+                to: 'message-stream',
+                content: \Illuminate\Support\Str::markdown($fullResponse),
+                replace: true
+            );
+        }
+
+        // Persist assistant response
+        if (!empty($fullResponse) && $this->conversation) {
+            Message::create([
+                'conversation_id' => $this->conversation->id,
+                'role'            => 'assistant',
+                'content'         => $fullResponse,
+            ]);
+
+            $this->messages[] = ['role' => 'assistant', 'content' => $fullResponse];
+            $this->sessionTokens += (int)(strlen($fullResponse) / 4);
+
+            // Update conversation title if still generic
+            if (str_ends_with($this->conversation->title, '...') || $this->conversation->title === 'Untitled session') {
+                $firstUserMsg = collect($this->messages)->firstWhere('role', 'user')['content'] ?? '';
+                $this->conversation->update(['title' => $this->generateTitle($firstUserMsg)]);
+            }
+
+            $this->loadRecentSessions();
+        }
+
+        $this->isStreaming = false;
+    }
+
+    // ═══════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════
+    private function generateTitle(string $text): string
+    {
+        $stopWords = ['i','can','you','please','the','a','an','is','are','was','were','be','been',
+                      'have','has','had','do','does','did','will','would','should','could','may',
+                      'might','shall','to','of','in','on','at','for','with','by','from','my','your'];
+
+        $words = preg_split('/\s+/', strtolower(strip_tags($text)));
+        $meaningful = array_filter($words, fn($w) => strlen($w) > 2 && !in_array($w, $stopWords));
+        $title = implode(' ', array_slice(array_values($meaningful), 0, 5));
+        return ucwords($title) ?: substr($text, 0, 40);
+    }
+
+    public function formattedTokens(): string
+    {
+        if ($this->sessionTokens >= 1000) {
+            return round($this->sessionTokens / 1000, 1) . 'k';
+        }
+        return (string)$this->sessionTokens;
+    }
+
     public function render()
     {
-        return view('livewire.claude-code-app')->layout('layouts.app');
+        return view('livewire.claude-code-app')
+            ->layout('layouts.app')
+            ->title('Rynude Code · ' . config('app.name', 'Rynude'));
     }
 }

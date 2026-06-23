@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use App\Models\Project;
 use App\Models\ProjectFile;
+use App\Models\Setting;
+use App\Models\AiModel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -45,9 +47,102 @@ class ProjectsPanel extends Component
         '📁', '🚀', '💡', '📊', '✍️', '🎨', '🔬', '💻', '📚', '🎯',
     ];
 
+    // Model selection properties
+    public string $selectedModel = '';
+    public array $models = [];
+    public array $moreModels = [];
+    public bool $webSearch = false;
+
     public function mount()
     {
         $this->loadProjects();
+        $this->loadModels();
+    }
+
+    public function loadModels()
+    {
+        $user = Auth::user();
+        $hasAnthropic = $user && !empty($user->anthropic_api_key);
+        $hasOpenAI = $user && !empty($user->openai_api_key);
+        $useProxy = $user && $user->use_proxy && !empty($user->proxy_base_url);
+        $hasNineRouter = $user && !empty($user->nine_router_api_key);
+        $hasHuggingFace = $user && !empty($user->huggingface_api_key);
+        $hasGoogle = $user && !empty($user->google_api_key);
+        $hasMistral = $user && !empty($user->mistral_api_key);
+        
+        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace || $hasGoogle || $hasMistral;
+
+        $this->models = [
+            (object)[
+                'code' => 'fable-5',
+                'name' => 'Fable 5',
+                'description' => 'For your toughest challenges',
+                'is_available' => false,
+            ],
+            (object)[
+                'code' => 'claude-opus-4-8',
+                'name' => 'Opus 4.8',
+                'description' => 'For complex tasks',
+                'is_available' => $available,
+            ],
+            (object)[
+                'code' => 'claude-sonnet-4-6',
+                'name' => 'Sonnet 4.6',
+                'description' => 'Most efficient for everyday tasks',
+                'is_available' => $available,
+            ],
+            (object)[
+                'code' => 'claude-haiku-4-5',
+                'name' => 'Haiku 4.5',
+                'description' => 'Fastest for quick answers',
+                'is_available' => $available,
+            ]
+        ];
+
+        // Restore moreModels from DB
+        $allModels = \App\Models\AiModel::where('is_active', true)->get();
+        foreach ($allModels as $model) {
+            $isAnthropic = str_starts_with($model->code, 'claude');
+            $isOpenAI = str_starts_with($model->code, 'gpt');
+
+            $is_available = false;
+            if (str_starts_with($model->code, 'kr/claude')) {
+                $is_available = true;
+            } elseif ($useProxy || $hasNineRouter) {
+                $is_available = true;
+            } elseif ($model->provider === 'huggingface' && $hasHuggingFace) {
+                $is_available = true;
+            } elseif ($model->provider === 'google' && $hasGoogle) {
+                $is_available = true;
+            } elseif ($model->provider === 'mistral' && $hasMistral) {
+                $is_available = true;
+            } elseif ($isAnthropic && $hasAnthropic) {
+                $is_available = true;
+            } elseif ($hasOpenAI && !$isAnthropic) {
+                $is_available = true;
+            }
+
+            // Exclude models already in $this->models
+            if (!in_array($model->code, ['fable-5', 'claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5'])) {
+                $this->moreModels[] = (object)[
+                    'code' => $model->code,
+                    'name' => $model->name,
+                    'description' => $model->name,
+                    'is_available' => $is_available,
+                ];
+            }
+        }
+
+        $validCodes = array_merge(
+            array_map(fn ($m) => $m->code, $this->models),
+            array_map(fn ($m) => $m->code, $this->moreModels)
+        );
+        $remembered = session('chat_selected_model');
+        if ($remembered && in_array($remembered, $validCodes, true)) {
+            $this->selectedModel = $remembered;
+        } else {
+            $this->selectedModel = count($this->models) > 0 ? $this->models[3]->code : 'claude-haiku-4-5';
+        }
     }
 
     public function updatedSearchQuery()
@@ -116,6 +211,8 @@ class ProjectsPanel extends Component
                 'icon' => $project->icon ?: '📁',
                 'is_starred' => (bool) $project->is_starred,
                 'chat_count' => $project->conversations->count(),
+                'updated_at' => $project->updated_at,
+                'created_at' => $project->created_at,
             ];
             $this->customInstructions = $project->custom_instructions ?? '';
             $this->projectFiles = $project->files->toArray();
@@ -271,12 +368,21 @@ class ProjectsPanel extends Component
         }
     }
 
+    public string $projectChatPrompt = '';
+
     public function startNewChatInProject()
     {
         if ($this->selectedProjectId) {
+            $prompt = $this->projectChatPrompt;
+            $this->projectChatPrompt = ''; // Reset for next time
             // Close the panel and signal ChatLayout to open a new chat with this project context
             $this->dispatch('close-panel');
-            $this->dispatch('startProjectChat', projectId: $this->selectedProjectId);
+            $this->dispatch('startProjectChat', 
+                projectId: $this->selectedProjectId, 
+                initialPrompt: $prompt,
+                initialModel: $this->selectedModel,
+                webSearch: $this->webSearch
+            );
         }
     }
     

@@ -19,8 +19,8 @@ class Message extends Model
         return $this->hasMany(MessageArtifact::class);
     }
 
-    public function attachment()
+    public function attachments()
     {
-        return $this->hasOne(MessageAttachment::class);
+        return $this->hasMany(MessageAttachment::class);
     }
 }

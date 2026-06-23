@@ -192,7 +192,7 @@
                     {{-- Preview Area --}}
                     <div class="flex-1 overflow-auto bg-[#FAFAFA] dark:bg-stone-900 rounded-b-[1rem]">
                         @if($currentArtifact['language'] === 'html')
-                            <iframe srcdoc="{{ $currentArtifact['content'] }}" class="w-full h-full border-0 bg-white"></iframe>
+                            <iframe sandbox="allow-scripts" srcdoc="{{ $currentArtifact['content'] }}" class="w-full h-full border-0 bg-white"></iframe>
                         @elseif($currentArtifact['language'] === 'react' || $currentArtifact['language'] === 'jsx' || $currentArtifact['language'] === 'tsx')
                             @php
                             $reactHtml = '<!DOCTYPE html><html><head><meta charset="utf-8" /><script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div><script type="text/babel">'.$currentArtifact['content'].'
@@ -200,7 +200,7 @@
                             const root = ReactDOM.createRoot(document.getElementById("root"));
                             root.render(<App />);</script></body></html>';
                             @endphp
-                            <iframe srcdoc="{{ $reactHtml }}" class="w-full h-full border-0 bg-white"></iframe>
+                            <iframe sandbox="allow-scripts" srcdoc="{{ $reactHtml }}" class="w-full h-full border-0 bg-white"></iframe>
                         @elseif($currentArtifact['language'] === 'svg')
                             <div class="flex items-center justify-center w-full h-full bg-white">
                                 {!! $currentArtifact['content'] !!}

@@ -94,54 +94,26 @@ class OpenAIProvider implements LLMProviderInterface
                 ];
             }
             
-            // Handle attachment
-            if (!empty($msg['attachment']) && isset($msg['attachment']['file_path'])) {
-                $filePath = storage_path('app/public/' . $msg['attachment']['file_path']);
-                if (file_exists($filePath)) {
-                    $mimeType = $msg['attachment']['file_type'];
-                    
-                    if (str_starts_with($mimeType, 'image/')) {
-                        $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
-                        $content[] = [
-                            'type' => 'image_url',
-                            'image_url' => [
-                                'url' => 'data:' . $processedImage['mime_type'] . ';base64,' . $processedImage['data']
-                            ]
-                        ];
-                    } elseif ($mimeType === 'application/pdf') {
-                        try {
-                            $parser = new \Smalot\PdfParser\Parser();
-                            $pdf = $parser->parseFile($filePath);
-                            $text = $pdf->getText();
+            // Handle attachments
+            if (!empty($msg['attachments'])) {
+                foreach ($msg['attachments'] as $att) {
+                    $filePath = storage_path('app/public/' . $att['file_path']);
+                    if (file_exists($filePath)) {
+                        $mimeType = $att['file_type'];
+                        
+                        if (str_starts_with($mimeType, 'image/')) {
+                            $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
                             $content[] = [
-                                'type' => 'text',
-                                'text' => "\n\n[Isi Dokumen PDF: {$msg['attachment']['file_name']}]\n" . $text . "\n[Akhir Isi Dokumen]"
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => 'data:' . $processedImage['mime_type'] . ';base64,' . $processedImage['data']
+                                ]
                             ];
-                        } catch (\Exception $e) {
+                        } elseif ($mimeType === 'application/pdf' || $mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || str_ends_with($att['file_name'], '.docx')) {
+                            $text = \App\Helpers\DocumentParser::parseText($att['file_path'], $mimeType, $att['file_name']);
                             $content[] = [
                                 'type' => 'text',
-                                'text' => "\n\n[Gagal membaca file PDF: " . $e->getMessage() . "]"
-                            ];
-                        }
-                    } elseif ($mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || str_ends_with($msg['attachment']['file_name'], '.docx')) {
-                        try {
-                            $zip = new \ZipArchive();
-                            $text = "";
-                            if ($zip->open($filePath) === true) {
-                                if (($index = $zip->locateName('word/document.xml')) !== false) {
-                                    $contentXml = $zip->getFromIndex($index);
-                                    $text = strip_tags(str_replace('</w:p>', "\n", $contentXml));
-                                }
-                                $zip->close();
-                            }
-                            $content[] = [
-                                'type' => 'text',
-                                'text' => "\n\n[Isi Dokumen Word: {$msg['attachment']['file_name']}]\n" . trim($text) . "\n[Akhir Isi Dokumen]"
-                            ];
-                        } catch (\Exception $e) {
-                            $content[] = [
-                                'type' => 'text',
-                                'text' => "\n\n[Gagal membaca file Word: " . $e->getMessage() . "]"
+                                'text' => "\n\n[Isi Dokumen lampiran: {$att['file_name']}]\n" . trim($text) . "\n[Akhir Isi Dokumen]"
                             ];
                         }
                     }

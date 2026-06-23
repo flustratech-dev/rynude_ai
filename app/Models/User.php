@@ -33,6 +33,7 @@ class User extends Authenticatable
         'huggingface_base_url',
         'google_api_key',
         'mistral_api_key',
+        'github_token',
         'role',
         'token_balance',
         'custom_instructions',
@@ -67,6 +68,7 @@ class User extends Authenticatable
             'huggingface_api_key' => 'encrypted',
             'google_api_key' => 'encrypted',
             'mistral_api_key' => 'encrypted',
+            'github_token' => 'encrypted',
             'preferences' => 'array',
         ];
     }
