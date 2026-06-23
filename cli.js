@@ -19,6 +19,7 @@ const RYNUDE_HOME = path.join(os.homedir(), '.rynude');
 const PERSIST_DB = path.join(RYNUDE_HOME, 'database.sqlite');
 const BACKUP_DIR = path.join(RYNUDE_HOME, 'backups');
 const PROJECT_DB = path.resolve('database', 'database.sqlite');
+const APP_KEY_FILE = path.join(RYNUDE_HOME, 'app_key.txt');
 
 function sizeOf(p) {
     try { return fs.statSync(p).size; } catch { return -1; }
@@ -68,11 +69,36 @@ function setEnvDbPath(absPath) {
     } catch {}
 }
 
+function protectAppKey() {
+    try {
+        if (!fs.existsSync('.env')) return;
+        const env = fs.readFileSync('.env', 'utf8');
+        const match = env.match(/^APP_KEY=(.*)$/m);
+        if (match && match[1]) {
+            const currentKey = match[1].trim();
+            if (fs.existsSync(APP_KEY_FILE)) {
+                // Pulihkan key lama jika berubah
+                const savedKey = fs.readFileSync(APP_KEY_FILE, 'utf8').trim();
+                if (savedKey && savedKey !== currentKey) {
+                    const newEnv = env.replace(/^APP_KEY=.*$/m, `APP_KEY=${savedKey}`);
+                    fs.writeFileSync('.env', newEnv);
+                    console.log(chalk.green('Kunci enkripsi (APP_KEY) lama berhasil dipulihkan untuk mengamankan data.'));
+                }
+            } else {
+                // Simpan key untuk pertama kalinya
+                fs.writeFileSync(APP_KEY_FILE, currentKey);
+            }
+        }
+    } catch {}
+}
+
 function protectDatabase() {
     if (!envUsesSqlite()) return; // hanya berlaku untuk sqlite
 
     ensureDir(RYNUDE_HOME);
     ensureDir(BACKUP_DIR);
+
+    protectAppKey();
 
     const persistSize = sizeOf(PERSIST_DB);
     const projectSize = sizeOf(PROJECT_DB);
