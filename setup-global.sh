@@ -1,38 +1,24 @@
 #!/bin/bash
-
 echo "========================================================"
-echo "Memasang perintah global 'rynude' untuk macOS / Linux..."
+echo "Memasang perintah global 'rynude' untuk Mac/Linux..."
 echo "========================================================"
 
-# Dapatkan path absolut dari direktori project ini
-TARGET_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_DIR="$(pwd)"
 
-# Gunakan folder .local/bin di direktori home user
-BIN_DIR="$HOME/.local/bin"
+# Tambahkan alias ke ~/.zshrc dan ~/.bashrc
+alias_cmd="alias rynude='cd \"$TARGET_DIR\" && npm run rynude'"
 
-# Buat foldernya jika belum ada
-mkdir -p "$BIN_DIR"
+if [ -f ~/.zshrc ]; then
+    echo "$alias_cmd" >> ~/.zshrc
+    echo "Alias berhasil ditambahkan ke ~/.zshrc"
+fi
 
-# Buat script eksekusi
-cat <<EOF > "$BIN_DIR/rynude"
-#!/bin/bash
-echo "========================================================"
-echo "Membuka project Rynude AI (Laravel + Vite)..."
-echo "========================================================"
-cd "$TARGET_DIR" || exit
-npm run rynude
-EOF
-
-# Beri izin eksekusi (executable) pada script tersebut
-chmod +x "$BIN_DIR/rynude"
+if [ -f ~/.bashrc ]; then
+    echo "$alias_cmd" >> ~/.bashrc
+    echo "Alias berhasil ditambahkan ke ~/.bashrc"
+fi
 
 echo ""
-echo "Berhasil! Script eksekusi telah dibuat di $BIN_DIR/rynude"
-echo ""
-echo "Silakan buka terminal baru dan ketik: rynude"
-echo ""
-echo "⚠️ PENTING: Jika perintah 'rynude' tidak ditemukan (command not found),"
-echo "pastikan Anda telah menambahkan ~/.local/bin ke dalam PATH Anda."
-echo "Tambahkan baris berikut ke ~/.zshrc atau ~/.bashrc Anda:"
-echo 'export PATH="$HOME/.local/bin:$PATH"'
+echo "Berhasil! Perintah 'rynude' sekarang sudah terpasang secara global."
+echo "Silakan tutup terminal ini, buka terminal baru, lalu ketikkan: rynude"
 echo ""
