@@ -2,7 +2,12 @@
 
 namespace App\Services;
 
-use App\Services\Concerns\BuildsDocumentContent;
+use Illuminate\Support\Facades\Storage;
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\FrontMatter\FrontMatterExtension;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\MarkdownConverter;
 use Mpdf\Mpdf;
 
 /**
@@ -20,8 +25,6 @@ use Mpdf\Mpdf;
  */
 class PdfRenderer
 {
-    use BuildsDocumentContent;
-
     /**
      * Build a PDF binary string from an artifact array.
      *
@@ -48,11 +51,239 @@ class PdfRenderer
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');
-        $mode = in_array($mode, ['skripsi', 'laporan', 'document'], true) ? $mode : 'document';
+        $mode = in_array($mode, ['skripsi', 'laporan', 'jurnal', 'document'], true) ? $mode : 'document';
 
         $html = $this->resolveImages($html);
 
         return $this->buildPdf($title, $html, $meta, $mode);
+    }
+
+    /**
+     * Convert markdown (with optional front-matter) to HTML body + parsed meta.
+     *
+     * @return array{0:string,1:array}
+     */
+    private function markdownToHtml(string $markdown): array
+    {
+        $environment = new Environment([
+            'html_input' => 'allow',          // keep author/AI inline <svg> and <img>
+            'allow_unsafe_links' => false,
+            'renderer' => ['block_separator' => "\n"],
+        ]);
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new GithubFlavoredMarkdownExtension());
+        $environment->addExtension(new FrontMatterExtension());
+
+        $converter = new MarkdownConverter($environment);
+        
+        // Auto-fix unquoted YAML values that contain colons (which breaks the YAML parser)
+        if (preg_match('/^---\r?\n(.*?)\r?\n---/s', $markdown, $matches)) {
+            $frontMatter = $matches[1];
+            // If a line is like "key: some: value", replace it with "key: 'some: value'"
+            $fixedFrontMatter = preg_replace('/^([a-zA-Z0-9_-]+):\s*([^"\'].*?:.*?)$/m', '$1: \'$2\'', $frontMatter);
+            if ($frontMatter !== $fixedFrontMatter) {
+                $markdown = "---\n" . $fixedFrontMatter . "\n---" . substr($markdown, strlen($matches[0]));
+            }
+        }
+
+        try {
+            $result = $converter->convert($markdown);
+        } catch (\Exception $e) {
+            // Fallback if YAML parsing still fails completely: strip front matter and parse as plain markdown
+            $markdown = preg_replace('/^---\r?\n.*?\r?\n---\r?\n/s', '', $markdown);
+            $environment = new Environment([
+                'html_input' => 'allow',
+                'allow_unsafe_links' => false,
+                'renderer' => ['block_separator' => "\n"],
+            ]);
+            $environment->addExtension(new CommonMarkCoreExtension());
+            $environment->addExtension(new GithubFlavoredMarkdownExtension());
+            $converter = new MarkdownConverter($environment);
+            $result = $converter->convert($markdown);
+        }
+
+        $meta = [];
+        if ($result instanceof \League\CommonMark\Extension\FrontMatter\Output\RenderedContentWithFrontMatter) {
+            $fm = $result->getFrontMatter();
+            if (is_array($fm)) {
+                $meta = $fm;
+            }
+        }
+
+        return [(string) $result->getContent(), $this->metaDefaults($meta['mode'] ?? 'document', $meta)];
+    }
+
+    private function metaDefaults(string $mode, array $meta = []): array
+    {
+        $normalizedMeta = [];
+        foreach ($meta as $key => $value) {
+            $normalizedMeta[$key] = is_array($value) ? implode(', ', $value) : $value;
+        }
+
+        return array_merge([
+            'mode' => $mode,
+            'judul' => null,
+            'penulis' => null,
+            'nim' => null,
+            'prodi' => null,
+            'fakultas' => null,
+            'universitas' => null,
+            'kota' => null,
+            'tahun' => null,
+            'pembimbing' => null,
+            'logo' => null,
+            // Optional format overrides (used to mimic an uploaded template).
+            'font' => null,
+            'font_size' => null,
+            'line_spacing' => null,
+            'align' => null,
+            'margin_top' => null,
+            'margin_right' => null,
+            'margin_bottom' => null,
+            'margin_left' => null,
+            'page_number' => null,
+        ], $normalizedMeta);
+    }
+
+    /**
+     * Normalise the optional formatting overrides from front-matter into safe,
+     * whitelisted values, falling back to per-mode defaults. Lets the AI replicate
+     * the look of a template the user uploaded (font, size, spacing, margins, page
+     * number position) without exposing mPDF/CSS to arbitrary input.
+     *
+     * @return array{font:string,fontSize:float,lineSpacing:float,align:string,margins:array{0:float,1:float,2:float,3:float},pageNumber:array{loc:string,align:string}}
+     */
+    private function resolveFormat(array $meta, bool $academic): array
+    {
+        // Font name → mPDF font family (core fonts + bundled DejaVu).
+        $fontMap = [
+            // GNU FreeFont (bundled with mPDF): Times/Helvetica/Courier-metric serif,
+            // sans and mono with FULL Unicode (Greek, math, accents). mPDF's core
+            // fonts ('times' etc.) corrupt Greek/maths in UTF-8 mode, so we map to the
+            // Free* families which look like Times New Roman / Arial but render every
+            // glyph an academic report needs.
+            'times' => 'freeserif', 'times new roman' => 'freeserif', 'serif' => 'freeserif',
+            'georgia' => 'freeserif', 'cambria' => 'freeserif',
+            'arial' => 'freesans', 'helvetica' => 'freesans', 'calibri' => 'freesans',
+            'sans' => 'freesans', 'sans-serif' => 'freesans', 'verdana' => 'freesans',
+            'tahoma' => 'freesans', 'segoe ui' => 'freesans',
+            'courier' => 'freemono', 'courier new' => 'freemono', 'consolas' => 'freemono',
+            'monospace' => 'freemono', 'mono' => 'freemono',
+        ];
+        $fontKey = strtolower(trim((string) ($meta['font'] ?? '')));
+        $font = $fontMap[$fontKey] ?? 'freeserif';
+
+        $isJurnalMode = ($meta['mode'] ?? '') === 'jurnal';
+        $defaultFontSize = $isJurnalMode ? 10 : 12;
+        $fontSize = (float) ($meta['font_size'] ?? $defaultFontSize);
+        if ($fontSize < 8 || $fontSize > 20) {
+            $fontSize = $defaultFontSize;
+        }
+
+        $spacingMap = ['1' => 1.0, '1.0' => 1.0, '1.15' => 1.15, '1.5' => 1.5, '2' => 2.0, '2.0' => 2.0, 'single' => 1.0, 'double' => 2.0];
+        $spacingKey = strtolower(trim((string) ($meta['line_spacing'] ?? '')));
+        $isJurnal = ($meta['mode'] ?? '') === 'jurnal';
+        $lineSpacing = $spacingMap[$spacingKey] ?? ($isJurnal ? 1.0 : ($academic ? 1.5 : 1.45));
+
+        $align = strtolower(trim((string) ($meta['align'] ?? '')));
+        $align = in_array($align, ['justify', 'left'], true) ? $align : ($academic ? 'justify' : 'left');
+
+        // Margins in mm; defaults follow the chosen mode (skripsi = 4-3-3-3 cm).
+        $defT = $academic ? 30 : 25;
+        $defR = $academic ? 30 : 25;
+        $defB = $academic ? 30 : 25;
+        $defL = $academic ? 40 : 25;
+        $cm = function ($v, $default) {
+            if ($v === null || $v === '') {
+                return (float) $default;
+            }
+            $mm = (float) $v * 10; // front-matter margins are given in cm
+            return ($mm >= 5 && $mm <= 80) ? $mm : (float) $default;
+        };
+        $margins = [
+            $cm($meta['margin_top'] ?? null, $defT),
+            $cm($meta['margin_right'] ?? null, $defR),
+            $cm($meta['margin_bottom'] ?? null, $defB),
+            $cm($meta['margin_left'] ?? null, $defL),
+        ];
+
+        $posMap = [
+            'bottom-center' => ['F', 'center'], 'bottom-centre' => ['F', 'center'], 'bottom' => ['F', 'center'],
+            'bottom-right' => ['F', 'right'], 'bottom-left' => ['F', 'left'],
+            'top-center' => ['H', 'center'], 'top-centre' => ['H', 'center'], 'top' => ['H', 'center'],
+            'top-right' => ['H', 'right'], 'top-left' => ['H', 'left'],
+            'none' => ['', ''], 'off' => ['', ''],
+        ];
+        $posKey = strtolower(trim((string) ($meta['page_number'] ?? '')));
+        [$loc, $palign] = $posMap[$posKey] ?? ['F', 'center'];
+
+        return [
+            'font' => $font,
+            'fontSize' => $fontSize,
+            'lineSpacing' => $lineSpacing,
+            'align' => $align,
+            'margins' => $margins,
+            'pageNumber' => ['loc' => $loc, 'align' => $palign],
+        ];
+    }
+
+    /**
+     * Rewrite <img src> values that point at local storage / app URLs into absolute
+     * filesystem paths that mPDF can read directly. Leaves remote URLs and data-URIs
+     * untouched (mPDF fetches those when allowed).
+     */
+    private function resolveImages(string $html): string
+    {
+        return preg_replace_callback('/<img\b[^>]*\bsrc=("|\')(.*?)\1/i', function ($m) {
+            $quote = $m[1];
+            $src = html_entity_decode($m[2]);
+            $resolved = $this->resolveImagePath($src);
+            if ($resolved === null) {
+                return $m[0];
+            }
+            return str_replace($m[2], htmlspecialchars($resolved, ENT_QUOTES), $m[0]);
+        }, $html) ?? $html;
+    }
+
+    private function resolveImagePath(string $src): ?string
+    {
+        // data: URIs and remote URLs are handled by mPDF natively.
+        if (str_starts_with($src, 'data:') || preg_match('#^https?://#i', $src)) {
+            // Strip the app's own host so local uploads resolve from disk instead of HTTP.
+            $appUrl = rtrim((string) config('app.url'), '/');
+            if ($appUrl && str_starts_with($src, $appUrl . '/storage/')) {
+                $src = substr($src, strlen($appUrl . '/storage/'));
+                return $this->fromPublicDisk($src);
+            }
+            return null; // genuine remote image — leave as-is
+        }
+
+        // /storage/... (public symlink) → public disk
+        if (str_starts_with($src, '/storage/')) {
+            return $this->fromPublicDisk(ltrim(substr($src, strlen('/storage/')), '/'));
+        }
+        if (str_starts_with($src, 'storage/')) {
+            return $this->fromPublicDisk(substr($src, strlen('storage/')));
+        }
+
+        // Bare relative path: try the public disk (where chat attachments live).
+        $fromPublic = $this->fromPublicDisk(ltrim($src, '/'));
+        if ($fromPublic !== null) {
+            return $fromPublic;
+        }
+
+        // Absolute filesystem path already.
+        return is_file($src) ? $src : null;
+    }
+
+    private function fromPublicDisk(string $relative): ?string
+    {
+        try {
+            $path = Storage::disk('public')->path($relative);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        return is_file($path) ? $path : null;
     }
 
     /**
@@ -61,6 +292,7 @@ class PdfRenderer
     private function buildPdf(string $title, string $bodyHtml, array $meta, string $mode): string
     {
         $academic = in_array($mode, ['skripsi', 'laporan'], true);
+        $isJurnal = $mode === 'jurnal';
         $fmt = $this->resolveFormat($meta, $academic);
         [$mt, $mr, $mb, $ml] = $fmt['margins'];
 
@@ -87,7 +319,7 @@ class PdfRenderer
         $mpdf->autoScriptToLang = false;
         $mpdf->autoLangToFont = false;
 
-        $css = $this->css($academic, $fmt);
+        $css = $this->css($academic, $fmt, $mode);
         $pageNum = $this->pageNumberMarkup($fmt['pageNumber']);
 
         if ($academic) {
@@ -130,6 +362,13 @@ class PdfRenderer
             //    the TOC page and body both get numbered at the requested position.
             $this->applyPageNumber($mpdf, $pageNum);
             $mpdf->WriteHTML('<div class="body">' . $body . '</div>');
+        } elseif ($isJurnal) {
+            // Jurnal/artikel mode: 2-column layout, no cover, no TOC.
+            $this->applyPageNumber($mpdf, $pageNum);
+            $mpdf->WriteHTML('<style>' . $css . '</style>');
+            $mpdf->SetColumns(2, '', 5);
+            $mpdf->WriteHTML('<div class="body">' . $bodyHtml . '</div>');
+            $mpdf->SetColumns(0);
         } else {
             $this->applyPageNumber($mpdf, $pageNum);
             $mpdf->WriteHTML('<style>' . $css . '</style>');
@@ -231,16 +470,16 @@ class PdfRenderer
             . '</div>';
     }
 
-    private function css(bool $academic, array $fmt): string
+    private function css(bool $academic, array $fmt, string $mode = 'document'): string
     {
         $font = $fmt['font'];
         $size = $fmt['fontSize'];
         $lh = $fmt['lineSpacing'];
         $align = $fmt['align'];
         // Heading sizes scale relative to the chosen body size.
-        $h1 = $academic ? ($size + 2) : ($size + 6);
-        $h2 = $academic ? $size : ($size + 2);
-        $h3 = $academic ? $size : ($size + 0.5);
+        $h1 = $academic ? 16 : ($size + 6);
+        $h2 = $academic ? 14 : ($size + 2);
+        $h3 = $academic ? 12 : ($size + 0.5);
 
         $base = <<<CSS
         body { font-family: {$font}; font-size: {$size}pt; line-height: {$lh}; text-align: {$align}; color: #000; }
@@ -249,8 +488,8 @@ class PdfRenderer
         a { color: #000; text-decoration: none; }
         ul, ol { margin: 0 0 6pt 0; }
         li { margin-bottom: 2pt; }
-        blockquote { border-left: 3px solid #999; padding-left: 10pt; color: #333; font-style: italic; margin: 8pt 0; }
-        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: {$h3}pt; }
+        blockquote { border-left: none; padding-left: 1.27cm; color: #000; font-style: normal; margin: 8pt 0; line-height: 1.0; }
+        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 10pt; }
         th, td { border: 0.6pt solid #000; padding: 5pt 7pt; text-align: left; vertical-align: top; }
         th { background: #efefef; font-weight: bold; }
         table.no-border, table.no-border th, table.no-border td { border: none !important; background: transparent !important; }
@@ -258,7 +497,11 @@ class PdfRenderer
         table.no-border p { text-indent: 0 !important; }
         img, svg { max-width: 100%; }
         figure { text-align: center; margin: 12pt 0; }
-        figcaption { font-size: 10pt; font-style: italic; margin-top: 4pt; }
+        figcaption { font-size: 10pt; text-align: center; margin-top: 4pt; }
+        .table-caption { font-size: 10pt; text-align: center; margin-bottom: 4pt; font-weight: bold; }
+        .daftar-pustaka p { text-indent: 0 !important; margin: 0 0 6pt 0; line-height: 1.0; }
+        .daftar-pustaka ol { list-style: none; padding: 0; margin: 0; }
+        .daftar-pustaka li { margin-bottom: 8pt; line-height: 1.0; text-indent: -1.27cm; padding-left: 1.27cm; }
         pre { background: #f4f4f4; padding: 8pt; border: 0.4pt solid #ddd; font-family: dejavusansmono; font-size: 9.5pt; white-space: pre-wrap; word-wrap: break-word; }
         code { font-family: dejavusansmono; font-size: 10pt; }
         CSS;
@@ -268,8 +511,8 @@ class PdfRenderer
             p { text-indent: 1.27cm; margin: 0; }
             li p, td p, blockquote p, figcaption { text-indent: 0; }
             h1 { font-size: {$h1}pt; text-align: center; text-transform: uppercase; margin: 0 0 18pt 0; }
-            h2 { font-size: {$h2}pt; margin: 16pt 0 8pt 0; }
-            h3 { font-size: {$h3}pt; margin: 12pt 0 6pt 0; }
+            h2 { font-size: {$h2}pt; text-align: left; margin: 16pt 0 8pt 0; }
+            h3 { font-size: {$h3}pt; text-align: left; margin: 12pt 0 6pt 0; }
             .cover { text-align: center; }
             .cover-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; line-height: 1.5; margin-top: 1cm; }
             .cover-logo { margin: 1cm 0; }
@@ -291,7 +534,30 @@ class PdfRenderer
             CSS;
         }
 
+        if ($mode === 'jurnal') {
+            $base .= <<<CSS
+            body { font-size: 10pt; line-height: 1.0; }
+            p { text-indent: 0; margin: 0 0 4pt 0; }
+            h1 { font-size: 12pt; text-align: center; text-transform: uppercase; margin: 0 0 8pt 0; }
+            h2 { font-size: 11pt; text-align: left; margin: 10pt 0 4pt 0; }
+            h3 { font-size: 10pt; text-align: left; margin: 8pt 0 3pt 0; }
+            figcaption { font-size: 8pt; }
+            .table-caption { font-size: 8pt; }
+            table { font-size: 8pt; }
+            .daftar-pustaka li { font-size: 8pt; }
+            CSS;
+        }
+
         return $base;
+    }
+
+    /**
+     * Strip a leading YAML front-matter block so on-screen markdown previews don't
+     * render the raw metadata. Used by the artifact preview blades.
+     */
+    public static function stripFrontMatter(string $content): string
+    {
+        return preg_replace('/^(?:\xEF\xBB\xBF)?\s*---\r?\n.*?\r?\n---[ \t]*\r?\n/s', '', $content, 1) ?? $content;
     }
 
     private function tempDir(): string
