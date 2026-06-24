@@ -238,6 +238,36 @@ Bosan dengan model standar? Mari manfaatkan server gratis **Hugging Face** yang 
 
 ---
 
+## 🦙 Menjalankan Model Lokal 100% Bebas Kuota (Ollama)
+
+Jika Anda ingin Rynude berjalan **sepenuhnya offline** dan **tanpa limit** di komputer Anda, Anda bisa menyambungkannya dengan Ollama. Kami sudah merancang sistem Auto-Detect yang membuat instalasinya semudah menjentikkan jari!
+
+### Panduan Instalasi Cepat:
+1. Buka PowerShell (Windows) dan jalankan perintah resmi ini untuk menginstal Ollama:
+   ```bash
+   irm https://ollama.com/install.ps1 | iex
+   ```
+2. Setelah terinstal, download model AI pilihan Anda. Contoh untuk Llama 3.1:
+   ```bash
+   ollama run llama3.1
+   ```
+   *(Atau coba `ollama run qwen2.5` untuk coding & logika bahasa Indonesia yang fantastis).*
+3. Buka aplikasi Rynude AI Anda, dan pada *dropdown* pilihan model di pojok kiri atas, pilih opsi **Rynude Ollama**.
+
+> [!TIP]
+> 🪄 **Keajaiban Auto-Detect:** Anda **TIDAK PERLU** repot-repot memasukkan API Key atau Base URL di Settings! Kode cerdas Rynude AI akan otomatis mendeteksi model pertama yang Anda download di Ollama dan langsung menggunakannya. Super *plug-and-play*!
+
+### ➕ Ingin Punya Banyak Pilihan Model Ollama di UI?
+Jika Anda mendownload banyak model lokal (Llama, Qwen, Mistral) dan ingin semuanya muncul sebagai pilihan di *dropdown* utama:
+1. Buka **Settings** -> Tab **AI Models**.
+2. Klik **Add Model**.
+3. Isi **Model Code** dengan nama model persis di Ollama (misal: `qwen2.5`).
+4. Isi **Model Name** dengan nama tampilan yang Anda suka (misal: `Qwen 2.5 Lokal`).
+5. **PENTING:** Setel **Provider** ke `ollama`.
+Begitu disimpan, model tersebut akan langsung aktif dan bisa dipilih!
+
+---
+
 ## 💎 Fitur Utama & Sekilas Biaya (Key Features & Pricing)
 
 Mengapa Anda harus beralih ke Rynude AI? Tabel di bawah ini menunjukkan perbandingan masif antara menggunakan layanan langganan AI konvensional dibandingkan memiliki server Rynude lokal Anda sendiri.
