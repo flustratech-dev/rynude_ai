@@ -2,6 +2,6 @@
   "hasCompletedOnboarding": true,
   "env": {
     "ANTHROPIC_BASE_URL": "http://localhost:20128/v1",
-    "ANTHROPIC_AUTH_TOKEN": "sk-0254844a1894d471-nn6yy1-07619ef7"
+    "ANTHROPIC_AUTH_TOKEN": "sk-4585340bb017db4e-avocsz-3e9fa520"
   }
 }

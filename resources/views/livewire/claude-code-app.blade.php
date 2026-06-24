@@ -10,6 +10,17 @@
     }"
 >
 
+    {{-- Rynude mascot bobbing animation --}}
+    <style>
+        @keyframes rynude-bob {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25%      { transform: translateY(-3px) rotate(-5deg); }
+            50%      { transform: translateY(0) rotate(0deg); }
+            75%      { transform: translateY(-3px) rotate(5deg); }
+        }
+        .rynude-mascot { animation: rynude-bob 2.4s ease-in-out infinite; transform-origin: bottom center; }
+    </style>
+
     {{-- ═══════════════════════════ LEFT SIDEBAR ═══════════════════════════ --}}
     <div
         x-show="sidebarOpen"
@@ -298,7 +309,13 @@
                     </div>
 
                     {{-- INPUT AREA --}}
-                    <div class="flex-shrink-0 border-t border-[#2A2A2A] bg-[#141414] px-4 pt-3 pb-4">
+                    <div class="relative flex-shrink-0 border-t border-[#2A2A2A] bg-[#141414] px-4 pt-3 pb-4">
+
+                        {{-- Pixel mascot standing above the Accept-edits button (top-right) --}}
+                        <img src="{{ asset('images/mascot.svg') }}" alt=""
+                            class="rynude-mascot absolute"
+                            style="right: 1.75rem; top: -2.4rem; width: 2.25rem; height: 2.25rem; z-index: 10; pointer-events: none; user-select: none;"
+                            draggable="false">
 
                         {{-- File attachment hidden input --}}
                         <input type="file" wire:model="attachments" id="code-file-upload" class="hidden" multiple
