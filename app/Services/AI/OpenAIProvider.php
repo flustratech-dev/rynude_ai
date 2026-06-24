@@ -24,6 +24,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
+        $isOllama = $aiModel && $aiModel->provider === 'ollama';
 
         if ($isHuggingFace) {
             $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
@@ -49,6 +50,9 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         } elseif ($is9RouterAuto) {
             $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
             $baseUrl = 'http://127.0.0.1:20128/v1';
+        } elseif ($isOllama) {
+            $apiKey = 'sk-dummy-key-for-ollama';
+            $baseUrl = 'http://127.0.0.1:11434/v1';
         } elseif ($isProxy) {
             $apiKey = ($user && !empty($user->proxy_api_key)) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
             if (!empty($user->proxy_base_url)) {
@@ -126,6 +130,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
+        $isOllama = $aiModel && $aiModel->provider === 'ollama';
 
         if ($isHuggingFace) {
             $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
@@ -154,6 +159,9 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         } elseif ($is9RouterAuto) {
             $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
             $baseUrl = 'http://127.0.0.1:20128/v1';
+        } elseif ($isOllama) {
+            $apiKey = 'sk-dummy-key-for-ollama';
+            $baseUrl = 'http://127.0.0.1:11434/v1';
         } elseif ($isProxy) {
             // Always try to use the proxy key if provided, otherwise fallback to dummy
             $apiKey = ($user && !empty($user->proxy_api_key)) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
@@ -244,6 +252,25 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                 CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
             ]
         ]);
+
+        // Auto-detect Ollama model if using the generic 'rynude-ollama'
+        if ($isOllama && $model === 'rynude-ollama') {
+            try {
+                $tagsResponse = $client->get('http://127.0.0.1:11434/api/tags', ['timeout' => 2]);
+                if ($tagsResponse->getStatusCode() === 200) {
+                    $tagsBody = json_decode($tagsResponse->getBody()->getContents(), true);
+                    if (!empty($tagsBody['models'])) {
+                        // Use the first available model automatically
+                        $model = $tagsBody['models'][0]['name'];
+                    } else {
+                        $model = 'llama3.1'; // Fallback if no models found
+                    }
+                }
+            } catch (\Exception $e) {
+                // If Ollama is down or error, fallback to a standard name
+                $model = 'llama3.1';
+            }
+        }
         
         try {
             $response = $client->post($baseUrl . '/chat/completions', [

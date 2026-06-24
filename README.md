@@ -254,24 +254,50 @@ Jika Anda ingin Rynude berjalan **sepenuhnya offline** dan **tanpa limit** di ko
    curl -fsSL https://ollama.com/install.sh | sh
    ```
 
-2. Setelah terinstal, download model AI pilihan Anda di terminal. Contoh untuk Llama 3.1:
+### 2. Rekomendasi 4 Model Terbaik & Perintah Downloadnya
+Di terminal Anda, cukup *copy-paste* salah satu perintah di bawah ini untuk mendownload model "otak" AI ke komputer Anda (ukurannya berkisar antara 4GB - 8GB per model):
+
+1. **Qwen 3.6** (Sangat cerdas, rajanya Coding & Logika buatan Alibaba)
+   ```bash
+   ollama run qwen3.6
+   ```
+2. **Gemma 4** (Andalan Google, luar biasa untuk penulisan & rangkuman)
+   ```bash
+   ollama run gemma4
+   ```
+3. **Qwen 2.5** (Sangat ringan, ngebut, dan luwes berbahasa Indonesia)
+   ```bash
+   ollama run qwen2.5
+   ```
+4. **Llama 3.1** (Jagoan open-source buatan Meta/Facebook, serba bisa)
    ```bash
    ollama run llama3.1
    ```
-   *(Atau Anda bisa menggunakan model lain seperti `ollama run qwen2.5` atau `ollama run glm-5.2:cloud` dll).*
 
-### 2. Mendaftarkan Model ke Aplikasi Rynude
-Agar model tersebut muncul di Rynude, Anda hanya perlu mendaftarkannya di menu Settings. Kode cerdas Rynude AI sudah mendukung otomatisasi *routing* Ollama tanpa perlu setting API Key atau Base URL manual!
+### 3. Mendaftarkan Model ke Aplikasi Rynude
+Agar model-model yang sudah Anda download di atas muncul di Rynude, Anda hanya perlu mendaftarkannya di menu Settings. Kode cerdas Rynude AI sudah mendukung otomatisasi *routing* Ollama tanpa perlu setting API Key atau Base URL manual!
 
 1. Buka aplikasi Rynude Anda dan masuk ke menu **Settings**.
 2. Masuk ke tab **AI Models** lalu klik **Add Model**.
-3. Isi datanya seperti ini:
-   - **Model Code**: Isi dengan nama model persis di Ollama (misal: `llama3.1` atau `glm-5.2:cloud`).
-   - **Model Name**: Bebas, ini nama tampilan yang Anda suka (misal: `Llama 3.1 Lokal`).
-   - **Provider**: **WAJIB** diisi `ollama`.
+3. Isi datanya seperti ini (contoh jika Anda mendownload Qwen 3.6):
+   - **Model Code**: `qwen3.6` *(HURUF KECIL SEMUA: harus sama persis dengan nama perintah `ollama run ...` di atas)*
+   - **Model Name**: `Qwen 3.6 (Lokal)` *(Bebas, ini nama tampilan yang akan muncul di moremodel)*
+   - **Provider**: **WAJIB** diisi `Ollama (Local)`.
 4. Klik **Simpan**.
 
-Selesai! Model tersebut akan langsung aktif, bisa Anda pilih di *dropdown* utama *chat*, dan langsung bekerja tanpa batas. Anda bisa mengulangi langkah ini untuk mendaftarkan 10 atau 20 model Ollama yang berbeda sekalipun!
+Selesai! Model tersebut akan langsung aktif, bisa Anda pilih di *dropdown* utama *chat*, dan langsung bekerja tanpa batas. Anda bisa mengulangi **Langkah 3** ini untuk memasukkan keempat model di atas ke dalam aplikasi Anda secara bersamaan!
+
+### 4. Rekomendasi Spesifikasi Komputer (PC/Laptop)
+Menjalankan *Rynude* bersamaan dengan "Otak Raksasa" *Ollama* di komputer yang sama tentu membutuhkan tenaga ekstra. Agar pengalaman *chatting* Anda mulus dan *ngebut*, berikut adalah spesifikasi yang disarankan:
+
+*   **Minimum (Bisa Jalan tapi Agak Lambat):**
+    *   **RAM:** 8 GB
+    *   **Prosesor (CPU):** Intel Core i3 / i5 (Gen 8 ke atas) atau AMD Ryzen 3.
+    *   **Penyimpanan:** Wajib SSD (Jangan pakai Hardisk biasa / HDD).
+*   **Rekomendasi Nyaman (Sangat Ngebut & Mulus):**
+    *   **RAM:** 16 GB atau lebih.
+    *   **VGA / GPU (Penting):** NVIDIA RTX 3050, GTX 1660, atau kartu grafis dengan minimal **4GB VRAM**. *(Jika Anda punya GPU NVIDIA, Ollama akan otomatis menggunakannya dan kecepatan membalas chat bisa 10x lipat lebih cepat dibanding hanya menggunakan CPU!)*
+    *   **Penyimpanan:** NVMe SSD.
 
 ---
 

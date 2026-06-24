@@ -829,6 +829,18 @@
                                     <input type="text" wire:model="modelName" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500" placeholder="e.g. Gemma 7B">
                                     @error('modelName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
+                                <div class="mb-4">
+                                    <label class="block text-[14px] text-[#2D2825] dark:text-stone-300 font-medium mb-1.5">Provider</label>
+                                    <select wire:model="modelProvider" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                        <option value="huggingface">Hugging Face</option>
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                        <option value="google">Google</option>
+                                        <option value="mistral">Mistral</option>
+                                        <option value="proxy">9Router / Proxy</option>
+                                        <option value="ollama">Ollama (Local)</option>
+                                    </select>
+                                </div>
                                 <div class="mb-6 flex items-center mt-6">
                                     <input type="checkbox" id="modelIsActive" wire:model="modelIsActive" class="w-4 h-4 text-[#D97757] bg-gray-100 border-gray-300 rounded focus:ring-[#D97757] dark:bg-stone-700 dark:border-stone-600">
                                     <label for="modelIsActive" class="ml-2 text-[14px] font-medium text-[#2D2825] dark:text-stone-300">Set as Active</label>
