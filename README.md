@@ -243,10 +243,17 @@ Bosan dengan model standar? Mari manfaatkan server gratis **Hugging Face** yang 
 Jika Anda ingin Rynude berjalan **sepenuhnya offline** dan **tanpa limit** di komputer Anda, Anda bisa menyambungkannya dengan Ollama. Anda bisa menggunakan model apa pun (seperti Llama 3.1, Qwen, Mistral, dll) secara gratis!
 
 ### 1. Instalasi Ollama & Download Model
-1. Buka PowerShell (Windows) dan jalankan perintah resmi ini untuk menginstal Ollama:
+1. Buka Terminal atau PowerShell Anda, lalu jalankan perintah resmi berikut sesuai Sistem Operasi Anda:
+   
+   **Untuk Windows (PowerShell):**
    ```bash
    irm https://ollama.com/install.ps1 | iex
    ```
+   **Untuk macOS / Linux (Terminal):**
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
+
 2. Setelah terinstal, download model AI pilihan Anda di terminal. Contoh untuk Llama 3.1:
    ```bash
    ollama run llama3.1
