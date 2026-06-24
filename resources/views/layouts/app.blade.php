@@ -60,7 +60,14 @@
                         });
                         
                         window.addEventListener('theme-changed', (e) => {
-                            if (!_isCodePage) this.theme = e.detail;
+                            if (!_isCodePage) {
+                                let newTheme = typeof e.detail === 'string' ? e.detail 
+                                    : (e.detail && e.detail.theme ? e.detail.theme 
+                                    : (Array.isArray(e.detail) ? e.detail[0] : e.detail));
+                                if (typeof newTheme === 'string') {
+                                    this.theme = newTheme;
+                                }
+                            }
                         });
                     },
                     setTheme(newTheme) {

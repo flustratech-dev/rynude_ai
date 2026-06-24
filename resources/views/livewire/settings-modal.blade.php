@@ -102,6 +102,26 @@
                     </svg>
                 </button>
 
+                {{-- Flash Message (global) --}}
+                @if($settingsMessage)
+                    <div
+                        x-data="{ show: true }"
+                        x-init="setTimeout(() => show = false, 3000)"
+                        x-show="show"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 -translate-y-2"
+                        class="mb-4 p-3 text-sm rounded-lg border {{ $settingsMessageType === 'success' ? 'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700' : 'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700' }}"
+                    >
+                        <div class="flex items-center gap-2">
+                            @if($settingsMessageType === 'success')
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            @endif
+                            {{ $settingsMessage }}
+                        </div>
+                    </div>
+                @endif
+
                 {{-- ========== GENERAL TAB ========== --}}
                 <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     
@@ -111,27 +131,29 @@
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Avatar</label>
-                            <div class="w-10 h-10 rounded-full bg-[#EAE9E5] dark:bg-stone-800 flex items-center justify-center text-sm font-medium text-[#2D2825] dark:text-stone-300">MR</div>
+                            <div class="w-10 h-10 rounded-full bg-[#D97757] flex items-center justify-center text-sm font-medium text-white shadow-sm">{{ $this->initials }}</div>
                         </div>
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Full name</label>
-                            <input wire:model="name" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <input wire:model.live.debounce.500ms="name" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What should Rynude call you?</label>
-                            <input type="text" value="ryan" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <input wire:model.live.debounce.500ms="nickname" type="text"  class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
 
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What best describes your work?</label>
-                            <div class="w-full md:w-[340px] flex md:justify-end">
-                                <button class="flex items-center gap-1.5 text-[15px] text-gray-500 dark:text-stone-400 hover:text-gray-800 dark:hover:text-stone-200">
-                                    Select
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                                </button>
-                            </div>
+                            <select
+                                wire:model.live="profession"
+                                class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500"
+                            >
+                                @foreach($professionOptions as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
@@ -142,8 +164,7 @@
                             Rynude will keep these in mind across chats and Cowork within <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Anthropic's guidelines</a>. <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Learn more</a>
                         </p>
                         <textarea 
-                            wire:model="customInstructions"
-                            wire:change="saveProfile"
+                            wire:model.live.debounce.1000ms="customInstructions"
                             class="w-full h-24 p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" 
                             placeholder="e.g. keep explanations brief and to the point"
                         ></textarea>
@@ -157,25 +178,22 @@
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Appearance</label>
                             <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
                                 <button 
-                                    @click="setTheme('system')"
-                                    :class="theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400'"
-                                    class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors"
+                                    @click="$dispatch('theme-changed', 'system'); $wire.updateTheme('system')"
+                                    class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors {{ $theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400' }}"
                                     title="System Theme"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 </button>
                                 <button 
-                                    @click="setTheme('light')"
-                                    :class="theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400'"
-                                    class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors"
+                                    @click="$dispatch('theme-changed', 'light'); $wire.updateTheme('light')"
+                                    class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors {{ $theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400' }}"
                                     title="Light Theme"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"></path></svg>
                                 </button>
                                 <button 
-                                    @click="setTheme('dark')"
-                                    :class="theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400'"
-                                    class="p-1.5 px-3 transition-colors"
+                                    @click="$dispatch('theme-changed', 'dark'); $wire.updateTheme('dark')"
+                                    class="p-1.5 px-3 transition-colors {{ $theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'hover:bg-gray-50 dark:hover:bg-stone-700/50 text-gray-600 dark:text-stone-400' }}"
                                     title="Dark Theme"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"></path></svg>
@@ -189,8 +207,7 @@
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">The language Rynude will reply in.</p>
                             </div>
                             <select
-                                wire:model="language"
-                                wire:change="saveLanguage"
+                                wire:model.live="language"
                                 class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500"
                             >
                                 <option value="en">English</option>
@@ -206,10 +223,15 @@
 
                         <div class="flex items-center justify-between pb-8">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Chat font</label>
-                            <button class="flex items-center gap-1.5 text-[15px] text-[#2D2825] dark:text-stone-300 hover:text-gray-600 dark:hover:text-stone-400">
-                                Anthropic Serif
-                                <svg class="w-4 h-4 text-gray-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
+                            <select
+                                wire:model.live="chatFont"
+                                class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500"
+                            >
+                                <option value="default">Default (System)</option>
+                                <option value="serif">Serif</option>
+                                <option value="mono">Monospace</option>
+                                <option value="inter">Inter</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -226,9 +248,9 @@
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">Choose how Rynude looks to you.</p>
                             </div>
                             <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
-                                <button @click="setTheme('light')" :class="theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors">Light</button>
-                                <button @click="setTheme('dark')" :class="theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors">Dark</button>
-                                <button @click="setTheme('system')" :class="theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400'" class="px-3 py-1.5 text-sm transition-colors">System</button>
+                                <button @click="$dispatch('theme-changed', 'light'); $wire.updateTheme('light')" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors {{ $theme === 'light' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }}">Light</button>
+                                <button @click="$dispatch('theme-changed', 'dark'); $wire.updateTheme('dark')" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors {{ $theme === 'dark' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }}">Dark</button>
+                                <button @click="$dispatch('theme-changed', 'system'); $wire.updateTheme('system')" class="px-3 py-1.5 text-sm transition-colors {{ $theme === 'system' ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }}">System</button>
                             </div>
                         </div>
 
@@ -240,7 +262,7 @@
                             </div>
                             <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
                                 @foreach(['small' => 'A', 'medium' => 'A', 'large' => 'A'] as $size => $label)
-                                    <button wire:click="$set('fontSize', '{{ $size }}')" class="px-3 py-1.5 transition-colors {{ $fontSize === $size ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }} {{ !$loop->last ? 'border-r border-claude-border-light dark:border-claude-border-dark' : '' }}" style="font-size: {{ $size === 'small' ? '12px' : ($size === 'medium' ? '15px' : '18px') }}">{{ $label }}</button>
+                                    <button @click="$wire.fontSize = '{{ $size }}'" class="px-3 py-1.5 transition-colors {{ $fontSize === $size ? 'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200' : 'text-gray-600 dark:text-stone-400' }} {{ !$loop->last ? 'border-r border-claude-border-light dark:border-claude-border-dark' : '' }}" style="font-size: {{ $size === 'small' ? '12px' : ($size === 'medium' ? '15px' : '18px') }}">{{ $label }}</button>
                                 @endforeach
                             </div>
                         </div>
@@ -253,7 +275,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 @foreach($accentColors as $color)
-                                    <button wire:click="$set('accentColor', '{{ $color }}')" class="w-7 h-7 rounded-full transition-all {{ $accentColor === $color ? 'ring-2 ring-offset-2 ring-stone-400 dark:ring-offset-stone-900' : 'hover:scale-110' }}" style="background-color: {{ $color }}"></button>
+                                    <button @click="$wire.accentColor = '{{ $color }}'" class="w-7 h-7 rounded-full transition-all {{ $accentColor === $color ? 'ring-2 ring-offset-2 ring-stone-400 dark:ring-offset-stone-900' : 'hover:scale-110' }}" style="background-color: {{ $color }}"></button>
                                 @endforeach
                             </div>
                         </div>
@@ -264,7 +286,7 @@
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Compact mode</label>
                                 <p class="text-[13px] text-gray-500 dark:text-stone-400">Reduce spacing to fit more on screen.</p>
                             </div>
-                            <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer" :class="$wire.compactMode ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" wire:click="$toggle('compactMode')">
+                            <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer" :class="$wire.compactMode ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.compactMode = !$wire.compactMode">
                                 <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.compactMode ? 'translate-x-5' : 'translate-x-[2px]'"></span>
                             </div>
                         </div>
@@ -278,12 +300,6 @@
                 {{-- ========== DATA & PRIVACY TAB ========== --}}
                 <div x-show="activeTab === 'data'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Data & Privacy</h2>
-
-                    @if (session()->has('dataMessage'))
-                        <div class="p-3 mb-6 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-stone-800 dark:text-green-400 border border-green-200 dark:border-stone-700">
-                            {{ session('dataMessage') }}
-                        </div>
-                    @endif
 
                     <div class="space-y-8">
                         <div class="flex items-start justify-between">
@@ -299,10 +315,9 @@
                                 <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on your conversations</label>
                                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Allow Rynude to use your conversations to improve the models.</p>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer mt-1 flex-shrink-0">
-                                <input type="checkbox" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#D97757]"></div>
-                            </label>
+                            <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 mt-1" :class="$wire.allowTraining ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.allowTraining = !$wire.allowTraining">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.allowTraining ? 'translate-x-5' : 'translate-x-[2px]'"></span>
+                            </div>
                         </div>
 
                         <div class="flex items-start justify-between border-t border-red-100 dark:border-red-900/40 pt-6">
@@ -389,7 +404,7 @@
 
                             <div class="pt-4 border-t border-claude-border-light dark:border-claude-border-dark">
                                 <label class="flex items-center gap-3 cursor-pointer mb-4">
-                                    <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ease-in-out" :class="$wire.useProxy ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" wire:click="$toggle('useProxy')">
+                                    <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ease-in-out" :class="$wire.useProxy ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.useProxy = !$wire.useProxy">
                                         <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition duration-200 ease-in-out" :class="$wire.useProxy ? 'translate-x-4' : 'translate-x-[3px]'"></span>
                                     </div>
                                     <div>
@@ -429,14 +444,28 @@
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Email address</label>
-                            <div class="text-[15px] text-gray-500 dark:text-stone-400">user@example.com</div>
+                            <div class="text-[15px] text-gray-500 dark:text-stone-400">{{ $email }}</div>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="text-[15px] text-[#2D2825] dark:text-stone-300 block mb-1">Delete account</label>
-                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400">Permanently delete your account and all of its contents from Rynude.</p>
+                        <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Full name</label>
+                            <div class="text-[15px] text-gray-500 dark:text-stone-400">{{ $name }}</div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Member since</label>
+                            <div class="text-[15px] text-gray-500 dark:text-stone-400">
+                                @if(Auth::check())
+                                    {{ Auth::user()->created_at->format('M d, Y') }}
+                                @else
+                                    —
+                                @endif
                             </div>
-                            <button class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">Delete</button>
+                        </div>
+                        <div class="flex items-start justify-between border-t border-red-100 dark:border-red-900/40 pt-6">
+                            <div>
+                                <label class="text-[15px] text-red-600 dark:text-red-400 font-medium block mb-1">Delete account</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Permanently delete your account and all of its contents from Rynude. This action cannot be undone.</p>
+                            </div>
+                            <button wire:click="deleteAccount" wire:confirm="Are you absolutely sure? This will permanently delete your account, all conversations, projects, and data. This cannot be undone." class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors flex-shrink-0">Delete account</button>
                         </div>
                     </div>
                 </div>
@@ -451,17 +480,16 @@
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on your conversations</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Anthropic to use your conversations to train our models. This helps us improve Rynude for everyone.</p>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer mt-1">
-                                    <input type="checkbox" value="" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#D97757]"></div>
-                                </label>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer mt-1" :class="$wire.allowTraining ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.allowTraining = !$wire.allowTraining">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.allowTraining ? 'translate-x-5' : 'translate-x-[2px]'"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div class="flex items-start justify-between mb-2">
                                 <div>
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export data</label>
-                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Request an export of your account data. You will receive an email when it's ready.</p>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Download a complete copy of all your conversations as a JSON file.</p>
                                 </div>
                                 <button wire:click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors">Export data</button>
                             </div>
@@ -471,7 +499,7 @@
 
                 {{-- ========== BILLING TAB ========== --}}
                 <div x-show="activeTab === 'billing'" x-cloak style="display: none;" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Billing</h2>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Quota & Usage</h2>
 
                     {{-- Real usage --}}
                     @php
@@ -517,27 +545,40 @@
                     <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-[16px] font-medium text-[#2D2825] dark:text-stone-200">Free Plan</h3>
-                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mt-1">You are currently on the free plan.</p>
+                                <h3 class="text-[16px] font-medium text-[#2D2825] dark:text-stone-200">
+                                    @if($tokensLimit > 500000)
+                                        Max Plan
+                                    @elseif($tokensLimit > 0)
+                                        Free Plan
+                                    @else
+                                        No Quota
+                                    @endif
+                                </h3>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mt-1">
+                                    @if($tokensLimit > 0)
+                                        You have {{ number_format($tokensLimit) }} tokens remaining in your quota.
+                                    @else
+                                        Connect your own API keys to start using Rynude.
+                                    @endif
+                                </p>
                             </div>
                             <span class="px-3 py-1 bg-gray-100 dark:bg-stone-700 text-gray-600 dark:text-stone-300 text-xs font-medium rounded-full">Current</span>
                         </div>
-                        <button class="w-full py-2.5 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Upgrade to Max</button>
                     </div>
 
-                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-4">Max features include:</h3>
+                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-4">Features include:</h3>
                     <ul class="space-y-3">
                         <li class="flex items-center gap-3 text-[14px] text-gray-600 dark:text-stone-300">
                             <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Priority access during high-traffic periods
+                            Multi-provider AI access (Anthropic, OpenAI, Google, Mistral)
                         </li>
                         <li class="flex items-center gap-3 text-[14px] text-gray-600 dark:text-stone-300">
                             <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Access to our most capable model, Rynude 3.5 Sonnet
+                            Custom Hugging Face model integration
                         </li>
                         <li class="flex items-center gap-3 text-[14px] text-gray-600 dark:text-stone-300">
                             <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Early access to new features
+                            Artifacts, web search & code execution
                         </li>
                     </ul>
                 </div>
@@ -552,10 +593,9 @@
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Web Search (Beta)</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Rynude to search the web for up-to-date information to answer your questions more accurately.</p>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer mt-1">
-                                    <input type="checkbox" value="" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#D97757]"></div>
-                                </label>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer mt-1" :class="$wire.capWebSearch ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.capWebSearch = !$wire.capWebSearch">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.capWebSearch ? 'translate-x-5' : 'translate-x-[2px]'"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
@@ -564,10 +604,9 @@
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Artifacts</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Enable Rynude to generate standalone artifacts like code, documents, and SVGs in a dedicated panel.</p>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer mt-1">
-                                    <input type="checkbox" value="" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#D97757]"></div>
-                                </label>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer mt-1" :class="$wire.capArtifacts ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.capArtifacts = !$wire.capArtifacts">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.capArtifacts ? 'translate-x-5' : 'translate-x-[2px]'"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
@@ -576,10 +615,9 @@
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Code Execution (Beta)</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Rynude to write and run code in a secure sandbox to perform complex calculations and data analysis.</p>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer mt-1">
-                                    <input type="checkbox" value="" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#D97757]"></div>
-                                </label>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer mt-1" :class="$wire.capCodeExecution ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="$wire.capCodeExecution = !$wire.capCodeExecution">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="$wire.capCodeExecution ? 'translate-x-5' : 'translate-x-[2px]'"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -697,12 +735,6 @@
                         <button wire:click="createModel" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">+ Add Model</button>
                     </div>
 
-                    @if (session()->has('modelMessage'))
-                        <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-stone-800 dark:text-green-400 border border-green-200 dark:border-stone-700" role="alert">
-                            {{ session('modelMessage') }}
-                        </div>
-                    @endif
-
                     <div class="overflow-x-auto border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
                         <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
                             <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
@@ -751,7 +783,7 @@
                         </div>
                         <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between">
                             <span>npm install -g @anthropic-ai/rynude-code</span>
-                            <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard">
+                            <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard" onclick="navigator.clipboard.writeText('npm install -g @anthropic-ai/rynude-code')">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
                         </div>
@@ -762,7 +794,7 @@
                     
                     <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between mb-6">
                         <span>rynude auth login</span>
-                        <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard">
+                        <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard" onclick="navigator.clipboard.writeText('rynude auth login')">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         </button>
                     </div>
@@ -813,4 +845,5 @@
             </div>
         </div>
     </div>
+
 </div>
