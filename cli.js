@@ -233,17 +233,33 @@ async function run() {
     process.on('SIGINT', killServers);
 
     async function showMenu() {
+        const workspace = process.env.RYNUDE_WORKSPACE || process.cwd();
+
         const response = await prompts({
             type: 'select',
             name: 'action',
             message: 'Gunakan ⬆️/⬇️ lalu tekan ENTER:',
             choices: [
+                { title: '💻 Buka Terminal UI (RynudeCode CLI)', value: 'cli' },
                 { title: '🌐 Buka Web UI (Browser)', value: 'browser' },
                 { title: '🛑 Tutup Server & Keluar', value: 'exit' }
             ]
         });
 
-        if (response.action === 'browser') {
+        if (response.action === 'cli') {
+            console.clear();
+            console.log(chalk.cyan(`Menjalankan RynudeCode CLI di workspace: ${workspace}`));
+            
+            // Execute the Laravel command directly attached to stdio
+            const cliProcess = spawn('php', ['artisan', 'rynude:chat', `--workspace=${workspace}`], {
+                stdio: 'inherit',
+                shell: true
+            });
+            
+            cliProcess.on('close', () => {
+                killServers();
+            });
+        } else if (response.action === 'browser') {
             openBrowser(`http://localhost:${laravelPort}`);
             console.log(chalk.cyan(`\nMembuka browser...`));
             setTimeout(showMenu, 1000);
@@ -252,10 +268,22 @@ async function run() {
         }
     }
 
-    // Cek apakah dijalankan dalam mode silent (oleh Background Launcher)
+    // Cek apakah dijalankan dalam mode silent atau mode CLI langsung
     const isSilent = process.argv.includes('--silent');
+    const isCliMode = process.argv.includes('--cli');
 
-    if (isSilent) {
+    if (isCliMode) {
+        const workspace = process.env.RYNUDE_WORKSPACE || process.cwd();
+        console.clear();
+        console.log(chalk.cyan(`Menjalankan RynudeCode CLI di workspace: ${workspace}`));
+        const cliProcess = spawn('php', ['artisan', 'rynude:chat', `--workspace=${workspace}`], {
+            stdio: 'inherit',
+            shell: true
+        });
+        cliProcess.on('close', () => {
+            killServers();
+        });
+    } else if (isSilent) {
         console.log(chalk.gray('Berjalan di mode silent (Background). Gunakan icon Taskbar untuk menutup.'));
         
         // Buka browser otomatis setelah beberapa saat menunggu server PHP siap

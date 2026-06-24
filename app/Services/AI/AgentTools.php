@@ -30,6 +30,7 @@ class AgentTools
      * @param array  $localFiles           ClaudeCodeApp::$localFilesTree (uploaded files)
      * @param array  $uploadedContents     [path => content] for uploaded files already read
      * @param string|null $githubToken     user's GitHub PAT for private repos / code search
+     * @param string $localWorkspacePath   Local directory path for the CLI or Web UI when exploring local files
      */
     public function __construct(
         private string $repoConnected = '',
@@ -37,6 +38,7 @@ class AgentTools
         private array $localFiles = [],
         private array $uploadedContents = [],
         private ?string $githubToken = null,
+        private string $localWorkspacePath = '',
     ) {}
 
     public function openedFiles(): array
@@ -63,11 +65,12 @@ class AgentTools
 
         $hasRepo  = $this->repoConnected !== '';
         $hasLocal = count($this->localFiles) > 0;
+        $hasWorkspace = $this->localWorkspacePath !== '';
 
-        if ($hasRepo || $hasLocal) {
+        if ($hasRepo || $hasLocal || $hasWorkspace) {
             $tools[] = [
                 'name' => 'list_files',
-                'description' => 'List files and directories available in the connected repository or uploaded folder. Call this first to discover what code exists before reading specific files.',
+                'description' => 'List files and directories available in the connected repository, local workspace, or uploaded folder. Call this first to discover what code exists before reading specific files.',
                 'input_schema' => [
                     'type' => 'object',
                     'properties' => [
@@ -90,6 +93,49 @@ class AgentTools
                         ],
                     ],
                     'required' => ['path'],
+                ],
+            ];
+        }
+
+        if ($hasWorkspace) {
+            $tools[] = [
+                'name' => 'write_file',
+                'description' => 'Create a new file or completely overwrite an existing file in the local workspace.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'path' => [
+                            'type' => 'string',
+                            'description' => 'Exact file path, e.g. "app/Helpers/MyHelper.php".',
+                        ],
+                        'content' => [
+                            'type' => 'string',
+                            'description' => 'The full content of the file.',
+                        ],
+                    ],
+                    'required' => ['path', 'content'],
+                ],
+            ];
+            $tools[] = [
+                'name' => 'edit_file',
+                'description' => 'Edit an existing file in the local workspace by replacing a specific string of text with a new string. Be careful to match exact indentation and characters.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'path' => [
+                            'type' => 'string',
+                            'description' => 'Exact file path to edit.',
+                        ],
+                        'search' => [
+                            'type' => 'string',
+                            'description' => 'The exact text to find and replace. Must match exactly including whitespace.',
+                        ],
+                        'replace' => [
+                            'type' => 'string',
+                            'description' => 'The new text to replace the searched text with.',
+                        ],
+                    ],
+                    'required' => ['path', 'search', 'replace'],
                 ],
             ];
         }
@@ -138,6 +184,8 @@ class AgentTools
             return match ($name) {
                 'list_files'  => $this->listFiles($input['path'] ?? ''),
                 'read_file'   => $this->readFile((string) ($input['path'] ?? '')),
+                'write_file'  => $this->writeFile((string) ($input['path'] ?? ''), (string) ($input['content'] ?? '')),
+                'edit_file'   => $this->editFile((string) ($input['path'] ?? ''), (string) ($input['search'] ?? ''), (string) ($input['replace'] ?? '')),
                 'search_code' => $this->searchCode((string) ($input['query'] ?? '')),
                 'web_search'  => $this->webSearch((string) ($input['query'] ?? '')),
                 default       => "Error: unknown tool '{$name}'.",
@@ -153,6 +201,7 @@ class AgentTools
         $lines = substr_count(rtrim($result), "\n") + 1;
         return match ($name) {
             'read_file'   => strlen($result) . ' chars',
+            'write_file', 'edit_file' => 'success',
             'list_files', 'search_code' => $lines . ' entries',
             'web_search'  => 'web results',
             default       => $lines . ' lines',
@@ -169,6 +218,21 @@ class AgentTools
         }
 
         $entries = [];
+
+        // 1. Local Workspace
+        if ($this->localWorkspacePath !== '') {
+            $localSvc = new \App\Services\LocalWorkspaceService();
+            $tree = $localSvc->fetchTree($this->localWorkspacePath);
+            foreach ($tree as $item) {
+                $p = $item['path'] ?? '';
+                if ($path !== '' && !str_starts_with($p, $path)) {
+                    continue;
+                }
+                $entries[] = ($item['type'] === 'dir' ? '[dir]  ' : '       ') . $p;
+            }
+        }
+
+        // 2. Connected Repo (GitHub)
         foreach ($this->repoTree as $item) {
             $p = $item['path'] ?? '';
             if ($path !== '' && !str_starts_with($p, $path)) {
@@ -177,6 +241,7 @@ class AgentTools
             $entries[] = ($item['type'] === 'dir' ? '[dir]  ' : '       ') . $p;
         }
 
+        // 3. Uploaded Files
         if (empty($entries)) {
             foreach ($this->localFiles as $item) {
                 $entries[] = '       ' . ($item['name'] ?? '');
@@ -188,6 +253,9 @@ class AgentTools
                 ? "No files found under '{$path}'."
                 : 'No files available. No repository is connected and no files were uploaded.';
         }
+
+        // Deduplicate entries
+        $entries = array_unique($entries);
 
         $shown = array_slice($entries, 0, 150);
         $note = count($entries) > 150 ? "\n… (" . (count($entries) - 150) . ' more, narrow with a path)' : '';
@@ -203,10 +271,15 @@ class AgentTools
 
         $content = null;
 
-        // Uploaded files first (already in memory), then the connected repo.
+        // Uploaded files first (already in memory), then local workspace, then connected repo.
         if (isset($this->uploadedContents[$path])) {
             $content = $this->uploadedContents[$path];
-        } elseif ($this->repoConnected !== '') {
+        } elseif ($this->localWorkspacePath !== '') {
+            $localSvc = new \App\Services\LocalWorkspaceService();
+            $content = $localSvc->fetchFileContent($this->localWorkspacePath, $path);
+        }
+        
+        if ($content === null && $this->repoConnected !== '') {
             [$owner, $repo] = array_pad(explode('/', $this->repoConnected, 2), 2, '');
             if ($owner === '' || $repo === '') {
                 return 'Error: connected repository is misconfigured.';
@@ -234,6 +307,34 @@ class AgentTools
         }
 
         return "File: {$path}\n```\n" . $content . "\n```" . $truncated;
+    }
+
+    private function writeFile(string $path, string $content): string
+    {
+        if ($this->localWorkspacePath === '') {
+            return 'Error: No local workspace available to write to.';
+        }
+        
+        $localSvc = new \App\Services\LocalWorkspaceService();
+        if ($localSvc->writeFile($this->localWorkspacePath, $path, $content)) {
+            return "Successfully wrote to '{$path}'.";
+        }
+
+        return "Error: Failed to write to '{$path}'.";
+    }
+
+    private function editFile(string $path, string $search, string $replace): string
+    {
+        if ($this->localWorkspacePath === '') {
+            return 'Error: No local workspace available to edit.';
+        }
+
+        $localSvc = new \App\Services\LocalWorkspaceService();
+        if ($localSvc->replaceInFile($this->localWorkspacePath, $path, $search, $replace)) {
+            return "Successfully edited '{$path}'.";
+        }
+
+        return "Error: Failed to edit '{$path}'. This may happen if the search string was not found exactly as provided (mind whitespace and indentation).";
     }
 
     private function searchCode(string $query): string

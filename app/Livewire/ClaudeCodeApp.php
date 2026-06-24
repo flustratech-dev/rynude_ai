@@ -585,6 +585,7 @@ class ClaudeCodeApp extends Component
             $this->localFilesTree,
             $uploadedContents,
             Auth::user()->github_token ?? null,
+            env('RYNUDE_WORKSPACE', '')
         );
 
         // ── Run the agent loop, interleaving text + tool activity ──────────
