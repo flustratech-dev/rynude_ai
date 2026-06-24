@@ -1,10 +1,10 @@
 <x-guest-layout>
-    <div class="min-h-screen bg-[#FFFDF9] flex flex-col font-sans text-[#2D2825]">
+    <div class="min-h-screen bg-[#FFFDF9] flex flex-col font-claude-response text-[#2D2825]">
         <!-- Header -->
         <header x-data="{ mobileMenuOpen: false }" class="relative z-50 flex items-center justify-between px-6 py-4 lg:px-10 lg:py-6 w-full bg-[#FFFDF9]">
             <div class="flex items-center gap-2">
                 <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude Logo" class="h-8 w-auto object-contain">
-                <span class="font-serif text-[22px] font-medium tracking-tight">rynude</span>
+                <span class="font-claude-response text-[22px] font-medium tracking-tight">rynude</span>
             </div>
 
             <!-- Desktop Menu -->
@@ -61,7 +61,7 @@
             <!-- Left Side -->
             <div class="w-full lg:w-1/2 flex flex-col items-center justify-center pt-10 lg:pt-0">
                 <div class="text-center mb-8 max-w-md">
-                    <h1 class="font-serif text-[42px] lg:text-[56px] leading-[1.1] text-[#2D2825] mb-4 tracking-tight">
+                    <h1 class="font-claude-response text-[42px] lg:text-[56px] leading-[1.1] text-[#2D2825] mb-4 tracking-tight">
                         Meet rynude Design
                     </h1>
                     <p class="text-[18px] text-gray-600">
@@ -144,7 +144,7 @@
                         <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2l2.4 7.6H22l-6.2 4.5 2.4 7.6-6.2-4.5-6.2 4.5 2.4-7.6L2 9.6h7.6z"/>
                         </svg>
-                        <span class="font-serif text-[15px] font-medium text-[#2D2825] tracking-tight">Rynude</span>
+                        <span class="font-claude-response text-[15px] font-medium text-[#2D2825] tracking-tight">Rynude</span>
                     </div>
                 </div>
             </div>
@@ -158,7 +158,7 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-[#D97757]"></span>
                     Now with Cowork, Design &amp; multi-model chat
                 </div>
-                <h1 class="font-serif text-[44px] md:text-[60px] leading-[1.05] font-medium tracking-tight max-w-3xl mx-auto">
+                <h1 class="font-claude-response text-[44px] md:text-[60px] leading-[1.05] font-medium tracking-tight max-w-3xl mx-auto">
                     The AI workspace that<br>
                     <span class="text-[#D97757]">works the way you think</span>
                 </h1>
@@ -209,7 +209,7 @@
         {{-- Features --}}
         <section id="features" class="max-w-6xl mx-auto w-full px-6 py-20">
             <div class="text-center mb-12">
-                <h2 class="font-serif text-[34px] font-medium tracking-tight">Everything in one workspace</h2>
+                <h2 class="font-claude-response text-[34px] font-medium tracking-tight">Everything in one workspace</h2>
                 <p class="text-gray-500 mt-3 text-[15.5px]">A focused set of tools that work together.</p>
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -238,7 +238,7 @@
         {{-- Models --}}
         <section id="models" class="border-y border-gray-200 bg-[#FFFDF9]">
             <div class="max-w-6xl mx-auto px-6 py-20 text-center">
-                <h2 class="font-serif text-[34px] font-medium tracking-tight">Your favorite models, one interface</h2>
+                <h2 class="font-claude-response text-[34px] font-medium tracking-tight">Your favorite models, one interface</h2>
                 <p class="text-gray-500 mt-3 text-[15.5px] max-w-2xl mx-auto">Switch providers without switching tools. Add your keys in Settings and start chatting.</p>
                 <div class="flex flex-wrap items-center justify-center gap-3 mt-10">
                     @foreach(['Rynude Opus 4.8', 'Rynude Sonnet 4.6', 'GPT', 'Gemini 2.5 Pro', 'Mistral Large', 'Codestral'] as $m)
@@ -256,7 +256,7 @@
                 </video>
                 <div class="absolute inset-0 bg-black/50"></div>
                 <div class="relative">
-                    <h2 class="font-serif text-[36px] md:text-[42px] font-medium text-white tracking-tight max-w-2xl mx-auto leading-tight">Ready to build with Rynude?</h2>
+                    <h2 class="font-claude-response text-[36px] md:text-[42px] font-medium text-white tracking-tight max-w-2xl mx-auto leading-tight">Ready to build with Rynude?</h2>
                     <p class="text-gray-300 mt-4 text-[16px] max-w-xl mx-auto">Start free in seconds. No credit card required.</p>
                     <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
                         <a href="{{ route('register') }}" class="w-full sm:w-auto px-7 py-3 bg-[#D97757] hover:bg-[#c56647] text-white rounded-xl text-[15px] font-medium transition-colors shadow-lg">
@@ -273,7 +273,7 @@
             <div class="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-2.5">
                     <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude" class="w-6 h-6 rounded-md object-contain">
-                    <span class="font-serif text-[16px] font-medium">Rynude</span>
+                    <span class="font-claude-response text-[16px] font-medium">Rynude</span>
                 </div>
                 <div class="flex items-center gap-6 text-[13.5px] text-gray-500">
                     <a href="#features" class="hover:text-[#2D2825] transition-colors">Features</a>

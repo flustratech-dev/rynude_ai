@@ -1,10 +1,10 @@
 <x-guest-layout>
-    <div class="min-h-screen bg-[#FFFDF9] flex flex-col font-sans text-[#2D2825]">
+    <div class="min-h-screen bg-[#FFFDF9] flex flex-col font-claude-response text-[#2D2825]">
         <!-- Header -->
         <header x-data="{ mobileMenuOpen: false }" class="relative z-50 flex items-center justify-between px-6 py-4 lg:px-10 lg:py-6 w-full bg-[#FFFDF9]">
             <div class="flex items-center gap-2">
                 <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude Logo" class="h-8 w-auto object-contain">
-                <span class="font-serif text-[22px] font-medium tracking-tight">rynude</span>
+                <span class="font-claude-response text-[22px] font-medium tracking-tight">rynude</span>
             </div>
 
             <!-- Desktop Menu -->
@@ -61,7 +61,7 @@
             <!-- Left Side -->
             <div class="w-full lg:w-1/2 flex flex-col items-center justify-center pt-10 lg:pt-0">
                 <div class="text-center mb-8 max-w-md">
-                    <h1 class="font-serif text-[42px] lg:text-[56px] leading-[1.1] text-[#2D2825] mb-4 tracking-tight">
+                    <h1 class="font-claude-response text-[42px] lg:text-[56px] leading-[1.1] text-[#2D2825] mb-4 tracking-tight">
                         Join rynude Design
                     </h1>
                     <p class="text-[18px] text-gray-600">
@@ -145,7 +145,7 @@
                         <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2l2.4 7.6H22l-6.2 4.5 2.4 7.6-6.2-4.5-6.2 4.5 2.4-7.6L2 9.6h7.6z"/>
                         </svg>
-                        <span class="font-serif text-[15px] font-medium text-[#2D2825] tracking-tight">Rynude</span>
+                        <span class="font-claude-response text-[15px] font-medium text-[#2D2825] tracking-tight">Rynude</span>
                     </div>
                 </div>
             </div>

@@ -97,11 +97,10 @@
         </div>
     </div>
 
-    {{-- ========== DESKTOP SIDEBAR ========== --}}
     <div
         x-show="!isMobile"
         x-cloak
-        :class="sidebarOpen ? 'w-[280px]' : 'w-[60px]'"
+        :class="sidebarOpen ? 'w-[290px]' : 'w-[60px]'"
         class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:block bg-[#F9F8F6] dark:bg-claude-bg-dark"
     >
         <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
