@@ -41,7 +41,7 @@
                 <span class="text-[13px] font-semibold text-[#E5E5E5] tracking-tight">Rynude Code</span>
                 <span class="text-[9px] px-1 py-0.5 bg-[#CC785C]/20 text-[#CC785C] rounded font-sans font-medium">Preview</span>
             </div>
-            <button @click="sidebarOpen = false" class="p-1 rounded hover:bg-[#2A2A2A] transition-colors text-[#555]">
+            <button @click="sidebarOpen = false" class="p-1 rounded hover:bg-[#2A2A2A] transition-colors text-[#999]">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
             </button>
         </div>
@@ -49,22 +49,22 @@
         {{-- New Session --}}
         <div class="px-2 pt-2 pb-1 flex-shrink-0">
             <button wire:click="newSession"
-                class="w-full flex items-center gap-2 px-2.5 py-2 text-[12px] text-[#999] hover:text-[#E5E5E5] hover:bg-[#252525] rounded-md transition-colors group font-sans">
+                class="w-full flex items-center gap-2 px-2.5 py-2 text-[12px] text-[#DDD] hover:text-[#E5E5E5] hover:bg-[#252525] rounded-md transition-colors group font-sans">
                 <svg class="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 New session
-                <kbd class="ml-auto text-[10px] bg-[#1F1F1F] border border-[#2A2A2A] text-[#444] px-1 rounded">N</kbd>
+                <kbd class="ml-auto text-[10px] bg-[#1F1F1F] border border-[#2A2A2A] text-[#888] px-1 rounded">N</kbd>
             </button>
         </div>
 
         {{-- Nav --}}
         <div class="px-2 space-y-0.5 flex-shrink-0">
             <button wire:click="$set('currentView', 'routines')"
-                class="w-full flex items-center gap-2 px-2.5 py-1.5 text-[12px] rounded-md transition-colors font-sans {{ $currentView === 'routines' || $currentView === 'new-routine' ? 'bg-[#252525] text-[#E5E5E5]' : 'text-[#777] hover:text-[#CCC] hover:bg-[#1F1F1F]' }}">
+                class="w-full flex items-center gap-2 px-2.5 py-1.5 text-[12px] rounded-md transition-colors font-sans {{ $currentView === 'routines' || $currentView === 'new-routine' ? 'bg-[#252525] text-[#E5E5E5]' : 'text-[#BBB] hover:text-[#CCC] hover:bg-[#1F1F1F]' }}">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 Routines
             </button>
             <a href="{{ route('chat', ['panel' => 'customize']) }}"
-                class="w-full flex items-center gap-2 px-2.5 py-1.5 text-[12px] text-[#777] hover:text-[#CCC] hover:bg-[#1F1F1F] rounded-md transition-colors font-sans">
+                class="w-full flex items-center gap-2 px-2.5 py-1.5 text-[12px] text-[#BBB] hover:text-[#CCC] hover:bg-[#1F1F1F] rounded-md transition-colors font-sans">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M16 12h6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24"/></svg>
                 Customize
             </a>
@@ -74,7 +74,7 @@
 
         {{-- Recent Sessions --}}
         <div class="flex-1 overflow-y-auto scrollbar-hide px-2 min-h-0">
-            <p class="px-2.5 text-[10px] font-semibold text-[#383838] uppercase tracking-widest mb-1.5 font-sans">Recents</p>
+            <p class="px-2.5 text-[10px] font-semibold text-[#777] uppercase tracking-widest mb-1.5 font-sans">Recents</p>
 
             @if($isStarted && $conversation && !collect($recentSessions)->contains('id', $conversation->id))
                 <div class="flex items-center gap-2 px-2.5 py-2 bg-[#252525] rounded-md border border-[#333] mb-1">
@@ -93,20 +93,20 @@
                             <div class="w-1.5 h-1.5 rounded-full bg-[#333] flex-shrink-0 group-hover:bg-[#555]"></div>
                         @endif
                         <div class="flex-1 min-w-0">
-                            <p class="text-[12px] text-[#888] group-hover:text-[#CCC] truncate font-sans transition-colors {{ ($conversation?->id === $session['id']) ? 'text-[#E5E5E5]' : '' }}">
+                            <p class="text-[12px] text-[#CCC] group-hover:text-[#CCC] truncate font-sans transition-colors {{ ($conversation?->id === $session['id']) ? 'text-[#E5E5E5]' : '' }}">
                                 {{ $session['title'] }}
                             </p>
-                            <p class="text-[10px] text-[#333] font-sans mt-0.5">{{ $session['ago'] }}</p>
+                            <p class="text-[10px] text-[#666] font-sans mt-0.5">{{ $session['ago'] }}</p>
                         </div>
                     </button>
                     <button wire:click="deleteSession({{ $session['id'] }})"
                         wire:confirm="Delete this session?"
-                        class="opacity-0 group-hover:opacity-100 p-1.5 mr-1 text-[#444] hover:text-[#F87171] transition-all rounded">
+                        class="opacity-0 group-hover:opacity-100 p-1.5 mr-1 text-[#888] hover:text-[#F87171] transition-all rounded">
                         <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
             @empty
-                <div class="px-2.5 py-2 text-[11px] text-[#333] italic font-sans">No previous sessions</div>
+                <div class="px-2.5 py-2 text-[11px] text-[#666] italic font-sans">No previous sessions</div>
             @endforelse
         </div>
 
@@ -117,21 +117,21 @@
                 <div class="w-5 h-5 rounded-full bg-[#CC785C]/20 border border-[#CC785C]/40 flex items-center justify-center flex-shrink-0">
                     <span class="text-[9px] text-[#CC785C] font-bold font-sans">{{ strtoupper(substr(auth()->user()?->name ?? 'G', 0, 1)) }}</span>
                 </div>
-                <span class="text-[12px] text-[#777] flex-1 text-left truncate font-sans">{{ auth()->user()?->name ?? 'Guest' }}</span>
-                <svg class="w-3 h-3 text-[#383838] transition-transform duration-200" :class="profileMenuOpen ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                <span class="text-[12px] text-[#BBB] flex-1 text-left truncate font-sans">{{ auth()->user()?->name ?? 'Guest' }}</span>
+                <svg class="w-3 h-3 text-[#777] transition-transform duration-200" :class="profileMenuOpen ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div x-show="profileMenuOpen" x-cloak x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
                 class="absolute bottom-14 left-2 w-[220px] bg-[#1F1F1F] border border-[#333] rounded-lg shadow-xl py-1 z-50 font-sans">
-                <div class="px-3 py-1.5 text-[11px] text-[#444] truncate border-b border-[#2A2A2A] mb-1">{{ auth()->user()?->email ?? '' }}</div>
+                <div class="px-3 py-1.5 text-[11px] text-[#888] truncate border-b border-[#2A2A2A] mb-1">{{ auth()->user()?->email ?? '' }}</div>
                 <button @click="$dispatch('open-settings-modal'); profileMenuOpen = false" class="w-full text-left px-3 py-1.5 hover:bg-[#2A2A2A] text-[13px] text-[#CCC] flex items-center gap-2">
-                    <svg class="w-3.5 h-3.5 text-[#555]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+                    <svg class="w-3.5 h-3.5 text-[#999]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
                     Settings
                 </button>
                 <div class="mx-3 my-1 border-t border-[#2A2A2A]"></div>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="w-full text-left px-3 py-1.5 hover:bg-[#2A2A2A] text-[13px] text-[#CCC] flex items-center gap-2">
-                        <svg class="w-3.5 h-3.5 text-[#555]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"/></svg>
+                        <svg class="w-3.5 h-3.5 text-[#999]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"/></svg>
                         Log out
                     </button>
                 </form>
@@ -145,32 +145,32 @@
         {{-- TOP BAR --}}
         <div class="flex items-center gap-2 px-3 py-2 border-b border-[#2A2A2A] bg-[#141414] flex-shrink-0">
             <button x-show="!sidebarOpen" @click="sidebarOpen = true"
-                class="p-1 rounded hover:bg-[#2A2A2A] transition-colors text-[#444] hover:text-[#888]">
+                class="p-1 rounded hover:bg-[#2A2A2A] transition-colors text-[#888] hover:text-[#CCC]">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
             </button>
 
             {{-- Breadcrumb --}}
-            <div class="flex items-center gap-1 text-[12px] text-[#444] flex-1 min-w-0">
+            <div class="flex items-center gap-1 text-[12px] text-[#888] flex-1 min-w-0">
                 <span class="text-[#CC785C]">~</span><span>/</span>
-                <span class="text-[#666]">session</span>
+                <span class="text-[#AAA]">session</span>
                 @if($isStarted && $conversation)
                     <span>/</span>
-                    <span class="text-[#999] truncate max-w-[200px]">{{ Str::slug(substr($conversation->title ?? 'active', 0, 35)) }}</span>
+                    <span class="text-[#DDD] truncate max-w-[200px]">{{ Str::slug(substr($conversation->title ?? 'active', 0, 35)) }}</span>
                 @endif
             </div>
 
             {{-- Token counter --}}
             @if($sessionTokens > 0)
             <div class="flex items-center gap-1 px-2 py-1 bg-[#1A1A1A] border border-[#252525] rounded text-[11px] font-sans flex-shrink-0">
-                <svg class="w-3 h-3 text-[#444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                <span class="text-[#555]">~{{ $this->formattedTokens() }} tokens</span>
+                <svg class="w-3 h-3 text-[#888]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <span class="text-[#999]">~{{ $this->formattedTokens() }} tokens</span>
             </div>
             @endif
 
             {{-- Model badge --}}
             <div class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] border border-[#2A2A2A] rounded text-[11px] font-sans flex-shrink-0">
                 <div class="w-1.5 h-1.5 rounded-full bg-[#4ADE80]"></div>
-                <span class="text-[#777]">{{ collect($models)->concat($moreModels)->firstWhere('code', $selectedModel)?->name ?? 'Rynude' }}</span>
+                <span class="text-[#BBB]">{{ collect($models)->concat($moreModels)->firstWhere('code', $selectedModel)?->name ?? 'Rynude' }}</span>
             </div>
 
             {{-- Mode badge --}}
@@ -190,22 +190,7 @@
             </div>
             @endif
 
-            {{-- Claude Code Text Logo (Top Right) --}}
-            <div class="ml-auto pr-2 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 123 16" class="h-3.5 text-[#555] hover:text-[#CCC] transition-colors cursor-default" fill="currentColor" aria-label="Claude Code">
-                    <path d="M19.121 1.67836V13.8338C19.121 14.6338 19.5307 14.8094 20.6038 14.946V15.8045H15.2968V14.946C16.3699 14.8094 16.7796 14.6338 16.7796 13.8338V2.0881L15.3944 1.44423V0.936935L18.5161 0.000396729H19.2185L19.121 1.67836Z"></path>
-                    <path d="M8.42885 14.7119C9.34587 14.7119 10.1068 14.5753 10.7117 14.3021C11.9409 13.7558 12.6823 12.7217 13.3067 11.0047H14.3407L13.9115 14.7704C12.253 15.5508 10.38 15.9996 8.01911 15.9996C6.36066 15.9996 4.91683 15.6679 3.70713 14.985C1.28774 13.6387 0 11.2193 0 8.48778C0 6.86835 0.370713 5.44403 1.09263 4.21482C2.53646 1.75641 5.13145 0.390621 8.1752 0.390621C10.3409 0.390621 12.1165 0.85889 13.5408 1.77592L13.6774 5.19038H12.6628C11.8238 2.71246 10.3605 1.67836 7.98009 1.67836C4.44856 1.67836 2.84864 4.15629 2.84864 7.72684C2.84864 8.99507 3.04375 10.1462 3.45349 11.1998C4.25345 13.3266 5.95092 14.7119 8.42885 14.7119Z"></path>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M31.1984 14.4582C30.6326 14.4582 30.3595 14.0095 30.3595 13.1314V9.0536C30.3595 6.2635 28.8766 5.19038 26.2036 5.19038C23.8427 5.19038 22.1257 6.16594 22.1257 7.78537C22.1257 8.27315 22.3013 8.64387 22.6525 8.89751L24.4476 8.66338C24.3695 8.11706 24.3305 7.78537 24.3305 7.64879C24.3305 6.73177 24.8183 6.2635 25.8133 6.2635C27.2767 6.2635 28.0181 7.29759 28.0181 8.95605V9.50236L24.311 10.6145C23.0818 10.9462 22.3794 11.2389 21.9111 11.9218C21.677 12.273 21.5599 12.7412 21.5599 13.307C21.5599 14.8875 22.6525 15.9996 24.5061 15.9996C25.8524 15.9996 27.0425 15.3947 28.0766 14.2436C28.4474 15.3947 29.0132 15.9996 30.0278 15.9996C30.8472 15.9996 31.5887 15.6679 32.252 15.024L32.0569 14.3411C31.7643 14.4192 31.4911 14.4582 31.1984 14.4582ZM28.0181 13.3851C27.0621 14.107 26.4962 14.4192 25.6182 14.4192C24.6036 14.4192 23.9793 13.8338 23.9793 12.7998C23.9793 12.0974 24.311 11.6876 25.0134 11.4535L28.0181 10.4974V13.3851Z"></path>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M63.1383 13.9509C64.6407 13.9509 66.065 13.0924 66.7869 11.8047L67.4503 11.9803C67.1576 14.2826 65.0699 15.9996 62.5139 15.9996C59.5092 15.9996 57.441 13.7948 57.441 10.6145C57.441 7.43417 59.6848 5.19038 62.6895 5.19038C64.9333 5.19038 66.5137 6.53665 67.021 8.878L59.6559 11.1374C60.1063 12.8856 61.3558 13.9509 63.1383 13.9509ZM64.4651 8.58533C64.1919 7.27808 63.3919 6.53665 62.2798 6.53665C60.6214 6.53665 59.4702 7.78537 59.4702 9.5804C59.4702 9.76927 59.478 9.95268 59.492 10.1322L64.4651 8.58533Z"></path>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M55.3143 13.4631V1.67836L55.4119 0.000396729H54.7095L51.5877 0.936935V1.44423L52.973 2.0881V5.95132C52.2901 5.44403 51.3925 5.19038 50.3194 5.19038C47.2171 5.19038 44.7978 7.55124 44.7978 11.0828C44.7978 13.9899 46.5343 15.9996 49.4024 15.9996C50.8853 15.9996 52.173 15.2777 52.973 14.1655L52.8754 15.9996H53.2851L56.8752 15.3167V14.4387L56.3679 14.3997C55.5289 14.3216 55.3143 14.146 55.3143 13.4631ZM52.973 13.2485C52.3486 13.8924 51.4316 14.2826 50.3975 14.2826C48.2708 14.2826 47.1976 12.6046 47.1976 10.3609C47.1976 7.84391 48.4268 6.36105 50.378 6.36105C51.8608 6.36105 52.973 7.21955 52.973 8.79996V13.2485Z"></path>
-                    <path d="M42.671 7.20004V13.4631C42.671 14.146 42.8857 14.3216 43.7246 14.3997L44.2319 14.4387V15.3167L40.6419 15.9996H40.2321L40.3297 14.0875C39.4127 15.1996 38.1835 15.9996 36.6811 15.9996C34.7105 15.9996 33.4812 14.9655 33.4812 12.7802V7.62928C33.4812 6.98541 33.2081 6.73177 32.2911 6.59519L31.9399 6.53665V5.67816L35.3348 5.19038H35.9202L35.8226 7.20004V12.4486C35.8226 13.7558 36.5055 14.3216 37.6176 14.3216C38.6127 14.3216 39.4517 13.8924 40.3297 13.2095V7.62928C40.3297 6.98541 40.0565 6.73177 39.1395 6.59519L38.8078 6.53665V5.67816L42.2028 5.19038H42.7686L42.671 7.20004Z"></path>
-                    <path d="M108.401 15.9006H107.983L108.083 14.0778C107.672 14.6337 107.149 15.0797 106.513 15.4158C105.89 15.739 105.201 15.9006 104.446 15.9006C103.465 15.9006 102.624 15.6937 101.922 15.28C101.219 14.8534 100.683 14.2717 100.312 13.5349C99.9409 12.7851 99.7554 11.9448 99.7554 11.014C99.7554 9.85059 100.007 8.82287 100.511 7.93088C101.014 7.0389 101.696 6.35376 102.558 5.87545C103.419 5.39714 104.36 5.15798 105.38 5.15798C106.48 5.15798 107.381 5.41007 108.083 5.91423V2.07483L106.672 1.43493V0.930765L109.852 0H110.567L110.468 1.66762V13.3797C110.468 13.7158 110.541 13.9485 110.686 14.0778C110.832 14.1942 111.117 14.2717 111.541 14.3105L112.058 14.3493V15.2219L108.401 15.9006ZM105.44 6.32144C104.446 6.32144 103.657 6.67048 103.074 7.36855C102.491 8.06662 102.2 9.04263 102.2 10.2966C102.2 11.4083 102.472 12.3391 103.015 13.0889C103.558 13.8257 104.373 14.1942 105.459 14.1942C105.989 14.1942 106.48 14.1037 106.93 13.9227C107.381 13.7417 107.765 13.4896 108.083 13.1664V8.7453C108.083 7.95674 107.831 7.35562 107.328 6.94195C106.824 6.52828 106.195 6.32144 105.44 6.32144Z"></path>
-                    <path d="M92.893 15.9005C91.833 15.9005 90.8989 15.6807 90.0907 15.2412C89.2824 14.7887 88.6531 14.1747 88.2026 13.399C87.7521 12.6105 87.5269 11.7185 87.5269 10.7231C87.5269 9.61134 87.7852 8.63534 88.302 7.79506C88.8187 6.95479 89.5143 6.30843 90.3888 5.85597C91.2633 5.39059 92.2305 5.1579 93.2905 5.1579C94.3505 5.1579 95.2846 5.38413 96.0928 5.83658C96.9143 6.27611 97.5503 6.89015 98.0008 7.67872C98.4513 8.46728 98.6765 9.3528 98.6765 10.3353C98.6765 11.447 98.4181 12.423 97.9014 13.2633C97.3847 14.1036 96.6824 14.7564 95.7947 15.2218C94.9202 15.6742 93.953 15.9005 92.893 15.9005ZM93.4495 14.6594C94.3372 14.6594 95.0063 14.3298 95.4568 13.6705C95.9073 13.0112 96.1326 12.1257 96.1326 11.014C96.1326 9.66952 95.8278 8.56424 95.2183 7.69811C94.6221 6.83198 93.794 6.39892 92.734 6.39892C91.8463 6.39892 91.1772 6.72856 90.7267 7.38785C90.2762 8.04714 90.0509 8.93266 90.0509 10.0444C90.0509 11.3888 90.349 12.4941 90.9453 13.3603C91.5548 14.2264 92.3895 14.6594 93.4495 14.6594Z"></path>
-                    <path d="M80.202 14.6207C81.1295 14.6207 81.9046 14.485 82.5274 14.2135C83.1501 13.9421 83.6668 13.5413 84.0776 13.0113C84.4883 12.4813 84.8527 11.7897 85.1707 10.9365H86.224L85.7868 14.6789C84.9388 15.0667 84.0246 15.3705 83.0441 15.5903C82.0769 15.7971 80.9904 15.9005 79.7847 15.9005C78.0887 15.9005 76.6246 15.5644 75.3924 14.8922C74.1602 14.22 73.2194 13.3151 72.5702 12.1775C71.9342 11.0399 71.6162 9.79241 71.6162 8.43505C71.6162 6.83206 71.9806 5.42299 72.7093 4.20783C73.4513 2.97974 74.4517 2.03605 75.7104 1.37675C76.9823 0.717463 78.3934 0.387817 79.9437 0.387817C82.1431 0.387817 83.965 0.846736 85.4092 1.76457L85.5284 5.09981H84.4949C84.071 3.88465 83.4747 3.01205 82.7062 2.48204C81.9377 1.93909 80.9506 1.66762 79.7449 1.66762C77.943 1.66762 76.618 2.22995 75.77 3.35463C74.9353 4.46637 74.5179 5.90776 74.5179 7.6788C74.5179 8.93275 74.7233 10.0897 75.134 11.1498C75.5448 12.1969 76.1741 13.0372 77.0221 13.6706C77.8833 14.304 78.9433 14.6207 80.202 14.6207Z"></path>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M118.181 13.9639C119.674 13.9639 121.09 13.1107 121.807 11.8308L122.466 12.0053C122.175 14.2935 120.101 16 117.56 16C114.574 16 112.519 13.8087 112.519 10.6479C112.519 7.48715 114.749 5.25714 117.735 5.25714C119.965 5.25714 121.536 6.59515 122.04 8.92211L114.72 11.1676C115.167 12.9051 116.409 13.9639 118.181 13.9639ZM119.499 8.63124C119.228 7.33202 118.433 6.59515 117.328 6.59515C115.679 6.59515 114.535 7.8362 114.535 9.6202C114.535 9.80791 114.543 9.99019 114.557 10.1686L119.499 8.63124Z"></path>
-                </svg>
-            </div>
-            <button @click="rightPanelOpen = !rightPanelOpen" class="p-1.5 rounded hover:bg-[#2A2A2A] transition-colors text-[#444] hover:text-[#888] flex-shrink-0">
+            <button @click="rightPanelOpen = !rightPanelOpen" class="ml-auto p-1.5 rounded hover:bg-[#2A2A2A] transition-colors text-[#888] hover:text-[#CCC] flex-shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
             </button>
         </div>
@@ -228,11 +213,11 @@
                                 <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/>
                             </svg>
                             <h1 class="font-sans text-[22px] font-semibold text-[#E5E5E5] mb-2 tracking-tight">What are we building?</h1>
-                            <p class="font-sans text-[13px] text-[#444] max-w-sm leading-relaxed mb-8">Describe a task, ask a question, or paste some code. I can read files, run commands, and edit your codebase.</p>
+                            <p class="font-sans text-[13px] text-[#888] max-w-sm leading-relaxed mb-8">Describe a task, ask a question, or paste some code. I can read files, run commands, and edit your codebase.</p>
                             <div class="flex flex-wrap gap-2 justify-center max-w-md">
                                 @foreach([['M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4','Fix a bug'],['M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2','Write tests'],['M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z','Explain code'],['M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12','Refactor']] as [$path,$label])
                                 <button wire:click="$set('message', '{{ $label }}')"
-                                    class="flex items-center gap-1.5 px-3 py-1.5 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] hover:border-[#3A3A3A] rounded-lg text-[12px] text-[#777] hover:text-[#CCC] transition-all font-sans">
+                                    class="flex items-center gap-1.5 px-3 py-1.5 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] hover:border-[#3A3A3A] rounded-lg text-[12px] text-[#BBB] hover:text-[#CCC] transition-all font-sans">
                                     <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="{{ $path }}" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                     {{ $label }}
                                 </button>
@@ -251,7 +236,7 @@
                                 <div class="flex-shrink-0 mt-0.5 text-[13px]"><span class="text-[#CC785C] select-none">❯</span></div>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-[10px] text-[#383838] font-sans uppercase tracking-widest">you</span>
+                                        <span class="text-[10px] text-[#777] font-sans uppercase tracking-widest">you</span>
                                     </div>
                                     {{-- Attachments --}}
                                     @if(!empty($msg['attachments']))
@@ -274,9 +259,9 @@
                                     <svg width="14" height="14" viewBox="0 0 100 100" class="text-[#CC785C] fill-current flex-shrink-0">
                                         <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/>
                                     </svg>
-                                    <span class="text-[10px] text-[#383838] font-sans uppercase tracking-widest">rynude</span>
-                                    <span class="text-[10px] text-[#2A2A2A]">·</span>
-                                    <span class="text-[10px] text-[#383838] font-sans">{{ collect($models)->concat($moreModels)->firstWhere('code', $selectedModel)?->name ?? 'Sonnet' }}</span>
+                                    <span class="text-[10px] text-[#777] font-sans uppercase tracking-widest">rynude</span>
+                                    <span class="text-[10px] text-[#555]">·</span>
+                                    <span class="text-[10px] text-[#777] font-sans">{{ collect($models)->concat($moreModels)->firstWhere('code', $selectedModel)?->name ?? 'Sonnet' }}</span>
                                 </div>
                                 <div class="cc-prose text-[14px] leading-7 text-[#CCCCCC]">
                                     {!! \Illuminate\Support\Str::markdown($msg['content']) !!}
@@ -291,7 +276,7 @@
                                     <svg width="14" height="14" viewBox="0 0 100 100" class="text-[#CC785C] fill-current animate-pulse">
                                         <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"/>
                                     </svg>
-                                    <span class="text-[10px] text-[#383838] font-sans uppercase tracking-widest">rynude</span>
+                                    <span class="text-[10px] text-[#777] font-sans uppercase tracking-widest">rynude</span>
                                 </div>
                                 <div class="mb-2 flex items-center gap-2 px-3 py-2 bg-[#1A1A1A] border border-[#252525] rounded-md w-fit">
                                     <div class="flex gap-1">
@@ -299,7 +284,7 @@
                                         <div class="w-1.5 h-1.5 rounded-full bg-[#CC785C] animate-bounce" style="animation-delay:150ms"></div>
                                         <div class="w-1.5 h-1.5 rounded-full bg-[#CC785C] animate-bounce" style="animation-delay:300ms"></div>
                                     </div>
-                                    <span class="text-[12px] text-[#555] font-sans">Thinking…</span>
+                                    <span class="text-[12px] text-[#999] font-sans">Thinking…</span>
                                 </div>
                                 <div wire:stream="message-stream" class="cc-prose text-[14px] leading-7 text-[#CCCCCC]"></div>
                             </div>
@@ -335,7 +320,7 @@
                         @endif
 
                         {{-- Uploading indicator --}}
-                        <div wire:loading wire:target="attachments" class="flex items-center gap-2 mb-2 text-[12px] text-[#555] font-sans">
+                        <div wire:loading wire:target="attachments" class="flex items-center gap-2 mb-2 text-[12px] text-[#999] font-sans">
                             <svg class="animate-spin w-3.5 h-3.5 text-[#CC785C]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             Uploading…
                         </div>
@@ -346,20 +331,20 @@
                             {{-- Env pill --}}
                             <div x-data="{ open: false }" class="relative">
                                 <button @click="open = !open" @click.away="open = false"
-                                    class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] rounded text-[11px] text-[#666] hover:text-[#CCC] transition-colors font-sans">
+                                    class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] rounded text-[11px] text-[#AAA] hover:text-[#CCC] transition-colors font-sans">
                                     <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
                                     Default
                                     <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                                 </button>
                                 <div x-show="open" x-cloak class="absolute bottom-full left-0 mb-1 w-64 bg-[#1F1F1F] border border-[#2A2A2A] rounded-lg shadow-xl py-1.5 z-50 font-sans">
-                                    <div class="px-3 py-1 text-[10px] text-[#383838] uppercase tracking-wider">Cloud</div>
+                                    <div class="px-3 py-1 text-[10px] text-[#777] uppercase tracking-wider">Cloud</div>
                                     <button class="w-full px-3 py-1.5 hover:bg-[#252525] text-[12px] text-[#CCC] flex items-center justify-between">
-                                        <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-[#444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Default</span>
+                                        <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-[#888]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Default</span>
                                         <svg class="w-3 h-3 text-[#4ADE80]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
                                     </button>
-                                    <div class="px-3 py-1 mt-1 border-t border-[#2A2A2A] pt-2 text-[10px] text-[#383838] uppercase tracking-wider">Local Device</div>
+                                    <div class="px-3 py-1 mt-1 border-t border-[#2A2A2A] pt-2 text-[10px] text-[#777] uppercase tracking-wider">Local Device</div>
                                     <button onclick="document.getElementById('code-folder-upload').click();" class="w-full px-3 py-1.5 hover:bg-[#252525] text-[12px] text-[#CCC] flex items-center justify-between transition-colors">
-                                        <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-[#444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Upload Folder</span>
+                                        <span class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-[#888]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Upload Folder</span>
                                     </button>
                                 </div>
                                 <input type="file" id="code-folder-upload" class="hidden" wire:model="attachments" webkitdirectory directory multiple>
@@ -373,7 +358,7 @@
                                 </div>
                             @else
                                 <button wire:click="$set('repoModalOpen', true)"
-                                    class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] hover:border-[#3A4A3A] rounded text-[11px] text-[#555] hover:text-[#4ADE80] transition-colors font-sans group">
+                                    class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] hover:border-[#3A4A3A] rounded text-[11px] text-[#999] hover:text-[#4ADE80] transition-colors font-sans group">
                                     <svg class="w-3 h-3 group-hover:text-[#4ADE80]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
                                     + Connect repo
                                 </button>
@@ -382,7 +367,7 @@
                             {{-- Model selector --}}
                             <div x-data="{ open: false, selectedModel: @entangle('selectedModel'), moreOpen: false }" class="relative ml-auto">
                                 <button @click="open = !open" @click.away="open = false; moreOpen = false"
-                                    class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] rounded text-[11px] text-[#777] hover:text-[#CCC] transition-colors font-sans">
+                                    class="flex items-center gap-1.5 px-2 py-1 bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] rounded text-[11px] text-[#BBB] hover:text-[#CCC] transition-colors font-sans">
                                     <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                                     {{ collect($models)->concat($moreModels)->firstWhere('code', $selectedModel)?->name ?? 'Select' }}
                                     <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -397,10 +382,10 @@
                                             <div class="flex items-center gap-1.5">
                                                 <span class="text-[13px] text-[#CCC]">{{ $model->name }}</span>
                                                 @if(!$model->is_available)
-                                                <span class="text-[9px] bg-[#2A2A2A] text-[#555] px-1 rounded">Soon</span>
+                                                <span class="text-[9px] bg-[#2A2A2A] text-[#999] px-1 rounded">Soon</span>
                                                 @endif
                                             </div>
-                                            <div class="text-[11px] text-[#444] mt-0.5">{{ $model->description }}</div>
+                                            <div class="text-[11px] text-[#888] mt-0.5">{{ $model->description }}</div>
                                         </div>
                                         <svg x-show="selectedModel === '{{ $model->code }}'" class="w-3.5 h-3.5 text-[#CC785C] shrink-0 mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
                                     </button>
@@ -412,15 +397,15 @@
                                     @if(count($moreModels) > 0)
                                     <div class="relative" x-data="{ moreOpen: false }">
                                         <button @mouseenter="moreOpen = true" @mouseleave="moreOpen = false"
-                                            class="w-full px-3 py-2 hover:bg-[#252525] text-[13px] text-[#888] flex items-center justify-between transition-colors">
+                                            class="w-full px-3 py-2 hover:bg-[#252525] text-[13px] text-[#CCC] flex items-center justify-between transition-colors">
                                             <span>More models</span>
-                                            <svg class="w-3.5 h-3.5 text-[#444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                                            <svg class="w-3.5 h-3.5 text-[#888]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
                                         </button>
                                         <div x-show="moreOpen" @mouseenter="moreOpen = true" @mouseleave="moreOpen = false" x-cloak
                                             class="absolute left-0 bottom-0 -translate-x-full w-56 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-2xl py-1.5 max-h-64 overflow-y-auto scrollbar-hide">
                                             @foreach($moreModels as $mm)
                                             <button wire:click="$set('selectedModel', '{{ $mm->code }}')" @click="open = false; moreOpen = false"
-                                                class="w-full px-3 py-1.5 hover:bg-[#252525] text-left flex items-center justify-between text-[12px] text-[#888] hover:text-[#CCC] transition-colors {{ !$mm->is_available ? 'opacity-30 cursor-not-allowed' : '' }}"
+                                                class="w-full px-3 py-1.5 hover:bg-[#252525] text-left flex items-center justify-between text-[12px] text-[#CCC] hover:text-[#CCC] transition-colors {{ !$mm->is_available ? 'opacity-30 cursor-not-allowed' : '' }}"
                                                 {{ !$mm->is_available ? 'disabled' : '' }}>
                                                 {{ $mm->name }}
                                                 <svg x-show="selectedModel === '{{ $mm->code }}'" class="w-3 h-3 text-[#CC785C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
@@ -460,7 +445,7 @@
                                 </button>
                                 <div x-show="open" x-cloak
                                     class="absolute bottom-full right-0 mb-1 w-64 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-2xl py-1.5 z-50 font-sans">
-                                    <div class="px-3 py-1.5 text-[10px] text-[#383838] uppercase tracking-widest border-b border-[#252525] mb-1">Agent Mode</div>
+                                    <div class="px-3 py-1.5 text-[10px] text-[#777] uppercase tracking-widest border-b border-[#252525] mb-1">Agent Mode</div>
                                     <template x-for="m in modes" :key="m.value">
                                         <button @click="mode = m.value; open = false"
                                             class="w-full px-3 py-2 hover:bg-[#252525] text-left flex items-start justify-between gap-3 transition-colors">
@@ -473,15 +458,15 @@
                                                             'bg-[#4ADE80]': m.value === 'auto',
                                                         }"></span>
                                                     <span class="text-[13px] text-[#CCC]" x-text="m.label"></span>
-                                                    <span class="text-[10px] text-[#333] border border-[#2A2A2A] px-1 rounded" x-text="m.key"></span>
+                                                    <span class="text-[10px] text-[#666] border border-[#2A2A2A] px-1 rounded" x-text="m.key"></span>
                                                 </div>
-                                                <p class="text-[11px] text-[#444] mt-0.5 pl-3.5 leading-relaxed" x-text="m.desc"></p>
+                                                <p class="text-[11px] text-[#888] mt-0.5 pl-3.5 leading-relaxed" x-text="m.desc"></p>
                                             </div>
                                             <svg x-show="mode === m.value" class="w-3.5 h-3.5 text-[#CC785C] shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
                                         </button>
                                     </template>
                                     <div class="px-3 py-2 mt-1 border-t border-[#252525]">
-                                        <p class="text-[10px] text-[#333] leading-relaxed">Mode affects how the AI structures its responses. You can switch anytime mid-session.</p>
+                                        <p class="text-[10px] text-[#666] leading-relaxed">Mode affects how the AI structures its responses. You can switch anytime mid-session.</p>
                                     </div>
                                 </div>
                             </div>
@@ -502,13 +487,13 @@
                             <div class="flex items-center gap-1.5 flex-shrink-0">
                                 {{-- Attach file --}}
                                 <button onclick="document.getElementById('code-file-upload').click()"
-                                    class="p-1.5 rounded-md text-[#383838] hover:text-[#777] hover:bg-[#252525] transition-colors" title="Attach file">
+                                    class="p-1.5 rounded-md text-[#777] hover:text-[#BBB] hover:bg-[#252525] transition-colors" title="Attach file">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                                 </button>
                                 
                                 {{-- Attach folder --}}
                                 <button onclick="document.getElementById('code-folder-upload').click()"
-                                    class="p-1.5 rounded-md text-[#383838] hover:text-[#777] hover:bg-[#252525] transition-colors" title="Upload folder">
+                                    class="p-1.5 rounded-md text-[#777] hover:text-[#BBB] hover:bg-[#252525] transition-colors" title="Upload folder">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                                 </button>
 
@@ -524,19 +509,19 @@
                                     wire:loading.attr="disabled"
                                     wire:target="sendMessage, generateResponse"
                                     wire:loading.class="hidden"
-                                    class="p-1.5 rounded-md transition-all duration-150 disabled:opacity-40 {{ trim($message) || !empty($attachmentPreviews) ? 'bg-[#CC785C] text-white hover:bg-[#B86A4F]' : 'text-[#2A2A2A] bg-[#1F1F1F] cursor-not-allowed' }}">
+                                    class="p-1.5 rounded-md transition-all duration-150 disabled:opacity-40 {{ trim($message) || !empty($attachmentPreviews) ? 'bg-[#CC785C] text-white hover:bg-[#B86A4F]' : 'text-[#555] bg-[#1F1F1F] cursor-not-allowed' }}">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                                 </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between mt-2 px-1">
-                            <span class="text-[10px] text-[#2A2A2A] font-sans">
-                                <kbd class="bg-[#1A1A1A] border border-[#252525] px-1 py-0.5 rounded text-[#383838]">Enter</kbd> send ·
-                                <kbd class="bg-[#1A1A1A] border border-[#252525] px-1 py-0.5 rounded text-[#383838]">Shift+Enter</kbd> newline ·
-                                <kbd class="bg-[#1A1A1A] border border-[#252525] px-1 py-0.5 rounded text-[#383838]">Ctrl+U</kbd> attach
+                            <span class="text-[10px] text-[#555] font-sans">
+                                <kbd class="bg-[#1A1A1A] border border-[#252525] px-1 py-0.5 rounded text-[#777]">Enter</kbd> send ·
+                                <kbd class="bg-[#1A1A1A] border border-[#252525] px-1 py-0.5 rounded text-[#777]">Shift+Enter</kbd> newline ·
+                                <kbd class="bg-[#1A1A1A] border border-[#252525] px-1 py-0.5 rounded text-[#777]">Ctrl+U</kbd> attach
                             </span>
-                            <a href="{{ route('home') }}" class="text-[10px] text-[#2A2A2A] hover:text-[#555] font-sans transition-colors">← Back to Rynude</a>
+                            <a href="{{ route('home') }}" class="text-[10px] text-[#555] hover:text-[#999] font-sans transition-colors">← Back to Rynude</a>
                         </div>
                     </div>
 
@@ -560,31 +545,31 @@
                     @foreach([['files','Files'],['diff','Diff'],['tools','Tools']] as [$tab,$label])
                     <button @click="rightPanelTab = '{{ $tab }}'"
                         class="px-3 py-1.5 text-[11px] font-sans rounded-t transition-colors"
-                        :class="rightPanelTab==='{{ $tab }}'?'bg-[#1A1A1A] text-[#CCC] border-t border-x border-[#2A2A2A]':'text-[#383838] hover:text-[#666]'">{{ $label }}</button>
+                        :class="rightPanelTab==='{{ $tab }}'?'bg-[#1A1A1A] text-[#CCC] border-t border-x border-[#2A2A2A]':'text-[#777] hover:text-[#AAA]'">{{ $label }}</button>
                     @endforeach
-                    <button @click="rightPanelOpen = false" class="ml-auto p-1 text-[#2A2A2A] hover:text-[#555] transition-colors mb-1">
+                    <button @click="rightPanelOpen = false" class="ml-auto p-1 text-[#555] hover:text-[#999] transition-colors mb-1">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
                 </div>
                 <div x-show="rightPanelTab==='files'" class="flex-1 overflow-y-auto scrollbar-hide p-2 font-sans">
-                    <p class="text-[10px] text-[#2A2A2A] uppercase tracking-widest px-2 py-1">EXPLORER</p>
+                    <p class="text-[10px] text-[#555] uppercase tracking-widest px-2 py-1">EXPLORER</p>
                     @php $ec=['php'=>'#7E9FC7','js'=>'#E5C07B','ts'=>'#3178C6','css'=>'#56B6C2','json'=>'#D19A66','env'=>'#98C379','md'=>'#98C379']; @endphp
                     
                     {{-- Local Files --}}
                     @if(count($localFilesTree) > 0)
-                        <p class="text-[9px] text-[#444] uppercase tracking-widest px-2 py-1 mt-2">Local Files</p>
+                        <p class="text-[9px] text-[#888] uppercase tracking-widest px-2 py-1 mt-2">Local Files</p>
                         @foreach($localFilesTree as $item)
                         <div class="flex items-center gap-1.5 py-0.5 px-2 hover:bg-[#1F1F1F] rounded group">
                             <span class="w-3 flex-shrink-0"></span>
                             <span class="text-[9px] font-bold flex-shrink-0" style="color:{{ $ec[$item['extra']]??'#555' }}">{{ strtoupper($item['extra']) }}</span>
-                            <span class="text-[12px] text-[#555] group-hover:text-[#CCC] truncate">{{ $item['name'] }}</span>
+                            <span class="text-[12px] text-[#999] group-hover:text-[#CCC] truncate">{{ $item['name'] }}</span>
                         </div>
                         @endforeach
                     @endif
 
                     {{-- Repo Files --}}
                     @if(count($repoTree) > 0)
-                        <p class="text-[9px] text-[#444] uppercase tracking-widest px-2 py-1 mt-2 mb-1">Repository: {{ basename($repoConnected) }}</p>
+                        <p class="text-[9px] text-[#888] uppercase tracking-widest px-2 py-1 mt-2 mb-1">Repository: {{ basename($repoConnected) }}</p>
                         <div class="relative">
                             {{-- Loading overlay when fetching file --}}
                             <div wire:loading wire:target="loadFileFromRepo" class="absolute inset-0 bg-[#141414]/80 flex items-center justify-center z-10">
@@ -598,13 +583,13 @@
                             <div @if($item['type']==='file') wire:click="loadFileFromRepo('{{ $item['path'] }}')" @endif
                                 class="flex items-center gap-1.5 py-0.5 hover:bg-[#1F1F1F] rounded group {{ $item['type']==='file'?'cursor-pointer':'' }} {{ $isSelected ? 'bg-[#2A2A2A]' : '' }}" style="padding-left:{{ $item['depth']*12+8 }}px">
                                 @if($item['type']==='dir')
-                                <svg class="w-3 h-3 text-[#383838] flex-shrink-0 {{ $item['extra']?'rotate-90':'' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                <svg class="w-3 h-3 text-[#777] flex-shrink-0 {{ $item['extra']?'rotate-90':'' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                                 <svg class="w-3 h-3 text-[#CC785C]/50 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-                                <span class="text-[12px] text-[#666] group-hover:text-[#CCC] truncate">{{ $item['name'] }}</span>
+                                <span class="text-[12px] text-[#AAA] group-hover:text-[#CCC] truncate">{{ $item['name'] }}</span>
                                 @else
                                 <span class="w-3 flex-shrink-0"></span>
                                 <span class="text-[9px] font-bold flex-shrink-0" style="color:{{ $ec[$item['extra']]??'#555' }}">{{ strtoupper($item['extra']) }}</span>
-                                <span class="text-[12px] truncate {{ $isSelected ? 'text-[#4ADE80]' : 'text-[#555] group-hover:text-[#CCC]' }}">{{ $item['name'] }}</span>
+                                <span class="text-[12px] truncate {{ $isSelected ? 'text-[#4ADE80]' : 'text-[#999] group-hover:text-[#CCC]' }}">{{ $item['name'] }}</span>
                                 @if($isSelected)
                                 <svg class="w-3 h-3 text-[#4ADE80] ml-auto mr-2 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                                 @endif
@@ -614,17 +599,30 @@
                         </div>
                     @elseif(empty($localFilesTree))
                         <div class="text-center mt-10 px-4">
-                            <p class="text-[11px] text-[#444] mb-2">No files loaded.</p>
-                            <p class="text-[10px] text-[#333]">Connect a repository or upload files to see them here.</p>
+                            <p class="text-[11px] text-[#888] mb-2">No files loaded.</p>
+                            <p class="text-[10px] text-[#666]">Connect a repository or upload files to see them here.</p>
                         </div>
                     @endif
                 </div>
                 <div x-show="rightPanelTab==='diff'" class="flex-1 p-4 font-sans text-center">
-                    <p class="text-[12px] text-[#2A2A2A] mt-8">No file changes yet.</p>
+                    <p class="text-[12px] text-[#555] mt-8">No file changes yet.</p>
                 </div>
                 <div x-show="rightPanelTab==='tools'" class="flex-1 overflow-y-auto scrollbar-hide p-3 font-sans">
-                    <p class="text-[10px] text-[#2A2A2A] uppercase tracking-widest mb-3">Tool calls</p>
-                    <p class="text-[12px] text-[#2A2A2A] text-center mt-6">Tool calls will appear here during the session.</p>
+                    <p class="text-[10px] text-[#555] uppercase tracking-widest mb-3">Tool calls</p>
+                    @forelse($toolCalls as $tc)
+                    <div class="flex items-start gap-2 px-2 py-1.5 mb-1 bg-[#1A1A1A] border border-[#252525] rounded-md">
+                        <svg class="w-3 h-3 text-[#4ADE80] flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[12px] text-[#CC785C]">{{ $tc['name'] }}</span>
+                                <span class="text-[10px] text-[#444] ml-auto flex-shrink-0">{{ $tc['summary'] }}</span>
+                            </div>
+                            <p class="text-[11px] text-[#555] truncate mt-0.5">{{ $tc['input'] }}</p>
+                        </div>
+                    </div>
+                    @empty
+                    <p class="text-[12px] text-[#555] text-center mt-6">Tool calls will appear here during the session.</p>
+                    @endforelse
                 </div>
             </div>
 
@@ -641,16 +639,16 @@
                 </div>
                 <div>
                     <h3 class="text-[15px] font-semibold text-[#E5E5E5]">Connect Repository</h3>
-                    <p class="text-[12px] text-[#555] mt-0.5">Add context from a GitHub or GitLab repo</p>
+                    <p class="text-[12px] text-[#999] mt-0.5">Add context from a GitHub or GitLab repo</p>
                 </div>
-                <button @click="repoModalOpen = false; $wire.set('repoModalOpen', false)" class="ml-auto p-1.5 text-[#383838] hover:text-[#888] transition-colors rounded-lg hover:bg-[#252525]">
+                <button @click="repoModalOpen = false; $wire.set('repoModalOpen', false)" class="ml-auto p-1.5 text-[#777] hover:text-[#CCC] transition-colors rounded-lg hover:bg-[#252525]">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[11px] text-[#555] uppercase tracking-widest mb-1.5">Repository URL</label>
+                    <label class="block text-[11px] text-[#999] uppercase tracking-widest mb-1.5">Repository URL</label>
                     <input wire:model="repoUrl"
                         type="url"
                         placeholder="https://github.com/username/repo"
@@ -661,14 +659,14 @@
                 </div>
 
                 <div class="bg-[#141414] border border-[#252525] rounded-lg p-3">
-                    <p class="text-[11px] text-[#444] leading-relaxed">
+                    <p class="text-[11px] text-[#888] leading-relaxed">
                         The repository URL will be added as context to your session. Rynude Code will reference this repo when answering questions.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3 pt-1">
                     <button @click="repoModalOpen = false; $wire.set('repoModalOpen', false)"
-                        class="flex-1 px-4 py-2 text-[13px] font-medium text-[#888] bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] rounded-lg transition-colors">
+                        class="flex-1 px-4 py-2 text-[13px] font-medium text-[#CCC] bg-[#1F1F1F] hover:bg-[#252525] border border-[#2A2A2A] rounded-lg transition-colors">
                         Cancel
                     </button>
                     <button wire:click="connectRepo"
@@ -717,17 +715,17 @@
     .cc-prose h1,.cc-prose h2,.cc-prose h3 { color: #E5E5E5; font-weight: 600; margin: 1.25rem 0 0.5rem; }
     .cc-prose h1 { font-size: 18px; }
     .cc-prose h2 { font-size: 15px; }
-    .cc-prose h3 { font-size: 13px; color: #888; }
+    .cc-prose h3 { font-size: 13px; color: #AAA; }
     .cc-prose ul,.cc-prose ol { padding-left: 1.25rem; margin: 0.5rem 0; }
     .cc-prose li { margin: 0.2rem 0; color: #CCCCCC; font-size: 14px; }
     .cc-prose strong { color: #E5E5E5; font-weight: 600; }
     .cc-prose code:not(pre code) { background: #1F2933; color: #CC785C; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; font-family: ui-monospace, monospace; border: 1px solid #2A3A4A; }
     .cc-prose pre { background: #0D1117; border: 1px solid #2A2A2A; border-radius: 8px; padding: 0; margin: 0.75rem 0; overflow: hidden; }
     .cc-prose pre > code { display: block; background: transparent; color: #E5E5E5; padding: 14px 16px; font-size: 12.5px; line-height: 1.7; border: none; overflow-x: auto; white-space: pre; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .cc-prose blockquote { border-left: 2px solid #CC785C; padding-left: 12px; margin: 0.75rem 0; color: #777; font-style: italic; }
+    .cc-prose blockquote { border-left: 2px solid #CC785C; padding-left: 12px; margin: 0.75rem 0; color: #999; font-style: italic; }
     .cc-prose a { color: #CC785C; text-decoration: underline; text-underline-offset: 2px; }
     .cc-prose table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .cc-prose th { background: #1F1F1F; color: #777; font-weight: 600; text-align: left; padding: 6px 10px; border-bottom: 1px solid #2A2A2A; }
+    .cc-prose th { background: #1F1F1F; color: #999; font-weight: 600; text-align: left; padding: 6px 10px; border-bottom: 1px solid #2A2A2A; }
     .cc-prose td { padding: 6px 10px; border-bottom: 1px solid #1A1A1A; color: #CCC; }
     .cc-prose hr { border: none; border-top: 1px solid #1F1F1F; margin: 1rem 0; }
 </style>

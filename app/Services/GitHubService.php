@@ -82,6 +82,43 @@ class GitHubService
     }
 
     /**
+     * Search code inside a repo via GitHub's code-search API.
+     * Returns array of [{path, fragment}]. Requires a token for most repos
+     * (GitHub gates code search behind authentication).
+     *
+     * @return array<int, array{path: string, fragment: string}>
+     */
+    public function searchCode(string $owner, string $repo, string $query, int $limit = 10): array
+    {
+        $q = trim($query);
+        if ($q === '') {
+            return [];
+        }
+
+        $response = $this->request(
+            'search/code?q=' . rawurlencode($q . " repo:{$owner}/{$repo}") . '&per_page=' . $limit,
+            ['Accept' => 'application/vnd.github.text-match+json']
+        );
+
+        if (!$response->successful()) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($response->json('items', []) as $item) {
+            $fragment = '';
+            foreach ($item['text_matches'] ?? [] as $match) {
+                $fragment .= trim($match['fragment'] ?? '') . "\n";
+            }
+            $out[] = [
+                'path'     => $item['path'] ?? '',
+                'fragment' => trim($fragment),
+            ];
+        }
+        return $out;
+    }
+
+    /**
      * Get repo info (default branch, description, etc.)
      */
     public function getRepoInfo(string $owner, string $repo): ?array
@@ -100,13 +137,13 @@ class GitHubService
         return null;
     }
 
-    private function request(string $endpoint): \Illuminate\Http\Client\Response
+    private function request(string $endpoint, array $extraHeaders = []): \Illuminate\Http\Client\Response
     {
         $http = Http::baseUrl('https://api.github.com')
-            ->withHeaders([
+            ->withHeaders(array_merge([
                 'Accept'     => 'application/vnd.github.v3+json',
                 'User-Agent' => 'Rynude-Code/1.0',
-            ])
+            ], $extraHeaders))
             ->timeout(15);
 
         if ($this->token) {

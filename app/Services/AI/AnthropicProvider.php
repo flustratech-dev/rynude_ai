@@ -3,9 +3,10 @@
 namespace App\Services\AI;
 
 use App\Services\AI\Contracts\LLMProviderInterface;
+use App\Services\AI\Contracts\SupportsToolUse;
 use Illuminate\Support\Facades\Http;
 
-class AnthropicProvider implements LLMProviderInterface
+class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 {
     public function streamResponse(array $messages, string $model): \Generator
     {
@@ -158,5 +159,234 @@ class AnthropicProvider implements LLMProviderInterface
         } catch (\Exception $e) {
             yield "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]";
         }
+    }
+
+    /**
+     * One agentic turn with native Anthropic tool use. See SupportsToolUse.
+     */
+    public function streamAgentTurn(array $messages, string $model, array $tools): \Generator
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $apiKey = $user?->anthropic_api_key ?: config('services.anthropic.key');
+
+        if (empty($apiKey)) {
+            yield ['type' => 'text', 'text' => 'Anthropic API key is not configured. Please add it in your Settings.'];
+            return ['stop_reason' => 'error', 'error' => 'missing_key'];
+        }
+
+        [$anthropicMessages, $systemPrompt] = $this->mapMessagesToAnthropic($messages);
+
+        $payload = array_filter([
+            'model' => $model,
+            'messages' => $anthropicMessages,
+            'system' => $systemPrompt ? [[
+                'type' => 'text',
+                'text' => $systemPrompt,
+                'cache_control' => ['type' => 'ephemeral'],
+            ]] : null,
+            'tools' => !empty($tools) ? array_map(fn ($t) => [
+                'name' => $t['name'],
+                'description' => $t['description'] ?? '',
+                'input_schema' => $t['input_schema'] ?? ['type' => 'object', 'properties' => (object) []],
+            ], $tools) : null,
+            'max_tokens' => 4096,
+            'stream' => true,
+        ]);
+
+        $client = new \GuzzleHttp\Client();
+        $inputTokens = 0;
+        $outputTokens = 0;
+        $stopReason = 'end';
+        $blocks = []; // index => ['type', 'id', 'name', 'json']
+
+        try {
+            $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
+                'headers' => [
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => '2023-06-01',
+                    'anthropic-beta' => 'prompt-caching-2024-07-31',
+                    'content-type' => 'application/json',
+                ],
+                'json' => $payload,
+                'stream' => true,
+                'http_errors' => false,
+                'timeout' => 300,
+            ]);
+
+            if ($response->getStatusCode() !== 200) {
+                $errorBody = json_decode($response->getBody()->getContents(), true);
+                $msg = $errorBody['error']['message'] ?? ('HTTP ' . $response->getStatusCode());
+                yield ['type' => 'text', 'text' => "\n[Error: {$msg}]"];
+                return ['stop_reason' => 'error', 'error' => $msg];
+            }
+
+            $body = $response->getBody();
+            $buffer = '';
+            while (!$body->eof()) {
+                $buffer .= $body->read(1024);
+
+                while (($pos = strpos($buffer, "\n")) !== false) {
+                    $line = trim(substr($buffer, 0, $pos));
+                    $buffer = substr($buffer, $pos + 1);
+                    if ($line === '' || !str_starts_with($line, 'data: ')) {
+                        continue;
+                    }
+                    $jsonStr = trim(substr($line, 6));
+                    if ($jsonStr === '' || $jsonStr === '[DONE]') {
+                        continue;
+                    }
+                    $data = json_decode($jsonStr, true);
+                    if (!$data || !isset($data['type'])) {
+                        continue;
+                    }
+
+                    switch ($data['type']) {
+                        case 'message_start':
+                            $inputTokens += $data['message']['usage']['input_tokens'] ?? 0;
+                            break;
+
+                        case 'content_block_start':
+                            $idx = $data['index'] ?? 0;
+                            $block = $data['content_block'] ?? [];
+                            $blocks[$idx] = [
+                                'type' => $block['type'] ?? 'text',
+                                'id' => $block['id'] ?? '',
+                                'name' => $block['name'] ?? '',
+                                'json' => '',
+                            ];
+                            break;
+
+                        case 'content_block_delta':
+                            $idx = $data['index'] ?? 0;
+                            $delta = $data['delta'] ?? [];
+                            if (($delta['type'] ?? '') === 'text_delta' && isset($delta['text'])) {
+                                yield ['type' => 'text', 'text' => $delta['text']];
+                            } elseif (($delta['type'] ?? '') === 'input_json_delta' && isset($delta['partial_json'])) {
+                                $blocks[$idx]['json'] = ($blocks[$idx]['json'] ?? '') . $delta['partial_json'];
+                            }
+                            break;
+
+                        case 'content_block_stop':
+                            $idx = $data['index'] ?? 0;
+                            $b = $blocks[$idx] ?? null;
+                            if ($b && $b['type'] === 'tool_use') {
+                                $input = json_decode($b['json'] !== '' ? $b['json'] : '{}', true);
+                                yield [
+                                    'type' => 'tool_use',
+                                    'id' => $b['id'],
+                                    'name' => $b['name'],
+                                    'input' => is_array($input) ? $input : [],
+                                ];
+                            }
+                            break;
+
+                        case 'message_delta':
+                            $outputTokens += $data['usage']['output_tokens'] ?? 0;
+                            if (isset($data['delta']['stop_reason'])) {
+                                $stopReason = $data['delta']['stop_reason'];
+                            }
+                            break;
+
+                        case 'error':
+                            $msg = $data['error']['message'] ?? 'Unknown error';
+                            yield ['type' => 'text', 'text' => "\n[Error from API: {$msg}]"];
+                            break;
+                    }
+                }
+            }
+
+            if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
+                \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
+                $user->decrement('token_balance', $inputTokens + $outputTokens);
+            }
+        } catch (\Exception $e) {
+            yield ['type' => 'text', 'text' => "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]"];
+            return ['stop_reason' => 'error', 'error' => $e->getMessage()];
+        }
+
+        return ['stop_reason' => $stopReason === 'tool_use' ? 'tool_use' : 'end'];
+    }
+
+    /**
+     * Map the unified message history to Anthropic [messages, systemPrompt].
+     * Tool results are merged into the preceding user message so roles alternate.
+     */
+    private function mapMessagesToAnthropic(array $messages): array
+    {
+        $out = [];
+        $systemPrompt = '';
+
+        foreach ($messages as $msg) {
+            $role = $msg['role'] ?? 'user';
+
+            if ($role === 'system') {
+                $systemPrompt .= $msg['content'] . "\n";
+                continue;
+            }
+
+            if ($role === 'tool') {
+                $toolResult = [
+                    'type' => 'tool_result',
+                    'tool_use_id' => $msg['tool_call_id'] ?? '',
+                    'content' => (string) ($msg['content'] ?? ''),
+                ];
+                $last = count($out) - 1;
+                if ($last >= 0 && $out[$last]['role'] === 'user' && is_array($out[$last]['content'])) {
+                    $out[$last]['content'][] = $toolResult;
+                } else {
+                    $out[] = ['role' => 'user', 'content' => [$toolResult]];
+                }
+                continue;
+            }
+
+            if ($role === 'assistant' && !empty($msg['tool_calls'])) {
+                $content = [];
+                if (!empty($msg['content'])) {
+                    $content[] = ['type' => 'text', 'text' => (string) $msg['content']];
+                }
+                foreach ($msg['tool_calls'] as $call) {
+                    $content[] = [
+                        'type' => 'tool_use',
+                        'id' => $call['id'],
+                        'name' => $call['name'],
+                        'input' => (object) ($call['input'] ?? []),
+                    ];
+                }
+                $out[] = ['role' => 'assistant', 'content' => $content];
+                continue;
+            }
+
+            // Plain user / assistant — text + attachments (images, parsed docs).
+            $content = [];
+            if (!empty($msg['content'])) {
+                $content[] = ['type' => 'text', 'text' => (string) $msg['content']];
+            }
+            foreach ($msg['attachments'] ?? [] as $att) {
+                $filePath = storage_path('app/public/' . $att['file_path']);
+                if (!file_exists($filePath)) {
+                    continue;
+                }
+                $mime = $att['file_type'] ?? '';
+                if (str_starts_with($mime, 'image/')) {
+                    $img = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mime, 4000);
+                    $content[] = [
+                        'type' => 'image',
+                        'source' => ['type' => 'base64', 'media_type' => $img['mime_type'], 'data' => $img['data']],
+                    ];
+                } elseif ($mime === 'application/pdf' || str_ends_with($att['file_name'] ?? '', '.docx')) {
+                    $text = \App\Helpers\DocumentParser::parseText($att['file_path'], $mime, $att['file_name'] ?? '');
+                    $content[] = ['type' => 'text', 'text' => "\n\n[Attachment: {$att['file_name']}]\n" . trim($text)];
+                }
+            }
+
+            $out[] = [
+                'role' => $role,
+                'content' => (count($content) === 1 && $content[0]['type'] === 'text')
+                    ? $content[0]['text']
+                    : (count($content) > 0 ? $content : ''),
+            ];
+        }
+
+        return [$out, $systemPrompt];
     }
 }

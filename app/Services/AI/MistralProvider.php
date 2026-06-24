@@ -2,10 +2,43 @@
 
 namespace App\Services\AI;
 
+use App\Services\AI\Concerns\OpenAiCompatToolStream;
 use App\Services\AI\Contracts\LLMProviderInterface;
+use App\Services\AI\Contracts\SupportsToolUse;
 
-class MistralProvider implements LLMProviderInterface
+class MistralProvider implements LLMProviderInterface, SupportsToolUse
 {
+    use OpenAiCompatToolStream;
+
+    /**
+     * One agentic turn over Mistral's OpenAI-compatible endpoint. See SupportsToolUse.
+     */
+    public function streamAgentTurn(array $messages, string $model, array $tools): \Generator
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $apiKey = $user?->mistral_api_key ?: config('services.mistral.key');
+
+        if (empty($apiKey)) {
+            yield ['type' => 'text', 'text' => 'Mistral API key is not configured. Please add it in your Settings.'];
+            return ['stop_reason' => 'error', 'error' => 'missing_key'];
+        }
+
+        $baseUrl = rtrim(config('services.mistral.base_url', 'https://api.mistral.ai/v1'), '/');
+
+        return yield from $this->streamOpenAiCompat(
+            new \GuzzleHttp\Client(),
+            $baseUrl . '/chat/completions',
+            [
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ],
+            $model,
+            $messages,
+            $tools
+        );
+    }
+
     public function streamResponse(array $messages, string $model): \Generator
     {
         $user = \Illuminate\Support\Facades\Auth::user();

@@ -9,7 +9,7 @@ class AiService
     /**
      * Resolve the appropriate provider based on the model name.
      */
-    protected function resolveProvider(string $model): LLMProviderInterface
+    public function resolveProvider(string $model): LLMProviderInterface
     {
         $user = \Illuminate\Support\Facades\Auth::user();
         if ($user && $user->use_proxy) {

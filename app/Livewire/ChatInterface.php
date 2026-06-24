@@ -171,7 +171,7 @@ class ChatInterface extends Component
                     'role' => $msg->role,
                     'content' => $msg->content,
                     'rating' => $msg->rating,
-                    'artifacts' => $artifactData,
+                    'artifact' => $artifactData,
                     'attachments' => $attachmentData,
                 ];
             }
@@ -494,7 +494,21 @@ class ChatInterface extends Component
         }
 
         // Prepend system prompt for Artifacts
-        $baseSystemPrompt = "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, or PDF, you MUST generate a well-structured Markdown document (language=\"markdown\"). DO NOT EVER generate raw PDF byte streams or PostScript code. The system will automatically convert your Markdown into a downloadable PDF for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide brief explanation outside the tag if needed.";
+        $baseSystemPrompt = "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, files, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, PDF, DOCX, or any text-based file, you MUST generate a well-structured Markdown document (language=\"markdown\") inside the <antArtifact> tag. DO NOT EVER generate raw file byte streams or PostScript code. The system will automatically convert your Markdown into downloadable files for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide brief explanation outside the tag if needed.";
+
+        // Document quality — produce print-ready PDFs (reports, papers, skripsi).
+        $baseSystemPrompt .= "\n\nCRITICAL INSTRUCTION FOR PDF/DOCX REQUESTS:\n"
+            . "When the user asks for a PDF, DOCX, or document, they are interacting with an external system that handles the file conversion. Therefore, you are STRICTLY FORBIDDEN from apologizing, claiming you cannot generate PDFs, or suggesting external tools like Word, Google Docs, Pandoc, or Typora. Your ONLY allowed response is to immediately generate the content as Markdown inside an <antArtifact> block. The system will seamlessly convert your Markdown artifact into the requested file format. Failure to use <antArtifact> or explaining your limitations will break the application.\n\n"
+            . "DOCUMENT GENERATION (when the user asks for a document, report, paper, makalah, laporan, skripsi, file, PDF, DOCX, etc., OR when they ask to 'continue' a previous chapter/document):\n"
+            . "- Write a markdown artifact (language=\"markdown\"). The system renders it to a polished PDF or document for the user automatically.\n"
+            . "- If the user asks you to continue a document (e.g., 'lanjut bab 2'), you MUST generate a NEW <antArtifact> block containing the continuation. DO NOT just reply with raw text.\n"
+            . "- If the user asks you to merge, combine, or join multiple attached documents, ACT AS AN INTELLIGENT EDITOR: do NOT just blindly copy-paste text. Clean up the text by removing redundant page numbers, repeating headers/footers, and fixing broken sentences across page breaks. Smooth out transitions between documents.\n"
+            . "- Diagrams, flowcharts, charts, org/structure figures: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Do NOT use ASCII diagrams or mermaid. Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X. Caption</figcaption></figure>. If the extracted text mentions a diagram but it's missing, creatively generate an SVG diagram to replace it!\n"
+            . "- To include an image the user uploaded, reference it with markdown: ![Keterangan](attachments/<filename>) using the path from the conversation; the renderer resolves local uploads automatically.\n"
+            . "- For FORMAL / ACADEMIC documents (skripsi, laporan, thesis): begin the artifact content with a YAML front-matter block to trigger the academic layout (cover page, automatic DAFTAR ISI / Table of Contents, Roman→Arabic page numbering, 4-3-3-3 cm margins, Times New Roman 12pt, justified). Use exactly this shape (omit fields you don't know):\n"
+            . "---\nmode: skripsi            # skripsi | laporan | document\njudul: <full title>\npenulis: <author name>\nnim: <student id>\nprodi: <study program>\nfakultas: <faculty>\nuniversitas: <university>\nkota: <city>\ntahun: <year>\npembimbing: <advisor>\n---\n"
+            . "Then structure chapters as level-1 headings (# BAB I PENDAHULUAN, # BAB II …) — each # heading starts a new page — with ## and ### for sub-sections (## 1.1 Latar Belakang). Headings are collected into the Table of Contents automatically.\n"
+            . "- For casual/simple documents, OMIT the front-matter; the renderer applies a clean general layout. Choose academic vs. casual based on what the user actually asked for.";
 
         // Response-quality principles: structured reasoning, sourcing, and honesty.
         $baseSystemPrompt .= "\n\nResponse principles (apply to every answer):\n"
@@ -597,6 +611,15 @@ class ChatInterface extends Component
             'role' => 'system',
             'content' => $baseSystemPrompt,
         ]);
+        
+        // Append a strict formatting reminder to the very last user message
+        // This prevents the AI from "forgetting" the artifact tags or "apologizing" in long conversations
+        if (!empty($messagesForAi)) {
+            $lastIndex = count($messagesForAi) - 1;
+            if ($messagesForAi[$lastIndex]['role'] === 'user') {
+                $messagesForAi[$lastIndex]['content'] .= "\n\n[SYSTEM REMINDER: If the user asked for a PDF, DOCX, or document, you MUST NOT apologize. You MUST output your content EXCLUSIVELY inside an <antArtifact> block. The system will convert it.]";
+            }
+        }
 
         // Clear any stale stop flag before we begin streaming
         $stopKey = 'chat_stop_' . $this->conversationId;
@@ -622,7 +645,7 @@ class ChatInterface extends Component
             $fullResponse .= $chunk;
             
             $displayContent = $fullResponse;
-            $pattern = '/<antArtifact\b[^>]*>([\s\S]*?)(?:<\/antArtifact>|$)/';
+            $pattern = '/<(?:antA|a)rtifact\b[^>]*>([\s\S]*?)(?:<\/(?:antA|a)rtifact>|$)/i';
             
             $loadingHtml = '<div class="mt-3 inline-flex items-center gap-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl p-2 pr-4 bg-white dark:bg-stone-800 shadow-sm max-w-full">
                 <div class="w-10 h-10 bg-[#F9F8F6] dark:bg-stone-700 rounded-lg flex items-center justify-center shrink-0">
@@ -638,8 +661,8 @@ class ChatInterface extends Component
                 return $loadingHtml;
             }, $displayContent);
 
-            if (($pos = strpos($displayContent, '<antArtifact')) !== false) {
-                $displayContent = substr($displayContent, 0, $pos) . $loadingHtml;
+            if (preg_match('/<(?:antA|a)rtifact\b/i', $displayContent, $m, PREG_OFFSET_CAPTURE)) {
+                $displayContent = substr($displayContent, 0, $m[0][1]) . $loadingHtml;
                 if (!$artifactAnnounced) {
                     $this->streamActivity('Writing artifact…');
                     $artifactAnnounced = true;
@@ -662,14 +685,16 @@ class ChatInterface extends Component
 
         // After stream is done, parse artifact if present
         $artifactData = null;
-        $pattern = '/<antArtifact\s+identifier="([^"]+)"\s+type="([^"]+)"\s+language="([^"]*)"\s+title="([^"]+)">([\s\S]*?)<\/antArtifact>/';
+        $pattern = '/<(?:antA|a)rtifact\b([^>]*)>([\s\S]*?)(?:<\/(?:antA|a)rtifact>|$)/i';
         
         if (preg_match($pattern, $fullResponse, $matches)) {
-            $identifier = $matches[1];
-            $type = $matches[2];
-            $language = $matches[3];
-            $title = $matches[4];
-            $content = trim($matches[5]);
+            $attrString = $matches[1];
+            $content = trim($matches[2]);
+            
+            $identifier = preg_match('/identifier="([^"]+)"/i', $attrString, $m) ? $m[1] : 'artifact-' . uniqid();
+            $type = preg_match('/type="([^"]+)"/i', $attrString, $m) ? $m[1] : 'application/vnd.ant.code';
+            $language = preg_match('/language="([^"]*)"/i', $attrString, $m) ? $m[1] : 'markdown';
+            $title = preg_match('/title="([^"]+)"/i', $attrString, $m) ? $m[1] : 'Document';
             
             // Remove the artifact block from the visible text
             $cleanResponse = preg_replace($pattern, '', $fullResponse);
@@ -684,7 +709,7 @@ class ChatInterface extends Component
             $artModel = MessageArtifact::create([
                 'message_id' => $assistantMessage->id,
                 'identifier' => $identifier,
-                'type' => $type === 'application/vnd.ant.code' ? 'code' : 'text',
+                'type' => str_contains($type, 'code') ? 'code' : 'text',
                 'language' => $language ?: 'text',
                 'title' => $title,
                 'content' => $content,
@@ -698,6 +723,7 @@ class ChatInterface extends Component
                 'content' => $artModel->content,
             ];
             $fullResponse = $cleanResponse;
+            $this->dispatch('openArtifact', artifact: $artifactData);
         } else {
             $assistantMessage = Message::create([
                 'conversation_id' => $this->conversationId,

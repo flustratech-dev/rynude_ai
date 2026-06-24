@@ -1,4 +1,17 @@
-<div class="flex flex-col h-full bg-transparent dark:bg-claude-bg-dark relative">
+<div class="flex flex-col h-full bg-transparent dark:bg-claude-bg-dark relative"
+    x-data="{ isDropping: false }"
+    x-on:dragover.prevent="isDropping = true"
+    x-on:dragleave.prevent="isDropping = false"
+    x-on:drop.prevent="isDropping = false; if($event.dataTransfer.files.length > 0) { const fileInput = document.getElementById('file-upload'); fileInput.files = $event.dataTransfer.files; fileInput.dispatchEvent(new Event('change')); }"
+>
+    {{-- Drag & Drop Overlay --}}
+    <div x-show="isDropping" x-transition x-cloak class="absolute inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-2 border-dashed border-[#D97757] rounded-xl m-2">
+        <div class="flex flex-col items-center pointer-events-none">
+            <svg class="w-12 h-12 text-[#D97757] mb-3 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <h3 class="text-xl font-medium text-stone-800 dark:text-stone-200">Drop files here to attach</h3>
+        </div>
+    </div>
+
     {{-- Full-screen Loading Overlay --}}
     <div wire:loading wire:target="loadSelectedConversation, startProjectChat" class="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-background/90 dark:bg-background/90 backdrop-blur-sm">
         <div class="w-12 h-12 rounded-2xl bg-claude-bg-light dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark flex items-center justify-center mb-4 shadow-sm">
@@ -431,7 +444,7 @@
                                             <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path>
                                         </svg>
                                     </div>
-                                    <div class="text-[#2D2825] dark:text-stone-200 text-[18px] leading-normal max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full font-serif prose-p:leading-normal prose-p:m-0 prose-p:mb-2 prose-headings:m-0 prose-headings:mt-3 prose-headings:mb-1.5 prose-ul:m-0 prose-ul:mb-2 prose-li:m-0 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors">
+                                    <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] max-w-[90%] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 prose-p:pl-2 prose-p:pr-8 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline transition-colors prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-stone-800 prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;">
                                         {!! Illuminate\Support\Str::markdown($msg['content'] ?? '', ['html_input' => 'strip']) !!}
 
                                         @if(isset($msg['artifact']) && $msg['artifact'])
@@ -525,7 +538,7 @@
                             <div class="flex flex-col gap-1.5 max-w-[90%] w-full">
                                 {{-- Live activity status: what the assistant is doing right now --}}
                                 <div wire:stream="activity-status" class="empty:hidden text-[13px] text-[#D97757] font-medium"></div>
-                                <div class="text-[#2D2825] dark:text-stone-200 text-[15px] leading-relaxed prose prose-stone dark:prose-invert max-w-none w-full font-serif prose-p:leading-relaxed prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-a:text-[#D97757] hover:prose-a:text-[#c96646] transition-colors [&::after]:hidden" wire:stream="message-stream">
+                                <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 prose-p:pl-2 prose-p:pr-8 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline transition-colors prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-stone-800 prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2 [&::after]:hidden" wire:stream="message-stream" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;">
                                     <div class="text-stone-400 text-[15px] flex items-center gap-3 mt-1 font-medium">
                                         <span>Rynude is thinking...</span>
                                     </div>
@@ -818,54 +831,69 @@
 
     function enhanceCodeBlocks() {
         document.querySelectorAll('.prose pre').forEach((pre) => {
-            // Apply syntax highlighting to the inner <code> element
-            const codeEl = pre.querySelector('code');
-            if (codeEl && !codeEl.hasAttribute('data-highlighted') && window.hljs) {
-                try {
-                    hljs.highlightElement(codeEl);
-                } catch (e) { /* hljs sets data-highlighted itself */ }
-            }
-
             if(pre.hasAttribute('data-enhanced')) return;
             pre.setAttribute('data-enhanced', 'true');
 
-            pre.classList.add('code-block-enter', 'relative', 'group/code');
+            const codeEl = pre.querySelector('code');
+            let lang = '';
+            if (codeEl) {
+                const langClass = Array.from(codeEl.classList).find(c => c.startsWith('language-'));
+                if (langClass) {
+                    lang = langClass.replace('language-', '');
+                }
+                if (!codeEl.hasAttribute('data-highlighted') && window.hljs) {
+                    try {
+                        hljs.highlightElement(codeEl);
+                        if (!lang && codeEl.result && codeEl.result.language) {
+                            lang = codeEl.result.language;
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'my-5 rounded-xl overflow-hidden border border-[#E5E5E5] dark:border-stone-700 shadow-sm bg-[#1E1E1E] flex flex-col font-sans';
             
+            pre.parentNode.insertBefore(wrapper, pre);
+            
+            const topBar = document.createElement('div');
+            topBar.className = 'flex items-center justify-between px-4 py-2 bg-stone-100 dark:bg-[#2B2D31] border-b border-[#E5E5E5] dark:border-stone-700 text-xs font-mono text-stone-500 dark:text-stone-400';
+            
+            const langLabel = document.createElement('span');
+            langLabel.textContent = lang || 'text';
+            topBar.appendChild(langLabel);
+
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'absolute top-2 right-2 p-1.5 rounded-lg bg-stone-700/80 text-stone-300 opacity-0 group-hover/code:opacity-100 transition-all hover:bg-stone-600 flex items-center gap-1.5 text-xs font-medium border border-stone-600/50 shadow-sm backdrop-blur-sm z-10';
+            copyBtn.className = 'flex items-center gap-1.5 hover:text-stone-800 dark:hover:text-stone-200 transition-colors';
             copyBtn.innerHTML = `
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                <span>Copy</span>
+                <span>Copy code</span>
             `;
             
             copyBtn.addEventListener('click', async () => {
-                // Ensure we don't copy the copy button's own text
                 const codeNode = pre.querySelector('code');
-                const code = codeNode ? codeNode.innerText : pre.innerText.replace('Copy', '').trim();
-                
+                const code = codeNode ? codeNode.innerText : pre.innerText;
                 try {
                     await navigator.clipboard.writeText(code);
-                    copyBtn.classList.add('copy-pop', '!text-green-400', '!border-green-500/50', '!bg-stone-800');
-                    copyBtn.classList.remove('text-stone-300', 'bg-stone-700/80', 'border-stone-600/50');
                     copyBtn.innerHTML = `
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Copied!</span>
+                        <svg class="w-3.5 h-3.5 text-green-600 dark:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span class="text-green-600 dark:text-green-500">Copied!</span>
                     `;
-                    
                     setTimeout(() => {
-                        copyBtn.classList.remove('copy-pop', '!text-green-400', '!border-green-500/50', '!bg-stone-800');
-                        copyBtn.classList.add('text-stone-300', 'bg-stone-700/80', 'border-stone-600/50');
                         copyBtn.innerHTML = `
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                            <span>Copy</span>
+                            <span>Copy code</span>
                         `;
                     }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy', err);
-                }
+                } catch (err) {}
             });
             
-            pre.appendChild(copyBtn);
+            topBar.appendChild(copyBtn);
+            wrapper.appendChild(topBar);
+            
+            pre.classList.remove('my-4', 'rounded-xl', 'border', 'shadow-sm', 'border-stone-700/50');
+            pre.classList.add('!my-0', '!border-0', '!bg-transparent', '!rounded-none');
+            wrapper.appendChild(pre);
         });
     }
 </script>

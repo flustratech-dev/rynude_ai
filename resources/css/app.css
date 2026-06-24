@@ -1,5 +1,53 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500&display=swap');
 
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('../../public/fonts/AnthropicSerif-Text-Regular-Static.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('../../public/fonts/AnthropicSerif-Text-RegularItalic-Static.otf') format('opentype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('../../public/fonts/AnthropicSerif-Text-Medium-Static.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('../../public/fonts/AnthropicSerif-Text-MediumItalic-Static.otf') format('opentype');
+    font-weight: 500;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('../../public/fonts/AnthropicSerif-Text-Bold-Static.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('../../public/fonts/AnthropicSerif-Text-BoldItalic-Static.otf') format('opentype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

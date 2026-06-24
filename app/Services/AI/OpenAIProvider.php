@@ -2,16 +2,125 @@
 
 namespace App\Services\AI;
 
+use App\Services\AI\Concerns\OpenAiCompatToolStream;
 use App\Services\AI\Contracts\LLMProviderInterface;
+use App\Services\AI\Contracts\SupportsToolUse;
 use Illuminate\Support\Facades\Http;
 
-class OpenAIProvider implements LLMProviderInterface
+class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 {
+    use OpenAiCompatToolStream;
+
+    /**
+     * Resolve [apiKey, baseUrl, label] for the current user/model. Shared by the
+     * plain chat path and the agentic tool path.
+     */
+    private function resolveConfig(string $model): array
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        $isProxy = $user && $user->use_proxy;
+        $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo');
+
+        $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
+
+        if ($isHuggingFace) {
+            $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
+
+            $savedUrl = $user->huggingface_base_url;
+            if (!empty($savedUrl) && str_contains($savedUrl, 'api-inference.huggingface.co')) {
+                $savedUrl = str_replace('api-inference.huggingface.co', 'router.huggingface.co', $savedUrl);
+            }
+
+            $hfBaseUrl = !empty($savedUrl) ? rtrim(trim($savedUrl), '/') : '';
+
+            if (empty($hfBaseUrl)) {
+                $baseUrl = "https://router.huggingface.co/v1";
+            } else {
+                $baseUrl = $hfBaseUrl;
+                if (!preg_match('~^https?://~i', $baseUrl)) {
+                    $baseUrl = "https://" . $baseUrl;
+                }
+                if (!str_ends_with($baseUrl, '/v1')) {
+                    $baseUrl .= '/v1';
+                }
+            }
+        } elseif ($is9RouterAuto) {
+            $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
+            $baseUrl = 'http://127.0.0.1:20128/v1';
+        } elseif ($isProxy) {
+            $apiKey = ($user && !empty($user->proxy_api_key)) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
+            if (!empty($user->proxy_base_url)) {
+                $baseUrl = rtrim($user->proxy_base_url, '/');
+            } else {
+                $baseUrl = 'http://127.0.0.1:20128/v1';
+            }
+        } else {
+            $apiKey = $user ? $user->openai_api_key : null;
+            if (empty($apiKey)) {
+                $apiKey = config('services.openai.key');
+            }
+            $baseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
+        }
+
+        if (empty($apiKey) && $isProxy) {
+            $apiKey = 'sk-dummy-key-for-local-proxy';
+        }
+
+        $label = $isHuggingFace ? 'huggingface' : ($isProxy ? 'proxy' : 'openai');
+
+        // Native OpenAI function-calling is only reliable on the genuine OpenAI
+        // endpoint. Local proxies, 9Router (kr/*) and HuggingFace routers either
+        // reject the `tools` param or can't round-trip tool messages — those fall
+        // back to AgentRunner's text-protocol (ReAct) loop instead.
+        $nativeTools = !($isProxy || $is9RouterAuto || $isHuggingFace);
+
+        return [$apiKey, $baseUrl, $label, $nativeTools];
+    }
+
+    private function guzzle(): \GuzzleHttp\Client
+    {
+        $stack = \GuzzleHttp\HandlerStack::create(new \GuzzleHttp\Handler\CurlHandler());
+        return new \GuzzleHttp\Client([
+            'handler' => $stack,
+            'curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4],
+        ]);
+    }
+
+    /**
+     * One agentic turn over an OpenAI-compatible endpoint. See SupportsToolUse.
+     */
+    public function streamAgentTurn(array $messages, string $model, array $tools): \Generator
+    {
+        [$apiKey, $baseUrl, , $nativeTools] = $this->resolveConfig($model);
+
+        // Endpoint can't be trusted with native tools — signal AgentRunner to use
+        // its text-protocol fallback (no HTTP call wasted here).
+        if (!empty($tools) && !$nativeTools) {
+            return ['stop_reason' => 'error', 'error' => 'native_tools_unsupported'];
+        }
+
+        if (empty($apiKey)) {
+            yield ['type' => 'text', 'text' => 'OpenAI API key is not configured. Please add it in your Settings.'];
+            return ['stop_reason' => 'error', 'error' => 'missing_key'];
+        }
+
+        return yield from $this->streamOpenAiCompat(
+            $this->guzzle(),
+            $baseUrl . '/chat/completions',
+            ['Authorization' => 'Bearer ' . $apiKey, 'Content-Type' => 'application/json'],
+            $model,
+            $messages,
+            $tools
+        );
+    }
+
     public function streamResponse(array $messages, string $model): \Generator
     {
         // Get the API key from the currently authenticated user, or fallback to config
         $user = \Illuminate\Support\Facades\Auth::user();
-        
+
         $isProxy = $user && $user->use_proxy;
         $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo');
         

@@ -56,6 +56,10 @@ class ClaudeCodeApp extends Component
     // ── Token Counter ──────────────────────────────────
     public int $sessionTokens = 0;
 
+    // ── Agent Tool Calls (right-panel "Tools" tab) ─────
+    // [ ['name'=>'read_file', 'input'=>'app/Models/User.php', 'summary'=>'1.2k chars'] ]
+    public array $toolCalls = [];
+
     public function mount(): void
     {
         $this->buildModelList();
@@ -149,6 +153,7 @@ class ClaudeCodeApp extends Component
         $this->conversation = $conv;
         $this->messages = [];
         $this->sessionTokens = 0;
+        $this->toolCalls = [];
 
         foreach ($conv->messages as $msg) {
             $this->messages[] = [
@@ -193,6 +198,7 @@ class ClaudeCodeApp extends Component
         $this->isStarted        = false;
         $this->isStreaming       = false;
         $this->sessionTokens    = 0;
+        $this->toolCalls        = [];
         $this->repoConnected    = '';
         $this->repoTree         = [];
         $this->selectedFilesContext = [];
@@ -459,15 +465,15 @@ class ClaudeCodeApp extends Component
             ? array_merge([$userMessages[0]], array_slice($userMessages, -19))
             : $userMessages;
 
-        // Build messages for AI — strip attachment data, add file content hint
+        // Build messages for AI — keep attachments so the provider can render
+        // images/docs natively during the agent turn.
         $aiMessages = [];
         foreach ($messagesForAi as $m) {
-            $content = $m['content'];
-            if (!empty($m['attachments'])) {
-                $names = array_column($m['attachments'], 'file_name');
-                $content .= "\n\n[Attached files: " . implode(', ', $names) . "]";
-            }
-            $aiMessages[] = ['role' => $m['role'], 'content' => $content];
+            $aiMessages[] = array_filter([
+                'role'        => $m['role'],
+                'content'     => $m['content'],
+                'attachments' => $m['attachments'] ?? null,
+            ], fn ($v) => $v !== null);
         }
 
         // ── System prompt — mode-aware, deeply code-specific ──────────────
@@ -498,19 +504,43 @@ class ClaudeCodeApp extends Component
                 . "Do NOT ask 'shall I proceed?' — just do it.",
         };
 
-        $systemPrompt = "You are Rynude Code, an expert autonomous AI coding agent built into the Rynude platform.\n"
-            . "You are NOT a general-purpose chatbot. You are a specialized coding agent.\n"
-            . "Your purpose: help developers read, write, debug, refactor, and understand code across ALL languages and frameworks.\n\n"
-            . "CORE BEHAVIOR:\n"
-            . "- Always respond as an expert engineer, not as a helpful assistant.\n"
-            . "- Be concise, precise, and technical. Skip pleasantries.\n"
-            . "- Format ALL code in fenced code blocks with the language specified: ```php, ```js, ```bash, etc.\n"
-            . "- Reference files using backtick paths: `app/Http/Controllers/UserController.php`\n"
-            . "- Format shell commands with a $ prefix inside a ```bash block.\n"
-            . "- When explaining architecture, use clear structure: numbered steps, bullet points, or tables.\n"
-            . "- Assume the user is an experienced developer unless stated otherwise.\n"
-            . "- If asked about the codebase structure, reference Laravel/PHP conventions as the default stack.\n\n"
-            . $modeInstructions;
+        // ── Base persona — loaded verbatim from plan_rynudecode.md at runtime ──
+        // The markdown file is the editable source of truth for the agent persona.
+        // Fall back to the inline persona if the file is missing/empty (e.g. packaged
+        // builds under RYNUDE_HOME where the markdown may not ship).
+        $personaPath = base_path('plan_rynudecode.md');
+        $persona = is_file($personaPath) ? trim(file_get_contents($personaPath)) : '';
+
+        if ($persona === '') {
+            $persona = "You are Rynude Code, an expert autonomous AI coding agent built into the Rynude platform.\n"
+                . "You are NOT a general-purpose chatbot. You are a specialized coding agent.\n"
+                . "Your purpose: help developers read, write, debug, refactor, and understand code across ALL languages and frameworks.\n\n"
+                . "CORE BEHAVIOR:\n"
+                . "- Always respond as an expert engineer, not as a helpful assistant.\n"
+                . "- Be concise, precise, and technical. Skip pleasantries.\n"
+                . "- Format ALL code in fenced code blocks with the language specified: ```php, ```js, ```bash, etc.\n"
+                . "- Reference files using backtick paths: `app/Http/Controllers/UserController.php`\n"
+                . "- Format shell commands with a $ prefix inside a ```bash block.\n"
+                . "- When explaining architecture, use clear structure: numbered steps, bullet points, or tables.\n"
+                . "- Assume the user is an experienced developer unless stated otherwise.\n"
+                . "- If asked about the codebase structure, reference Laravel/PHP conventions as the default stack.";
+        }
+
+        $systemPrompt = $persona . "\n\n" . $modeInstructions;
+
+        // ── Agentic tools guidance ────────────────────────────────────────
+        $systemPrompt .= "\n\nAGENTIC TOOLS:\n"
+            . "You can call tools to gather context yourself instead of guessing. "
+            . "Before answering questions about the codebase, use `list_files` and `search_code` to locate "
+            . "relevant files, then `read_file` to inspect their actual contents. Use `web_search` for "
+            . "up-to-date external facts. Chain several tool calls as needed, then give a precise answer "
+            . "grounded in what you read. Do NOT fabricate file paths or code — verify with tools first.";
+
+        // ── Persistent conversation memory (durable across turns & models) ──
+        $memoryService = app(\App\Services\AI\ConversationMemoryService::class);
+        if ($this->conversation) {
+            $systemPrompt .= $memoryService->formatForPrompt($this->conversation);
+        }
 
         if ($this->repoConnected) {
             $systemPrompt .= "\n\nCONNECTED REPOSITORY: {$this->repoConnected}\n"
@@ -543,24 +573,71 @@ class ClaudeCodeApp extends Component
 
         array_unshift($aiMessages, ['role' => 'system', 'content' => $systemPrompt]);
 
-        // Stream response
-        $aiService   = new \App\Services\AI\AiService();
-        $stream      = $aiService->streamResponse($aiMessages, $this->selectedModel);
-        $fullResponse = '';
+        // ── Agentic tool registry ──────────────────────────────────────────
+        // Pre-seed already-loaded files so the agent can re-read them with no API call.
+        $uploadedContents = [];
+        foreach ($this->selectedFilesContext as $f) {
+            $uploadedContents[$f['path']] = $f['content'];
+        }
+        $tools = new \App\Services\AI\AgentTools(
+            $this->repoConnected,
+            $this->repoTree,
+            $this->localFilesTree,
+            $uploadedContents,
+            Auth::user()->github_token ?? null,
+        );
 
-        foreach ($stream as $chunk) {
-            // Check stop flag
+        // ── Run the agent loop, interleaving text + tool activity ──────────
+        $runner   = new \App\Services\AI\AgentRunner(new \App\Services\AI\AiService());
+        $rendered = '';   // finalized markdown shown to the user
+        $pending  = '';   // transient "tool running…" line
+
+        foreach ($runner->run($aiMessages, $this->selectedModel, $tools) as $event) {
+            // Honour the stop button.
             if ($this->conversation && Cache::get('chat_stop_' . $this->conversation->id)) {
                 Cache::forget('chat_stop_' . $this->conversation->id);
                 break;
             }
 
-            $fullResponse .= $chunk;
+            if ($event['type'] === 'reset') {
+                // Runner is discarding a failed turn's output before a clean retry.
+                $rendered = '';
+                $pending  = '';
+            } elseif ($event['type'] === 'text') {
+                $rendered .= $event['text'];
+            } elseif ($event['type'] === 'tool') {
+                $summary = $this->toolInputSummary($event['input']);
+                if ($event['status'] === 'running') {
+                    $pending = "\n\n> ⏳ **{$event['name']}** `{$summary}`\n";
+                } else { // done
+                    $pending = '';
+                    $rendered .= "\n\n> 🔧 **{$event['name']}** `{$summary}` — ✓ {$event['summary']}\n\n";
+                    $this->toolCalls[] = [
+                        'name'    => $event['name'],
+                        'input'   => $summary,
+                        'summary' => $event['summary'],
+                    ];
+                }
+            }
+
             $this->stream(
                 to: 'message-stream',
-                content: \Illuminate\Support\Str::markdown($fullResponse),
+                content: \Illuminate\Support\Str::markdown($rendered . $pending),
                 replace: true
             );
+        }
+
+        $fullResponse = trim($rendered);
+
+        // Merge files the agent opened into the context + Files panel.
+        foreach ($tools->openedFiles() as $file) {
+            $already = false;
+            foreach ($this->selectedFilesContext as $f) {
+                if ($f['path'] === $file['path']) { $already = true; break; }
+            }
+            if (!$already) {
+                $this->selectedFilesContext[] = $file;
+            }
         }
 
         // Persist assistant response
@@ -574,16 +651,37 @@ class ClaudeCodeApp extends Component
             $this->messages[] = ['role' => 'assistant', 'content' => $fullResponse];
             $this->sessionTokens += (int)(strlen($fullResponse) / 4);
 
+            // Persist any newly opened files into the conversation metadata.
+            $meta = $this->conversation->metadata ?? [];
+            $meta['selectedFilesContext'] = $this->selectedFilesContext;
+            $this->conversation->update(['metadata' => $meta]);
+
             // Update conversation title if still generic
             if (str_ends_with($this->conversation->title, '...') || $this->conversation->title === 'Untitled session') {
                 $firstUserMsg = collect($this->messages)->firstWhere('role', 'user')['content'] ?? '';
                 $this->conversation->update(['title' => $this->generateTitle($firstUserMsg)]);
             }
 
+            // Refresh durable memory once enough new messages have accumulated.
+            // Runs after streaming so it never delays output (failures are logged).
+            if ($memoryService->shouldRefresh($this->conversation, count($this->messages))) {
+                $memoryService->refresh($this->conversation, $this->messages, $this->selectedModel);
+            }
+
             $this->loadRecentSessions();
         }
 
         $this->isStreaming = false;
+    }
+
+    /** Compact one-line summary of a tool's input, for the activity callout. */
+    private function toolInputSummary(array $input): string
+    {
+        $parts = [];
+        foreach ($input as $v) {
+            $parts[] = is_scalar($v) ? (string) $v : json_encode($v);
+        }
+        return \Illuminate\Support\Str::limit(implode(' ', $parts), 80) ?: '…';
     }
 
     // ═══════════════════════════════════════
