@@ -157,16 +157,21 @@ class PdfRenderer
     {
         // Font name → mPDF font family (core fonts + bundled DejaVu).
         $fontMap = [
-            'times' => 'times', 'times new roman' => 'times', 'serif' => 'times',
-            'georgia' => 'times', 'cambria' => 'times',
-            'arial' => 'helvetica', 'helvetica' => 'helvetica', 'calibri' => 'helvetica',
-            'sans' => 'helvetica', 'sans-serif' => 'helvetica', 'verdana' => 'helvetica',
-            'tahoma' => 'helvetica', 'segoe ui' => 'helvetica',
-            'courier' => 'courier', 'courier new' => 'courier', 'consolas' => 'courier',
-            'monospace' => 'courier', 'mono' => 'courier',
+            // GNU FreeFont (bundled with mPDF): Times/Helvetica/Courier-metric serif,
+            // sans and mono with FULL Unicode (Greek, math, accents). mPDF's core
+            // fonts ('times' etc.) corrupt Greek/maths in UTF-8 mode, so we map to the
+            // Free* families which look like Times New Roman / Arial but render every
+            // glyph an academic report needs.
+            'times' => 'freeserif', 'times new roman' => 'freeserif', 'serif' => 'freeserif',
+            'georgia' => 'freeserif', 'cambria' => 'freeserif',
+            'arial' => 'freesans', 'helvetica' => 'freesans', 'calibri' => 'freesans',
+            'sans' => 'freesans', 'sans-serif' => 'freesans', 'verdana' => 'freesans',
+            'tahoma' => 'freesans', 'segoe ui' => 'freesans',
+            'courier' => 'freemono', 'courier new' => 'freemono', 'consolas' => 'freemono',
+            'monospace' => 'freemono', 'mono' => 'freemono',
         ];
         $fontKey = strtolower(trim((string) ($meta['font'] ?? '')));
-        $font = $fontMap[$fontKey] ?? 'times';
+        $font = $fontMap[$fontKey] ?? 'freeserif';
 
         $fontSize = (float) ($meta['font_size'] ?? 12);
         if ($fontSize < 8 || $fontSize > 20) {
@@ -304,8 +309,11 @@ class PdfRenderer
         $mpdf = new Mpdf($config);
         $mpdf->SetTitle($title);
         $mpdf->showImageErrors = false;
-        $mpdf->autoScriptToLang = true;
-        $mpdf->autoLangToFont = true;
+        // Keep the chosen font: do NOT auto-substitute fonts by detected language —
+        // that silently replaced the body with DejaVu Serif instead of Times-like
+        // FreeSerif. The Free* families already cover Latin + Greek + maths.
+        $mpdf->autoScriptToLang = false;
+        $mpdf->autoLangToFont = false;
 
         $css = $this->css($academic, $fmt);
         $pageNum = $this->pageNumberMarkup($fmt['pageNumber']);
@@ -451,18 +459,26 @@ class PdfRenderer
             . '</div>';
     }
 
-    private function css(bool $academic): string
+    private function css(bool $academic, array $fmt): string
     {
-        $base = <<<'CSS'
-        body { font-family: times; font-size: 12pt; color: #000; }
-        .pf { text-align: center; font-family: times; font-size: 11pt; color: #000; }
-        h1, h2, h3, h4, h5 { font-family: times; font-weight: bold; color: #000; }
-        p { margin: 0 0 6pt 0; }
+        $font = $fmt['font'];
+        $size = $fmt['fontSize'];
+        $lh = $fmt['lineSpacing'];
+        $align = $fmt['align'];
+        // Heading sizes scale relative to the chosen body size.
+        $h1 = $academic ? ($size + 2) : ($size + 6);
+        $h2 = $academic ? $size : ($size + 2);
+        $h3 = $academic ? $size : ($size + 0.5);
+
+        $base = <<<CSS
+        body { font-family: {$font}; font-size: {$size}pt; line-height: {$lh}; text-align: {$align}; color: #000; }
+        .pf { font-family: {$font}; font-size: 11pt; color: #000; }
+        h1, h2, h3, h4, h5 { font-family: {$font}; font-weight: bold; color: #000; }
         a { color: #000; text-decoration: none; }
         ul, ol { margin: 0 0 6pt 0; }
         li { margin-bottom: 2pt; }
         blockquote { border-left: 3px solid #999; padding-left: 10pt; color: #333; font-style: italic; margin: 8pt 0; }
-        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 11pt; }
+        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: {$h3}pt; }
         th, td { border: 0.6pt solid #000; padding: 5pt 7pt; text-align: left; vertical-align: top; }
         th { background: #efefef; font-weight: bold; }
         table.no-border, table.no-border th, table.no-border td { border: none !important; background: transparent !important; }
@@ -476,13 +492,12 @@ class PdfRenderer
         CSS;
 
         if ($academic) {
-            $base .= <<<'CSS'
-            body { line-height: 1.5; text-align: justify; }
-            p { text-indent: 1.27cm; margin: 0; text-align: justify; }
+            $base .= <<<CSS
+            p { text-indent: 1.27cm; margin: 0; }
             li p, td p, blockquote p, figcaption { text-indent: 0; }
-            h1 { font-size: 14pt; text-align: center; text-transform: uppercase; margin: 0 0 18pt 0; }
-            h2 { font-size: 12pt; margin: 16pt 0 8pt 0; }
-            h3 { font-size: 12pt; margin: 12pt 0 6pt 0; }
+            h1 { font-size: {$h1}pt; text-align: center; text-transform: uppercase; margin: 0 0 18pt 0; }
+            h2 { font-size: {$h2}pt; margin: 16pt 0 8pt 0; }
+            h3 { font-size: {$h3}pt; margin: 12pt 0 6pt 0; }
             .cover { text-align: center; }
             .cover-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; line-height: 1.5; margin-top: 1cm; }
             .cover-logo { margin: 1cm 0; }
@@ -491,13 +506,16 @@ class PdfRenderer
             .cover-bottom { margin-top: 2cm; font-size: 14pt; font-weight: bold; line-height: 1.5; }
             .cover-inst { margin: 2pt 0; text-transform: uppercase; }
             .toc-title { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 18pt; }
+            .mpdf_toc, .mpdf_toc_a, .mpdf_toc_level_0, .mpdf_toc_level_1, .mpdf_toc_level_2,
+            .mpdf_toc_t_level_0, .mpdf_toc_t_level_1, .mpdf_toc_t_level_2,
+            .mpdf_toc_p_level_0, .mpdf_toc_p_level_1, .mpdf_toc_p_level_2 { font-family: {$font}; font-size: {$size}pt; }
             CSS;
         } else {
-            $base .= <<<'CSS'
-            body { line-height: 1.45; }
-            h1 { font-size: 18pt; margin: 0 0 10pt 0; }
-            h2 { font-size: 14pt; margin: 14pt 0 6pt 0; }
-            h3 { font-size: 12.5pt; margin: 10pt 0 5pt 0; }
+            $base .= <<<CSS
+            p { margin: 0 0 6pt 0; }
+            h1 { font-size: {$h1}pt; margin: 0 0 10pt 0; }
+            h2 { font-size: {$h2}pt; margin: 14pt 0 6pt 0; }
+            h3 { font-size: {$h3}pt; margin: 10pt 0 5pt 0; }
             CSS;
         }
 
