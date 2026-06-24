@@ -25,7 +25,7 @@ echo npm run rynude >> "%NPM_BIN%\rynude.bat"
 echo @echo off > "%NPM_BIN%\rynudecode.bat"
 echo set "RYNUDE_WORKSPACE=%%CD%%" >> "%NPM_BIN%\rynudecode.bat"
 echo cd /d "%TARGET_DIR%" >> "%NPM_BIN%\rynudecode.bat"
-echo npm run rynude -- --cli >> "%NPM_BIN%\rynudecode.bat"
+echo php artisan rynude:chat --workspace="%%RYNUDE_WORKSPACE%%" >> "%NPM_BIN%\rynudecode.bat"
 
 echo.
 echo Berhasil! Perintah 'rynude' dan 'rynudecode' sekarang sudah terpasang secara global.

@@ -83,26 +83,75 @@ class RynudeChatCommand extends Command
             ]
         ]);
 
-        info('');
-        info('🚀 RynudeCode v1.0 CLI');
-        info('📂 Workspace: ' . $workspace);
-        info('🤖 Model: ' . $model);
-        info('Ketik pesan Anda. Ketik "/exit" atau tekan Ctrl+C untuk keluar.');
-        info('');
+        $shortWorkspace = substr($workspace, 0, 38);
+        $padLeft = str_pad($shortWorkspace, 38, " ", STR_PAD_BOTH);
+
+        $box = <<<EOT
+<fg=red>┌─</> Rynude Code v1.0 <fg=red>─────────────────────────────────────────────────────────────────────┐</>
+<fg=red>│</>              Welcome back!             <fg=red>│</> <fg=red>Tips for getting started</>                     <fg=red>│</>
+<fg=red>│</>                                        <fg=red>│</> Run /init to create a RYNUDE.md file         <fg=red>│</>
+<fg=red>│</>               <fg=red>▀▄   ▄▀</>                  <fg=red>│</> with instructions for Rynude                 <fg=red>│</>
+<fg=red>│</>              <fg=red>▄█▀███▀█▄</>                 <fg=red>│</> <fg=gray>───────────────────────────────────────────</>  <fg=red>│</>
+<fg=red>│</>             <fg=red>█▀███████▀█</>                <fg=red>│</> <fg=red>What's new</>                                   <fg=red>│</>
+<fg=red>│</>             <fg=red>█ █▀▀▀▀▀█ █</>                <fg=red>│</> Added `write_file` and `edit_file` tools     <fg=red>│</>
+<fg=red>│</>                <fg=red>▀▀   ▀▀</>                  <fg=red>│</> Added model picker with /model               <fg=red>│</>
+<fg=red>│</>                                        <fg=red>│</> Added CLI slash commands like /clear         <fg=red>│</>
+<fg=red>│</> rynudecode user • Local Workspace      <fg=red>│</> /release-notes for more                      <fg=red>│</>
+<fg=red>│</> {$padLeft} <fg=red>│</>                                              <fg=red>│</>
+<fg=red>└───────────────────────────────────────────────────────────────────────────────────────┘</>
+EOT;
+
+        $this->output->writeln('');
+        $this->output->writeln($box);
+        $this->output->writeln('');
 
         $aiService = new AiService();
         $agentRunner = new AgentRunner($aiService);
 
         while (true) {
             $userInput = text(
-                label: '❯',
-                placeholder: 'Apa yang bisa saya bantu?',
+                label: '>',
+                placeholder: 'Try "edit <filepath> to..."',
+                hint: '? for shortcuts • <- for agents',
                 required: true
             );
 
-            if (strtolower(trim($userInput)) === '/exit' || strtolower(trim($userInput)) === 'exit') {
-                info('Sampai jumpa! 👋');
+            $command = strtolower(trim($userInput));
+            
+            if ($command === '/exit' || $command === '/quit') {
                 break;
+            } elseif ($command === '/clear') {
+                \Laravel\Prompts\clear();
+                continue;
+            } elseif ($command === '/help') {
+                $this->output->writeln('');
+                $this->output->writeln('<info>Available Slash Commands:</info>');
+                $this->output->writeln('  <comment>/help</comment>    Show this help message');
+                $this->output->writeln('  <comment>/clear</comment>   Clear the terminal screen');
+                $this->output->writeln('  <comment>/model</comment>   Change the AI model');
+                $this->output->writeln('  <comment>/exit</comment>    Exit the CLI');
+                $this->output->writeln('');
+                continue;
+            } elseif ($command === '/model') {
+                $options = [
+                    'claude-sonnet-4-6' => 'Claude 3.5 Sonnet (Recommended)',
+                    'claude-haiku-4-6' => 'Claude 3.5 Haiku',
+                ];
+
+                $dbModels = \App\Models\AiModel::where('is_active', true)->get();
+                foreach ($dbModels as $m) {
+                    if (!isset($options[$m->code])) {
+                        $options[$m->code] = $m->name;
+                    }
+                }
+
+                $model = \Laravel\Prompts\select(
+                    label: 'Select AI Model:',
+                    options: $options,
+                    default: array_key_exists($model, $options) ? $model : null
+                );
+                $this->output->writeln("<info>Model changed to {$model}</info>\n");
+                continue;
             }
 
             // Save user message
@@ -125,11 +174,11 @@ class RynudeChatCommand extends Command
 
             $this->output->writeln('');
             
+            $startTime = microtime(true);
             $generator = $agentRunner->run($messages, $model, $tools);
             $fullResponse = '';
 
             try {
-                // We will stream the text directly using symfony console output
                 $output = $this->output;
                 
                 foreach ($generator as $event) {
@@ -144,12 +193,21 @@ class RynudeChatCommand extends Command
                         $name = $event['name'] ?? '';
                         
                         if ($status === 'running') {
-                            $output->writeln('');
-                            $output->writeln("<comment>⠋ ⚙️ Executing: {$name}...</comment>");
+                            $inputParams = $event['input'] ?? [];
+                            $paramStr = '';
+                            if (!empty($inputParams['path'])) {
+                                $paramStr = ' ' . $inputParams['path'];
+                            } elseif (!empty($inputParams['query'])) {
+                                $paramStr = ' "' . $inputParams['query'] . '"';
+                            }
+                            
+                            // Print on current line without newline
+                            $output->write("\r<comment>⠋ {$name}{$paramStr}...</comment>");
                         } elseif ($status === 'done') {
                             $summary = $event['summary'] ?? '';
-                            $output->writeln("<info>✔ ⚙️ Done: {$name} ({$summary})</info>");
-                            $output->writeln('');
+                            // Clear line and write success
+                            $output->write("\r\033[K"); // Clear the line
+                            $output->writeln("<info>✔ {$name} <fg=gray>({$summary})</></info>");
                         }
                     }
                 }
@@ -157,7 +215,13 @@ class RynudeChatCommand extends Command
                 error("\nError: " . $e->getMessage());
             }
 
+            $endTime = microtime(true);
+            $duration = round($endTime - $startTime, 2);
+            $estimatedTokensOut = round(strlen($fullResponse) / 4);
+
             $this->output->writeln("\n");
+            $this->output->writeln("<fg=gray>✨ Selesai dalam {$duration}s • ~{$estimatedTokensOut} tokens dihasilkan</>");
+            $this->output->writeln("");
 
             if (!empty(trim($fullResponse))) {
                 Message::create([
