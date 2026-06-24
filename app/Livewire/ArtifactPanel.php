@@ -18,14 +18,31 @@ class ArtifactPanel extends Component
 
     public function mount()
     {
-        $user_id = \Illuminate\Support\Facades\Auth::id();
-        if ($user_id) {
-            $this->artifacts = \App\Models\MessageArtifact::whereHas('message.conversation', function($q) use ($user_id) {
-                $q->where('user_id', $user_id);
-            })->orderBy('created_at', 'desc')->get()->unique('identifier')->values()->toArray();
-        } else {
+        $this->loadArtifacts();
+    }
+
+    /**
+     * Load the lightweight artifact list for the grid. Deliberately omits the
+     * (potentially huge) `content` column: it would otherwise be serialised into the
+     * Livewire snapshot on every request — typing in search, switching tabs, etc. —
+     * which is the main source of lag. Full content is fetched on demand in
+     * openArtifact() / switchVersion().
+     */
+    private function loadArtifacts(): void
+    {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (! $userId) {
             $this->artifacts = [];
+            return;
         }
+
+        $this->artifacts = \App\Models\MessageArtifact::query()
+            ->whereHas('message.conversation', fn ($q) => $q->where('user_id', $userId))
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'identifier', 'title', 'language', 'type', 'created_at', 'is_public'])
+            ->unique('identifier')
+            ->values()
+            ->toArray();
     }
 
     public function generateTemplate($type)
@@ -37,32 +54,37 @@ class ArtifactPanel extends Component
     #[On('openArtifact')]
     public function showArtifact($artifact)
     {
-        $this->currentArtifact = $artifact;
-        $this->isOpen = true;
-        
-        $this->loadVersions($artifact['id']);
+        // Only trust the id from the event payload: re-load the artifact from the DB
+        // with an ownership check so a spoofed browser event can't inject arbitrary
+        // content into the panel. A brand-new artifact (no id yet) is accepted inline.
+        $id = is_array($artifact) ? ($artifact['id'] ?? null) : null;
 
-        // Add to artifacts list if not already there
-        $exists = collect($this->artifacts)->firstWhere('id', $artifact['id']);
-        if (!$exists) {
-            $this->artifacts[] = $artifact;
+        if ($id) {
+            $model = \App\Models\MessageArtifact::find($id);
+            if (! $model || ! $this->ownsArtifact($model)) {
+                return;
+            }
+            $this->currentArtifact = $model->toArray();
+            $this->loadVersions($id);
+        } else {
+            $this->currentArtifact = is_array($artifact) ? $artifact : null;
         }
-        
+
+        $this->isOpen = true;
+        $this->loadArtifacts();
         $this->dispatch('showArtifactPanel');
     }
 
     public function openArtifact($id)
     {
-        $this->currentArtifact = collect($this->artifacts)->firstWhere('id', $id);
-        if (!$this->currentArtifact) {
-            $model = \App\Models\MessageArtifact::find($id);
-            if ($model && $this->ownsArtifact($model)) {
-                $this->currentArtifact = $model->toArray();
-            } else {
-                return;
-            }
+        // Always load full content fresh from the DB (the list omits it) and verify
+        // ownership before exposing the artifact.
+        $model = \App\Models\MessageArtifact::find($id);
+        if (! $model || ! $this->ownsArtifact($model)) {
+            return;
         }
 
+        $this->currentArtifact = $model->toArray();
         $this->isOpen = true;
         $this->loadVersions($id);
         $this->dispatch('showArtifactPanel');
@@ -164,25 +186,49 @@ class ArtifactPanel extends Component
     public function deleteArtifact($id)
     {
         $model = \App\Models\MessageArtifact::find($id);
-        if ($model) {
-            \App\Models\MessageArtifact::where('identifier', $model->identifier)->delete();
-            $this->mount();
-            if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
-                $this->closeArtifact();
-            }
+        if (! $model || ! $this->ownsArtifact($model)) {
+            return;
+        }
+
+        $this->ownedByIdentifier($model->identifier)->delete();
+        $this->loadArtifacts();
+
+        if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
+            $this->closeArtifact();
         }
     }
 
     public function renameArtifact($id, $newTitle)
     {
+        $newTitle = trim((string) $newTitle);
         $model = \App\Models\MessageArtifact::find($id);
-        if ($model && !empty(trim($newTitle))) {
-            \App\Models\MessageArtifact::where('identifier', $model->identifier)->update(['title' => trim($newTitle)]);
-            $this->mount();
-            if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
-                $this->currentArtifact['title'] = trim($newTitle);
-            }
+        if (! $model || ! $this->ownsArtifact($model) || $newTitle === '') {
+            return;
         }
+
+        // Cap the title length to avoid unbounded input being persisted/rendered.
+        $newTitle = \Illuminate\Support\Str::limit($newTitle, 120, '');
+
+        $this->ownedByIdentifier($model->identifier)->update(['title' => $newTitle]);
+        $this->loadArtifacts();
+
+        if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
+            $this->currentArtifact['title'] = $newTitle;
+        }
+    }
+
+    /**
+     * Query scoped to artifacts that share an identifier AND belong to the
+     * authenticated user's conversations — so a bulk delete/rename can never reach
+     * another user's rows even if identifiers collide.
+     */
+    private function ownedByIdentifier(?string $identifier): \Illuminate\Database\Eloquent\Builder
+    {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+
+        return \App\Models\MessageArtifact::query()
+            ->where('identifier', $identifier)
+            ->whereHas('message.conversation', fn ($q) => $q->where('user_id', $userId));
     }
 
     public function createNewArtifact()
@@ -219,6 +265,36 @@ class ArtifactPanel extends Component
         return response()->streamDownload(function () use ($binary) {
             echo $binary;
         }, $filename, ['Content-Type' => 'application/pdf']);
+    }
+
+    public function downloadAsDocx($mode = null)
+    {
+        if (! $this->currentArtifact) {
+            return;
+        }
+
+        $binary = app(\App\Services\DocxRenderer::class)->render($this->currentArtifact, $mode);
+        $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'document') . '.docx';
+
+        return response()->streamDownload(function () use ($binary) {
+            echo $binary;
+        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+    }
+
+    public function downloadAsMarkdown()
+    {
+        if (! $this->currentArtifact) {
+            return;
+        }
+
+        // Match the on-screen preview: strip the YAML front-matter so the .md is the
+        // clean document body (same behaviour as the artifact preview blades).
+        $content = \App\Services\PdfRenderer::stripFrontMatter($this->currentArtifact['content'] ?? '');
+        $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'document') . '.md';
+
+        return response()->streamDownload(function () use ($content) {
+            echo $content;
+        }, $filename, ['Content-Type' => 'text/markdown; charset=utf-8']);
     }
 
     public function toggleFullscreen()
