@@ -51,7 +51,7 @@ class PdfRenderer
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');
-        $mode = in_array($mode, ['skripsi', 'laporan', 'document'], true) ? $mode : 'document';
+        $mode = in_array($mode, ['skripsi', 'laporan', 'jurnal', 'document'], true) ? $mode : 'document';
 
         $html = $this->resolveImages($html);
 
@@ -173,14 +173,17 @@ class PdfRenderer
         $fontKey = strtolower(trim((string) ($meta['font'] ?? '')));
         $font = $fontMap[$fontKey] ?? 'freeserif';
 
-        $fontSize = (float) ($meta['font_size'] ?? 12);
+        $isJurnalMode = ($meta['mode'] ?? '') === 'jurnal';
+        $defaultFontSize = $isJurnalMode ? 10 : 12;
+        $fontSize = (float) ($meta['font_size'] ?? $defaultFontSize);
         if ($fontSize < 8 || $fontSize > 20) {
-            $fontSize = 12;
+            $fontSize = $defaultFontSize;
         }
 
         $spacingMap = ['1' => 1.0, '1.0' => 1.0, '1.15' => 1.15, '1.5' => 1.5, '2' => 2.0, '2.0' => 2.0, 'single' => 1.0, 'double' => 2.0];
         $spacingKey = strtolower(trim((string) ($meta['line_spacing'] ?? '')));
-        $lineSpacing = $spacingMap[$spacingKey] ?? ($academic ? 1.5 : 1.45);
+        $isJurnal = ($meta['mode'] ?? '') === 'jurnal';
+        $lineSpacing = $spacingMap[$spacingKey] ?? ($isJurnal ? 1.0 : ($academic ? 1.5 : 1.45));
 
         $align = strtolower(trim((string) ($meta['align'] ?? '')));
         $align = in_array($align, ['justify', 'left'], true) ? $align : ($academic ? 'justify' : 'left');
@@ -289,6 +292,7 @@ class PdfRenderer
     private function buildPdf(string $title, string $bodyHtml, array $meta, string $mode): string
     {
         $academic = in_array($mode, ['skripsi', 'laporan'], true);
+        $isJurnal = $mode === 'jurnal';
         $fmt = $this->resolveFormat($meta, $academic);
         [$mt, $mr, $mb, $ml] = $fmt['margins'];
 
@@ -315,7 +319,7 @@ class PdfRenderer
         $mpdf->autoScriptToLang = false;
         $mpdf->autoLangToFont = false;
 
-        $css = $this->css($academic, $fmt);
+        $css = $this->css($academic, $fmt, $mode);
         $pageNum = $this->pageNumberMarkup($fmt['pageNumber']);
 
         if ($academic) {
@@ -358,6 +362,13 @@ class PdfRenderer
             //    the TOC page and body both get numbered at the requested position.
             $this->applyPageNumber($mpdf, $pageNum);
             $mpdf->WriteHTML('<div class="body">' . $body . '</div>');
+        } elseif ($isJurnal) {
+            // Jurnal/artikel mode: 2-column layout, no cover, no TOC.
+            $this->applyPageNumber($mpdf, $pageNum);
+            $mpdf->WriteHTML('<style>' . $css . '</style>');
+            $mpdf->SetColumns(2, '', 5);
+            $mpdf->WriteHTML('<div class="body">' . $bodyHtml . '</div>');
+            $mpdf->SetColumns(0);
         } else {
             $this->applyPageNumber($mpdf, $pageNum);
             $mpdf->WriteHTML('<style>' . $css . '</style>');
@@ -459,16 +470,16 @@ class PdfRenderer
             . '</div>';
     }
 
-    private function css(bool $academic, array $fmt): string
+    private function css(bool $academic, array $fmt, string $mode = 'document'): string
     {
         $font = $fmt['font'];
         $size = $fmt['fontSize'];
         $lh = $fmt['lineSpacing'];
         $align = $fmt['align'];
         // Heading sizes scale relative to the chosen body size.
-        $h1 = $academic ? ($size + 2) : ($size + 6);
-        $h2 = $academic ? $size : ($size + 2);
-        $h3 = $academic ? $size : ($size + 0.5);
+        $h1 = $academic ? 16 : ($size + 6);
+        $h2 = $academic ? 14 : ($size + 2);
+        $h3 = $academic ? 12 : ($size + 0.5);
 
         $base = <<<CSS
         body { font-family: {$font}; font-size: {$size}pt; line-height: {$lh}; text-align: {$align}; color: #000; }
@@ -477,8 +488,8 @@ class PdfRenderer
         a { color: #000; text-decoration: none; }
         ul, ol { margin: 0 0 6pt 0; }
         li { margin-bottom: 2pt; }
-        blockquote { border-left: 3px solid #999; padding-left: 10pt; color: #333; font-style: italic; margin: 8pt 0; }
-        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: {$h3}pt; }
+        blockquote { border-left: none; padding-left: 1.27cm; color: #000; font-style: normal; margin: 8pt 0; line-height: 1.0; }
+        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 10pt; }
         th, td { border: 0.6pt solid #000; padding: 5pt 7pt; text-align: left; vertical-align: top; }
         th { background: #efefef; font-weight: bold; }
         table.no-border, table.no-border th, table.no-border td { border: none !important; background: transparent !important; }
@@ -486,7 +497,11 @@ class PdfRenderer
         table.no-border p { text-indent: 0 !important; }
         img, svg { max-width: 100%; }
         figure { text-align: center; margin: 12pt 0; }
-        figcaption { font-size: 10pt; font-style: italic; margin-top: 4pt; }
+        figcaption { font-size: 10pt; text-align: center; margin-top: 4pt; }
+        .table-caption { font-size: 10pt; text-align: center; margin-bottom: 4pt; font-weight: bold; }
+        .daftar-pustaka p { text-indent: 0 !important; margin: 0 0 6pt 0; line-height: 1.0; }
+        .daftar-pustaka ol { list-style: none; padding: 0; margin: 0; }
+        .daftar-pustaka li { margin-bottom: 8pt; line-height: 1.0; text-indent: -1.27cm; padding-left: 1.27cm; }
         pre { background: #f4f4f4; padding: 8pt; border: 0.4pt solid #ddd; font-family: dejavusansmono; font-size: 9.5pt; white-space: pre-wrap; word-wrap: break-word; }
         code { font-family: dejavusansmono; font-size: 10pt; }
         CSS;
@@ -496,8 +511,8 @@ class PdfRenderer
             p { text-indent: 1.27cm; margin: 0; }
             li p, td p, blockquote p, figcaption { text-indent: 0; }
             h1 { font-size: {$h1}pt; text-align: center; text-transform: uppercase; margin: 0 0 18pt 0; }
-            h2 { font-size: {$h2}pt; margin: 16pt 0 8pt 0; }
-            h3 { font-size: {$h3}pt; margin: 12pt 0 6pt 0; }
+            h2 { font-size: {$h2}pt; text-align: left; margin: 16pt 0 8pt 0; }
+            h3 { font-size: {$h3}pt; text-align: left; margin: 12pt 0 6pt 0; }
             .cover { text-align: center; }
             .cover-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; line-height: 1.5; margin-top: 1cm; }
             .cover-logo { margin: 1cm 0; }
@@ -516,6 +531,20 @@ class PdfRenderer
             h1 { font-size: {$h1}pt; margin: 0 0 10pt 0; }
             h2 { font-size: {$h2}pt; margin: 14pt 0 6pt 0; }
             h3 { font-size: {$h3}pt; margin: 10pt 0 5pt 0; }
+            CSS;
+        }
+
+        if ($mode === 'jurnal') {
+            $base .= <<<CSS
+            body { font-size: 10pt; line-height: 1.0; }
+            p { text-indent: 0; margin: 0 0 4pt 0; }
+            h1 { font-size: 12pt; text-align: center; text-transform: uppercase; margin: 0 0 8pt 0; }
+            h2 { font-size: 11pt; text-align: left; margin: 10pt 0 4pt 0; }
+            h3 { font-size: 10pt; text-align: left; margin: 8pt 0 3pt 0; }
+            figcaption { font-size: 8pt; }
+            .table-caption { font-size: 8pt; }
+            table { font-size: 8pt; }
+            .daftar-pustaka li { font-size: 8pt; }
             CSS;
         }
 
