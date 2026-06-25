@@ -25,7 +25,7 @@ class AgentRunner
      * @param AgentTools $tools    Tool registry.
      * @param int        $maxIterations Hard cap on model↔tool round-trips.
      */
-    public function run(array $messages, string $model, AgentTools $tools, int $maxIterations = 8): \Generator
+    public function run(array &$messages, string $model, AgentTools $tools, int $maxIterations = 8): \Generator
     {
         $provider = $this->ai->resolveProvider($model);
         $schemas = $tools->schemas();
@@ -152,7 +152,7 @@ class AgentRunner
      * tag, that text is the final answer. Works over plain chat completions, so it
      * runs on any provider/proxy — including ones that reject the `tools` param.
      */
-    private function runReAct(array $messages, string $model, AgentTools $tools, int $maxIterations): \Generator
+    private function runReAct(array &$messages, string $model, AgentTools $tools, int $maxIterations): \Generator
     {
         // Append the tool protocol + catalogue to the system message.
         $catalogue = '';
