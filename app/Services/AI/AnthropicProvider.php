@@ -5,12 +5,27 @@ namespace App\Services\AI;
 use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
 use Illuminate\Support\Facades\Http;
+use App\Services\AI\CostTracker;
 
 class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 {
+    /**
+     * Determine if the model supports extended thinking.
+     */
+    protected function modelSupportsThinking(string $model): bool
+    {
+        if (str_contains($model, 'haiku')) {
+            return false;
+        }
+        return str_contains($model, 'sonnet') || 
+               str_contains($model, 'opus') || 
+               str_contains($model, 'thinking') || 
+               str_contains($model, 'claude-3-5') ||
+               str_contains($model, 'claude-3-7');
+    }
+
     public function streamResponse(array $messages, string $model): \Generator
     {
-        // Get the API key from the currently authenticated user, or fallback to config
         $user = \Illuminate\Support\Facades\Auth::user();
         $apiKey = $user ? $user->anthropic_api_key : null;
         
@@ -23,57 +38,29 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             return;
         }
 
-        // Map standard messages array to Anthropic format
-        $anthropicMessages = [];
-        $systemPrompt = "";
+        [$anthropicMessages, $systemPrompt] = $this->mapMessagesToAnthropic($messages);
+
+        $supportsThinking = $this->modelSupportsThinking($model);
         
-        foreach ($messages as $msg) {
-            if ($msg['role'] === 'system') {
-                $systemPrompt .= $msg['content'] . "\n";
-            } else {
-                $content = [];
-                
-                // Handle text content
-                if (!empty($msg['content'])) {
-                    $content[] = [
-                        'type' => 'text',
-                        'text' => $msg['content']
-                    ];
-                }
-                
-                // Handle attachments
-                if (!empty($msg['attachments'])) {
-                    foreach ($msg['attachments'] as $att) {
-                        $filePath = storage_path('app/public/' . $att['file_path']);
-                        if (file_exists($filePath)) {
-                            $mimeType = $att['file_type'];
-                            
-                            if (str_starts_with($mimeType, 'image/')) {
-                                $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
-                                $content[] = [
-                                    'type' => 'image',
-                                    'source' => [
-                                        'type' => 'base64',
-                                        'media_type' => $processedImage['mime_type'],
-                                        'data' => $processedImage['data']
-                                    ]
-                                ];
-                            } elseif ($mimeType === 'application/pdf' || $mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || str_ends_with($att['file_name'], '.docx')) {
-                                $text = \App\Helpers\DocumentParser::parseText($att['file_path'], $mimeType, $att['file_name']);
-                                $content[] = [
-                                    'type' => 'text',
-                                    'text' => "\n\n[Isi Dokumen lampiran: {$att['file_name']}]\n" . trim($text) . "\n[Akhir Isi Dokumen]"
-                                ];
-                            }
-                        }
-                    }
-                }
-                
-                $anthropicMessages[] = [
-                    'role' => $msg['role'],
-                    'content' => count($content) === 1 && $content[0]['type'] === 'text' ? $content[0]['text'] : (count($content) > 0 ? $content : '')
-                ];
-            }
+        $payload = array_filter([
+            'model' => $model,
+            'messages' => $anthropicMessages,
+            'system' => $systemPrompt ? [
+                [
+                    'type' => 'text',
+                    'text' => $systemPrompt,
+                    'cache_control' => ['type' => 'ephemeral']
+                ]
+            ] : null,
+            'max_tokens' => $supportsThinking ? 16384 : 4096,
+            'stream' => true,
+        ]);
+
+        if ($supportsThinking) {
+            $payload['thinking'] = [
+                'type' => 'enabled',
+                'budget_tokens' => 4000,
+            ];
         }
 
         $client = new \GuzzleHttp\Client();
@@ -85,22 +72,10 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 'headers' => [
                     'x-api-key' => $apiKey,
                     'anthropic-version' => '2023-06-01',
-                    'anthropic-beta' => 'prompt-caching-2024-07-31',
+                    'anthropic-beta' => 'prompt-caching-2024-07-31,extended-thinking-2025-04-11',
                     'content-type' => 'application/json',
                 ],
-                'json' => array_filter([
-                    'model' => $model,
-                    'messages' => $anthropicMessages,
-                    'system' => $systemPrompt ? [
-                        [
-                            'type' => 'text',
-                            'text' => $systemPrompt,
-                            'cache_control' => ['type' => 'ephemeral']
-                        ]
-                    ] : null,
-                    'max_tokens' => 4096,
-                    'stream' => true,
-                ]),
+                'json' => $payload,
                 'stream' => true,
                 'http_errors' => false,
                 'timeout' => 300,
@@ -140,6 +115,9 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                                 $outputTokens += $data['usage']['output_tokens'];
                             } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['text'])) {
                                 yield $data['delta']['text'];
+                            } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['thinking'])) {
+                                // For plain response streaming, we can prefix thinking or stream it
+                                yield "[Thinking] " . $data['delta']['thinking'];
                             } elseif ($data['type'] === 'error') {
                                 yield "\n[Error from API: " . ($data['error']['message'] ?? 'Unknown error') . "]";
                             }
@@ -152,6 +130,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
                 \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
+                
+                CostTracker::track($model, $inputTokens, $outputTokens);
             }
             
         } catch (\GuzzleHttp\Exception\ConnectException $e) {
@@ -176,6 +156,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 
         [$anthropicMessages, $systemPrompt] = $this->mapMessagesToAnthropic($messages);
 
+        $supportsThinking = $this->modelSupportsThinking($model);
+
         $payload = array_filter([
             'model' => $model,
             'messages' => $anthropicMessages,
@@ -189,22 +171,31 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 'description' => $t['description'] ?? '',
                 'input_schema' => $t['input_schema'] ?? ['type' => 'object', 'properties' => (object) []],
             ], $tools) : null,
-            'max_tokens' => 4096,
+            'max_tokens' => $supportsThinking ? 16384 : 4096,
             'stream' => true,
         ]);
+
+        if ($supportsThinking) {
+            $payload['thinking'] = [
+                'type' => 'enabled',
+                'budget_tokens' => 10000,
+            ];
+            // Extended thinking models need a very large max_tokens setting
+            $payload['max_tokens'] = 32768;
+        }
 
         $client = new \GuzzleHttp\Client();
         $inputTokens = 0;
         $outputTokens = 0;
         $stopReason = 'end';
-        $blocks = []; // index => ['type', 'id', 'name', 'json']
+        $blocks = []; // index => ['type', 'id', 'name', 'json', 'thinking', 'signature']
 
         try {
             $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
                 'headers' => [
                     'x-api-key' => $apiKey,
                     'anthropic-version' => '2023-06-01',
-                    'anthropic-beta' => 'prompt-caching-2024-07-31',
+                    'anthropic-beta' => 'prompt-caching-2024-07-31,extended-thinking-2025-04-11',
                     'content-type' => 'application/json',
                 ],
                 'json' => $payload,
@@ -253,6 +244,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                                 'id' => $block['id'] ?? '',
                                 'name' => $block['name'] ?? '',
                                 'json' => '',
+                                'thinking' => '',
+                                'signature' => '',
                             ];
                             break;
 
@@ -261,6 +254,11 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                             $delta = $data['delta'] ?? [];
                             if (($delta['type'] ?? '') === 'text_delta' && isset($delta['text'])) {
                                 yield ['type' => 'text', 'text' => $delta['text']];
+                            } elseif (($delta['type'] ?? '') === 'thinking_delta' && isset($delta['thinking'])) {
+                                $blocks[$idx]['thinking'] = ($blocks[$idx]['thinking'] ?? '') . $delta['thinking'];
+                                yield ['type' => 'thinking', 'text' => $delta['thinking']];
+                            } elseif (($delta['type'] ?? '') === 'signature_delta' && isset($delta['signature'])) {
+                                $blocks[$idx]['signature'] = ($blocks[$idx]['signature'] ?? '') . $delta['signature'];
                             } elseif (($delta['type'] ?? '') === 'input_json_delta' && isset($delta['partial_json'])) {
                                 $blocks[$idx]['json'] = ($blocks[$idx]['json'] ?? '') . $delta['partial_json'];
                             }
@@ -298,13 +296,30 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
                 \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
+                
+                CostTracker::track($model, $inputTokens, $outputTokens);
             }
         } catch (\Exception $e) {
             yield ['type' => 'text', 'text' => "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]"];
             return ['stop_reason' => 'error', 'error' => $e->getMessage()];
         }
 
-        return ['stop_reason' => $stopReason === 'tool_use' ? 'tool_use' : 'end'];
+        // Find thinking text and signature from content blocks
+        $thinkingText = '';
+        $signatureText = '';
+        foreach ($blocks as $b) {
+            if (($b['type'] ?? '') === 'thinking') {
+                $thinkingText = $b['thinking'] ?? '';
+                $signatureText = $b['signature'] ?? '';
+                break;
+            }
+        }
+
+        return [
+            'stop_reason' => $stopReason === 'tool_use' ? 'tool_use' : 'end',
+            'thinking' => $thinkingText,
+            'signature' => $signatureText,
+        ];
     }
 
     /**
@@ -321,6 +336,15 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 
             if ($role === 'system') {
                 $systemPrompt .= $msg['content'] . "\n";
+                continue;
+            }
+
+            // Structured Content Array passthrough
+            if (is_array($msg['content'])) {
+                $out[] = [
+                    'role' => $role,
+                    'content' => $msg['content']
+                ];
                 continue;
             }
 
@@ -356,7 +380,7 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 continue;
             }
 
-            // Plain user / assistant — text + attachments (images, parsed docs).
+            // Plain user / assistant — text + attachments
             $content = [];
             if (!empty($msg['content'])) {
                 $content[] = ['type' => 'text', 'text' => (string) $msg['content']];

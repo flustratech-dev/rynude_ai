@@ -7,34 +7,32 @@ use App\Services\AI\Contracts\SupportsToolUse;
 /**
  * Drives the agentic loop: call the model, run any tools it requests, feed the
  * results back, and repeat until the model answers without asking for tools.
- *
- * Provider-agnostic — it relies on SupportsToolUse. Providers that don't support
- * tools (or endpoints that reject them) degrade gracefully to plain chat.
  */
 class AgentRunner
 {
     public function __construct(private AiService $ai) {}
 
     /**
-     * Run the loop, yielding UI events:
-     *   ['type' => 'text', 'text' => string]
-     *   ['type' => 'tool', 'name' => string, 'input' => array, 'status' => 'running'|'done', 'summary' => string]
+     * Run the loop, yielding UI events.
      *
      * @param array      $messages Unified message history (system first).
      * @param string     $model    Selected model.
      * @param AgentTools $tools    Tool registry.
      * @param int        $maxIterations Hard cap on model↔tool round-trips.
      */
-    public function run(array &$messages, string $model, AgentTools $tools, int $maxIterations = 8): \Generator
+    public function run(array &$messages, string $model, AgentTools $tools, int $maxIterations = 100): \Generator
     {
         $provider = $this->ai->resolveProvider($model);
         $schemas = $tools->schemas();
 
         // No tool support → plain chat passthrough.
         if (!($provider instanceof SupportsToolUse) || empty($schemas)) {
+            $assistantText = '';
             foreach ($this->ai->streamResponse($messages, $model) as $chunk) {
+                $assistantText .= $chunk;
                 yield ['type' => 'text', 'text' => $chunk];
             }
+            $messages[] = ['role' => 'assistant', 'content' => $assistantText];
             return;
         }
 
@@ -45,6 +43,7 @@ class AgentRunner
 
         for ($iter = 0; $iter < $maxIterations; $iter++) {
             $assistantText = '';
+            $thinkingText = '';
             $toolCalls = [];
 
             $turn = $provider->streamAgentTurn($messages, $model, $toolsEnabled ? $schemas : []);
@@ -53,19 +52,23 @@ class AgentRunner
                 if (($event['type'] ?? '') === 'text') {
                     $assistantText .= $event['text'];
                     yield ['type' => 'text', 'text' => $event['text']];
+                } elseif (($event['type'] ?? '') === 'thinking') {
+                    $thinkingText .= $event['text'];
+                    yield ['type' => 'thinking', 'text' => $event['text']];
                 } elseif (($event['type'] ?? '') === 'tool_use') {
                     $toolCalls[] = $event;
                 }
             }
 
             $result = $turn->getReturn() ?? ['stop_reason' => 'end'];
+            $signatureText = $result['signature'] ?? '';
+            $thinkingTextFromReturn = $result['thinking'] ?? '';
+            if (empty($thinkingText) && !empty($thinkingTextFromReturn)) {
+                $thinkingText = $thinkingTextFromReturn;
+            }
 
             if (($result['stop_reason'] ?? '') === 'error') {
                 if (!$retriedPlain) {
-                    // The endpoint choked on the tool protocol (no tool support, or a
-                    // translating proxy that can't round-trip tool messages). Clear the
-                    // error text we streamed and degrade to a plain-chat answer — using
-                    // any tool output already gathered to keep it grounded.
                     $retriedPlain = true;
                     $toolsEnabled = false;
                     yield ['type' => 'reset'];
@@ -74,28 +77,50 @@ class AgentRunner
                         yield from $this->finalizeWithPlainChat($baseMessages, $toolTranscript, $model);
                         return;
                     }
-                    // No native tool support (e.g. a translating proxy). Run a
-                    // text-protocol ReAct loop over plain chat instead — works anywhere.
                     yield from $this->runReAct($baseMessages, $model, $tools, $maxIterations);
                     return;
                 }
-                return; // already degraded once — give up cleanly
+                return;
             }
+
+            // Construct structured assistant turn (thinking + text + tool_use blocks)
+            $contentBlocks = [];
+            if (!empty($thinkingText)) {
+                $contentBlocks[] = [
+                    'type' => 'thinking',
+                    'thinking' => $thinkingText,
+                    'signature' => $signatureText,
+                ];
+            }
+            if ($assistantText !== '') {
+                $contentBlocks[] = [
+                    'type' => 'text',
+                    'text' => $assistantText,
+                ];
+            }
+
+            if (!empty($toolCalls)) {
+                foreach ($toolCalls as $call) {
+                    $contentBlocks[] = [
+                        'type' => 'tool_use',
+                        'id' => $call['id'],
+                        'name' => $call['name'],
+                        'input' => $call['input'],
+                    ];
+                }
+            }
+
+            // Append assistant turn to messages reference
+            $messages[] = [
+                'role' => 'assistant',
+                'content' => count($contentBlocks) === 1 && $contentBlocks[0]['type'] === 'text' 
+                    ? $contentBlocks[0]['text'] 
+                    : $contentBlocks,
+            ];
 
             if (empty($toolCalls)) {
                 return; // model gave its final answer
             }
-
-            // Record the assistant turn (text + the tool calls it requested).
-            $messages[] = [
-                'role' => 'assistant',
-                'content' => $assistantText,
-                'tool_calls' => array_map(fn ($c) => [
-                    'id' => $c['id'],
-                    'name' => $c['name'],
-                    'input' => $c['input'],
-                ], $toolCalls),
-            ];
 
             // Execute each tool and append its result.
             foreach ($toolCalls as $call) {
@@ -128,8 +153,7 @@ class AgentRunner
 
     /**
      * Produce a final answer via plain chat (no tools), folding the gathered tool
-     * output into the prompt. Used when the endpoint can't continue a tool
-     * conversation but we already have useful context to answer from.
+     * output into the prompt.
      */
     private function finalizeWithPlainChat(array $baseMessages, string $toolTranscript, string $model): \Generator
     {
@@ -139,22 +163,19 @@ class AgentRunner
                 . "do not ask to run more tools.\n\n" . $toolTranscript,
         ];
 
+        $assistantText = '';
         foreach ($this->ai->streamResponse($baseMessages, $model) as $chunk) {
+            $assistantText .= $chunk;
             yield ['type' => 'text', 'text' => $chunk];
         }
+        $baseMessages[] = ['role' => 'assistant', 'content' => $assistantText];
     }
 
     /**
      * Text-protocol (ReAct) agent loop for endpoints without native tool support.
-     *
-     * The model requests a tool by emitting `<tool>name {json}</tool>`; we execute
-     * it and feed the result back as a user message. When it answers without a tool
-     * tag, that text is the final answer. Works over plain chat completions, so it
-     * runs on any provider/proxy — including ones that reject the `tools` param.
      */
     private function runReAct(array &$messages, string $model, AgentTools $tools, int $maxIterations): \Generator
     {
-        // Append the tool protocol + catalogue to the system message.
         $catalogue = '';
         foreach ($tools->schemas() as $t) {
             $props = array_keys($t['input_schema']['properties'] ?? []);
@@ -186,8 +207,8 @@ class AgentRunner
             $call = $this->parseReActCall($text);
 
             if ($call === null) {
-                // No tool requested — this is the final answer.
                 yield ['type' => 'text', 'text' => trim($text)];
+                $messages[] = ['role' => 'assistant', 'content' => trim($text)];
                 return;
             }
 
@@ -209,17 +230,17 @@ class AgentRunner
             ];
         }
 
-        // Hit the step cap — ask for a final answer from what we have.
         $messages[] = ['role' => 'user', 'content' => 'Stop using tools now and give your best final answer from what you have gathered.'];
+        $assistantText = '';
         foreach ($this->ai->streamResponse($messages, $model) as $chunk) {
+            $assistantText .= $chunk;
             yield ['type' => 'text', 'text' => $chunk];
         }
+        $messages[] = ['role' => 'assistant', 'content' => $assistantText];
     }
 
     /**
      * Extract a <tool>name {json}</tool> request from model output, if present.
-     *
-     * @return array{name: string, input: array}|null
      */
     private function parseReActCall(string $text): ?array
     {
@@ -237,7 +258,6 @@ class AgentRunner
                     $input = $decoded;
                 }
             } else {
-                // Positional argument — map to the tool's primary parameter.
                 $val = trim($rest, " \t\n\r\"'`");
                 if ($val !== '') {
                     $key = in_array($name, ['search_code', 'web_search'], true) ? 'query' : 'path';
@@ -249,4 +269,3 @@ class AgentRunner
         return ['name' => $name, 'input' => $input];
     }
 }
-

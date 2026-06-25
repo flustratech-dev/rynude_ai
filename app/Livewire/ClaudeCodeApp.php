@@ -536,6 +536,9 @@ class ClaudeCodeApp extends Component
             . "up-to-date external facts. Chain several tool calls as needed, then give a precise answer "
             . "grounded in what you read. Do NOT fabricate file paths or code — verify with tools first.";
 
+        // Auto-inject workspace tech stack and instructions
+        $systemPrompt .= \App\Services\AI\WorkspaceContext::getContext(env('RYNUDE_WORKSPACE', ''));
+
         // ── Persistent conversation memory (durable across turns & models) ──
         $memoryService = app(\App\Services\AI\ConversationMemoryService::class);
         if ($this->conversation) {
@@ -592,6 +595,7 @@ class ClaudeCodeApp extends Component
         $runner   = new \App\Services\AI\AgentRunner(new \App\Services\AI\AiService());
         $rendered = '';   // finalized markdown shown to the user
         $pending  = '';   // transient "tool running…" line
+        $thinkingText = '';
 
         foreach ($runner->run($aiMessages, $this->selectedModel, $tools) as $event) {
             // Honour the stop button.
@@ -604,8 +608,11 @@ class ClaudeCodeApp extends Component
                 // Runner is discarding a failed turn's output before a clean retry.
                 $rendered = '';
                 $pending  = '';
+                $thinkingText = '';
             } elseif ($event['type'] === 'text') {
                 $rendered .= $event['text'];
+            } elseif ($event['type'] === 'thinking') {
+                $thinkingText .= $event['text'];
             } elseif ($event['type'] === 'tool') {
                 $summary = $this->toolInputSummary($event['input']);
                 if ($event['status'] === 'running') {
@@ -621,9 +628,11 @@ class ClaudeCodeApp extends Component
                 }
             }
 
+            $thinkingOutput = !empty($thinkingText) ? "\n\n> 💭 *Thinking:*\n> " . str_replace("\n", "\n> ", trim($thinkingText)) . "\n\n" : "";
+
             $this->stream(
                 to: 'message-stream',
-                content: \Illuminate\Support\Str::markdown($rendered . $pending),
+                content: \Illuminate\Support\Str::markdown($thinkingOutput . $rendered . $pending),
                 replace: true
             );
         }
@@ -649,7 +658,14 @@ class ClaudeCodeApp extends Component
                 'content'         => $fullResponse,
             ]);
 
-            $this->messages[] = ['role' => 'assistant', 'content' => $fullResponse];
+            $already = false;
+            $last = end($this->messages);
+            if ($last && $last['role'] === 'assistant' && $last['content'] === $fullResponse) {
+                $already = true;
+            }
+            if (!$already) {
+                $this->messages[] = ['role' => 'assistant', 'content' => $fullResponse];
+            }
             $this->sessionTokens += (int)(strlen($fullResponse) / 4);
 
             // Persist any newly opened files into the conversation metadata.

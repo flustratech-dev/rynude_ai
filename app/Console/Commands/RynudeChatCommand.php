@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use App\Services\AI\AiService;
 use App\Services\AI\AgentRunner;
 use App\Services\AI\AgentTools;
+use App\Services\AI\WorkspaceContext;
+use App\Services\AI\CostTracker;
 use App\Models\User;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -41,6 +43,9 @@ class RynudeChatCommand extends Command
         $workspace = rtrim($this->option('workspace') ?: getcwd(), '\\/');
         $model = $this->option('model');
 
+        // Reset session cost at startup
+        CostTracker::reset();
+
         // Authenticate as the first user (since Rynude is usually a single-user local tool)
         $user = User::first();
         if (!$user) {
@@ -69,6 +74,9 @@ class RynudeChatCommand extends Command
             . "Do not just output code blocks if the user asks you to implement a feature; write the files!\n\n"
             . "LOCAL WORKSPACE: " . $workspace;
 
+        // Auto-inject tech stack & custom files context (RYNUDE.md, AGENTS.md, etc.)
+        $systemPrompt .= WorkspaceContext::getContext($workspace);
+
         $messages = [
             ['role' => 'system', 'content' => $systemPrompt]
         ];
@@ -93,10 +101,10 @@ class RynudeChatCommand extends Command
 <fg=red>│</>               <fg=red>▀▄   ▄▀</>                  <fg=red>│</> with instructions for Rynude                 <fg=red>│</>
 <fg=red>│</>              <fg=red>▄█▀███▀█▄</>                 <fg=red>│</> <fg=gray>───────────────────────────────────────────</>  <fg=red>│</>
 <fg=red>│</>             <fg=red>█▀███████▀█</>                <fg=red>│</> <fg=red>What's new</>                                   <fg=red>│</>
-<fg=red>│</>             <fg=red>█ █▀▀▀▀▀█ █</>                <fg=red>│</> Added `write_file` and `edit_file` tools     <fg=red>│</>
+<fg=red>│</>             <fg=red>█ █▀▀▀▀▀█ █</>                <fg=red>│</> Added `bash` and `grep_search` tools         <fg=red>│</>
 <fg=red>│</>                <fg=red>▀▀   ▀▀</>                  <fg=red>│</> Added model picker with /model               <fg=red>│</>
-<fg=red>│</>                                        <fg=red>│</> Added CLI slash commands like /clear         <fg=red>│</>
-<fg=red>│</> rynudecode user • Local Workspace      <fg=red>│</> /release-notes for more                      <fg=red>│</>
+<fg=red>│</>                                        <fg=red>│</> Added cost tracker with /cost               <fg=red>│</>
+<fg=red>│</> rynudecode user • Local Workspace      <fg=red>│</> /compact to summarize conversation          <fg=red>│</>
 <fg=red>│</> {$padLeft} <fg=red>│</>                                              <fg=red>│</>
 <fg=red>└───────────────────────────────────────────────────────────────────────────────────────┘</>
 EOT;
@@ -126,11 +134,48 @@ EOT;
             } elseif ($command === '/help') {
                 $this->output->writeln('');
                 $this->output->writeln('<info>Available Slash Commands:</info>');
-                $this->output->writeln('  <comment>/help</comment>    Show this help message');
-                $this->output->writeln('  <comment>/clear</comment>   Clear the terminal screen');
-                $this->output->writeln('  <comment>/model</comment>   Change the AI model');
-                $this->output->writeln('  <comment>/exit</comment>    Exit the CLI');
+                $this->output->writeln('  <comment>/help</comment>     Show this help message');
+                $this->output->writeln('  <comment>/clear</comment>    Clear the terminal screen');
+                $this->output->writeln('  <comment>/model</comment>    Change the AI model');
+                $this->output->writeln('  <comment>/cost</comment>     Show session tokens and estimated cost in USD');
+                $this->output->writeln('  <comment>/compact</comment>  Summarize and compress conversation context');
+                $this->output->writeln('  <comment>/exit</comment>     Exit the CLI');
                 $this->output->writeln('');
+                continue;
+            } elseif ($command === '/cost') {
+                $summary = CostTracker::getSessionSummary();
+                $this->output->writeln('');
+                $this->output->writeln('<info>💰 Session Cost & Usage Summary:</info>');
+                $this->output->writeln("  Estimated Cost: <comment>\${$summary['cost']} USD</comment>");
+                $this->output->writeln("  Input Tokens:   <comment>{$summary['input_tokens']}</comment>");
+                $this->output->writeln("  Output Tokens:  <comment>{$summary['output_tokens']}</comment>");
+                $this->output->writeln("  Total Tokens:   <comment>{$summary['total_tokens']}</comment>");
+                $this->output->writeln('');
+                continue;
+            } elseif ($command === '/compact') {
+                $this->output->writeln("\n<comment>⠋ Compacting conversation using AI summarization...</comment>");
+                
+                try {
+                    $summaryPrompt = "Summarize the key decisions, codebase facts, and progress from the conversation so far in under 300 words. Be extremely precise.";
+                    $summaryMessages = $messages;
+                    $summaryMessages[] = ['role' => 'user', 'content' => $summaryPrompt];
+                    
+                    $summaryText = "";
+                    foreach ($aiService->streamResponse($summaryMessages, $model) as $chunk) {
+                        $summaryText .= $chunk;
+                    }
+                    
+                    // Compact messages
+                    $messages = [
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'assistant', 'content' => "Summary of the conversation so far:\n" . trim($summaryText)]
+                    ];
+                    
+                    $this->output->writeln("\r\033[K<info>✔ Conversation compacted successfully!</info>\n");
+                    $this->output->writeln("<fg=gray>" . trim($summaryText) . "</>\n");
+                } catch (\Exception $e) {
+                    error("\nFailed to compact conversation: " . $e->getMessage());
+                }
                 continue;
             } elseif ($command === '/model') {
                 $options = [
@@ -188,6 +233,9 @@ EOT;
                         $text = $event['text'] ?? '';
                         $fullResponse .= $text;
                         $output->write($text);
+                    } elseif ($type === 'thinking') {
+                        $text = $event['text'] ?? '';
+                        $output->write("<fg=gray>{$text}</>");
                     } elseif ($type === 'tool') {
                         $status = $event['status'] ?? '';
                         $name = $event['name'] ?? '';
@@ -201,11 +249,9 @@ EOT;
                                 $paramStr = ' "' . $inputParams['query'] . '"';
                             }
                             
-                            // Print on current line without newline
                             $output->write("\r<comment>⠋ {$name}{$paramStr}...</comment>");
                         } elseif ($status === 'done') {
                             $summary = $event['summary'] ?? '';
-                            // Clear line and write success
                             $output->write("\r\033[K"); // Clear the line
                             $output->writeln("<info>✔ {$name} <fg=gray>({$summary})</></info>");
                         }
@@ -224,24 +270,18 @@ EOT;
             $this->output->writeln("");
 
             if (!empty(trim($fullResponse))) {
+                // Save to database
                 Message::create([
                     'conversation_id' => $conversation->id,
                     'role' => 'assistant',
                     'content' => $fullResponse,
                 ]);
-                $messages[] = ['role' => 'assistant', 'content' => $fullResponse];
-                
-                // Add tool results context back into messages sequence if needed
-                // AgentRunner actually handles modifying the $messages array by reference in PHP? No, it yields.
-                // Wait, AgentRunner in `run()` modifies `$messages`?
-                // `run(array $messages, ...)` is passed by value in PHP. 
-                // So the loop in AgentRunner doesn't update our `$messages` array for the next turn.
-                // We need to keep our `$messages` updated.
-                // Since AgentRunner yields text and tools, we should reconstruct the assistant message 
-                // and tool calls if needed, OR we just append the final text.
-                // For a continuous conversation, we just append the text.
-                // But wait, the context of tool calls might be lost for the NEXT turn.
-                // For simplicity, we just keep the final text for now.
+
+                // Append assistant turn to in-memory messages if not already done by reference in AgentRunner
+                $lastMsg = end($messages);
+                if ($lastMsg === false || $lastMsg['role'] !== 'assistant') {
+                    $messages[] = ['role' => 'assistant', 'content' => $fullResponse];
+                }
             }
         }
 
