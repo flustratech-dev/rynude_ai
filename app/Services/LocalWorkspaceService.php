@@ -89,6 +89,11 @@ class LocalWorkspaceService
      */
     protected function isIgnored(string $relativePath, array $patterns): bool
     {
+        // Explicitly ignore .rynude folder (backups, settings) to avoid loops
+        if ($relativePath === '.rynude' || str_starts_with($relativePath, '.rynude/')) {
+            return true;
+        }
+
         // 1. Check hardcoded directories
         foreach ($this->ignoreDirs as $ignoreDir) {
             if ($relativePath === $ignoreDir || str_starts_with($relativePath, $ignoreDir . '/')) {
@@ -141,8 +146,13 @@ class LocalWorkspaceService
     public function writeFile(string $basePath, string $relativePath, string $content): bool
     {
         $fullPath = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . ltrim($relativePath, '/\\');
-        $directory = dirname($fullPath);
         
+        // Backup before overwrite if file already exists
+        if (File::exists($fullPath) && File::isFile($fullPath)) {
+            $this->backupFile($basePath, $relativePath);
+        }
+
+        $directory = dirname($fullPath);
         if (!File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true, true);
         }
@@ -162,6 +172,7 @@ class LocalWorkspaceService
         }
 
         $content = File::get($fullPath);
+        $newContent = '';
 
         if ($startLine !== null && $endLine !== null) {
             $lines = explode("\n", $content);
@@ -190,9 +201,85 @@ class LocalWorkspaceService
         }
         
         if ($content !== $newContent) {
+            // Backup before editing
+            $this->backupFile($basePath, $relativePath);
             return File::put($fullPath, $newContent) !== false;
         }
 
         return false;
+    }
+
+    /**
+     * Backup file before overwrite or edit.
+     */
+    protected function backupFile(string $basePath, string $relativePath): void
+    {
+        $fullPath = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . ltrim($relativePath, '/\\');
+        if (!File::exists($fullPath) || !File::isFile($fullPath)) {
+            return;
+        }
+
+        $backupRoot = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . '.rynude' . DIRECTORY_SEPARATOR . 'backups';
+        $manifestPath = $backupRoot . DIRECTORY_SEPARATOR . 'manifest.json';
+
+        $manifest = [];
+        if (File::exists($manifestPath)) {
+            $manifest = json_decode(File::get($manifestPath), true) ?: [];
+        }
+
+        $timestamp = date('Ymd_His');
+        $backupFilename = $timestamp . '_' . uniqid() . '_' . str_replace(['/', '\\'], '_', $relativePath);
+        $backupPath = $backupRoot . DIRECTORY_SEPARATOR . $backupFilename;
+
+        if (!File::isDirectory($backupRoot)) {
+            File::makeDirectory($backupRoot, 0755, true, true);
+        }
+
+        File::copy($fullPath, $backupPath);
+
+        $manifest[] = [
+            'timestamp' => time(),
+            'relative_path' => $relativePath,
+            'backup_file' => $backupFilename,
+        ];
+        File::put($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * Restore the last backup file, popping it from the manifest stack.
+     */
+    public function restoreLastBackup(string $basePath): ?string
+    {
+        $backupRoot = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . '.rynude' . DIRECTORY_SEPARATOR . 'backups';
+        $manifestPath = $backupRoot . DIRECTORY_SEPARATOR . 'manifest.json';
+        if (!File::exists($manifestPath)) {
+            return null;
+        }
+
+        $manifest = json_decode(File::get($manifestPath), true) ?: [];
+        if (empty($manifest)) {
+            return null;
+        }
+
+        $lastBackup = array_pop($manifest);
+        $backupFile = $lastBackup['backup_file'];
+        $relativePath = $lastBackup['relative_path'];
+
+        $backupPath = $backupRoot . DIRECTORY_SEPARATOR . $backupFile;
+        $originalFullPath = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . ltrim($relativePath, '/\\');
+
+        if (File::exists($backupPath)) {
+            $dir = dirname($originalFullPath);
+            if (!File::isDirectory($dir)) {
+                File::makeDirectory($dir, 0755, true, true);
+            }
+            File::copy($backupPath, $originalFullPath);
+            File::delete($backupPath);
+
+            File::put($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT));
+            return $relativePath;
+        }
+
+        return null;
     }
 }

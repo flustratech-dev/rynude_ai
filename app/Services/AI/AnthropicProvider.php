@@ -38,12 +38,41 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             return;
         }
 
+        $modelMap = [
+            'claude-sonnet-4-6' => 'claude-3-5-sonnet-20241022',
+            'claude-haiku-4-6' => 'claude-3-5-haiku-20241022',
+            'claude-haiku-4-5' => 'claude-3-5-haiku-20241022',
+            'claude-opus-4-8' => 'claude-3-opus-20240229',
+        ];
+        $apiModel = $modelMap[$model] ?? $model;
+
         [$anthropicMessages, $systemPrompt] = $this->mapMessagesToAnthropic($messages);
 
-        $supportsThinking = $this->modelSupportsThinking($model);
+        // Optimize message list prompt caching: find the last user message and cache it
+        if (count($anthropicMessages) >= 3) {
+            for ($i = count($anthropicMessages) - 1; $i >= 0; $i--) {
+                if ($anthropicMessages[$i]['role'] === 'user') {
+                    if (is_array($anthropicMessages[$i]['content'])) {
+                        $lastBlockIdx = count($anthropicMessages[$i]['content']) - 1;
+                        $anthropicMessages[$i]['content'][$lastBlockIdx]['cache_control'] = ['type' => 'ephemeral'];
+                    } else {
+                        $anthropicMessages[$i]['content'] = [
+                            [
+                                'type' => 'text',
+                                'text' => $anthropicMessages[$i]['content'],
+                                'cache_control' => ['type' => 'ephemeral']
+                            ]
+                        ];
+                    }
+                    break;
+                }
+            }
+        }
+
+        $supportsThinking = $this->modelSupportsThinking($apiModel);
         
         $payload = array_filter([
-            'model' => $model,
+            'model' => $apiModel,
             'messages' => $anthropicMessages,
             'system' => $systemPrompt ? [
                 [
@@ -63,33 +92,71 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             ];
         }
 
-        $client = new \GuzzleHttp\Client();
+        $client = $this->getClient();
         $inputTokens = 0;
         $outputTokens = 0;
+        $cacheReadTokens = 0;
+        $cacheWriteTokens = 0;
         
-        try {
-            $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
-                'headers' => [
-                    'x-api-key' => $apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'anthropic-beta' => 'prompt-caching-2024-07-31,extended-thinking-2025-04-11',
-                    'content-type' => 'application/json',
-                ],
-                'json' => $payload,
-                'stream' => true,
-                'http_errors' => false,
-                'timeout' => 300,
-            ]);
+        $maxRetries = 3;
+        $retryDelay = 1;
+        $response = null;
 
-            if ($response->getStatusCode() === 429) {
-                yield "\n[Error: Rate limit exceeded. Please try again later.]";
+        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
+                    'headers' => [
+                        'x-api-key' => $apiKey,
+                        'anthropic-version' => '2023-06-01',
+                        'anthropic-beta' => 'prompt-caching-2024-07-31,extended-thinking-2025-04-11',
+                        'content-type' => 'application/json',
+                    ],
+                    'json' => $payload,
+                    'stream' => true,
+                    'http_errors' => false,
+                    'timeout' => 300,
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                if ($statusCode === 200) {
+                    break;
+                }
+
+                if (($statusCode === 429 || $statusCode >= 500) && $attempt < $maxRetries) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+
+                if ($statusCode === 429) {
+                    yield "\n[Error: Rate limit exceeded. Please try again later.]";
+                    return;
+                } else {
+                    $errorBody = json_decode($response->getBody()->getContents(), true);
+                    yield "\n[Error: API returned status code " . $statusCode . " - " . ($errorBody['error']['message'] ?? 'Unknown error') . "]";
+                    return;
+                }
+
+            } catch (\GuzzleHttp\Exception\ConnectException $e) {
+                if ($attempt < $maxRetries) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                yield "\n[Error: Connection timeout. Please check your network and try again.]";
                 return;
-            } elseif ($response->getStatusCode() !== 200) {
-                $errorBody = json_decode($response->getBody()->getContents(), true);
-                yield "\n[Error: API returned status code " . $response->getStatusCode() . " - " . ($errorBody['error']['message'] ?? 'Unknown error') . "]";
+            } catch (\Exception $e) {
+                if ($attempt < $maxRetries) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                yield "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]";
                 return;
             }
+        }
 
+        try {
             $body = $response->getBody();
             $buffer = '';
             while (!$body->eof()) {
@@ -110,13 +177,18 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                         $data = json_decode($jsonStr, true);
                         if ($data && isset($data['type'])) {
                             if ($data['type'] === 'message_start' && isset($data['message']['usage']['input_tokens'])) {
-                                $inputTokens += $data['message']['usage']['input_tokens'];
+                                $usage = $data['message']['usage'] ?? [];
+                                $inputTokens += $usage['input_tokens'] ?? 0;
+                                $cacheReadTokens += $usage['cache_read_input_tokens'] ?? 0;
+                                $cacheWriteTokens += $usage['cache_creation_input_tokens'] ?? 0;
                             } elseif ($data['type'] === 'message_delta' && isset($data['usage']['output_tokens'])) {
-                                $outputTokens += $data['usage']['output_tokens'];
+                                $usage = $data['usage'] ?? [];
+                                $outputTokens += $usage['output_tokens'] ?? 0;
+                                $cacheReadTokens += $usage['cache_read_input_tokens'] ?? 0;
+                                $cacheWriteTokens += $usage['cache_creation_input_tokens'] ?? 0;
                             } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['text'])) {
                                 yield $data['delta']['text'];
                             } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['thinking'])) {
-                                // For plain response streaming, we can prefix thinking or stream it
                                 yield "[Thinking] " . $data['delta']['thinking'];
                             } elseif ($data['type'] === 'error') {
                                 yield "\n[Error from API: " . ($data['error']['message'] ?? 'Unknown error') . "]";
@@ -131,11 +203,9 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
                 
-                CostTracker::track($model, $inputTokens, $outputTokens);
+                CostTracker::track($model, $inputTokens, $outputTokens, $cacheReadTokens, $cacheWriteTokens);
             }
             
-        } catch (\GuzzleHttp\Exception\ConnectException $e) {
-            yield "\n[Error: Connection timeout. Please check your network and try again.]";
         } catch (\Exception $e) {
             yield "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]";
         }
@@ -154,23 +224,58 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             return ['stop_reason' => 'error', 'error' => 'missing_key'];
         }
 
+        $modelMap = [
+            'claude-sonnet-4-6' => 'claude-3-5-sonnet-20241022',
+            'claude-haiku-4-6' => 'claude-3-5-haiku-20241022',
+            'claude-haiku-4-5' => 'claude-3-5-haiku-20241022',
+            'claude-opus-4-8' => 'claude-3-opus-20240229',
+        ];
+        $apiModel = $modelMap[$model] ?? $model;
+
         [$anthropicMessages, $systemPrompt] = $this->mapMessagesToAnthropic($messages);
 
-        $supportsThinking = $this->modelSupportsThinking($model);
+        // Optimize message list prompt caching: find the last user message and cache it
+        if (count($anthropicMessages) >= 3) {
+            for ($i = count($anthropicMessages) - 1; $i >= 0; $i--) {
+                if ($anthropicMessages[$i]['role'] === 'user') {
+                    if (is_array($anthropicMessages[$i]['content'])) {
+                        $lastBlockIdx = count($anthropicMessages[$i]['content']) - 1;
+                        $anthropicMessages[$i]['content'][$lastBlockIdx]['cache_control'] = ['type' => 'ephemeral'];
+                    } else {
+                        $anthropicMessages[$i]['content'] = [
+                            [
+                                'type' => 'text',
+                                'text' => $anthropicMessages[$i]['content'],
+                                'cache_control' => ['type' => 'ephemeral']
+                            ]
+                        ];
+                    }
+                    break;
+                }
+            }
+        }
+
+        $supportsThinking = $this->modelSupportsThinking($apiModel);
 
         $payload = array_filter([
-            'model' => $model,
+            'model' => $apiModel,
             'messages' => $anthropicMessages,
             'system' => $systemPrompt ? [[
                 'type' => 'text',
                 'text' => $systemPrompt,
                 'cache_control' => ['type' => 'ephemeral'],
             ]] : null,
-            'tools' => !empty($tools) ? array_map(fn ($t) => [
-                'name' => $t['name'],
-                'description' => $t['description'] ?? '',
-                'input_schema' => $t['input_schema'] ?? ['type' => 'object', 'properties' => (object) []],
-            ], $tools) : null,
+            'tools' => !empty($tools) ? array_map(function ($t, $index) use ($tools) {
+                $toolData = [
+                    'name' => $t['name'],
+                    'description' => $t['description'] ?? '',
+                    'input_schema' => $t['input_schema'] ?? ['type' => 'object', 'properties' => (object) []],
+                ];
+                if ($index === count($tools) - 1) {
+                    $toolData['cache_control'] = ['type' => 'ephemeral'];
+                }
+                return $toolData;
+            }, $tools, array_keys($tools)) : null,
             'max_tokens' => $supportsThinking ? 16384 : 4096,
             'stream' => true,
         ]);
@@ -180,37 +285,77 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 'type' => 'enabled',
                 'budget_tokens' => 10000,
             ];
-            // Extended thinking models need a very large max_tokens setting
             $payload['max_tokens'] = 32768;
         }
 
-        $client = new \GuzzleHttp\Client();
+        $client = $this->getClient();
         $inputTokens = 0;
         $outputTokens = 0;
+        $cacheReadTokens = 0;
+        $cacheWriteTokens = 0;
         $stopReason = 'end';
-        $blocks = []; // index => ['type', 'id', 'name', 'json', 'thinking', 'signature']
+        $blocks = [];
+
+        $maxRetries = 3;
+        $retryDelay = 1;
+        $response = null;
+
+        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
+                    'headers' => [
+                        'x-api-key' => $apiKey,
+                        'anthropic-version' => '2023-06-01',
+                        'anthropic-beta' => 'prompt-caching-2024-07-31,extended-thinking-2025-04-11',
+                        'content-type' => 'application/json',
+                    ],
+                    'json' => $payload,
+                    'stream' => true,
+                    'http_errors' => false,
+                    'timeout' => 300,
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                if ($statusCode === 200) {
+                    break;
+                }
+
+                if (($statusCode === 429 || $statusCode >= 500) && $attempt < $maxRetries) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+
+                if ($statusCode === 429) {
+                    yield ['type' => 'text', 'text' => "\n[Error: Rate limit exceeded. Please try again later.]"];
+                    return ['stop_reason' => 'error', 'error' => 'rate_limit'];
+                } else {
+                    $errorBody = json_decode($response->getBody()->getContents(), true);
+                    $msg = $errorBody['error']['message'] ?? ('HTTP ' . $statusCode);
+                    yield ['type' => 'text', 'text' => "\n[Error: {$msg}]"];
+                    return ['stop_reason' => 'error', 'error' => $msg];
+                }
+
+            } catch (\GuzzleHttp\Exception\ConnectException $e) {
+                if ($attempt < $maxRetries) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                yield ['type' => 'text', 'text' => "\n[Error: Connection timeout. Please check your network and try again.]"];
+                return ['stop_reason' => 'error', 'error' => $e->getMessage()];
+            } catch (\Exception $e) {
+                if ($attempt < $maxRetries) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                yield ['type' => 'text', 'text' => "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]"];
+                return ['stop_reason' => 'error', 'error' => $e->getMessage()];
+            }
+        }
 
         try {
-            $response = $client->post(config('services.anthropic.base_url', 'https://api.anthropic.com/v1/messages'), [
-                'headers' => [
-                    'x-api-key' => $apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'anthropic-beta' => 'prompt-caching-2024-07-31,extended-thinking-2025-04-11',
-                    'content-type' => 'application/json',
-                ],
-                'json' => $payload,
-                'stream' => true,
-                'http_errors' => false,
-                'timeout' => 300,
-            ]);
-
-            if ($response->getStatusCode() !== 200) {
-                $errorBody = json_decode($response->getBody()->getContents(), true);
-                $msg = $errorBody['error']['message'] ?? ('HTTP ' . $response->getStatusCode());
-                yield ['type' => 'text', 'text' => "\n[Error: {$msg}]"];
-                return ['stop_reason' => 'error', 'error' => $msg];
-            }
-
             $body = $response->getBody();
             $buffer = '';
             while (!$body->eof()) {
@@ -233,7 +378,10 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 
                     switch ($data['type']) {
                         case 'message_start':
-                            $inputTokens += $data['message']['usage']['input_tokens'] ?? 0;
+                            $usage = $data['message']['usage'] ?? [];
+                            $inputTokens += $usage['input_tokens'] ?? 0;
+                            $cacheReadTokens += $usage['cache_read_input_tokens'] ?? 0;
+                            $cacheWriteTokens += $usage['cache_creation_input_tokens'] ?? 0;
                             break;
 
                         case 'content_block_start':
@@ -279,7 +427,10 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                             break;
 
                         case 'message_delta':
-                            $outputTokens += $data['usage']['output_tokens'] ?? 0;
+                            $usage = $data['usage'] ?? [];
+                            $outputTokens += $usage['output_tokens'] ?? 0;
+                            $cacheReadTokens += $usage['cache_read_input_tokens'] ?? 0;
+                            $cacheWriteTokens += $usage['cache_creation_input_tokens'] ?? 0;
                             if (isset($data['delta']['stop_reason'])) {
                                 $stopReason = $data['delta']['stop_reason'];
                             }
@@ -297,7 +448,7 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
                 
-                CostTracker::track($model, $inputTokens, $outputTokens);
+                CostTracker::track($model, $inputTokens, $outputTokens, $cacheReadTokens, $cacheWriteTokens);
             }
         } catch (\Exception $e) {
             yield ['type' => 'text', 'text' => "\n[Error communicating with Anthropic API: " . $e->getMessage() . "]"];
@@ -412,5 +563,13 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
         }
 
         return [$out, $systemPrompt];
+    }
+
+    /**
+     * Get a GuzzleHttp\Client instance.
+     */
+    protected function getClient(array $config = []): \GuzzleHttp\Client
+    {
+        return new \GuzzleHttp\Client($config);
     }
 }

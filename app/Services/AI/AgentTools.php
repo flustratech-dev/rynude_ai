@@ -29,6 +29,19 @@ class AgentTools
         'history' => []
     ];
 
+    /** Current tool call ID being executed. */
+    private ?string $currentToolCallId = null;
+
+    public function setCurrentToolCallId(?string $id): void
+    {
+        $this->currentToolCallId = $id;
+    }
+
+    public function getCurrentToolCallId(): ?string
+    {
+        return $this->currentToolCallId;
+    }
+
     /**
      * @param string $repoConnected        "owner/repo" or '' when no repo is connected
      * @param array  $repoTree             flat depth list from ClaudeCodeApp::$repoTree
@@ -260,6 +273,20 @@ class AgentTools
                     'required' => ['pattern'],
                 ],
             ];
+            $tools[] = [
+                'name' => 'git_operation',
+                'description' => 'Execute basic git command (status, diff, log, show) to understand workspace state.',
+                'input_schema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'subcommand' => [
+                            'type' => 'string',
+                            'description' => 'The git subcommand, e.g. "status", "diff", "log -n 5".',
+                        ],
+                    ],
+                    'required' => ['subcommand'],
+                ],
+            ];
         }
 
         if ($hasRepo) {
@@ -304,8 +331,14 @@ class AgentTools
     {
         // 1. Permission Check
         $guard = new PermissionGuard();
-        if (!$guard->askPermission($name, $input, $this->localWorkspacePath)) {
-            return "Error: Permission denied by user.";
+        if (!$guard->isApproved($name, $input)) {
+            if (app()->runningInConsole()) {
+                if (!$guard->askPermission($name, $input, $this->localWorkspacePath)) {
+                    return "Error: Permission denied by user.";
+                }
+            } else {
+                throw new \App\Exceptions\PermissionRequiredException($name, $input, $this->currentToolCallId);
+            }
         }
 
         $start = microtime(true);
@@ -320,6 +353,7 @@ class AgentTools
                 'bash'           => $this->runBash((string) ($input['command'] ?? ''), $input['timeout'] ?? 30),
                 'grep_search'    => $this->runGrepSearch((string) ($input['query'] ?? ''), (bool) ($input['case_insensitive'] ?? false), (bool) ($input['is_regex'] ?? false)),
                 'glob'           => $this->runGlob((string) ($input['pattern'] ?? '')),
+                'git_operation'  => $this->runGitOperation((string) ($input['subcommand'] ?? '')),
                 'search_code'    => $this->searchCode((string) ($input['query'] ?? '')),
                 'web_search'     => $this->webSearch((string) ($input['query'] ?? '')),
                 default          => "Error: unknown tool '{$name}'.",
@@ -823,5 +857,35 @@ class AgentTools
             $out[] = "[{$n}] {$r['title']}\n    {$r['url']}\n    {$r['snippet']}";
         }
         return implode("\n", $out);
+    }
+
+    private function runGitOperation(string $subcommand): string
+    {
+        if ($this->localWorkspacePath === '') {
+            return 'Error: No local workspace available to run git command.';
+        }
+        
+        $subcommand = trim($subcommand);
+        
+        $allowed = ['status', 'diff', 'log', 'show', 'branch', 'config'];
+        $parts = explode(' ', $subcommand);
+        $baseCmd = strtolower($parts[0] ?? '');
+        
+        if (!in_array($baseCmd, $allowed)) {
+            return "Error: Git subcommand '{$baseCmd}' is not allowed for security reasons. Allowed: " . implode(', ', $allowed);
+        }
+        
+        try {
+            $process = Process::fromShellCommandline("git " . $subcommand);
+            $process->setWorkingDirectory($this->localWorkspacePath);
+            $process->run();
+            
+            $output = $process->getOutput() . $process->getErrorOutput();
+            $exitCode = $process->getExitCode();
+            
+            return "Git Exit Code: {$exitCode}\nOutput:\n" . trim($output);
+        } catch (\Throwable $e) {
+            return "Error executing git command: " . $e->getMessage();
+        }
     }
 }

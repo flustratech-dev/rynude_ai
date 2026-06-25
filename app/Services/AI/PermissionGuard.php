@@ -106,7 +106,7 @@ class PermissionGuard
     /**
      * Extract a simplified target string for the operation.
      */
-    protected function getPermissionTarget(string $toolName, array $input): string
+    public function getPermissionTarget(string $toolName, array $input): string
     {
         return match ($toolName) {
             'bash' => $input['command'] ?? '',
@@ -118,7 +118,7 @@ class PermissionGuard
     /**
      * Generate diff preview for tool call.
      */
-    protected function generateDiffPreview(string $toolName, array $input, string $workspacePath): string
+    public function generateDiffPreview(string $toolName, array $input, string $workspacePath): string
     {
         $relativePath = $input['path'] ?? '';
         if ($relativePath === '') return '';
@@ -190,83 +190,7 @@ class PermissionGuard
             return "   (No changes to apply)";
         }
 
-        return $this->renderDiff($oldContent, $newContent);
-    }
-
-    /**
-     * Render line-by-line diff.
-     */
-    protected function renderDiff(string $old, string $new): string
-    {
-        $oldLines = explode("\n", $old);
-        $newLines = explode("\n", $new);
-        $diff = [];
-        
-        $i = 0;
-        $j = 0;
-        $maxShown = 40; // Avoid huge screens
-        $count = 0;
-
-        while ($i < count($oldLines) && $j < count($newLines)) {
-            if ($oldLines[$i] === $newLines[$j]) {
-                // Show matching line context only if close to changes (simple lookahead)
-                // For simplicity, just display modified lines
-                $i++;
-                $j++;
-            } else {
-                // Lookahead to check if it's an insertion or deletion
-                $found = false;
-                for ($k = 1; $k <= 5; $k++) {
-                    if ($i + $k < count($oldLines) && $oldLines[$i + $k] === $newLines[$j]) {
-                        // Deletion
-                        for ($m = 0; $m < $k; $m++) {
-                            $diff[] = "   <fg=red>- " . $oldLines[$i + $m] . "</>";
-                            $count++;
-                        }
-                        $i += $k;
-                        $found = true;
-                        break;
-                    }
-                    if ($j + $k < count($newLines) && $oldLines[$i] === $newLines[$j + $k]) {
-                        // Insertion
-                        for ($m = 0; $m < $k; $m++) {
-                            $diff[] = "   <fg=green>+ " . $newLines[$j + $m] . "</>";
-                            $count++;
-                        }
-                        $j += $k;
-                        $found = true;
-                        break;
-                    }
-                }
-                
-                if (!$found) {
-                    // Direct modification
-                    $diff[] = "   <fg=red>- " . $oldLines[$i] . "</>";
-                    $diff[] = "   <fg=green>+ " . $newLines[$j] . "</>";
-                    $i++;
-                    $j++;
-                    $count += 2;
-                }
-            }
-
-            if ($count >= $maxShown) {
-                $diff[] = "   ... (remaining diff lines hidden)";
-                break;
-            }
-        }
-
-        while ($i < count($oldLines) && $count < $maxShown) {
-            $diff[] = "   <fg=red>- " . $oldLines[$i] . "</>";
-            $i++;
-            $count++;
-        }
-        while ($j < count($newLines) && $count < $maxShown) {
-            $diff[] = "   <fg=green>+ " . $newLines[$j] . "</>";
-            $j++;
-            $count++;
-        }
-
-        return implode("\n", $diff);
+        return DiffRenderer::render($oldContent, $newContent);
     }
 
     /**
@@ -303,5 +227,20 @@ class PermissionGuard
         }
 
         return false;
+    }
+    /**
+     * Get all currently approved patterns.
+     */
+    public static function getApprovedPatterns(): array
+    {
+        return self::$approvedPatterns;
+    }
+
+    /**
+     * Clear all cached approved patterns.
+     */
+    public static function resetApprovedPatterns(): void
+    {
+        self::$approvedPatterns = [];
     }
 }

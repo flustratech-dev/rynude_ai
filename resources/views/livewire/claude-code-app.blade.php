@@ -7,6 +7,7 @@
         isStarted: @entangle('isStarted'),
         isStreaming: @entangle('isStreaming'),
         repoModalOpen: @entangle('repoModalOpen'),
+        pendingPermission: @entangle('pendingPermission'),
     }"
 >
 
@@ -674,6 +675,70 @@
                         Connect
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    {{-- ═══════════════ PERMISSION CONFIRM MODAL ═══════════════ --}}
+    <div x-show="pendingPermission" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="$wire.call('denyPermission')"></div>
+        <div class="relative w-full max-w-2xl bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-2xl p-6 font-sans flex flex-col max-h-[85vh]">
+            <div class="flex items-center gap-3 mb-4 flex-shrink-0">
+                <div class="w-9 h-9 rounded-xl bg-[#CC785C]/10 border border-[#CC785C]/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-[#CC785C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-[15px] font-semibold text-[#E5E5E5]">Permission Required</h3>
+                    <p class="text-[12px] text-[#999] mt-0.5">Rynude Code wants to run a potentially dangerous operation</p>
+                </div>
+                <button @click="$wire.call('denyPermission')" class="ml-auto p-1.5 text-[#777] hover:text-[#CCC] transition-colors rounded-lg hover:bg-[#252525]">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="space-y-4 flex-1 overflow-y-auto min-h-0 pr-1">
+                <div class="bg-[#141414] border border-[#252525] rounded-xl p-3 font-mono text-[12px]">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-[#CC785C] font-semibold">Tool:</span>
+                        <span class="px-1.5 py-0.5 bg-[#CC785C]/10 text-[#CC785C] rounded font-mono">{{ $pendingToolName }}</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-[#CC785C] font-semibold flex-shrink-0">Target:</span>
+                        <span class="text-[#CCC] break-all">{{ $pendingPermissionTarget }}</span>
+                    </div>
+                </div>
+
+                @if(!empty($pendingPermissionDiff))
+                    <div>
+                        <label class="block text-[11px] text-[#888] uppercase tracking-widest mb-1.5 font-sans">Proposed Changes (Diff)</label>
+                        <div class="bg-[#0D1117] border border-[#2A2A2A] rounded-xl p-3 font-mono text-[11px] max-h-[300px] overflow-y-auto whitespace-pre scrollbar-hide text-[#E5E5E5] leading-relaxed">
+                            @foreach(explode("\n", $pendingPermissionDiff) as $line)
+                                @if(str_starts_with($line, "+") && !str_starts_with($line, "+++"))
+                                    <div class="text-[#4ADE80] bg-[#4ADE80]/5 px-1">{{ $line }}</div>
+                                @elseif(str_starts_with($line, "-") && !str_starts_with($line, "---"))
+                                    <div class="text-[#F87171] bg-[#F87171]/5 px-1">{{ $line }}</div>
+                                @else
+                                    <div class="opacity-60 px-1">{{ $line }}</div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div>
+                        <label class="block text-[11px] text-[#888] uppercase tracking-widest mb-1.5 font-sans">Full Input Parameters</label>
+                        <pre class="bg-[#141414] border border-[#252525] rounded-xl p-3 font-mono text-[11.5px] max-h-[200px] overflow-y-auto text-[#AAA] whitespace-pre-wrap">{{ json_encode($pendingToolInput, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                    </div>
+                @endif
+            </div>
+
+            <div class="flex items-center gap-3 pt-4 border-t border-[#2A2A2A] flex-shrink-0 mt-4">
+                <button wire:click="denyPermission"
+                    class="flex-1 px-4 py-2.5 text-[13px] font-medium text-[#F87171] bg-[#F87171]/5 hover:bg-[#F87171]/10 border border-[#F87171]/20 rounded-lg transition-colors">
+                    Deny
+                </button>
+                <button wire:click="approvePermission"
+                    class="flex-1 px-4 py-2.5 text-[13px] font-medium text-white bg-[#CC785C] hover:bg-[#B86A4F] rounded-lg transition-colors shadow-lg">
+                    Allow Operation
+                </button>
             </div>
         </div>
     </div>

@@ -126,7 +126,9 @@ class AgentRunner
             foreach ($toolCalls as $call) {
                 yield ['type' => 'tool', 'name' => $call['name'], 'input' => $call['input'], 'status' => 'running'];
 
+                $tools->setCurrentToolCallId($call['id']);
                 $output = $tools->execute($call['name'], $call['input']);
+                $tools->setCurrentToolCallId(null);
 
                 $messages[] = [
                     'role' => 'tool',

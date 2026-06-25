@@ -23,10 +23,24 @@ class CostTracker
     /**
      * Track and return cost for a single turn.
      */
-    public static function track(string $model, int $inputTokens, int $outputTokens): float
+    public static function track(string $model, int $inputTokens, int $outputTokens, int $cacheReadTokens = 0, int $cacheWriteTokens = 0): float
     {
         $rates = self::$pricing[$model] ?? self::$pricing['default'];
-        $cost = (($inputTokens * $rates['input']) + ($outputTokens * $rates['output'])) / 1000000.0;
+        
+        // Anthropic's inputTokens is the total count, which includes cached tokens.
+        // We isolate regular non-cached input tokens.
+        $regularInputTokens = max(0, $inputTokens - $cacheReadTokens - $cacheWriteTokens);
+        
+        $baseRate = $rates['input'];
+        $readRate = $baseRate * 0.10;   // Cache read is 10% of base input rate
+        $writeRate = $baseRate * 1.25;  // Cache write/creation is 125% of base input rate
+        
+        $cost = (
+            ($regularInputTokens * $baseRate) +
+            ($cacheReadTokens * $readRate) +
+            ($cacheWriteTokens * $writeRate) +
+            ($outputTokens * $rates['output'])
+        ) / 1000000.0;
 
         self::$sessionCost += $cost;
         self::$sessionInputTokens += $inputTokens;
