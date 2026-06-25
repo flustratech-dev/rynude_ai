@@ -60,6 +60,14 @@ class ClaudeCodeApp extends Component
     // [ ['name'=>'read_file', 'input'=>'app/Models/User.php', 'summary'=>'1.2k chars'] ]
     public array $toolCalls = [];
 
+    // ── Permission Modal State ─────────────────────────
+    public bool $pendingPermission = false;
+    public string $pendingToolName = '';
+    public array $pendingToolInput = [];
+    public ?string $pendingToolCallId = null;
+    public string $pendingPermissionDiff = '';
+    public string $pendingPermissionTarget = '';
+
     public function mount(): void
     {
         $this->buildModelList();
@@ -447,9 +455,7 @@ class ClaudeCodeApp extends Component
     public function generateResponse(): void
     {
         set_time_limit(0);
-
-        if (empty($this->messages) || end($this->messages)['role'] !== 'user') {
-            $this->isStreaming = false;
+        if (empty($this->messages) || !in_array(end($this->messages)['role'], ['user', 'tool'])) {
             return;
         }
 
@@ -536,6 +542,9 @@ class ClaudeCodeApp extends Component
             . "up-to-date external facts. Chain several tool calls as needed, then give a precise answer "
             . "grounded in what you read. Do NOT fabricate file paths or code — verify with tools first.";
 
+        // Auto-inject workspace tech stack and instructions
+        $systemPrompt .= \App\Services\AI\WorkspaceContext::getContext(env('RYNUDE_WORKSPACE', ''));
+
         // ── Persistent conversation memory (durable across turns & models) ──
         $memoryService = app(\App\Services\AI\ConversationMemoryService::class);
         if ($this->conversation) {
@@ -592,40 +601,67 @@ class ClaudeCodeApp extends Component
         $runner   = new \App\Services\AI\AgentRunner(new \App\Services\AI\AiService());
         $rendered = '';   // finalized markdown shown to the user
         $pending  = '';   // transient "tool running…" line
-
-        foreach ($runner->run($aiMessages, $this->selectedModel, $tools) as $event) {
-            // Honour the stop button.
-            if ($this->conversation && Cache::get('chat_stop_' . $this->conversation->id)) {
-                Cache::forget('chat_stop_' . $this->conversation->id);
-                break;
-            }
-
-            if ($event['type'] === 'reset') {
-                // Runner is discarding a failed turn's output before a clean retry.
-                $rendered = '';
-                $pending  = '';
-            } elseif ($event['type'] === 'text') {
-                $rendered .= $event['text'];
-            } elseif ($event['type'] === 'tool') {
-                $summary = $this->toolInputSummary($event['input']);
-                if ($event['status'] === 'running') {
-                    $pending = "\n\n> ⏳ **{$event['name']}** `{$summary}`\n";
-                } else { // done
-                    $pending = '';
-                    $rendered .= "\n\n> 🔧 **{$event['name']}** `{$summary}` — ✓ {$event['summary']}\n\n";
-                    $this->toolCalls[] = [
-                        'name'    => $event['name'],
-                        'input'   => $summary,
-                        'summary' => $event['summary'],
-                    ];
+        $thinkingText = '';
+        try {
+            foreach ($runner->run($aiMessages, $this->selectedModel, $tools) as $event) {
+                // Honour the stop button.
+                if ($this->conversation && Cache::get('chat_stop_' . $this->conversation->id)) {
+                    Cache::forget('chat_stop_' . $this->conversation->id);
+                    break;
                 }
-            }
 
-            $this->stream(
-                to: 'message-stream',
-                content: \Illuminate\Support\Str::markdown($rendered . $pending),
-                replace: true
-            );
+                if ($event['type'] === 'reset') {
+                    // Runner is discarding a failed turn's output before a clean retry.
+                    $rendered = '';
+                    $pending  = '';
+                    $thinkingText = '';
+                } elseif ($event['type'] === 'text') {
+                    $rendered .= $event['text'];
+                } elseif ($event['type'] === 'thinking') {
+                    $thinkingText .= $event['text'];
+                } elseif ($event['type'] === 'tool') {
+                    $summary = $this->toolInputSummary($event['input']);
+                    if ($event['status'] === 'running') {
+                        $pending = "\n\n> ⏳ **{$event['name']}** `{$summary}`\n";
+                    } else { // done
+                        $pending = '';
+                        $rendered .= "\n\n> 🔧 **{$event['name']}** `{$summary}` — ✓ {$event['summary']}\n\n";
+                        $this->toolCalls[] = [
+                            'name'    => $event['name'],
+                            'input'   => $summary,
+                            'summary' => $event['summary'],
+                        ];
+                    }
+                }
+
+                $thinkingOutput = !empty($thinkingText) ? "\n\n> 💭 *Thinking:*\n> " . str_replace("\n", "\n> ", trim($thinkingText)) . "\n\n" : "";
+
+                $this->stream(
+                    to: 'message-stream',
+                    content: \Illuminate\Support\Str::markdown($thinkingOutput . $rendered . $pending),
+                    replace: true
+                );
+            }
+        } catch (\App\Exceptions\PermissionRequiredException $e) {
+            $this->pendingPermission = true;
+            $this->pendingToolName = $e->getToolName();
+            $this->pendingToolInput = $e->getToolInput();
+            $this->pendingToolCallId = $e->getToolCallId();
+            
+            $guard = new \App\Services\AI\PermissionGuard();
+            $workspace = env('RYNUDE_WORKSPACE', '');
+            
+            $this->pendingPermissionTarget = $guard->getPermissionTarget($this->pendingToolName, $this->pendingToolInput);
+            
+            if (in_array($this->pendingToolName, ['write_file', 'edit_file', 'multi_edit_file'])) {
+                $this->pendingPermissionDiff = $guard->generateDiffPreview($this->pendingToolName, $this->pendingToolInput, $workspace);
+            } else {
+                $this->pendingPermissionDiff = '';
+            }
+            
+            $this->isStreaming = false;
+            $this->dispatch('scroll-to-bottom');
+            return;
         }
 
         $fullResponse = trim($rendered);
@@ -649,7 +685,14 @@ class ClaudeCodeApp extends Component
                 'content'         => $fullResponse,
             ]);
 
-            $this->messages[] = ['role' => 'assistant', 'content' => $fullResponse];
+            $already = false;
+            $last = end($this->messages);
+            if ($last && $last['role'] === 'assistant' && $last['content'] === $fullResponse) {
+                $already = true;
+            }
+            if (!$already) {
+                $this->messages[] = ['role' => 'assistant', 'content' => $fullResponse];
+            }
             $this->sessionTokens += (int)(strlen($fullResponse) / 4);
 
             // Persist any newly opened files into the conversation metadata.
@@ -706,6 +749,77 @@ class ClaudeCodeApp extends Component
             return round($this->sessionTokens / 1000, 1) . 'k';
         }
         return (string)$this->sessionTokens;
+    }
+
+    public function approvePermission(): void
+    {
+        if (!$this->pendingPermission) return;
+
+        $guard = new \App\Services\AI\PermissionGuard();
+        $guard->approvePattern($this->pendingToolName, $this->pendingPermissionTarget);
+
+        $uploadedContents = [];
+        foreach ($this->selectedFilesContext as $f) {
+            $uploadedContents[$f['path']] = $f['content'];
+        }
+        $tools = new \App\Services\AI\AgentTools(
+            $this->repoConnected,
+            $this->repoTree,
+            $this->localFilesTree,
+            $uploadedContents,
+            Auth::user()->github_token ?? null,
+            env('RYNUDE_WORKSPACE', '')
+        );
+
+        $tools->setCurrentToolCallId($this->pendingToolCallId);
+        $output = $tools->execute($this->pendingToolName, $this->pendingToolInput);
+        $tools->setCurrentToolCallId(null);
+
+        $summary = $this->toolInputSummary($this->pendingToolInput);
+        $this->toolCalls[] = [
+            'name'    => $this->pendingToolName,
+            'input'   => $summary,
+            'summary' => $tools->summarize($this->pendingToolName, $output),
+        ];
+
+        $this->messages[] = [
+            'role' => 'tool',
+            'tool_call_id' => $this->pendingToolCallId,
+            'name' => $this->pendingToolName,
+            'content' => $output,
+        ];
+
+        $this->pendingPermission = false;
+        $this->pendingToolName = '';
+        $this->pendingToolInput = [];
+        $this->pendingToolCallId = null;
+        $this->pendingPermissionDiff = '';
+        $this->pendingPermissionTarget = '';
+
+        $this->isStreaming = true;
+        $this->dispatch('message-added');
+    }
+
+    public function denyPermission(): void
+    {
+        if (!$this->pendingPermission) return;
+
+        $this->messages[] = [
+            'role' => 'tool',
+            'tool_call_id' => $this->pendingToolCallId,
+            'name' => $this->pendingToolName,
+            'content' => 'Error: Permission denied by user.',
+        ];
+
+        $this->pendingPermission = false;
+        $this->pendingToolName = '';
+        $this->pendingToolInput = [];
+        $this->pendingToolCallId = null;
+        $this->pendingPermissionDiff = '';
+        $this->pendingPermissionTarget = '';
+
+        $this->isStreaming = true;
+        $this->dispatch('message-added');
     }
 
     public function render()

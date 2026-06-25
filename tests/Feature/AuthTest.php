@@ -12,7 +12,7 @@ class AuthTest extends TestCase
 
     public function test_guests_see_the_welcome_page(): void
     {
-        $this->get('/')->assertOk();
+        $this->get('/')->assertRedirect('/login');
     }
 
     public function test_login_screen_can_be_rendered(): void
