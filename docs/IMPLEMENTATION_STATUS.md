@@ -37,15 +37,15 @@ V5 Development
 
 Current Sprint:
 
-Sprint 1 — Implementation in progress (Steps 1–2 complete, paused for review per user rules)
+Sprint 1 — Implementation in progress (Steps 1–3 complete, paused for review per user rules)
 
 Overall Progress:
 
-20% — Steps 1 (migrations) + 2 (DTOs) of Section 12 implementation order complete
+30% — Steps 1 (migrations) + 2 (DTOs) + 3 (ModelAdapter base + AnthropicAdapter) of Section 12 implementation order complete
 
 Project State:
 
-Sprint 1 Implementation — Steps 1 & 2 complete and tested; awaiting review before Step 3
+Sprint 1 Implementation — Steps 1, 2 & 3 complete and tested; awaiting review before Step 4
 
 Reference:
 
@@ -489,6 +489,101 @@ Next Sprint Step:
 
 Step 3 — ModelAdapter base class + AnthropicAdapter (smoke test against
 existing AnthropicProvider)
+
+---
+
+## 2026-06-28 — Sprint 1 Step 3
+
+Sprint:
+
+Sprint 1
+
+Status:
+
+In Progress — Step 3 complete, awaiting review
+
+Completed Work:
+
+* Step 3: ModelCapability value object, ModelAdapter abstract base class,
+  ModelAdapterRegistry (Anthropic-only routing for this step), and
+  AnthropicAdapter that wraps the existing AnthropicProvider and translates
+  its native stream into NormalizedEvent objects (text / thinking / tool_use).
+
+Files Added:
+
+* app/Services/AI/Normalization/ModelCapability.php
+* app/Services/AI/Normalization/ModelAdapter.php
+* app/Services/AI/Normalization/ModelAdapterRegistry.php
+* app/Services/AI/Normalization/Adapters/AnthropicAdapter.php
+* tests/Support/FakeLLMProvider.php
+* tests/Unit/Normalization/ModelCapabilityTest.php          (2 tests)
+* tests/Feature/Normalization/ModelAdapterRegistryTest.php  (6 tests)
+* tests/Feature/Normalization/AnthropicAdapterTest.php      (13 tests)
+
+Files Modified:
+
+* docs/IMPLEMENTATION_STATUS.md — this entry + status header bump
+
+(No changes to AnthropicProvider.php, ChatInterface.php, AiService.php, or
+any other existing service. Design invariant §1.3.1 preserved: providers
+are not rewritten in Sprint 1.)
+
+Test Results:
+
+* 21 new tests / 60 assertions — ALL PASS
+  (2 ModelCapabilityTest + 6 ModelAdapterRegistryTest + 13 AnthropicAdapterTest)
+* Combined Sprint 1 total (Steps 1+2+3): 57 new tests / 229 assertions — ALL PASS
+* Full suite: 110 / 111 pass. The single failure
+  (`AgentToolsTest::test_list_files_respects_depth_and_gitignore`) is the
+  same pre-existing failure documented in the Steps 1+2 entry. No
+  regression introduced by Step 3.
+* One PHPUnit doc-comment deprecation surfaced in `PanelsRenderTest` —
+  pre-existing, unrelated to Step 3.
+
+Important Decisions:
+
+* **Adapters are model-scoped, not provider-scoped.** `ModelAdapterRegistry::for($model)`
+  returns a fresh instance constructed with the model code, because
+  capabilities differ across models from the same provider (Haiku has no
+  extended thinking; Sonnet / Opus do). `capabilities()` therefore reads
+  `$this->model`.
+* **Adapter wraps the provider via constructor injection.** `AnthropicAdapter`
+  accepts an optional `LLMProviderInterface` argument that defaults to
+  `new AnthropicProvider()`. This lets tests inject a `FakeLLMProvider`
+  without touching the real network — and preserves the
+  "do not modify AnthropicProvider" requirement.
+* **Two translation surfaces, one normalized stream.** When the request
+  carries tools, `AnthropicAdapter` calls `streamAgentTurn()` (structured
+  event arrays) and maps each event 1:1 to `NormalizedEvent`. When tools
+  are empty, it falls back to `streamResponse()` (string deltas), where a
+  `[Thinking] ` prefix is the existing provider's convention for
+  extended-thinking output and is rewritten into `NormalizedEvent::thinking()`.
+* **Registry throws on unknown models in Step 3.** OpenAI / Google /
+  Mistral adapters arrive in Step 4. Until then, an unknown model code is
+  a configuration error, not a silent fallback. `kr/claude*` (9Router
+  proxy) explicitly routes through OpenAI in `AiService`, so it is
+  rejected here and will be picked up by `OpenAIAdapter` in Step 4.
+* **Usage events deferred.** `AnthropicProvider` records tokens internally
+  (`TokenUsage::record` + `CostTracker::track`) but does not yield usage
+  events. Surfacing usage as `NormalizedEvent::usage()` would require a
+  provider change, which violates the "preserve behavior" requirement
+  for Step 3. Will be addressed when the coordinator/pipeline lands.
+* **`FakeLLMProvider` lands now under `tests/Support`** (planned in
+  Sprint 1 Architecture §2). Generic enough for the Step 4 adapters to
+  reuse with their own scripted output.
+
+Risks:
+
+* None new. The Step 3 surface is read-only relative to the legacy
+  ChatInterface path — `AiService::resolveProvider()` is still the only
+  resolver used in production. Adapters are dormant until the
+  GenerationCoordinator (Step 13) wires them up.
+
+Next Sprint Step:
+
+Step 4 — Remaining adapters (OpenAI, Google, Mistral) + extend
+ModelAdapterRegistry to route to them. `kr/claude*` and `use_proxy` paths
+become OpenAIAdapter consumers.
 
 ---
 
