@@ -45,7 +45,7 @@ class EventStoreTest extends TestCase
         $store->save($event3);
         
         $results = $store->findByTimeRange(
-            'sess_1',
+            '11111111-1111-1111-1111-111111111111',
             new DateTimeImmutable('2023-10-10T10:30:00Z'),
             new DateTimeImmutable('2023-10-10T11:30:00Z')
         );

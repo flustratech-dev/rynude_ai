@@ -63,11 +63,11 @@ class ActivityStreamServiceTest extends TestCase
         $this->assertEquals('evt_1', $streamProvider->published[0]->id);
         
         // Verify we can retrieve history
-        $history = $service->getHistory('sess_1');
+        $history = $service->getHistory('11111111-1111-1111-1111-111111111111');
         $this->assertCount(1, $history);
         
         // Verify we can get latest
-        $latest = $service->getLatest('sess_1');
+        $latest = $service->getLatest('11111111-1111-1111-1111-111111111111');
         $this->assertNotNull($latest);
         $this->assertEquals('evt_1', $latest->id);
     }
@@ -96,11 +96,11 @@ class ActivityStreamServiceTest extends TestCase
         $this->assertCount(2, $streamProvider->published);
         
         // Verify history has both
-        $history = $service->getHistory('sess_1');
+        $history = $service->getHistory('11111111-1111-1111-1111-111111111111');
         $this->assertCount(2, $history);
         
         // Verify latest is evt_2 because it's newer
-        $latest = $service->getLatest('sess_1');
+        $latest = $service->getLatest('11111111-1111-1111-1111-111111111111');
         $this->assertEquals('evt_2', $latest->id);
     }
 }
