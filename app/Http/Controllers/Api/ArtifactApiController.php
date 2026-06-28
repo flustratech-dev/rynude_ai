@@ -132,7 +132,7 @@ class ArtifactApiController extends ApiController
         $data = $artifact->toArray();
         $binary = app(PdfRenderer::class)->render($data, $mode);
         $filename = Str::slug($artifact->title ?: 'document') . '.pdf';
-        return response()->streamDownload(fn () => echo $binary, $filename, ['Content-Type' => 'application/pdf']);
+        return response()->streamDownload(function () use ($binary) { echo $binary; }, $filename, ['Content-Type' => 'application/pdf']);
     }
 
     public function downloadMarkdown(MessageArtifact $artifact)
@@ -140,7 +140,7 @@ class ArtifactApiController extends ApiController
         $this->authorizeOwnership($artifact);
         $content = PdfRenderer::stripFrontMatter($artifact->content ?? '');
         $filename = Str::slug($artifact->title ?: 'document') . '.md';
-        return response()->streamDownload(fn () => echo $content, $filename, ['Content-Type' => 'text/markdown; charset=utf-8']);
+        return response()->streamDownload(function () use ($content) { echo $content; }, $filename, ['Content-Type' => 'text/markdown; charset=utf-8']);
     }
 
     public function downloadFile(MessageArtifact $artifact)
@@ -148,7 +148,7 @@ class ArtifactApiController extends ApiController
         $this->authorizeOwnership($artifact);
         $ext = $this->extensionForLanguage($artifact->language ?? 'txt');
         $filename = Str::slug($artifact->title ?: 'artifact') . '.' . $ext;
-        return response()->streamDownload(fn () => echo $artifact->content ?? '', $filename, ['Content-Type' => 'text/plain; charset=utf-8']);
+        return response()->streamDownload(function () use ($artifact) { echo $artifact->content ?? ''; }, $filename, ['Content-Type' => 'text/plain; charset=utf-8']);
     }
 
     private function extensionForLanguage(string $language): string
