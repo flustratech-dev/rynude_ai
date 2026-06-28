@@ -19,7 +19,7 @@ class ActivityTimeline extends Component
         $this->workflowId = $workflowId;
         
         $historyService = app(EventHistoryServiceInterface::class);
-        $events = $historyService->getEventsForSession($sessionId);
+        $events = $historyService->getHistory($sessionId);
         
         $this->initialEvents = array_map(fn($e) => $e->toArray(), $events);
     }

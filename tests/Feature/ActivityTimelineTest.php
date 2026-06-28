@@ -11,7 +11,7 @@ class ActivityTimelineTest extends TestCase
     public function test_it_mounts_with_session_id()
     {
         $mock = \Mockery::mock(\App\Contracts\EventHistoryServiceInterface::class);
-        $mock->shouldReceive('getEventsForSession')->with('test-session-123')->andReturn([]);
+        $mock->shouldReceive('getHistory')->with('test-session-123')->andReturn([]);
         $this->app->instance(\App\Contracts\EventHistoryServiceInterface::class, $mock);
 
         Livewire::test(ActivityTimeline::class, ['sessionId' => 'test-session-123'])
