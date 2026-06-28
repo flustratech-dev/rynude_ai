@@ -17,7 +17,9 @@ use Tests\TestCase;
  *
  * As each endpoint group gains real behaviour (see the dedicated *ApiTest
  * feature tests), it moves out of the pending provider below. Implemented
- * groups so far: Settings, Projects, Designs.
+ * groups so far: Settings, Projects, Designs, Chat (CRUD + share), Artifacts
+ * (CRUD). Still pending: chat send/stop (Phase 5 streaming), artifact store
+ * (Phase 5 — artifacts are created by the streamed generation), all Cowork.
  */
 class ApiRouteStructureTest extends TestCase
 {
@@ -32,6 +34,19 @@ class ApiRouteStructureTest extends TestCase
     public static function apiEndpointProvider(): array
     {
         return array_merge(static::pendingApiEndpointProvider(), [
+            // Chat (implemented: CRUD + share)
+            'chat list'        => ['get', '/api/chats'],
+            'chat show'        => ['get', '/api/chats/1'],
+            'chat update'      => ['patch', '/api/chats/1'],
+            'chat destroy'     => ['delete', '/api/chats/1'],
+            'chat share'       => ['post', '/api/chats/1/share'],
+
+            // Artifacts (implemented: CRUD)
+            'artifacts list'   => ['get', '/api/artifacts'],
+            'artifacts show'   => ['get', '/api/artifacts/1'],
+            'artifacts update' => ['patch', '/api/artifacts/1'],
+            'artifacts delete' => ['delete', '/api/artifacts/1'],
+
             // Settings (implemented)
             'settings show'    => ['get', '/api/settings'],
             'settings update'  => ['patch', '/api/settings'],
@@ -60,21 +75,12 @@ class ApiRouteStructureTest extends TestCase
     public static function pendingApiEndpointProvider(): array
     {
         return [
-            // Chat
-            'chat list'        => ['get', '/api/chats'],
+            // Chat — streaming entry points still owned by Phase 5.
             'chat send'        => ['post', '/api/chats/send'],
             'chat stop'        => ['post', '/api/chats/stop'],
-            'chat show'        => ['get', '/api/chats/1'],
-            'chat update'      => ['patch', '/api/chats/1'],
-            'chat destroy'     => ['delete', '/api/chats/1'],
-            'chat share'       => ['post', '/api/chats/1/share'],
 
-            // Artifacts
-            'artifacts list'   => ['get', '/api/artifacts'],
+            // Artifacts — creation happens inside the streamed generation (Phase 5).
             'artifacts store'  => ['post', '/api/artifacts'],
-            'artifacts show'   => ['get', '/api/artifacts/1'],
-            'artifacts update' => ['patch', '/api/artifacts/1'],
-            'artifacts delete' => ['delete', '/api/artifacts/1'],
 
             // Cowork tasks
             'tasks list'       => ['get', '/api/tasks'],
