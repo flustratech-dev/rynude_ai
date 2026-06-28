@@ -11,7 +11,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \App\Contracts\EventHistoryServiceInterface::class,
+            \App\Services\EventHistoryService::class
+        );
+        $this->app->bind(
+            \App\Contracts\EventEmitterInterface::class,
+            \App\Services\EventEmitter::class
+        );
+        $this->app->bind(
+            \App\Repositories\AgentEventRepositoryInterface::class,
+            \App\Repositories\EventStore::class
+        );
     }
 
     /**
