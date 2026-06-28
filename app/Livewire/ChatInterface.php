@@ -1075,6 +1075,7 @@ class ChatInterface extends Component
 
     public function render()
     {
+        \Illuminate\Support\Facades\Log::info('ChatInterface re-rendered');
         return view('livewire.chat-interface');
     }
 }

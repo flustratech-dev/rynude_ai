@@ -20,6 +20,7 @@ class ActivityFeed extends Component
 
     public function render()
     {
+        \Illuminate\Support\Facades\Log::info('ActivityFeed re-rendered');
         return view('livewire.activity-feed');
     }
 }

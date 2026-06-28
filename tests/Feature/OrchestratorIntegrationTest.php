@@ -54,13 +54,23 @@ class OrchestratorIntegrationTest extends TestCase
             public function notifyListeners(AgentEvent $event): void {}
         };
 
+        $eventStore = new class implements \App\Repositories\AgentEventRepositoryInterface {
+            public function save(\App\Domain\AgentEvent $event): void {}
+            public function findBySession(string $sessionId): array { return []; }
+            public function findLatest(string $sessionId, int $limit = 50): array { return []; }
+            public function findByTimeRange(string $sessionId, \DateTimeImmutable $start, \DateTimeImmutable $end): array { return []; }
+        };
+
         $this->activityStream = new ActivityStreamService(
-            $this->emitter,
             $this->historyService,
-            $this->streamProvider
+            $this->streamProvider,
+            $eventStore
         );
 
         $this->toolTracker = new \App\Services\Orchestrator\ToolExecutionTracker($this->activityStream);
+        \Illuminate\Support\Facades\Event::fake([
+            \App\Events\AgentEventDispatched::class
+        ]);
     }
 
     public function test_orchestrator_emits_pipeline_events_in_order()

@@ -26,6 +26,7 @@ class ActivityTimeline extends Component
 
     public function render()
     {
+        \Illuminate\Support\Facades\Log::info('ActivityTimeline re-rendered');
         return view('livewire.activity-timeline');
     }
 }

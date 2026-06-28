@@ -30,6 +30,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class ActivityStreamServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \Illuminate\Support\Facades\Event::fake([
+            \App\Events\AgentEventDispatched::class
+        ]);
+    }
+
     public function test_emit_dispatches_event_and_publishes_to_stream()
     {
         $store = new EventStore();

@@ -1,4 +1,4 @@
-<div class="flex flex-col w-full px-2 mt-4 font-sans max-h-[300px] overflow-y-auto scrollbar-hide" 
+<div wire:ignore class="flex flex-col w-full px-2 mt-4 font-sans max-h-[300px] overflow-y-auto scrollbar-hide" 
     x-data="{
         events: @js($events),
         handleEvent(e) {

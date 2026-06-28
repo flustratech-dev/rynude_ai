@@ -37,13 +37,17 @@ class ToolExecutionTrackerTest extends TestCase
             public function filterHistory(string $sessionId, array $filters): array { return []; }
         };
 
-        $emitter = new class implements EventEmitterInterface {
-            public function dispatch(AgentEvent $event): void {}
-            public function subscribe(callable $listener): void {}
-            public function notifyListeners(AgentEvent $event): void {}
+        $eventStore = new class implements \App\Repositories\AgentEventRepositoryInterface {
+            public function save(\App\Domain\AgentEvent $event): void {}
+            public function findBySession(string $sessionId): array { return []; }
+            public function findLatest(string $sessionId, int $limit = 50): array { return []; }
+            public function findByTimeRange(string $sessionId, \DateTimeImmutable $start, \DateTimeImmutable $end): array { return []; }
         };
 
-        $this->activityStream = new ActivityStreamService($emitter, $historyService, $this->streamProvider);
+        $this->activityStream = new ActivityStreamService($historyService, $this->streamProvider, $eventStore);
+        \Illuminate\Support\Facades\Event::fake([
+            \App\Events\AgentEventDispatched::class
+        ]);
     }
 
     public function test_lifecycle_emits_correct_events()
