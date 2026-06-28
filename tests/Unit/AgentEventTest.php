@@ -20,7 +20,9 @@ class AgentEventTest extends TestCase
             $timestamp,
             'sess_456',
             'agent_789',
+            'wf_012',
             AgentEventType::THINKING,
+            null,
             'Thinking about the request...',
             ['tool' => 'none']
         );
@@ -30,7 +32,9 @@ class AgentEventTest extends TestCase
         $this->assertEquals('2023-10-10T10:00:00.000000Z', $event->timestamp->format('Y-m-d\TH:i:s.u\Z'));
         $this->assertEquals('sess_456', $event->sessionId);
         $this->assertEquals('agent_789', $event->agentId);
+        $this->assertEquals('wf_012', $event->workflowId);
         $this->assertEquals(AgentEventType::THINKING, $event->eventType);
+        $this->assertNull($event->stage);
         $this->assertEquals('Thinking about the request...', $event->message);
         $this->assertEquals(['tool' => 'none'], $event->metadata);
     }
@@ -42,12 +46,15 @@ class AgentEventTest extends TestCase
             '2023-10-10T10:00:00Z',
             'sess_456',
             'agent_789',
+            'wf_012',
             'thinking',
+            'UNDERSTAND',
             'Thinking about the request...',
             ['tool' => 'none']
         );
         
         $this->assertEquals(AgentEventType::THINKING, $event->eventType);
+        $this->assertEquals('UNDERSTAND', $event->stage);
         $this->assertEquals('UTC', $event->timestamp->getTimezone()->getName());
     }
 
@@ -60,7 +67,9 @@ class AgentEventTest extends TestCase
             '2023-10-10T10:00:00Z',
             'sess_456',
             'agent_789',
+            'wf_012',
             'invalid_type',
+            null,
             'Message'
         );
     }
@@ -75,7 +84,9 @@ class AgentEventTest extends TestCase
             '2023-10-10T10:00:00Z',
             'sess_456',
             'agent_789',
+            'wf_012',
             AgentEventType::PLANNING,
+            null,
             'Message'
         );
     }
@@ -87,7 +98,9 @@ class AgentEventTest extends TestCase
             '2023-10-10T10:00:00Z',
             'sess_456',
             'agent_789',
+            'wf_012',
             AgentEventType::COMPLETED,
+            null,
             'Done',
             ['foo' => 'bar']
         );

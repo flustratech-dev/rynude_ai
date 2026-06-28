@@ -16,7 +16,9 @@ class AgentEvent implements JsonSerializable
     public readonly DateTimeImmutable $timestamp;
     public readonly string $sessionId;
     public readonly string $agentId;
+    public readonly string $workflowId;
     public readonly AgentEventType $eventType;
+    public readonly ?string $stage;
     public readonly string $message;
     public readonly array $metadata;
 
@@ -25,7 +27,9 @@ class AgentEvent implements JsonSerializable
         DateTimeImmutable|string $timestamp,
         string $sessionId,
         string $agentId,
+        string $workflowId,
         AgentEventType|string $eventType,
+        ?string $stage,
         string $message,
         array $metadata = []
     ) {
@@ -39,12 +43,15 @@ class AgentEvent implements JsonSerializable
         
         $this->sessionId = $sessionId;
         $this->agentId = $agentId;
+        $this->workflowId = $workflowId;
         
         if (is_string($eventType)) {
             $this->eventType = AgentEventType::from($eventType);
         } else {
             $this->eventType = $eventType;
         }
+
+        $this->stage = $stage;
 
         $this->message = $message;
         $this->metadata = $metadata;
@@ -60,7 +67,9 @@ class AgentEvent implements JsonSerializable
             'timestamp' => $this->timestamp->format('Y-m-d\TH:i:s.u\Z'),
             'sessionId' => $this->sessionId,
             'agentId' => $this->agentId,
+            'workflowId' => $this->workflowId,
             'eventType' => $this->eventType->value,
+            'stage' => $this->stage,
             'message' => $this->message,
             'metadata' => $this->metadata,
         ], self::schemaRules());
@@ -75,9 +84,11 @@ class AgentEvent implements JsonSerializable
         return [
             'id' => ['required', 'string'],
             'timestamp' => ['required', 'date'],
-            'sessionId' => ['required', 'string'],
-            'agentId' => ['required', 'string'],
+            'sessionId' => ['required', 'string', 'uuid'],
+            'agentId' => ['required', 'string', 'uuid'],
+            'workflowId' => ['required', 'string', 'uuid'],
             'eventType' => ['required', new Enum(AgentEventType::class)],
+            'stage' => ['nullable', 'string'],
             'message' => ['required', 'string'],
             'metadata' => ['array'],
         ];
@@ -90,7 +101,9 @@ class AgentEvent implements JsonSerializable
             'timestamp' => $this->timestamp->format('Y-m-d\TH:i:s.u\Z'),
             'sessionId' => $this->sessionId,
             'agentId' => $this->agentId,
+            'workflowId' => $this->workflowId,
             'eventType' => $this->eventType->value,
+            'stage' => $this->stage,
             'message' => $this->message,
             'metadata' => $this->metadata,
         ];

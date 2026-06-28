@@ -19,7 +19,9 @@ class EventStoreTest extends TestCase
             new DateTimeImmutable(),
             'sess_1',
             'agent_1',
+            'wf_1',
             AgentEventType::THINKING,
+            null,
             'Message'
         );
         
@@ -34,9 +36,9 @@ class EventStoreTest extends TestCase
     {
         $store = new EventStore();
         
-        $event1 = new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', 'agent_1', AgentEventType::THINKING, 'M1');
-        $event2 = new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', 'agent_1', AgentEventType::PLANNING, 'M2');
-        $event3 = new AgentEvent('evt_3', new DateTimeImmutable('2023-10-10T12:00:00Z'), 'sess_1', 'agent_1', AgentEventType::WRITING, 'M3');
+        $event1 = new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::THINKING, null, 'M1');
+        $event2 = new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::PLANNING, null, 'M2');
+        $event3 = new AgentEvent('evt_3', new DateTimeImmutable('2023-10-10T12:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::WRITING, null, 'M3');
         
         $store->save($event1);
         $store->save($event2);

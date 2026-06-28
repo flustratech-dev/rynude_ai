@@ -4,6 +4,13 @@ namespace App\Enums;
 
 enum AgentEventType: string
 {
+    case START = 'start';
+    case COMPLETED = 'completed';
+    case ERROR = 'error';
+    case CANCELLED = 'cancelled';
+    case TIMEOUT = 'timeout';
+    
+    // Kept for backward compatibility or existing tests
     case THINKING = 'thinking';
     case PLANNING = 'planning';
     case RESEARCHING = 'researching';
@@ -11,5 +18,4 @@ enum AgentEventType: string
     case REVIEWING = 'reviewing';
     case TOOL_START = 'tool_start';
     case TOOL_END = 'tool_end';
-    case COMPLETED = 'completed';
 }

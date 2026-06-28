@@ -15,6 +15,12 @@
 - [x] SSE support (Provider Interface)
 - [x] WebSocket support (Provider Interface)
 
+## Sprint 2.5: Architecture Hardening
+- [x] Fix failing tests
+- [x] Introduce abstractions
+- [x] Prepare multi-agent support (Add agentId)
+- [x] Repository cleanup
+
 ## Sprint 3: Orchestrator Integration
 - [ ] Emit events before and after stages (understand, plan, research, write, review, complete)
 

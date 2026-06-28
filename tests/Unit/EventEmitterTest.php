@@ -25,7 +25,9 @@ class EventEmitterTest extends TestCase
             new DateTimeImmutable(),
             'sess_123',
             'agent_1',
+            'wf_1',
             AgentEventType::THINKING,
+            null,
             'Thinking'
         );
 
