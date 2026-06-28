@@ -21,6 +21,9 @@ class AgentToolsTest extends TestCase
         if (!is_dir($this->tempWorkspace)) {
             mkdir($this->tempWorkspace, 0755, true);
         }
+        
+        // Initialize git so git ls-files and git grep work
+        exec('git init ' . escapeshellarg($this->tempWorkspace));
 
         // Disable interactive permissions for tests by default
         putenv('DANGEROUSLY_SKIP_PERMISSIONS=true');
@@ -55,6 +58,7 @@ class AgentToolsTest extends TestCase
     {
         $localSvc = new LocalWorkspaceService();
         $localSvc->writeFile($this->tempWorkspace, 'src/test.txt', "First line\nTargetFunction here\nThird line");
+        exec('cd ' . escapeshellarg($this->tempWorkspace) . ' && git config user.email "test@example.com" && git config user.name "Test" && git add . && git commit -m "init"');
 
         $tools = new AgentTools(localWorkspacePath: $this->tempWorkspace);
         
@@ -147,6 +151,7 @@ class AgentToolsTest extends TestCase
         
         // Create gitignore
         $localSvc->writeFile($this->tempWorkspace, '.gitignore', "subdir/nested/");
+        exec('cd ' . escapeshellarg($this->tempWorkspace) . ' && git config user.email "test@example.com" && git config user.name "Test" && git add . && git commit -m "init"');
 
         $tools = new AgentTools(localWorkspacePath: $this->tempWorkspace);
         

@@ -9,11 +9,11 @@
 - [x] Run tests
 
 ## Sprint 2: Activity Stream Service
-- [ ] Event emitter
-- [ ] Event repository implementation
-- [ ] Event retrieval API
-- [ ] SSE support
-- [ ] WebSocket support
+- [x] Event emitter
+- [x] Event repository implementation
+- [x] Event retrieval API
+- [x] SSE support (Provider Interface)
+- [x] WebSocket support (Provider Interface)
 
 ## Sprint 3: Orchestrator Integration
 - [ ] Emit events before and after stages (understand, plan, research, write, review, complete)
