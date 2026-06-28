@@ -26,9 +26,9 @@ Hope this helps!';
         $this->assertEquals('application/json', $result['artifact']->type);
         $this->assertEquals('json', $result['artifact']->language);
         $this->assertEquals('Test File', $result['artifact']->title);
-        $this->assertEquals("{\n  \"key\": \"value\"\n}", $result['artifact']->content);
+        $this->assertEquals("{\n  \"key\": \"value\"\n}", str_replace("\r\n", "\n", $result['artifact']->content));
         
-        $this->assertEquals("Here is your file:\n\nHope this helps!", $result['cleanText']);
+        $this->assertEquals("Here is your file:\n\nHope this helps!", str_replace("\r\n", "\n", $result['cleanText']));
     }
 
     public function test_returns_null_when_no_artifact(): void

@@ -15,14 +15,16 @@ use DateTimeImmutable;
 
 class ObservabilityStressTest extends TestCase
 {
+    use RefreshDatabase;
+    
     public function test_concurrent_workflow_isolation()
     {
         $orchestrator = app(AgentOrchestrator::class);
         $emitter = app(EventEmitterInterface::class);
         
         $events = [];
-        $emitter->subscribe(function (AgentEvent $event) use (&$events) {
-            $events[] = $event;
+        \Illuminate\Support\Facades\Event::listen(\App\Events\AgentEventDispatched::class, function ($e) use (&$events) {
+            $events[] = $e->agentEvent;
         });
 
         // Simulate 5 concurrent workflows emitting events
@@ -60,8 +62,8 @@ class ObservabilityStressTest extends TestCase
             
             // Validate timestamps are monotonically increasing or equal within a workflow
             for ($i = 1; $i < count($workflowEvents); $i++) {
-                $prevTime = $workflowEvents[$i - 1]->timestamp;
-                $currTime = $workflowEvents[$i]->timestamp;
+                $prevTime = $workflowEvents[$i - 1]->createdAt;
+                $currTime = $workflowEvents[$i]->createdAt;
                 $this->assertGreaterThanOrEqual($prevTime, $currTime);
             }
         }

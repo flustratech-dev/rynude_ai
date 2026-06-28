@@ -13,7 +13,8 @@ use DateTimeZone;
 class AgentEvent implements JsonSerializable
 {
     public readonly string $id;
-    public readonly DateTimeImmutable $timestamp;
+    public readonly DateTimeImmutable $createdAt;
+    public readonly int $sequenceNumber;
     public readonly string $sessionId;
     public readonly string $agentId;
     public readonly string $workflowId;
@@ -24,22 +25,25 @@ class AgentEvent implements JsonSerializable
 
     public function __construct(
         string $id,
-        DateTimeImmutable|string $timestamp,
+        DateTimeImmutable|string $createdAt,
         string $sessionId,
         string $agentId,
         string $workflowId,
         AgentEventType|string $eventType,
         ?string $stage,
         string $message,
-        array $metadata = []
+        array $metadata = [],
+        int $sequenceNumber = 0
     ) {
         $this->id = $id;
         
-        // Ensure timestamp is UTC
-        if (is_string($timestamp)) {
-            $timestamp = new DateTimeImmutable($timestamp);
+        // Ensure createdAt is UTC
+        if (is_string($createdAt)) {
+            $createdAt = new DateTimeImmutable($createdAt);
         }
-        $this->timestamp = $timestamp->setTimezone(new DateTimeZone('UTC'));
+        $this->createdAt = $createdAt->setTimezone(new DateTimeZone('UTC'));
+        
+        $this->sequenceNumber = $sequenceNumber;
         
         $this->sessionId = $sessionId;
         $this->agentId = $agentId;
@@ -64,7 +68,8 @@ class AgentEvent implements JsonSerializable
         // For validation, we use primitive array values.
         $validator = Validator::make([
             'id' => $this->id,
-            'timestamp' => $this->timestamp->format('Y-m-d\TH:i:s.u\Z'),
+            'createdAt' => $this->createdAt->format('Y-m-d\TH:i:s.u\Z'),
+            'sequenceNumber' => $this->sequenceNumber,
             'sessionId' => $this->sessionId,
             'agentId' => $this->agentId,
             'workflowId' => $this->workflowId,
@@ -83,7 +88,8 @@ class AgentEvent implements JsonSerializable
     {
         return [
             'id' => ['required', 'string'],
-            'timestamp' => ['required', 'date'],
+            'createdAt' => ['required', 'date'],
+            'sequenceNumber' => ['required', 'integer'],
             'sessionId' => ['required', 'string', 'uuid'],
             'agentId' => ['required', 'string', 'uuid'],
             'workflowId' => ['required', 'string', 'uuid'],
@@ -98,7 +104,8 @@ class AgentEvent implements JsonSerializable
     {
         return [
             'id' => $this->id,
-            'timestamp' => $this->timestamp->format('Y-m-d\TH:i:s.u\Z'),
+            'createdAt' => $this->createdAt->format('Y-m-d\TH:i:s.u\Z'),
+            'sequenceNumber' => $this->sequenceNumber,
             'sessionId' => $this->sessionId,
             'agentId' => $this->agentId,
             'workflowId' => $this->workflowId,

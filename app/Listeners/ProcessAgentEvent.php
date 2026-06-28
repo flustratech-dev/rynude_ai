@@ -5,8 +5,8 @@ namespace App\Listeners;
 use App\Events\AgentEventDispatched;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use App\Repositories\AgentEventRepositoryInterface;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Cache;
 
 class ProcessAgentEvent implements ShouldQueue
 {
@@ -19,12 +19,19 @@ class ProcessAgentEvent implements ShouldQueue
 
     public function handle(AgentEventDispatched $event): void
     {
-        // 1. Save to EventStore (DB)
-        $repository = app(AgentEventRepositoryInterface::class);
-        $repository->save($event->agentEvent);
+        $agentEvent = $event->agentEvent;
+        
+        $cacheKey = 'processed_event_' . $agentEvent->id;
+        
+        // Deduplicate using Cache (TTL 120 seconds)
+        if (Cache::has($cacheKey)) {
+            return; // Already processed
+        }
+        
+        Cache::put($cacheKey, true, 120);
 
-        // 2. Publish to Redis for Phase 2/3
-        $channel = 'agent-events.' . $event->agentEvent->workflowId;
-        Redis::publish($channel, json_encode($event->agentEvent));
+        // Publish to Redis for SSE Bridge
+        $channel = 'agent-events.' . $agentEvent->workflowId;
+        Redis::publish($channel, json_encode($agentEvent));
     }
 }

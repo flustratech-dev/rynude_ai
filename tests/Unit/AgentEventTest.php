@@ -13,23 +13,25 @@ class AgentEventTest extends TestCase
 {
     public function test_can_create_valid_agent_event()
     {
-        $timestamp = new DateTimeImmutable('2023-10-10T10:00:00Z');
+        $createdAt = new DateTimeImmutable('2023-10-10T10:00:00Z');
         
         $event = new AgentEvent(
             'evt_123',
-            $timestamp,
+            $createdAt,
             '11111111-1111-1111-1111-111111111111',
             '22222222-2222-2222-2222-222222222222',
             '33333333-3333-3333-3333-333333333333',
             AgentEventType::THINKING,
             null,
             'Thinking about the request...',
-            ['tool' => 'none']
+            ['tool' => 'none'],
+            1
         );
 
         $this->assertEquals('evt_123', $event->id);
-        $this->assertEquals('UTC', $event->timestamp->getTimezone()->getName());
-        $this->assertEquals('2023-10-10T10:00:00.000000Z', $event->timestamp->format('Y-m-d\TH:i:s.u\Z'));
+        $this->assertEquals('UTC', $event->createdAt->getTimezone()->getName());
+        $this->assertEquals('2023-10-10T10:00:00.000000Z', $event->createdAt->format('Y-m-d\TH:i:s.u\Z'));
+        $this->assertEquals(1, $event->sequenceNumber);
         $this->assertEquals('11111111-1111-1111-1111-111111111111', $event->sessionId);
         $this->assertEquals('22222222-2222-2222-2222-222222222222', $event->agentId);
         $this->assertEquals('33333333-3333-3333-3333-333333333333', $event->workflowId);
@@ -55,7 +57,8 @@ class AgentEventTest extends TestCase
         
         $this->assertEquals(AgentEventType::THINKING, $event->eventType);
         $this->assertEquals('UNDERSTAND', $event->stage);
-        $this->assertEquals('UTC', $event->timestamp->getTimezone()->getName());
+        $this->assertEquals('UTC', $event->createdAt->getTimezone()->getName());
+        $this->assertEquals(0, $event->sequenceNumber);
     }
 
     public function test_invalid_event_type_throws_exception()

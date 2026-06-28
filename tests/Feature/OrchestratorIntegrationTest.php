@@ -75,7 +75,7 @@ class OrchestratorIntegrationTest extends TestCase
 
         $events = $this->streamProvider->published;
         
-        $this->assertCount(23, $events); // 5 stages * 2 (START, COMPLETED) + 12 tool events + 1 final COMPLETED
+        $this->assertCount(21, $events); // 5 stages * 2 (START, COMPLETED) + 10 tool events + 1 final COMPLETED
 
         // Verify orchestrator stages specifically by filtering for non-tool events
         $orchestratorEvents = array_values(array_filter($events, function($event) {

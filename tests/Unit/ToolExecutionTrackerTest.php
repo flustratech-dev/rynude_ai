@@ -64,19 +64,14 @@ class ToolExecutionTrackerTest extends TestCase
         $this->assertEquals('started', $startEvent->metadata['toolStatus']);
         $this->assertEquals(0, $startEvent->metadata['progressPercent']);
 
-        // 2. Update Status
+        // 2. Update Status (no longer emits an event)
         $tracker->updateStatus($toolId, ['progress_detail' => 'running...'], 45);
-        $this->assertCount(2, $this->streamProvider->published);
-        $updateEvent = $this->streamProvider->published[1];
-        $this->assertEquals(AgentEventType::THINKING, $updateEvent->eventType);
-        $this->assertEquals('running', $updateEvent->metadata['toolStatus']);
-        $this->assertEquals(45, $updateEvent->metadata['progressPercent']);
-        $this->assertEquals('running...', $updateEvent->metadata['progress_detail']);
+        $this->assertCount(1, $this->streamProvider->published); // Still 1
 
         // 3. Complete Tool
         $tracker->completeTool($toolId, ['result' => 'done']);
-        $this->assertCount(3, $this->streamProvider->published);
-        $completeEvent = $this->streamProvider->published[2];
+        $this->assertCount(2, $this->streamProvider->published); // Now 2
+        $completeEvent = $this->streamProvider->published[1];
         $this->assertEquals(AgentEventType::COMPLETED, $completeEvent->eventType);
         $this->assertEquals('completed', $completeEvent->metadata['toolStatus']);
         $this->assertEquals(100, $completeEvent->metadata['progressPercent']);

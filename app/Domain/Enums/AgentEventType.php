@@ -18,4 +18,5 @@ enum AgentEventType: string
     case REVIEWING = 'reviewing';
     case TOOL_START = 'tool_start';
     case TOOL_END = 'tool_end';
+    case MESSAGE_CHUNK = 'message_chunk';
 }

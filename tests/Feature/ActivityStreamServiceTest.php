@@ -25,22 +25,20 @@ class FakeStreamProvider implements StreamProviderInterface
     }
 }
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 class ActivityStreamServiceTest extends TestCase
 {
+    use RefreshDatabase;
     public function test_emit_dispatches_event_and_publishes_to_stream()
     {
         $store = new EventStore();
         $historyService = new EventHistoryService($store);
-        $emitter = new EventEmitter();
         $streamProvider = new FakeStreamProvider();
-        
         $notified = false;
-        $emitter->subscribe(function (AgentEvent $event) use (&$notified, $store) {
-            $notified = true;
-            $store->save($event);
-        });
-
-        $service = new ActivityStreamService($emitter, $historyService, $streamProvider);
+        // In the new setup, ActivityStreamService saves directly to the DB.
+        
+        $service = new ActivityStreamService($historyService, $streamProvider, $store);
         
         $event = new AgentEvent(
             'evt_1',
@@ -55,8 +53,9 @@ class ActivityStreamServiceTest extends TestCase
 
         $service->emit($event);
 
-        // Verify subscriber was notified (which persists it in our setup)
-        $this->assertTrue($notified);
+        // Verify event was saved to the DB
+        $history = $service->getHistory('11111111-1111-1111-1111-111111111111');
+        $this->assertCount(1, $history);
         
         // Verify stream provider published the event
         $this->assertCount(1, $streamProvider->published);
@@ -76,14 +75,8 @@ class ActivityStreamServiceTest extends TestCase
     {
         $store = new EventStore();
         $historyService = new EventHistoryService($store);
-        $emitter = new EventEmitter();
         $streamProvider = new FakeStreamProvider();
-        
-        $emitter->subscribe(function (AgentEvent $event) use ($store) {
-            $store->save($event);
-        });
-
-        $service = new ActivityStreamService($emitter, $historyService, $streamProvider);
+        $service = new ActivityStreamService($historyService, $streamProvider, $store);
         
         $events = [
             new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', AgentEventType::THINKING, null, 'M1'),

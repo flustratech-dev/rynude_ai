@@ -1,4 +1,4 @@
-<div x-data="{
+<div wire:ignore x-data="{
     stages: [
         { id: 'UNDERSTAND', label: 'Understand Request', status: 'pending' },
         { id: 'PLAN', label: 'Plan Execution', status: 'pending' },
@@ -13,8 +13,9 @@
         }
     },
     handleEvent(e) {
-        if (e.detail.sessionId !== '{{ $sessionId }}') return;
-        this.processEvent(e.detail);
+        const data = e.detail;
+        if (this.$wire.workflowId && data.workflowId !== this.$wire.workflowId) return;
+        this.processEvent(data);
     },
     processEvent(event) {
         let stageId = event.stage;

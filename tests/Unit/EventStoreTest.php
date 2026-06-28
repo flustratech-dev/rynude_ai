@@ -8,8 +8,12 @@ use App\Domain\AgentEvent;
 use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 class EventStoreTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_can_persist_and_retrieve_events()
     {
         $store = new EventStore();

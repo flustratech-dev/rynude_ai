@@ -20,7 +20,7 @@ class EventHistoryService implements EventHistoryServiceInterface
         $allEvents = $this->store->findBySession($sessionId);
         
         // Sort newest first
-        usort($allEvents, fn(AgentEvent $a, AgentEvent $b) => $b->timestamp <=> $a->timestamp);
+        usort($allEvents, fn(AgentEvent $a, AgentEvent $b) => $b->createdAt <=> $a->createdAt);
 
         $offset = ($page - 1) * $perPage;
         return array_slice($allEvents, $offset, $perPage);

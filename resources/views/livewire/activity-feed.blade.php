@@ -1,14 +1,17 @@
 <div class="flex flex-col w-full px-2 mt-4 font-sans max-h-[300px] overflow-y-auto scrollbar-hide" 
     x-data="{
-        events: @entangle('events'),
+        events: @js($events),
         handleEvent(e) {
             const data = e.detail;
-            if (data.sessionId !== '{{ $sessionId }}') return;
+            if (this.$wire.workflowId && data.workflowId !== this.$wire.workflowId) return;
             if (!this.events) this.events = [];
+            
+            // Deduplicate by id (exact same event delivered twice)
+            if (this.events.some(x => x.id === data.id)) return;
             
             if (data.stage || data.eventType === 'tool_start' || data.eventType === 'tool_end') {
                 const identifier = data.stage || data.message;
-                const idx = this.events.findIndex(x => (x.stage === identifier || x.message === identifier) && x.eventType !== 'completed' && x.eventType !== 'error');
+                const idx = this.events.findIndex(x => (x.stage === identifier || x.message === identifier) && x.eventType !== 'completed' && x.eventType !== 'error' && x.eventType !== 'tool_end');
                 
                 if (idx >= 0) {
                     this.events[idx] = data;
@@ -18,6 +21,9 @@
             } else {
                 this.events.push(data);
             }
+            
+            // Sort by sequenceNumber
+            this.events.sort((a, b) => (a.sequenceNumber || 0) - (b.sequenceNumber || 0));
             
             this.$nextTick(() => {
                 const container = this.$refs.feedContainer;

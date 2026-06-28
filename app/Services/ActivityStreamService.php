@@ -9,24 +9,24 @@ use App\Domain\AgentEvent;
 
 class ActivityStreamService
 {
-    private EventEmitterInterface $emitter;
     private EventHistoryServiceInterface $historyService;
     private StreamProviderInterface $streamProvider;
+    private \App\Repositories\AgentEventRepositoryInterface $eventStore;
 
     public function __construct(
-        EventEmitterInterface $emitter,
         EventHistoryServiceInterface $historyService,
-        StreamProviderInterface $streamProvider
+        StreamProviderInterface $streamProvider,
+        \App\Repositories\AgentEventRepositoryInterface $eventStore
     ) {
-        $this->emitter = $emitter;
         $this->historyService = $historyService;
         $this->streamProvider = $streamProvider;
+        $this->eventStore = $eventStore;
     }
 
     public function emit(AgentEvent $event): void
     {
-        // Internal in-memory emitter (optional/deprecated)
-        $this->emitter->dispatch($event);
+        // 1. Save to DB (Single Source of Truth)
+        $this->eventStore->save($event);
         
         // Dispatch to Laravel Event Bus (Phase 2 foundation)
         event(new \App\Events\AgentEventDispatched($event));
