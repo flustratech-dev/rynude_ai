@@ -75,17 +75,22 @@ class OrchestratorIntegrationTest extends TestCase
 
         $events = $this->streamProvider->published;
         
-        $this->assertCount(11, $events); // 5 stages * 2 (START, COMPLETED) + 1 final COMPLETED
+        $this->assertCount(23, $events); // 5 stages * 2 (START, COMPLETED) + 12 tool events + 1 final COMPLETED
 
-        // Verify ordering and stages
+        // Verify orchestrator stages specifically by filtering for non-tool events
+        $orchestratorEvents = array_values(array_filter($events, function($event) {
+            return !isset($event->metadata['toolExecutionId']) && $event->message !== 'Workflow completed successfully';
+        }));
+        
+        $this->assertCount(10, $orchestratorEvents);
         $expectedStages = ['UNDERSTAND', 'PLAN', 'RESEARCH', 'WRITE', 'REVIEW'];
         
         for ($i = 0; $i < 5; $i++) {
             $startIndex = $i * 2;
             $completeIndex = $i * 2 + 1;
             
-            $startEvent = $events[$startIndex];
-            $completeEvent = $events[$completeIndex];
+            $startEvent = $orchestratorEvents[$startIndex];
+            $completeEvent = $orchestratorEvents[$completeIndex];
             
             $this->assertEquals(AgentEventType::START, $startEvent->eventType);
             $this->assertEquals($expectedStages[$i], $startEvent->stage);
@@ -94,7 +99,7 @@ class OrchestratorIntegrationTest extends TestCase
             $this->assertEquals($expectedStages[$i], $completeEvent->stage);
         }
         
-        $finalEvent = $events[10];
+        $finalEvent = end($events);
         $this->assertEquals(AgentEventType::COMPLETED, $finalEvent->eventType);
         $this->assertNull($finalEvent->stage);
         $this->assertEquals('Workflow completed successfully', $finalEvent->message);
@@ -132,24 +137,28 @@ class OrchestratorIntegrationTest extends TestCase
 
         $events = $this->streamProvider->published;
         
-        // Expected events: UNDERSTAND START, UNDERSTAND COMPLETE, PLAN START, PLAN ERROR, FINAL ERROR
-        $this->assertCount(5, $events);
+        $orchestratorEvents = array_values(array_filter($events, function($event) {
+            return !isset($event->metadata['toolExecutionId']);
+        }));
         
-        $this->assertEquals(AgentEventType::START, $events[0]->eventType);
-        $this->assertEquals('UNDERSTAND', $events[0]->stage);
+        // Expected orchestrator events: UNDERSTAND START, UNDERSTAND COMPLETE, PLAN START, PLAN ERROR, FINAL ERROR
+        $this->assertCount(5, $orchestratorEvents);
         
-        $this->assertEquals(AgentEventType::COMPLETED, $events[1]->eventType);
-        $this->assertEquals('UNDERSTAND', $events[1]->stage);
+        $this->assertEquals(AgentEventType::START, $orchestratorEvents[0]->eventType);
+        $this->assertEquals('UNDERSTAND', $orchestratorEvents[0]->stage);
         
-        $this->assertEquals(AgentEventType::START, $events[2]->eventType);
-        $this->assertEquals('PLAN', $events[2]->stage);
+        $this->assertEquals(AgentEventType::COMPLETED, $orchestratorEvents[1]->eventType);
+        $this->assertEquals('UNDERSTAND', $orchestratorEvents[1]->stage);
         
-        $this->assertEquals(AgentEventType::ERROR, $events[3]->eventType);
-        $this->assertEquals('PLAN', $events[3]->stage);
-        $this->assertStringContainsString('Failed PLAN stage', $events[3]->message);
+        $this->assertEquals(AgentEventType::START, $orchestratorEvents[2]->eventType);
+        $this->assertEquals('PLAN', $orchestratorEvents[2]->stage);
         
-        $this->assertEquals(AgentEventType::ERROR, $events[4]->eventType);
-        $this->assertNull($events[4]->stage);
-        $this->assertStringContainsString('Workflow failed', $events[4]->message);
+        $this->assertEquals(AgentEventType::ERROR, $orchestratorEvents[3]->eventType);
+        $this->assertEquals('PLAN', $orchestratorEvents[3]->stage);
+        $this->assertStringContainsString('Failed PLAN stage', $orchestratorEvents[3]->message);
+        
+        $this->assertEquals(AgentEventType::ERROR, $orchestratorEvents[4]->eventType);
+        $this->assertNull($orchestratorEvents[4]->stage);
+        $this->assertStringContainsString('Workflow failed', $orchestratorEvents[4]->message);
     }
 }

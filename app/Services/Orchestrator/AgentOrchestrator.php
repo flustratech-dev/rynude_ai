@@ -34,7 +34,7 @@ class AgentOrchestrator
         }
     }
 
-    private function runStage(string $sessionId, string $agentId, string $workflowId, string $stage, callable $action): void
+    protected function runStage(string $sessionId, string $agentId, string $workflowId, string $stage, callable $action): void
     {
         $this->emitEvent($sessionId, $agentId, $workflowId, AgentEventType::START, $stage, "Starting $stage stage");
         
@@ -62,33 +62,33 @@ class AgentOrchestrator
         $this->activityStream->emit($event);
     }
 
-    private function understand(string $sessionId, string $agentId, string $workflowId, string $stage): void
+    protected function understand(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
         $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'AnalyzeContextTool', ToolCategory::RESEARCH, $stage);
         $this->toolTracker->updateStatus($toolId, [], 50);
         $this->toolTracker->completeTool($toolId, ['result' => 'Context analyzed']);
     }
 
-    private function plan(string $sessionId, string $agentId, string $workflowId, string $stage): void
+    protected function plan(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
         $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'PlanningTool', ToolCategory::SYSTEM, $stage);
         $this->toolTracker->updateStatus($toolId, [], 100);
         $this->toolTracker->completeTool($toolId, ['plan' => 'Step 1, Step 2']);
     }
 
-    private function research(string $sessionId, string $agentId, string $workflowId, string $stage): void
+    protected function research(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
         $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'WebSearchTool', ToolCategory::RESEARCH, $stage);
         $this->toolTracker->completeTool($toolId, ['query' => 'observability']);
     }
 
-    private function write(string $sessionId, string $agentId, string $workflowId, string $stage): void
+    protected function write(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
         $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'CodeEditorTool', ToolCategory::WRITING, $stage);
         $this->toolTracker->completeTool($toolId, ['files' => 1]);
     }
 
-    private function review(string $sessionId, string $agentId, string $workflowId, string $stage): void
+    protected function review(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
         $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'ReviewTool', ToolCategory::REVIEW, $stage);
         $this->toolTracker->completeTool($toolId, ['status' => 'approved']);
