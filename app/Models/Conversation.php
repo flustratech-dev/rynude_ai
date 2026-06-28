@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Conversation extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'user_id', 'title', 'project_id', 'archived_at', 'share_token',
         'memory', 'memory_synced_count', 'memory_updated_at', 'metadata',

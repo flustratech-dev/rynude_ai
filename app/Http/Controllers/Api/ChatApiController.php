@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Conversation;
+use App\Models\Message;
+use App\Models\MessageAttachment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -55,14 +58,148 @@ class ChatApiController extends ApiController
         return response()->json(['data' => $conversations]);
     }
 
-    public function send(): JsonResponse
+    public function send(Request $request)
     {
-        return $this->pendingMigration('chat.send', 'App\\Livewire\\ChatInterface::sendMessage', 'Phase 5');
+        $validated = $request->validate([
+            'prompt' => ['required', 'string', 'max:10000'],
+            'model' => ['required', 'string'],
+            'conversation_id' => ['nullable', 'integer', 'exists:conversations,id'],
+            'project_id' => ['nullable', 'integer', 'exists:projects,id'],
+            'web_search' => ['nullable', 'boolean'],
+            'attachments.*' => ['nullable', 'file', 'max:50000'], // 50MB per file
+        ]);
+
+        $text = trim($validated['prompt']);
+        $model = $validated['model'];
+        $conversationId = $validated['conversation_id'] ?? null;
+        $projectId = $validated['project_id'] ?? null;
+        $webSearch = $validated['web_search'] ?? false;
+
+        // Create or load conversation
+        if ($conversationId) {
+            $conversation = Conversation::where('id', $conversationId)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+        } else {
+            $conversation = Conversation::create([
+                'user_id' => Auth::id(),
+                'title' => 'New Chat',
+                'project_id' => $projectId,
+            ]);
+        }
+
+        // Create user message
+        $userMessage = Message::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'user',
+            'content' => $text,
+        ]);
+
+        // Handle file attachments
+        $attachmentData = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('attachments', 'public');
+                $attachment = \App\Models\MessageAttachment::create([
+                    'message_id' => $userMessage->id,
+                    'file_path' => $path,
+                    'file_type' => $file->getMimeType(),
+                    'file_name' => $file->getClientOriginalName(),
+                ]);
+
+                $attachmentData[] = [
+                    'file_path' => $path,
+                    'file_type' => $file->getMimeType(),
+                    'file_name' => $file->getClientOriginalName(),
+                ];
+            }
+        }
+
+        // Clear the autosaved draft
+        $conversation->update(['draft_prompt' => null]);
+
+        // Build message history for AI
+        $conversation->load(['messages.artifacts', 'messages.attachments']);
+        $messages = [];
+
+        foreach ($conversation->messages as $msg) {
+            $msgData = [
+                'role' => $msg->role,
+                'content' => $msg->content,
+            ];
+
+            // Include attachments in message context if present
+            if ($msg->attachments->isNotEmpty()) {
+                $msgData['attachments'] = $msg->attachments->map(fn($att) => [
+                    'file_path' => $att->file_path,
+                    'file_type' => $att->file_type,
+                    'file_name' => $att->file_name,
+                ])->toArray();
+            }
+
+            $messages[] = $msgData;
+        }
+
+        // Stream the AI response using Server-Sent Events (SSE)
+        // Resolve the service before the closure so mocks can intercept it
+        $streamingService = app(\App\Services\ChatStreamingService::class);
+
+        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch) {
+            try {
+                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch);
+
+                foreach ($generator as $event) {
+                    // Format as SSE: data: {...}\n\n
+                    echo 'data: ' . json_encode($event) . "\n\n";
+
+                    // Flush output buffer to send immediately
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                }
+
+            } catch (\Exception $e) {
+                // Send error event
+                echo 'data: ' . json_encode([
+                    'type' => 'error',
+                    'data' => $e->getMessage(),
+                ]) . "\n\n";
+
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no', // Disable nginx buffering
+            'Connection' => 'keep-alive',
+        ]);
     }
 
-    public function stop(): JsonResponse
+    public function stop(Request $request): JsonResponse
     {
-        return $this->pendingMigration('chat.stop', 'App\\Livewire\\ChatInterface::stopGeneration', 'Phase 5');
+        $conversationId = $request->input('conversation_id');
+
+        if (!$conversationId) {
+            return response()->json(['error' => 'conversation_id required'], 400);
+        }
+
+        // Verify ownership
+        $owns = Conversation::where('id', $conversationId)
+            ->where('user_id', Auth::id())
+            ->exists();
+
+        if (!$owns) {
+            return response()->json(['error' => 'Conversation not found'], 404);
+        }
+
+        // Set cache flag that the streaming loop checks
+        \Illuminate\Support\Facades\Cache::put('chat_stop_' . $conversationId, true, 120);
+
+        return response()->json(['stopped' => true]);
     }
 
     public function show(Conversation $conversation): JsonResponse
