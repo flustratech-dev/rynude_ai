@@ -15,6 +15,7 @@ class AgentEvent implements JsonSerializable
     public readonly string $id;
     public readonly DateTimeImmutable $timestamp;
     public readonly string $sessionId;
+    public readonly string $agentId;
     public readonly AgentEventType $eventType;
     public readonly string $message;
     public readonly array $metadata;
@@ -23,6 +24,7 @@ class AgentEvent implements JsonSerializable
         string $id,
         DateTimeImmutable|string $timestamp,
         string $sessionId,
+        string $agentId,
         AgentEventType|string $eventType,
         string $message,
         array $metadata = []
@@ -36,6 +38,7 @@ class AgentEvent implements JsonSerializable
         $this->timestamp = $timestamp->setTimezone(new DateTimeZone('UTC'));
         
         $this->sessionId = $sessionId;
+        $this->agentId = $agentId;
         
         if (is_string($eventType)) {
             $this->eventType = AgentEventType::from($eventType);
@@ -56,6 +59,7 @@ class AgentEvent implements JsonSerializable
             'id' => $this->id,
             'timestamp' => $this->timestamp->format('Y-m-d\TH:i:s.u\Z'),
             'sessionId' => $this->sessionId,
+            'agentId' => $this->agentId,
             'eventType' => $this->eventType->value,
             'message' => $this->message,
             'metadata' => $this->metadata,
@@ -72,6 +76,7 @@ class AgentEvent implements JsonSerializable
             'id' => ['required', 'string'],
             'timestamp' => ['required', 'date'],
             'sessionId' => ['required', 'string'],
+            'agentId' => ['required', 'string'],
             'eventType' => ['required', new Enum(AgentEventType::class)],
             'message' => ['required', 'string'],
             'metadata' => ['array'],
@@ -84,6 +89,7 @@ class AgentEvent implements JsonSerializable
             'id' => $this->id,
             'timestamp' => $this->timestamp->format('Y-m-d\TH:i:s.u\Z'),
             'sessionId' => $this->sessionId,
+            'agentId' => $this->agentId,
             'eventType' => $this->eventType->value,
             'message' => $this->message,
             'metadata' => $this->metadata,

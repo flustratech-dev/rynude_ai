@@ -2,18 +2,20 @@
 
 namespace App\Services;
 
+use App\Contracts\EventEmitterInterface;
+use App\Contracts\EventHistoryServiceInterface;
 use App\Contracts\StreamProviderInterface;
 use App\Models\AgentEvent;
 
 class ActivityStreamService
 {
-    private EventEmitter $emitter;
-    private EventHistoryService $historyService;
+    private EventEmitterInterface $emitter;
+    private EventHistoryServiceInterface $historyService;
     private StreamProviderInterface $streamProvider;
 
     public function __construct(
-        EventEmitter $emitter,
-        EventHistoryService $historyService,
+        EventEmitterInterface $emitter,
+        EventHistoryServiceInterface $historyService,
         StreamProviderInterface $streamProvider
     ) {
         $this->emitter = $emitter;

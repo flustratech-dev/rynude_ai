@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\AgentEvent;
 
-class EventEmitter
+use App\Contracts\EventEmitterInterface;
+
+class EventEmitter implements EventEmitterInterface
 {
     /** @var array<callable> */
     private array $subscribers = [];
