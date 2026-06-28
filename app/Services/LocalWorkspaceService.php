@@ -38,7 +38,8 @@ class LocalWorkspaceService
         );
 
         foreach ($iterator as $file) {
-            $relativePath = str_replace('\\', '/', str_replace($basePath . '/', '', $file->getPathname()));
+            $normalizedPathname = str_replace('\\', '/', $file->getPathname());
+            $relativePath = str_replace($basePath . '/', '', $normalizedPathname);
             
             // Check ignore patterns (explicit list + gitignore)
             if ($this->isIgnored($relativePath, $gitignorePatterns)) {
