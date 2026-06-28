@@ -15,8 +15,10 @@ use Illuminate\Contracts\View\View;
  */
 class DesignController extends Controller
 {
-    public function index(): View
+    public function index(): \Illuminate\Http\RedirectResponse
     {
-        return view('design');
+        // The Livewire design-panel component is being retired as part of the
+        // Livewire-to-API migration. Redirect to /chat until a native replacement exists.
+        return redirect()->route('chat');
     }
 }

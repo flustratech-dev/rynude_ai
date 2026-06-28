@@ -2,5 +2,5 @@
 {{-- Rendered by App\Http\Controllers\DesignController@index. --}}
 {{-- Mounts the existing Livewire component so all business logic stays intact. --}}
 <x-app-layout>
-    @livewire('design-panel')
+    @include('livewire.design-panel')
 </x-app-layout>

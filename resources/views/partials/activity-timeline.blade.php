@@ -15,7 +15,7 @@
     so the mount point in chat-interface stays unchanged. Later phases can
     @include this partial directly from any Blade view with no Livewire at all.
 --}}
-<div wire:ignore x-data="{
+<div x-ignore x-data="{
     workflowId: @js($workflowId ?? null),
     initialEvents: @js($initialEvents ?? []),
     stages: [

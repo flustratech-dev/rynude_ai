@@ -19,9 +19,6 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
-        <!-- Livewire -->
-        @livewireStyles
-
         <!-- Theme Initialization -->
         <script>
             // Force dark mode on /code route (Claude Code terminal page)
@@ -174,9 +171,8 @@
             </main>
         </div>
 
-        @livewire('quota-warning-modal')
-        @livewire('system-update-modal')
-        @livewireScripts
+        @include('livewire.quota-warning-modal')
+        @include('livewire.system-update-modal')
 
         <!-- Markdown & Code Block Setup -->
         <script>
@@ -216,41 +212,12 @@
             }
 
             document.addEventListener('DOMContentLoaded', initCodeBlocks);
-            document.addEventListener('livewire:navigated', initCodeBlocks);
-            document.addEventListener('livewire:init', () => {
-                Livewire.hook('morph.updated', ({ el, component }) => {
-                    initCodeBlocks();
-                });
-
-                // Copy content dispatched from server components (share links, artifacts)
-                Livewire.on('copyToClipboard', (event) => {
-                    const content = Array.isArray(event) ? event[0]?.content : event?.content;
-                    if (content && navigator.clipboard) {
-                        navigator.clipboard.writeText(content).catch(() => {});
-                    }
-                });
-
-                // Add Ngrok bypass header to all Livewire requests to prevent iframe warning interception
-                Livewire.hook('request', ({ options }) => {
-                    if (!options.headers) options.headers = {};
-                    options.headers['ngrok-skip-browser-warning'] = 'true';
-                });
-
-                // Prevent Livewire error modal (black box bug) on connection issues/ngrok interceptions
-                Livewire.hook('commit', ({ fail }) => {
-                    fail(({ status, preventDefault }) => {
-                        preventDefault();
-                        console.error('Livewire request failed with status:', status);
-                        // Show a native alert instead of a broken black iframe modal
-                        if (status === 500) {
-                            alert("Server error occurred. Please check your database connection or backend logs.");
-                        } else if (status === 504) {
-                            alert("Request timeout. The AI might be taking too long to respond.");
-                        } else {
-                            alert("An error occurred during communication with the server (Status: " + status + "). Please try again.");
-                        }
-                    });
-                });
+            // Copy content dispatched from server components (share links, artifacts)
+            document.addEventListener('copyToClipboard', (event) => {
+                const content = event.detail?.content ?? event.detail;
+                if (content && navigator.clipboard) {
+                    navigator.clipboard.writeText(content).catch(() => {});
+                }
             });
         </script>
     </body>

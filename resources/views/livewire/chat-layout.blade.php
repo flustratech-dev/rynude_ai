@@ -1,9 +1,11 @@
 <div
     x-data="{
-        sidebarOpen: {{ Js::from($sidebarOpen) }},
+        sidebarOpen: new URLSearchParams(window.location.search).get('sidebar') !== 'false',
         isMobile: false,
-        activePanel: @entangle('activePanel'),
-        openArtifactId: @entangle('openArtifactId'),
+        activePanel: new URLSearchParams(window.location.search).get('panel') || null,
+        openArtifactId: new URLSearchParams(window.location.search).get('artifact')
+            ? parseInt(new URLSearchParams(window.location.search).get('artifact'))
+            : null,
         shortcutsOpen: false,
         artifactWidth: 50,
         isResizing: false,
@@ -17,9 +19,6 @@
             window.addEventListener('resize', () => this.checkMobile());
             window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: this.sidebarOpen } }));
 
-            // Resize logic. Stored on `this` so cleanup() can remove them; the
-            // old code added them anonymously and could never detach, leaking
-            // a new pair of document listeners on every Livewire re-mount.
             this._onMove = (e) => {
                 if (!this.isResizing) return;
                 let newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
@@ -42,7 +41,6 @@
         handleShortcut(e) {
             const mod = e.metaKey || e.ctrlKey;
 
-            // Esc closes any open overlay/panel
             if (e.key === 'Escape') {
                 if (this.shortcutsOpen) { this.shortcutsOpen = false; return; }
                 if (this.artifactPanelOpen || this.activePanel === 'artifacts') {
@@ -56,7 +54,6 @@
 
             if (!mod) return;
 
-            // Cmd/Ctrl + K → New chat
             if (e.key.toLowerCase() === 'k' && !e.shiftKey) {
                 e.preventDefault();
                 this.activePanel = null;
@@ -64,19 +61,16 @@
                 window.location.href = '/chat';
                 return;
             }
-            // Cmd/Ctrl + Shift + S → Toggle sidebar
             if (e.key.toLowerCase() === 's' && e.shiftKey) {
                 e.preventDefault();
                 this.toggle();
                 return;
             }
-            // Cmd/Ctrl + Shift + , → Open settings
             if (e.key === ',' && e.shiftKey) {
                 e.preventDefault();
                 window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'general' }));
                 return;
             }
-            // Cmd/Ctrl + / → Show shortcuts reference
             if (e.key === '/') {
                 e.preventDefault();
                 this.shortcutsOpen = !this.shortcutsOpen;
@@ -106,6 +100,21 @@
     @show-shortcuts.window="shortcutsOpen = true"
     @toggle-sidebar.window="toggle()"
     @close-customize.window="activePanel = null; sidebarOpen = true; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: true } }));"
+    @open-panel.window="activePanel = $event.detail"
+    @close-panel.window="activePanel = null"
+    @open-artifact.window="
+        const d = $event.detail;
+        openArtifactId = typeof d === 'number' ? d : (d.id || null);
+        if (activePanel === 'artifacts') activePanel = null;
+    "
+    @close-artifact-panel.window="openArtifactId = null"
+    @artifact-ready.window="
+        if ($event.detail && activePanel === null) { openArtifactId = parseInt($event.detail); }
+    "
+    @show-artifact-panel.window="
+        if (openArtifactId === null) openArtifactId = 0;
+        if (activePanel === 'artifacts') activePanel = null;
+    "
 >
     {{-- ========== MOBILE SIDEBAR OVERLAY ========== --}}
     <div x-show="isMobile && sidebarOpen" x-cloak class="relative z-40">
@@ -125,7 +134,7 @@
             x-transition:leave-end="-translate-x-full"
             class="fixed inset-y-0 left-0 z-40 w-[300px] shadow-2xl bg-[#F9F8F6] dark:bg-claude-bg-dark"
         >
-            <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$openArtifactId !== null" :sidebarOpen="$sidebarOpen" key="mobile-sidebar" />
+            @include('livewire.sidebar')
         </div>
     </div>
 
@@ -135,7 +144,7 @@
         :class="sidebarOpen ? 'w-[290px]' : 'w-[60px]'"
         class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:block bg-[#F9F8F6] dark:bg-claude-bg-dark"
     >
-        <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$openArtifactId !== null" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
+        @include('livewire.sidebar')
     </div>
 
     {{-- ========== MAIN CONTENT ========== --}}
@@ -160,27 +169,27 @@
             <div class="flex-1 flex flex-col min-w-0 relative">
                 <!-- SPA Pre-mounted panels managed by AlpineJS -->
                 <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
-                    <livewire:chats-panel key="panel-chats" />
+                    @include('livewire.chats-panel')
                 </div>
                 <div x-show="activePanel === 'projects'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
-                    <livewire:projects-panel key="panel-projects" />
+                    @include('livewire.projects-panel')
                 </div>
                 <div x-show="activePanel === 'code'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
-                    <livewire:code-panel key="panel-code" />
+                    @include('livewire.code-panel')
                 </div>
                 <div x-show="activePanel === 'cowork'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
-                    <livewire:cowork-panel key="panel-cowork" />
+                    @include('livewire.cowork-panel')
                 </div>
                 <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
-                    <livewire:design-panel key="panel-design" />
+                    @include('livewire.design-panel')
                 </div>
 
                 <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
-                    <livewire:customize-panel key="panel-customize" />
+                    @include('livewire.customize-panel')
                 </div>
 
                 <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full">
-                    <livewire:chat-interface key="panel-chat-interface" />
+                    @include('livewire.chat-interface')
                 </div>
             </div>
 
@@ -207,7 +216,7 @@
                 <!-- Overlay to capture mouse events over iframe while dragging -->
                 <div x-show="isResizing" class="absolute inset-0 z-40 cursor-col-resize"></div>
 
-                <livewire:artifact-panel :openArtifactId="$openArtifactId" key="desktop-artifact-panel" />
+                @include('livewire.artifact-panel')
             </div>
 
             <div
@@ -221,14 +230,14 @@
                 x-transition:leave-end="opacity-0 translate-y-8"
                 class="fixed inset-0 z-30 flex flex-col bg-white dark:bg-stone-800 md:hidden"
             >
-                <livewire:artifact-panel :openArtifactId="$openArtifactId" key="mobile-artifact-panel" />
+                @include('livewire.artifact-panel')
             </div>
         </div>
     </div>
 
     {{-- Modals --}}
-    <livewire:settings-modal />
-    <livewire:help-modal />
+    @include('livewire.settings-modal')
+    @include('livewire.help-modal')
 
     {{-- ========== KEYBOARD SHORTCUTS MODAL ========== --}}
     <div x-show="shortcutsOpen" x-cloak x-transition.opacity class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" @click.self="shortcutsOpen = false">

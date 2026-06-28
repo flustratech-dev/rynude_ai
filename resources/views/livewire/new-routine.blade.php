@@ -2,7 +2,7 @@
     {{-- Breadcrumbs Header --}}
     <div class="px-8 py-6 border-b border-stone-200 dark:border-stone-800">
         <div class="flex items-center gap-2 text-[14px]">
-            <button wire:click="$set('currentView', 'routines')" class="text-[#2D2825] dark:text-stone-200 hover:text-[#D97757] transition-colors flex items-center gap-1.5 font-medium">
+            <button @click="$set('currentView', 'routines')" class="text-[#2D2825] dark:text-stone-200 hover:text-[#D97757] transition-colors flex items-center gap-1.5 font-medium">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                 Routines
             </button>
@@ -126,7 +126,7 @@
 
     {{-- Bottom Bar --}}
     <div class="fixed bottom-0 left-[300px] right-0 border-t border-stone-200 dark:border-stone-800 bg-white/80 dark:bg-stone-950/80 backdrop-blur-sm p-4 px-8 flex justify-end gap-3 z-20">
-        <button wire:click="$set('currentView', 'routines')" class="px-4 py-2 text-[13px] font-medium text-stone-600 dark:text-stone-300 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors">
+        <button @click="$set('currentView', 'routines')" class="px-4 py-2 text-[13px] font-medium text-stone-600 dark:text-stone-300 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors">
             Cancel
         </button>
         <button class="px-4 py-2 text-[13px] font-medium text-stone-400 bg-stone-100 dark:bg-stone-900 rounded-lg cursor-not-allowed">

@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * API route structure for the Livewire -> pure Laravel migration.
+ * API route structure.
  *
  * Every endpoint in the new /api surface is exercised here. These tests lock in:
  *   - the route exists and resolves (no 404),

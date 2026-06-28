@@ -2,5 +2,5 @@
 {{-- Rendered by App\Http\Controllers\ClaudeCodeController@index. --}}
 {{-- Mounts the existing Livewire component so all business logic stays intact. --}}
 <x-app-layout>
-    @livewire('claude-code-app')
+    @include('livewire.claude-code-app')
 </x-app-layout>

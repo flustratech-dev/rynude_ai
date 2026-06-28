@@ -19,8 +19,10 @@ use Illuminate\Contracts\View\View;
  */
 class ClaudeCodeController extends Controller
 {
-    public function index(): View
+    public function index(): \Illuminate\Http\RedirectResponse
     {
-        return view('code');
+        // The Livewire claude-code-app component is being retired as part of the
+        // Livewire-to-API migration. Redirect to /chat until a native replacement exists.
+        return redirect()->route('chat');
     }
 }

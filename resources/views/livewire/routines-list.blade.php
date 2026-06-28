@@ -5,7 +5,7 @@
             <svg class="w-5 h-5 text-stone-600 dark:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             <h1 class="text-[15px] font-medium text-stone-800 dark:text-stone-200">Routines</h1>
         </div>
-        <button wire:click="$set('currentView', 'new-routine')" class="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg text-[13px] font-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+        <button @click="$set('currentView', 'new-routine')" class="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg text-[13px] font-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity">
             <span class="font-normal">+</span> New routine
         </button>
     </div>
@@ -36,7 +36,7 @@
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-8">
         {{-- Briefing --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                 Briefing
@@ -50,7 +50,7 @@
         </button>
 
         {{-- Email triage --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><path d="Mm22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
                 Email triage
@@ -64,7 +64,7 @@
         </button>
 
         {{-- System health check --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                 System health check
@@ -78,7 +78,7 @@
         </button>
 
         {{-- Issue triage --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                 Issue triage
@@ -92,7 +92,7 @@
         </button>
 
         {{-- PR review digest --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
                 PR review digest
@@ -105,7 +105,7 @@
         </button>
 
         {{-- Dependency update check --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                 Dependency update check
@@ -118,7 +118,7 @@
         </button>
 
         {{-- Release notes drafter --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                 Release notes drafter
@@ -131,7 +131,7 @@
         </button>
 
         {{-- Flaky test tracker --}}
-        <button wire:click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
+        <button @click="$set('currentView', 'new-routine')" class="text-left p-4 rounded-xl bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 transition-colors shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-[#2D2825] dark:text-stone-200 font-medium text-[13px]">
                 <svg class="w-4 h-4 text-stone-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2v7.31"></path><path d="M14 9.3V1.99"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>
                 Flaky test tracker

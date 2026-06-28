@@ -15,7 +15,7 @@
     so the mount point in chat-interface stays unchanged. Later phases can
     @include this partial directly from any Blade view with no Livewire at all.
 --}}
-<div wire:ignore class="flex flex-col w-full px-2 mt-4 font-sans max-h-[300px] overflow-y-auto scrollbar-hide"
+<div x-ignore class="flex flex-col w-full px-2 mt-4 font-sans max-h-[300px] overflow-y-auto scrollbar-hide"
     x-data="{
         workflowId: @js($workflowId ?? null),
         events: @js($events ?? []),

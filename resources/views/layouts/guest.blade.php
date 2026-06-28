@@ -13,7 +13,6 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @livewireStyles
     </head>
     <body class="font-sans text-[#2D2825] antialiased bg-[#F9F8F6]">
         @if(request()->routeIs('login') || request()->routeIs('register'))
@@ -33,6 +32,5 @@
             </div>
         @endif
 
-        @livewireScripts
     </body>
 </html>

@@ -19,18 +19,10 @@ Route::get('/chat', function () {
     return view('chat');
 })->name('chat');
 
-// Phase 1 (Routing Migration): the /code and /design pages now enter through
-// dedicated controllers instead of mounting Livewire components directly. The
-// controllers render thin wrapper views that still embed the existing Livewire
-// components, so behaviour and business logic are unchanged.
+// Phase 1 (Routing Migration): the /code and /design pages now through
+// dedicated controllers; Livewire components fully retired.
 Route::get('/code', [ClaudeCodeController::class, 'index'])->middleware(['auth', 'verified'])->name('code');
 Route::get('/design', [DesignController::class, 'index'])->middleware(['auth', 'verified'])->name('design');
-
-// The original Livewire full-page routes are kept alive in parallel so the old
-// and new entry points run side by side (safe rollback path; Livewire is not
-// removed). These map directly to the same components the controllers embed.
-Route::get('/legacy/code', \App\Livewire\ClaudeCodeApp::class)->middleware(['auth', 'verified'])->name('code.legacy');
-Route::get('/legacy/design', \App\Livewire\DesignPanel::class)->middleware(['auth', 'verified'])->name('design.legacy');
 
 // Signal the active streaming generation to stop. Uses a cache flag that the
 // streaming loop in ChatInterface::generateResponse() polls each chunk.
@@ -69,7 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
     Route::get('/artifact/{id}/preview.pdf', function ($id) {
         $model = \App\Models\MessageArtifact::where('id', $id)->firstOrFail();
 
