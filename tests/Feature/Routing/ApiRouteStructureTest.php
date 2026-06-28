@@ -31,12 +31,12 @@ class ApiRouteStructureTest extends TestCase
         return [
             // Chat
             'chat list'        => ['get', '/api/chats'],
-            'chat send'        => ['post', '/api/chat/send'],
-            'chat stop'        => ['post', '/api/chat/stop'],
-            'chat show'        => ['get', '/api/chat/1'],
-            'chat update'      => ['patch', '/api/chat/1'],
-            'chat destroy'     => ['delete', '/api/chat/1'],
-            'chat share'       => ['post', '/api/chat/1/share'],
+            'chat send'        => ['post', '/api/chats/send'],
+            'chat stop'        => ['post', '/api/chats/stop'],
+            'chat show'        => ['get', '/api/chats/1'],
+            'chat update'      => ['patch', '/api/chats/1'],
+            'chat destroy'     => ['delete', '/api/chats/1'],
+            'chat share'       => ['post', '/api/chats/1/share'],
 
             // Artifacts
             'artifacts list'   => ['get', '/api/artifacts'],

@@ -27,14 +27,17 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth')->group(function () {
-    // ── Chat ────────────────────────────────────────────────────────────
+    // ── Chat (resource: chats, route-key: conversation) ─────────────────
+    // Plural resource noun, matching artifacts/tasks/projects/designs. The two
+    // collection-level actions (send/stop) are declared before the {conversation}
+    // wildcard routes for clarity (no method clash either way).
     Route::get('chats', [ChatApiController::class, 'index'])->name('chats.index');
-    Route::post('chat/send', [ChatApiController::class, 'send'])->name('chat.send');
-    Route::post('chat/stop', [ChatApiController::class, 'stop'])->name('chat.stop');
-    Route::get('chat/{conversation}', [ChatApiController::class, 'show'])->name('chat.show');
-    Route::patch('chat/{conversation}', [ChatApiController::class, 'update'])->name('chat.update');
-    Route::delete('chat/{conversation}', [ChatApiController::class, 'destroy'])->name('chat.destroy');
-    Route::post('chat/{conversation}/share', [ChatApiController::class, 'share'])->name('chat.share');
+    Route::post('chats/send', [ChatApiController::class, 'send'])->name('chats.send');
+    Route::post('chats/stop', [ChatApiController::class, 'stop'])->name('chats.stop');
+    Route::get('chats/{conversation}', [ChatApiController::class, 'show'])->name('chats.show');
+    Route::patch('chats/{conversation}', [ChatApiController::class, 'update'])->name('chats.update');
+    Route::delete('chats/{conversation}', [ChatApiController::class, 'destroy'])->name('chats.destroy');
+    Route::post('chats/{conversation}/share', [ChatApiController::class, 'share'])->name('chats.share');
 
     // ── Artifacts ───────────────────────────────────────────────────────
     Route::get('artifacts', [ArtifactApiController::class, 'index'])->name('artifacts.index');
