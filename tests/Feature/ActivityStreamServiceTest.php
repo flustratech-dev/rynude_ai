@@ -45,9 +45,9 @@ class ActivityStreamServiceTest extends TestCase
         $event = new AgentEvent(
             'evt_1',
             new DateTimeImmutable(),
-            'sess_1',
-            'agent_1',
-            'wf_1',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             AgentEventType::THINKING,
             null,
             'Message'
@@ -86,8 +86,8 @@ class ActivityStreamServiceTest extends TestCase
         $service = new ActivityStreamService($emitter, $historyService, $streamProvider);
         
         $events = [
-            new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::THINKING, null, 'M1'),
-            new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::PLANNING, null, 'M2'),
+            new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', AgentEventType::THINKING, null, 'M1'),
+            new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', AgentEventType::PLANNING, null, 'M2'),
         ];
 
         $service->emitBatch($events);

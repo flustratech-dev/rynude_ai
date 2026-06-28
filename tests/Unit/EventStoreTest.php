@@ -17,9 +17,9 @@ class EventStoreTest extends TestCase
         $event = new AgentEvent(
             'evt_1',
             new DateTimeImmutable(),
-            'sess_1',
-            'agent_1',
-            'wf_1',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             AgentEventType::THINKING,
             null,
             'Message'
@@ -27,7 +27,7 @@ class EventStoreTest extends TestCase
         
         $store->save($event);
         
-        $events = $store->findBySession('sess_1');
+        $events = $store->findBySession('11111111-1111-1111-1111-111111111111');
         $this->assertCount(1, $events);
         $this->assertEquals('evt_1', $events[0]->id);
     }
@@ -36,9 +36,9 @@ class EventStoreTest extends TestCase
     {
         $store = new EventStore();
         
-        $event1 = new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::THINKING, null, 'M1');
-        $event2 = new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::PLANNING, null, 'M2');
-        $event3 = new AgentEvent('evt_3', new DateTimeImmutable('2023-10-10T12:00:00Z'), 'sess_1', 'agent_1', 'wf_1', AgentEventType::WRITING, null, 'M3');
+        $event1 = new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', AgentEventType::THINKING, null, 'M1');
+        $event2 = new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', AgentEventType::PLANNING, null, 'M2');
+        $event3 = new AgentEvent('evt_3', new DateTimeImmutable('2023-10-10T12:00:00Z'), '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', AgentEventType::WRITING, null, 'M3');
         
         $store->save($event1);
         $store->save($event2);

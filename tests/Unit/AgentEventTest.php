@@ -18,9 +18,9 @@ class AgentEventTest extends TestCase
         $event = new AgentEvent(
             'evt_123',
             $timestamp,
-            'sess_456',
-            'agent_789',
-            'wf_012',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             AgentEventType::THINKING,
             null,
             'Thinking about the request...',
@@ -30,9 +30,9 @@ class AgentEventTest extends TestCase
         $this->assertEquals('evt_123', $event->id);
         $this->assertEquals('UTC', $event->timestamp->getTimezone()->getName());
         $this->assertEquals('2023-10-10T10:00:00.000000Z', $event->timestamp->format('Y-m-d\TH:i:s.u\Z'));
-        $this->assertEquals('sess_456', $event->sessionId);
-        $this->assertEquals('agent_789', $event->agentId);
-        $this->assertEquals('wf_012', $event->workflowId);
+        $this->assertEquals('11111111-1111-1111-1111-111111111111', $event->sessionId);
+        $this->assertEquals('22222222-2222-2222-2222-222222222222', $event->agentId);
+        $this->assertEquals('33333333-3333-3333-3333-333333333333', $event->workflowId);
         $this->assertEquals(AgentEventType::THINKING, $event->eventType);
         $this->assertNull($event->stage);
         $this->assertEquals('Thinking about the request...', $event->message);
@@ -44,9 +44,9 @@ class AgentEventTest extends TestCase
         $event = new AgentEvent(
             'evt_123',
             '2023-10-10T10:00:00Z',
-            'sess_456',
-            'agent_789',
-            'wf_012',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             'thinking',
             'UNDERSTAND',
             'Thinking about the request...',
@@ -65,9 +65,9 @@ class AgentEventTest extends TestCase
         new AgentEvent(
             'evt_123',
             '2023-10-10T10:00:00Z',
-            'sess_456',
-            'agent_789',
-            'wf_012',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             'invalid_type',
             null,
             'Message'
@@ -82,9 +82,9 @@ class AgentEventTest extends TestCase
         new AgentEvent(
             '',
             '2023-10-10T10:00:00Z',
-            'sess_456',
-            'agent_789',
-            'wf_012',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             AgentEventType::PLANNING,
             null,
             'Message'
@@ -96,9 +96,9 @@ class AgentEventTest extends TestCase
         $event = new AgentEvent(
             'evt_123',
             '2023-10-10T10:00:00Z',
-            'sess_456',
-            'agent_789',
-            'wf_012',
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '33333333-3333-3333-3333-333333333333',
             AgentEventType::COMPLETED,
             null,
             'Done',
