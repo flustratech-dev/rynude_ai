@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ClaudeCodeController;
+use App\Http\Controllers\DesignController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -17,8 +19,18 @@ Route::get('/chat', function () {
     return view('chat');
 })->name('chat');
 
-Route::get('/code', \App\Livewire\ClaudeCodeApp::class)->middleware(['auth', 'verified'])->name('code');
-Route::get('/design', \App\Livewire\DesignPanel::class)->middleware(['auth', 'verified'])->name('design');
+// Phase 1 (Routing Migration): the /code and /design pages now enter through
+// dedicated controllers instead of mounting Livewire components directly. The
+// controllers render thin wrapper views that still embed the existing Livewire
+// components, so behaviour and business logic are unchanged.
+Route::get('/code', [ClaudeCodeController::class, 'index'])->middleware(['auth', 'verified'])->name('code');
+Route::get('/design', [DesignController::class, 'index'])->middleware(['auth', 'verified'])->name('design');
+
+// The original Livewire full-page routes are kept alive in parallel so the old
+// and new entry points run side by side (safe rollback path; Livewire is not
+// removed). These map directly to the same components the controllers embed.
+Route::get('/legacy/code', \App\Livewire\ClaudeCodeApp::class)->middleware(['auth', 'verified'])->name('code.legacy');
+Route::get('/legacy/design', \App\Livewire\DesignPanel::class)->middleware(['auth', 'verified'])->name('design.legacy');
 
 // Signal the active streaming generation to stop. Uses a cache flag that the
 // streaming loop in ChatInterface::generateResponse() polls each chunk.
