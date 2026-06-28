@@ -18,8 +18,8 @@ use Tests\TestCase;
  * As each endpoint group gains real behaviour (see the dedicated *ApiTest
  * feature tests), it moves out of the pending provider below. Implemented
  * groups so far: Settings, Projects, Designs, Chat (CRUD + share + streaming),
- * Artifacts (CRUD). Still pending: artifact store (Phase 5 — artifacts are
- * created by the streamed generation), all Cowork.
+ * Artifacts (CRUD), Cowork (tasks). Still pending: artifact store (Phase 5 —
+ * artifacts are created by the streamed generation).
  */
 class ApiRouteStructureTest extends TestCase
 {
@@ -65,6 +65,13 @@ class ApiRouteStructureTest extends TestCase
             'designs store'    => ['post', '/api/designs'],
             'designs update'   => ['patch', '/api/designs/1'],
             'designs delete'   => ['delete', '/api/designs/1'],
+
+            // Cowork tasks (implemented)
+            'tasks list'       => ['get', '/api/tasks'],
+            'tasks store'      => ['post', '/api/tasks'],
+            'tasks update'     => ['patch', '/api/tasks/1'],
+            'tasks delete'     => ['delete', '/api/tasks/1'],
+            'tasks run'        => ['post', '/api/tasks/1/run'],
         ]);
     }
 
@@ -79,13 +86,6 @@ class ApiRouteStructureTest extends TestCase
         return [
             // Artifacts — creation happens inside the streamed generation (Phase 5).
             'artifacts store'  => ['post', '/api/artifacts'],
-
-            // Cowork tasks
-            'tasks list'       => ['get', '/api/tasks'],
-            'tasks store'      => ['post', '/api/tasks'],
-            'tasks update'     => ['patch', '/api/tasks/1'],
-            'tasks delete'     => ['delete', '/api/tasks/1'],
-            'tasks run'        => ['post', '/api/tasks/1/run'],
         ];
     }
 
