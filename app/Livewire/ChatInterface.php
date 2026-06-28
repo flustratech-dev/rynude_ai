@@ -901,6 +901,16 @@ class ChatInterface extends Component
         $stopKey = 'chat_stop_' . $this->conversationId;
         \Illuminate\Support\Facades\Cache::forget($stopKey);
 
+        // Clear accumulated stream events from previous generations and signal
+        // the frontend Alpine components (timeline, feed) to reset their state.
+        // replace:true wipes old agent-stream-target content; the single div
+        // dispatches 'agent-generation-start' which the timeline/feed listen for.
+        $this->stream(
+            to: 'agent-stream-target',
+            content: '<div x-data x-init="window.dispatchEvent(new CustomEvent(\'agent-generation-start\'))"></div>',
+            replace: true
+        );
+
         // Call AI Service (resolved from the container so it can be faked in tests)
         $aiService = app(AiService::class);
         $stream = $aiService->streamResponse($messagesForAi, $this->selectedModel ?? 'claude-haiku-4-5');

@@ -50,6 +50,7 @@
     }
 }"
 @agent-stream-event.window="handleEvent"
+@agent-generation-start.window="stages = stages.map(function(s) { return { id: s.id, label: s.label, status: 'pending' }; })"
 class="flex flex-col font-sans px-4 py-4 mb-4 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#FAFAFA] dark:bg-stone-800 shadow-sm"
 >
     <h3 class="text-[11px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-4 opacity-80">Workflow Stages</h3>

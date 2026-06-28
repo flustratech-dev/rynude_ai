@@ -34,6 +34,7 @@
         }
     }"
     @agent-stream-event.window="handleEvent"
+    @agent-generation-start.window="events = []"
     x-ref="feedContainer"
 >
     <template x-for="(event, index) in events" :key="event.id || index">
