@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-use App\Models\AgentEvent;
+use App\Domain\AgentEvent;
 
 interface SSEProviderInterface
 {

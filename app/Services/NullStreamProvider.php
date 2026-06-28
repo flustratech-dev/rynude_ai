@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\StreamProviderInterface;
-use App\Models\AgentEvent;
+use App\Domain\AgentEvent;
 
 class NullStreamProvider implements StreamProviderInterface
 {

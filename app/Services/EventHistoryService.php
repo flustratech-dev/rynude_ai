@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\AgentEventRepositoryInterface;
-use App\Models\AgentEvent;
+use App\Domain\AgentEvent;
 use App\Contracts\EventHistoryServiceInterface;
 
 class EventHistoryService implements EventHistoryServiceInterface

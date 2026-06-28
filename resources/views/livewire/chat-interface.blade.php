@@ -1,4 +1,4 @@
-<div class="flex flex-col h-full bg-transparent dark:bg-claude-bg-dark relative"
+<div id="chat-interface-root" class="flex flex-col h-full bg-transparent dark:bg-claude-bg-dark relative"
     x-data="{ isDropping: false }"
     x-on:dragover.prevent="isDropping = true"
     x-on:dragleave.prevent="isDropping = false"
@@ -74,7 +74,7 @@
 
     {{-- Empty State: Greeting + Form centered vertically --}}
     @if(empty($messages))
-        <div class="flex-1 flex flex-col justify-center items-center px-4 -mt-16 md:-mt-32">
+        <div wire:key="new-chat-state" class="flex-1 flex flex-col justify-center items-center px-4 -mt-16 md:-mt-32">
             <div class="text-center mb-8">
                 <div class="flex items-center justify-center gap-3 md:gap-4">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-8 h-8 md:w-10 md:h-10 text-[#D97757] fill-current shrink-0">
@@ -142,8 +142,8 @@
                             x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' } }"
                             x-init="$watch('$wire.prompt', value => { if(!value) { $el.style.height = 'auto'; } else { resize(); } }); resize()"
                             @input="resize()"
-                        wire:model.live.debounce.2000ms="prompt"
-                            @keydown.enter="if(!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage() }"
+                        wire:model="prompt"
+                            @keydown.enter="if(!$event.shiftKey) { $event.preventDefault(); $el.closest('form').requestSubmit(); }"
                             rows="1"
                             class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto"
                             placeholder="How can I help you today?"
@@ -362,6 +362,7 @@
 
     {{-- Active Chat State --}}
     @else
+        <div wire:key="active-chat-state" class="flex flex-col flex-1 overflow-hidden">
         {{-- Memory button --}}
         @if($conversationId)
             <div class="absolute top-3 right-3 z-40 group">
@@ -378,7 +379,7 @@
             <div class="max-w-[42rem] mx-auto w-full py-4 md:py-6 px-3 md:px-4">
                 <div class="space-y-1">
                     @foreach($messages as $msg)
-                        <div class="w-full mx-auto flex flex-col group/msg">
+                        <div class="w-full mx-auto flex flex-col group/msg" wire:key="msg-{{ $loop->index }}">
                             @if($msg['role'] === 'user')
                                 <!-- User Message -->
                                 <div class="flex justify-end w-full">
@@ -386,7 +387,7 @@
                                         @if(isset($msg['attachments']) && !empty($msg['attachments']))
                                             <div class="flex flex-wrap gap-2 justify-end w-full" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; justify-content: flex-end; width: 100%;">
                                                 @foreach($msg['attachments'] as $att)
-                                                    <div class="relative group bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm" style="width: 112px; height: 128px; min-width: 112px; flex-shrink: 0;">
+                                                    <div class="relative group bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm" style="width: 112px; height: 128px; min-width: 112px; flex-shrink: 0;" wire:key="msg-{{ $loop->parent->index }}-att-{{ $loop->index }}">
                                                         @if(str_starts_with($att['file_type'], 'image/'))
                                                             <img src="{{ Storage::url($att['file_path']) }}" class="w-full h-full object-cover" alt="Attachment">
                                                             <div class="absolute bottom-2 left-2">
@@ -539,8 +540,8 @@
                                 {{-- Live activity status: what the assistant is doing right now --}}
                                 <div wire:stream="activity-status" class="empty:hidden text-[13px] text-[#D97757] font-medium"></div>
                                 {{-- Activity Feed (Streaming Progress) --}}
-                                <livewire:activity-timeline :sessionId="$conversationId" />
-                                <livewire:activity-feed :sessionId="$conversationId" />
+                                <livewire:activity-timeline :sessionId="$conversationId" wire:key="timeline-{{ $conversationId ?? 'new' }}" />
+                                <livewire:activity-feed :sessionId="$conversationId" wire:key="feed-{{ $conversationId ?? 'new' }}" />
                                 <div wire:stream="agent-stream-target" class="hidden"></div>
 
                                 <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 prose-p:pl-2 prose-p:pr-8 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline transition-colors prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-stone-800 prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2 [&::after]:hidden" wire:stream="message-stream" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;">
@@ -620,8 +621,8 @@
                         x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' } }"
                         x-init="$watch('$wire.prompt', value => { if(!value) { $el.style.height = 'auto'; } else { resize(); } }); resize()"
                         @input="resize()"
-                        wire:model.live.debounce.2000ms="prompt" 
-                        @keydown.enter="if(!$event.shiftKey) { $event.preventDefault(); $wire.sendMessage() }" 
+                        wire:model="prompt" 
+                        @keydown.enter="if(!$event.shiftKey) { $event.preventDefault(); $el.closest('form').requestSubmit(); }" 
                         rows="1" 
                         class="w-full bg-transparent border-0 focus:ring-0 px-3 md:px-4 pt-3 md:pt-4 pb-2 resize-none text-[#2D2825] dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto" 
                         placeholder="How can I help you today?"></textarea>
@@ -788,6 +789,7 @@
                 </div>
             </form>
         </div>
+        </div>
     @endif
 </div>
 
@@ -795,7 +797,10 @@
     document.addEventListener('livewire:initialized', () => {
         Livewire.on('messageAdded', () => {
             scrollToBottom();
-            @this.generateResponse();
+            
+            // In Livewire 3, it's safer to dispatch to a window event that an Alpine component listens to
+            // or dispatch a global Livewire event to avoid issues with @this going stale on wire:navigate.
+            Livewire.dispatch('generateResponse');
         });
         
         Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {

@@ -8,10 +8,10 @@ use App\Services\ActivityStreamService;
 use App\Contracts\EventEmitterInterface;
 use App\Contracts\EventHistoryServiceInterface;
 use App\Contracts\StreamProviderInterface;
-use App\Models\AgentEvent;
-use App\Enums\AgentEventType;
-use App\Enums\ToolCategory;
-use App\Enums\ToolStatus;
+use App\Domain\AgentEvent;
+use App\Domain\Enums\AgentEventType;
+use App\Domain\Enums\ToolCategory;
+use App\Domain\Enums\ToolStatus;
 use Illuminate\Support\Str;
 
 class ToolExecutionTrackerTest extends TestCase

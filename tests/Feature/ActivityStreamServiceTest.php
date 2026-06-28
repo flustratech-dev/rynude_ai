@@ -8,8 +8,8 @@ use App\Services\EventEmitter;
 use App\Services\EventHistoryService;
 use App\Repositories\EventStore;
 use App\Contracts\StreamProviderInterface;
-use App\Models\AgentEvent;
-use App\Enums\AgentEventType;
+use App\Domain\AgentEvent;
+use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 
 class FakeStreamProvider implements StreamProviderInterface

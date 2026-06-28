@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use Tests\TestCase;
 use App\Repositories\EventStore;
-use App\Models\AgentEvent;
-use App\Enums\AgentEventType;
+use App\Domain\AgentEvent;
+use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 
 class EventStoreTest extends TestCase

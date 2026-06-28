@@ -929,7 +929,7 @@ class ChatInterface extends Component
         // --- Observability Agent Pipeline ---
         // Subscribe to emit orchestrator events dynamically
         $emitter = app(\App\Contracts\EventEmitterInterface::class);
-        $emitter->subscribe(function (\App\Models\AgentEvent $event) {
+        $emitter->subscribe(function (\App\Domain\AgentEvent $event) {
             // Push events to frontend via Livewire stream
             // Need a sleep here to visibly show the UI updating, as the dummy orchestrator is instant
             usleep(500000); // 0.5 sec per event for testing visibility

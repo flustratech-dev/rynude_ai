@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\AgentEvent;
+use App\Domain\AgentEvent;
 
 use App\Contracts\EventEmitterInterface;
 

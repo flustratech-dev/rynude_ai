@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain;
 
 use JsonSerializable;
 use InvalidArgumentException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Enum;
-use App\Enums\ToolStatus;
-use App\Enums\ToolCategory;
+use App\Domain\Enums\ToolCategory;
+use App\Domain\Enums\ToolStatus;
 use DateTimeImmutable;
 use DateTimeZone;
 

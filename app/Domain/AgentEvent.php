@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain;
 
 use JsonSerializable;
 use InvalidArgumentException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Enum;
-use App\Enums\AgentEventType;
+use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 use DateTimeZone;
 

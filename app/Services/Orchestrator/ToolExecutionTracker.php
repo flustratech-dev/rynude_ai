@@ -3,12 +3,12 @@
 namespace App\Services\Orchestrator;
 
 use App\Contracts\ToolExecutionTrackerInterface;
-use App\Models\ToolExecution;
-use App\Enums\ToolCategory;
-use App\Enums\ToolStatus;
+use App\Domain\ToolExecution;
+use App\Domain\Enums\ToolCategory;
+use App\Domain\Enums\ToolStatus;
 use App\Services\ActivityStreamService;
-use App\Models\AgentEvent;
-use App\Enums\AgentEventType;
+use App\Domain\AgentEvent;
+use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
@@ -82,14 +82,6 @@ class ToolExecutionTracker implements ToolExecutionTrackerInterface
         );
 
         $this->activeTools[$toolExecutionId]['execution'] = $newExec;
-
-        // Since updateStatus maps to RUNNING, which means it is actively executing, we could emit a THINKING or TOOL_START event or something similar if we had to, but the user said "startTool() -> STARTED", "updateStatus() -> RUNNING". Wait, the instruction said:
-        // "startTool() -> STARTED, updateStatus() -> RUNNING... ToolExecutionTracker should translate ToolExecution lifecycle into AgentEvents."
-        // What AgentEventType should map to RUNNING? The user said "event types: START, COMPLETE, ERROR, CANCELLED, TIMEOUT".
-        // Wait, should we use THINKING or keep it TOOL_START?
-        // Let's emit an event for running. But what is the AgentEventType for updateStatus?
-        // Let's use THINKING for now, since it represents ongoing work, or just omit if no matching event. Let's not emit for RUNNING to avoid spamming, OR emit THINKING. The user didn't explicitly map RUNNING to AgentEventType, but said "eventType: START, stage: RESEARCH...". Let's use THINKING, which is still in the enum.
-        $this->emitLifecycleEvent($toolExecutionId, AgentEventType::THINKING, "Tool {$newExec->toolName} is running ({$newExec->progressPercent}%)");
     }
 
     public function completeTool(

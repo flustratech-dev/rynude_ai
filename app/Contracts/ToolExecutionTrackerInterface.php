@@ -2,8 +2,8 @@
 
 namespace App\Contracts;
 
-use App\Models\ToolExecution;
-use App\Enums\ToolCategory;
+use App\Domain\ToolExecution;
+use App\Domain\Enums\ToolCategory;
 
 interface ToolExecutionTrackerInterface
 {

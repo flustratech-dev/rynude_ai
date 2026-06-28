@@ -19,6 +19,8 @@ class SystemUpdateModal extends Component
     public function closeModal()
     {
         $this->isOpen = false;
+        \Illuminate\Support\Facades\Cache::forget('system_update_available');
+        $this->dispatch('check-for-updates');
     }
 
     public function render()

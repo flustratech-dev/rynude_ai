@@ -3,8 +3,8 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Models\AgentEvent;
-use App\Enums\AgentEventType;
+use App\Domain\AgentEvent;
+use App\Domain\Enums\AgentEventType;
 use InvalidArgumentException;
 use DateTimeImmutable;
 use DateTimeZone;

@@ -3,9 +3,9 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Models\ToolExecution;
-use App\Enums\ToolStatus;
-use App\Enums\ToolCategory;
+use App\Domain\ToolExecution;
+use App\Domain\Enums\ToolStatus;
+use App\Domain\Enums\ToolCategory;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Illuminate\Support\Str;

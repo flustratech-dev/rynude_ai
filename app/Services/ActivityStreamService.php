@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Contracts\EventEmitterInterface;
 use App\Contracts\EventHistoryServiceInterface;
 use App\Contracts\StreamProviderInterface;
-use App\Models\AgentEvent;
+use App\Domain\AgentEvent;
 
 class ActivityStreamService
 {
@@ -25,7 +25,13 @@ class ActivityStreamService
 
     public function emit(AgentEvent $event): void
     {
+        // Internal in-memory emitter (optional/deprecated)
         $this->emitter->dispatch($event);
+        
+        // Dispatch to Laravel Event Bus (Phase 2 foundation)
+        event(new \App\Events\AgentEventDispatched($event));
+
+        // Publish to legacy Livewire stream provider (Phase 1 shadow mode)
         $this->streamProvider->publish($event);
     }
 

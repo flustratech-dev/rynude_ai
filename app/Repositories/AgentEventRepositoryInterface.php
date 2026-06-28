@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\AgentEvent;
+use App\Domain\AgentEvent;
 use DateTimeImmutable;
 
 interface AgentEventRepositoryInterface

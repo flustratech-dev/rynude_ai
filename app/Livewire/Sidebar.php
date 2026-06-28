@@ -26,6 +26,7 @@ class Sidebar extends Component
         $this->checkForUpdates();
     }
 
+    #[On('check-for-updates')]
     public function checkForUpdates()
     {
         try {

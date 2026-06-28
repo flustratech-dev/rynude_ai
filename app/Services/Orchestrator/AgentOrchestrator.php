@@ -3,10 +3,10 @@
 namespace App\Services\Orchestrator;
 
 use App\Contracts\ToolExecutionTrackerInterface;
-use App\Enums\ToolCategory;
+use App\Domain\Enums\ToolCategory;
 use App\Services\ActivityStreamService;
-use App\Models\AgentEvent;
-use App\Enums\AgentEventType;
+use App\Domain\AgentEvent;
+use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 use Illuminate\Support\Str;
 

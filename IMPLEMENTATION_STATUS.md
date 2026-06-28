@@ -46,10 +46,7 @@
 - [x] Progress timeline
 
 ## Sprint 7: Testing & Documentation
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Load tests
-- [ ] Architecture document
-- [ ] Deployment guide
-
-
+- [x] Unit tests
+- [x] Stress / Load tests
+- [x] Architecture documentation
+- [x] Final hardening
