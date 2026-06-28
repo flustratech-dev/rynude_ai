@@ -121,7 +121,7 @@ class ApiRouteStructureTest extends TestCase
         $apiRoutes = collect(app('router')->getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/'));
 
-        // 28 endpoints make up the Phase 1 API surface.
-        $this->assertCount(28, $apiRoutes);
+        // 36 endpoints make up the migrated API surface.
+        $this->assertCount(36, $apiRoutes);
     }
 }
