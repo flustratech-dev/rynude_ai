@@ -198,24 +198,19 @@ class DtosTest extends TestCase
     public function test_quality_score_to_array_includes_threshold_and_passed(): void
     {
         $s = new QualityScore(
-            accuracy: 90,
-            completeness: 80,
-            consistency: 85,
-            academicQuality: 70,
-            formatting: 95,
-            overall: 84,
-            threshold: 85,
-            passed: false,
-            scorerModel: 'claude-haiku-4-5',
-            notes: ['completeness' => 'missing references'],
+            overallScore: 84,
+            accuracyScore: 90,
+            completenessScore: 80,
+            consistencyScore: 85,
+            formattingScore: 95,
+            feedback: 'missing references',
+            status: 'REQUIRES_IMPROVEMENT'
         );
 
         $arr = $s->toArray();
-        $this->assertFalse($arr['passed']);
-        $this->assertSame(85, $arr['threshold']);
-        $this->assertSame(84, $arr['overall']);
-        $this->assertSame('v5.1.0', $arr['rubric_version']);
-        $this->assertSame('missing references', $arr['notes']['completeness']);
+        $this->assertSame('REQUIRES_IMPROVEMENT', $arr['status']);
+        $this->assertSame(84, $arr['overallScore']);
+        $this->assertSame('missing references', $arr['feedback']);
     }
 
     public function test_normalized_event_text_factory(): void

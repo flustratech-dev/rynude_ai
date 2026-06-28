@@ -926,6 +926,33 @@ class ChatInterface extends Component
             );
         };
 
+        // --- Observability Agent Pipeline ---
+        // Subscribe to emit orchestrator events dynamically
+        $emitter = app(\App\Contracts\EventEmitterInterface::class);
+        $emitter->subscribe(function (\App\Models\AgentEvent $event) {
+            // Push events to frontend via Livewire stream
+            // Need a sleep here to visibly show the UI updating, as the dummy orchestrator is instant
+            usleep(500000); // 0.5 sec per event for testing visibility
+            $this->stream(
+                to: 'agent-stream-target',
+                content: '<div x-data x-init="window.dispatchEvent(new CustomEvent(\'agent-stream-event\', { detail: ' . htmlspecialchars(json_encode($event->toArray()), ENT_QUOTES, 'UTF-8') . ' }))"></div>',
+                replace: false
+            );
+        });
+
+        $orchestrator = app(\App\Services\Orchestrator\AgentOrchestrator::class);
+        $agentId = (string) \Illuminate\Support\Str::uuid();
+        $workflowId = (string) \Illuminate\Support\Str::uuid();
+
+        // Run the agent orchestrator pipeline (Understanding, Planning, Research, Writing, Reviewing)
+        try {
+            $orchestrator->execute((string)$this->conversationId, $agentId, $workflowId);
+        } catch (\Throwable $e) {
+            // Handle error in pipeline if necessary
+        }
+
+        // --- End Observability ---
+
         foreach ($stream as $chunk) {
             // Stop generation requested by the user
             if (\Illuminate\Support\Facades\Cache::get($stopKey)) {

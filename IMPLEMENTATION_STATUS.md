@@ -29,18 +29,21 @@
 - [x] Emit events before and after stages (understand, plan, research, write, review, complete)
 - [x] Add test coverage (ordering, failure scenarios)
 
-## Sprint 4: Tool Visibility
-- [ ] ToolStart Event
-- [ ] ToolEnd Event
+## Sprint 4: Tool Execution Observability
+- [x] Create `ToolExecution` domain model with progress tracking
+- [x] Create `ToolStatus` and `ToolCategory` enums
+- [x] Create `ToolExecutionTracker` service to translate tool lifecycle to `AgentEvent`
+- [x] Integrate Tracker into Orchestrator pipeline
+- [x] Add tests and verify tool execution event tracking
 
 ## Sprint 5: Frontend Activity Feed
-- [ ] Real-time feed component
-- [ ] Display latest events
-- [ ] Auto-scroll
-- [ ] Status icons
+- [x] Real-time feed component
+- [x] Display latest events
+- [x] Auto-scroll
+- [x] Status icons
 
 ## Sprint 6: Timeline UI
-- [ ] Progress timeline
+- [x] Progress timeline
 
 ## Sprint 7: Testing & Documentation
 - [ ] Unit tests
@@ -48,3 +51,5 @@
 - [ ] Load tests
 - [ ] Architecture document
 - [ ] Deployment guide
+
+
