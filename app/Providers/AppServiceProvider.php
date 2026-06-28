@@ -23,6 +23,14 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\AgentEventRepositoryInterface::class,
             \App\Repositories\EventStore::class
         );
+        $this->app->bind(
+            \App\Contracts\StreamProviderInterface::class,
+            \App\Services\NullStreamProvider::class
+        );
+        $this->app->bind(
+            \App\Contracts\ToolExecutionTrackerInterface::class,
+            \App\Services\ToolExecutionTracker::class
+        );
     }
 
     /**
