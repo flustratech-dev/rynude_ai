@@ -46,7 +46,7 @@
             if (e.key === 'Escape') {
                 if (this.shortcutsOpen) { this.shortcutsOpen = false; return; }
                 if (this.artifactPanelOpen || this.activePanel === 'artifacts') {
-                    if (this.artifactPanelOpen) { Livewire.dispatch('closeArtifactPanel'); }
+                    if (this.artifactPanelOpen) { window.dispatchEvent(new CustomEvent('closeArtifactPanel')); }
                     if (this.activePanel === 'artifacts') this.activePanel = null;
                     return;
                 }
@@ -60,8 +60,8 @@
             if (e.key.toLowerCase() === 'k' && !e.shiftKey) {
                 e.preventDefault();
                 this.activePanel = null;
-                Livewire.dispatch('closeArtifactPanel');
-                Livewire.dispatch('newChat');
+                window.dispatchEvent(new CustomEvent('closeArtifactPanel'));
+                window.location.href = '/chat';
                 return;
             }
             // Cmd/Ctrl + Shift + S → Toggle sidebar

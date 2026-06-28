@@ -9,7 +9,6 @@
         </div>
         <button
             @click="activePanel = null; artifactPanelOpen = false"
-            wire:click="closePanel"
             class="p-2 rounded-lg hover:bg-[#F3F3F3] dark:hover:bg-stone-800 transition-colors text-claude-500 dark:text-stone-400 hover:text-claude-700 dark:hover:text-stone-200"
             title="Close"
         >
@@ -62,8 +61,7 @@
                     </div>
                 </div>
                 <button
-                    @click="activePanel = null; artifactPanelOpen = false"
-                    wire:click="openUpgradeModal"
+                    @click="activePanel = null; artifactPanelOpen = false; window.dispatchEvent(new CustomEvent('open-upgrade-modal'))"
                     class="mt-8 px-8 py-3 rounded-xl bg-claude-800 text-white text-[15px] font-medium hover:bg-claude-900 transition-colors"
                 >
                     Upgrade to Max

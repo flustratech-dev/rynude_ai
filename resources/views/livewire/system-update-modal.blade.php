@@ -1,7 +1,22 @@
-<div>
-    @if($isOpen)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm sm:p-6 transition-opacity"
-        x-data="{ showCopied: false }"
+<div
+    x-data="{
+        open: false,
+        showCopied: false,
+        updateCommand: '{{ $updateCommand }}',
+        closeModal() {
+            this.open = false;
+        },
+        copyCommand() {
+            navigator.clipboard.writeText(this.updateCommand).then(() => {
+                this.showCopied = true;
+                setTimeout(() => this.showCopied = false, 2000);
+            });
+        }
+    }"
+    @open-system-update.window="open = true; updateCommand = $event.detail?.command || '{{ $updateCommand }}'"
+    @keydown.escape.window="if (open) closeModal()"
+>
+    <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm sm:p-6 transition-opacity"
         x-transition:enter="ease-out duration-300"
         x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100"
@@ -16,7 +31,7 @@
             x-transition:leave="ease-in duration-200"
             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            @click.outside="@this.call('closeModal')"
+            @click.outside="closeModal()"
         >
             <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
@@ -28,7 +43,7 @@
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Pembaruan Sistem Tersedia</h3>
                 </div>
-                <button wire:click="closeModal" class="p-2 text-gray-400 transition-colors rounded-lg hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <button @click="closeModal()" class="p-2 text-gray-400 transition-colors rounded-lg hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -62,14 +77,9 @@
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Perintah Pembaruan</label>
                         <div class="relative flex items-center">
-                            <pre class="w-full p-4 overflow-x-auto text-sm text-gray-200 bg-gray-900 rounded-xl dark:bg-black font-mono select-all">{{ $updateCommand }}</pre>
-                            <button 
-                                @click="
-                                    navigator.clipboard.writeText('{{ $updateCommand }}').then(() => {
-                                        showCopied = true;
-                                        setTimeout(() => showCopied = false, 2000);
-                                    })
-                                "
+                            <pre class="w-full p-4 overflow-x-auto text-sm text-gray-200 bg-gray-900 rounded-xl dark:bg-black font-mono select-all" x-text="updateCommand"></pre>
+                            <button
+                                @click="copyCommand()"
                                 class="absolute right-3 p-2 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700"
                                 title="Salin ke clipboard"
                             >
@@ -90,11 +100,10 @@
 
             <!-- Footer -->
             <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-                <button wire:click="closeModal" class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-colors">
+                <button @click="closeModal()" class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-colors">
                     Mengerti, Tutup
                 </button>
             </div>
         </div>
     </div>
-    @endif
 </div>

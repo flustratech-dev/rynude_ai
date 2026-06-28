@@ -1,5 +1,16 @@
 <div
-    x-data="{ open: $wire.entangle('isOpen') }"
+    x-data="{
+        open: false,
+        activeTab: 'help',
+        expandedFaq: null,
+        closeModal() {
+            this.open = false;
+            this.expandedFaq = null;
+        },
+        toggleFaq(id) {
+            this.expandedFaq = (this.expandedFaq === id) ? null : id;
+        }
+    }"
     x-init="
         $watch('open', value => {
             if (value) {
@@ -9,7 +20,8 @@
             }
         });
     "
-    @keydown.escape.window="open = false; $wire.closeModal()"
+    @open-help-modal.window="open = true; activeTab = $event.detail?.tab || 'help'"
+    @keydown.escape.window="if (open) closeModal()"
     x-show="open"
     x-cloak
     class="fixed inset-0 z-50"
@@ -25,7 +37,7 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         class="absolute inset-0 bg-[#1F1E1B]/40 backdrop-blur-sm"
-        @click="$wire.closeModal()"
+        @click="closeModal()"
     ></div>
 
     {{-- Modal --}}
@@ -38,12 +50,12 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            @click.away="$wire.closeModal()"
+            @click.away="closeModal()"
             class="bg-white w-full max-w-2xl max-h-[80vh] rounded-[1.5rem] shadow-2xl flex flex-col overflow-hidden border border-[#E5E5E5] relative"
         >
             {{-- Close Button --}}
             <button
-                @click="$wire.closeModal()"
+                @click="closeModal()"
                 class="absolute top-4 right-4 z-10 p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#2D2825] hover:bg-[#F3F3F3] transition-colors"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -54,14 +66,16 @@
             {{-- Tab Headers --}}
             <div class="flex border-b border-[#E5E5E5] px-6 pt-4">
                 <button
-                    wire:click="$set('activeTab', 'help')"
-                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'help' ? 'border-claude-800 text-claude-800' : 'border-transparent text-claude-400 hover:text-claude-600' }}"
+                    @click="activeTab = 'help'"
+                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
+                    :class="activeTab === 'help' ? 'border-claude-800 text-claude-800' : 'border-transparent text-claude-400 hover:text-claude-600'"
                 >
                     Get Help
                 </button>
                 <button
-                    wire:click="$set('activeTab', 'apps')"
-                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'apps' ? 'border-claude-800 text-claude-800' : 'border-transparent text-claude-400 hover:text-claude-600' }}"
+                    @click="activeTab = 'apps'"
+                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
+                    :class="activeTab === 'apps' ? 'border-claude-800 text-claude-800' : 'border-transparent text-claude-400 hover:text-claude-600'"
                 >
                     Apps & Extensions
                 </button>
@@ -70,7 +84,7 @@
             {{-- Content --}}
             <div class="flex-1 overflow-y-auto p-6">
                 {{-- Help Tab --}}
-                @if($activeTab === 'help')
+                <div x-show="activeTab === 'help'"
                     <h2 class="font-serif text-2xl text-claude-800 mb-2">How can we help?</h2>
                     <p class="text-sm text-claude-500 mb-6">Find answers to common questions or reach out to our support team.</p>
 
@@ -89,22 +103,21 @@
                         @foreach($faqs as $faq)
                             <div class="rounded-xl border border-[#E5E5E5] overflow-hidden">
                                 <button
-                                    wire:click="toggleFaq('{{ $faq['id'] }}')"
+                                    @click="toggleFaq('{{ $faq['id'] }}')"
                                     class="w-full flex items-center justify-between px-4 py-3 text-left text-[15px] text-claude-700 hover:bg-[#F9F8F6] transition-colors"
                                 >
                                     <span class="font-medium">{{ $faq['question'] }}</span>
                                     <svg
-                                        class="w-4 h-4 text-claude-400 flex-shrink-0 transition-transform duration-200 {{ $expandedFaq === $faq['id'] ? 'rotate-180' : '' }}"
+                                        class="w-4 h-4 text-claude-400 flex-shrink-0 transition-transform duration-200"
+                                        :class="expandedFaq === '{{ $faq['id'] }}' ? 'rotate-180' : ''"
                                         fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
                                     >
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
                                     </svg>
                                 </button>
-                                @if($expandedFaq === $faq['id'])
-                                    <div class="px-4 pb-4 text-sm text-claude-500 leading-relaxed">
-                                        {{ $faq['answer'] }}
-                                    </div>
-                                @endif
+                                <div x-show="expandedFaq === '{{ $faq['id'] }}'" x-collapse class="px-4 pb-4 text-sm text-claude-500 leading-relaxed">
+                                    {{ $faq['answer'] }}
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -123,10 +136,10 @@
                             </div>
                         </div>
                     </div>
-                @endif
+                </div>
 
                 {{-- Apps Tab --}}
-                @if($activeTab === 'apps')
+                <div x-show="activeTab === 'apps'"
                     <h2 class="font-serif text-2xl text-claude-800 mb-2">Apps & Extensions</h2>
                     <p class="text-sm text-claude-500 mb-6">Access Rynude across all your devices and platforms.</p>
 
@@ -187,7 +200,7 @@
                             <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 flex-shrink-0">Available</span>
                         </div>
                     </div>
-                @endif
+                </div>
             </div>
         </div>
     </div>
