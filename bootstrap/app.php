@@ -22,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+
+        // Keep every request on one local host (localhost vs 127.0.0.1) so the
+        // session cookie isn't split across hosts — fixes "logout on refresh"
+        // and the chat showing no answer (its /api/* calls were bouncing to login).
+        $middleware->prependToGroup('web', \App\Http\Middleware\EnforceCanonicalHost::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

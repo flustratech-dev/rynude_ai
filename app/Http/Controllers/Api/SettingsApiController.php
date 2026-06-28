@@ -81,7 +81,7 @@ class SettingsApiController extends Controller
             // Preferences
             'language' => ['sometimes', 'string', 'max:10'],
             'chat_font' => ['sometimes', 'string', 'max:50'],
-            'theme' => ['sometimes', 'string', Rule::in(['light', 'dark', 'auto'])],
+            'theme' => ['sometimes', 'string', Rule::in(['light', 'dark', 'system', 'auto'])],
             'font_size' => ['sometimes', 'string', Rule::in(['small', 'medium', 'large'])],
             'accent_color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'compact_mode' => ['sometimes', 'boolean'],
@@ -101,7 +101,79 @@ class SettingsApiController extends Controller
             'use_proxy' => ['sometimes', 'boolean'],
             'proxy_base_url' => ['sometimes', 'nullable', 'url'],
             'proxy_api_key' => ['sometimes', 'nullable', 'string'],
+
+            // Custom model / action fields
+            '_action' => ['sometimes', 'string'],
+            'model_id' => ['sometimes', 'nullable', 'integer'],
+            'model_code' => ['sometimes', 'required_if:_action,store_model', 'string'],
+            'model_name' => ['sometimes', 'required_if:_action,store_model', 'string'],
+            'model_provider' => ['sometimes', 'required_if:_action,store_model', 'string'],
+            'model_is_active' => ['sometimes', 'boolean'],
         ]);
+
+        // ── Actions ─────────────────────────────────────────────────────
+        $action = $request->input('_action');
+
+        if ($action === 'store_model') {
+            $modelId = $request->input('model_id');
+            $code = $request->input('model_code');
+            $name = $request->input('model_name');
+            $provider = $request->input('model_provider', 'huggingface');
+            $isActive = $request->input('model_is_active', true);
+
+            // Validation for unique code
+            if ($modelId) {
+                $exists = \App\Models\AiModel::where('code', $code)->where('id', '!=', $modelId)->exists();
+            } else {
+                $exists = \App\Models\AiModel::where('code', $code)->exists();
+            }
+
+            if ($exists) {
+                return response()->json(['errors' => ['model_code' => ['Model code must be unique.']]], 422);
+            }
+
+            \App\Models\AiModel::updateOrCreate(['id' => $modelId], [
+                'code' => $code,
+                'name' => $name,
+                'provider' => $provider,
+                'is_active' => $isActive,
+            ]);
+        } elseif ($action === 'toggle_model') {
+            $modelId = $request->input('model_id');
+            $model = \App\Models\AiModel::find($modelId);
+            if ($model) {
+                $model->is_active = !$model->is_active;
+                $model->save();
+            }
+        } elseif ($action === 'delete_model') {
+            $modelId = $request->input('model_id');
+            \App\Models\AiModel::destroy($modelId);
+        } elseif ($action === 'delete_chats') {
+            $conversations = \App\Models\Conversation::where('user_id', $user->id)->get();
+            foreach ($conversations as $c) {
+                $c->messages()->delete();
+                $c->delete();
+            }
+        } elseif ($action === 'delete_account') {
+            // Delete all related data
+            \App\Models\Conversation::where('user_id', $user->id)->each(function ($c) {
+                $c->messages()->delete();
+                $c->delete();
+            });
+
+            \App\Models\TokenUsage::where('user_id', $user->id)->delete();
+            \App\Models\Project::where('user_id', $user->id)->delete();
+            \App\Models\CoworkTask::where('user_id', $user->id)->delete();
+            \App\Models\Design::where('user_id', $user->id)->delete();
+
+            Auth::logout();
+            $user->delete();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json(['redirect' => route('login')]);
+        }
 
         // ── Direct columns on the user model ────────────────────────────
         $directColumns = [
@@ -177,7 +249,81 @@ class SettingsApiController extends Controller
         $apiKeys['use_proxy'] = (bool) ($user->use_proxy ?? false);
         $apiKeys['proxy_base_url'] = $user->proxy_base_url ?? '';
         $apiKeys['proxy_api_key_set'] = !empty($user->proxy_api_key);
+        $apiKeys['huggingface_api_key_set'] = !empty($user->huggingface_api_key);
         $apiKeys['huggingface_base_url'] = $user->huggingface_base_url ?? 'https://api-inference.huggingface.co/v1';
+
+        $u = $user;
+        $hasAnthropic = !empty($u->anthropic_api_key);
+        $hasOpenAI = !empty($u->openai_api_key);
+        $useProxy = (bool)($u->use_proxy && $u->proxy_base_url);
+        $hasNineRouter = !empty($u->nine_router_api_key);
+        $hasHuggingFace = !empty($u->huggingface_api_key);
+        $hasGoogle = !empty($u->google_api_key);
+        $hasMistral = !empty($u->mistral_api_key);
+
+        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace || $hasGoogle || $hasMistral;
+
+        $models = [
+            [
+                'code' => 'fable-5',
+                'name' => 'Fable 5',
+                'description' => 'For your toughest challenges',
+                'is_available' => false,
+            ],
+            [
+                'code' => 'claude-opus-4-8',
+                'name' => 'Opus 4.8',
+                'description' => 'For complex tasks',
+                'is_available' => $available,
+            ],
+            [
+                'code' => 'claude-sonnet-4-6',
+                'name' => 'Sonnet 4.6',
+                'description' => 'Most efficient for everyday tasks',
+                'is_available' => $available,
+            ],
+            [
+                'code' => 'claude-haiku-4-5',
+                'name' => 'Haiku 4.5',
+                'description' => 'Fastest for quick answers',
+                'is_available' => $available,
+            ]
+        ];
+
+        $moreModels = [];
+        $allModels = \App\Models\AiModel::where('is_active', true)->get();
+        foreach ($allModels as $model) {
+            $isAnthropic = str_starts_with($model->code, 'claude');
+            $isOpenAI = str_starts_with($model->code, 'gpt');
+
+            $is_available = false;
+            if (str_starts_with($model->code, 'kr/claude')) {
+                $is_available = true;
+            } elseif ($useProxy || $hasNineRouter) {
+                $is_available = true;
+            } elseif ($model->provider === 'huggingface' && $hasHuggingFace) {
+                $is_available = true;
+            } elseif ($model->provider === 'google' && $hasGoogle) {
+                $is_available = true;
+            } elseif ($model->provider === 'mistral' && $hasMistral) {
+                $is_available = true;
+            } elseif ($isAnthropic && $hasAnthropic) {
+                $is_available = true;
+            } elseif ($hasOpenAI && !$isAnthropic) {
+                $is_available = true;
+            }
+
+            if (!in_array($model->code, ['fable-5', 'claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5'])) {
+                $moreModels[] = [
+                    'code' => $model->code,
+                    'name' => $model->name,
+                    'description' => $model->name,
+                    'is_available' => $is_available,
+                ];
+            }
+        }
+
+        $aiModels = \App\Models\AiModel::orderBy('created_at', 'desc')->get();
 
         return [
             'profile' => [
@@ -189,6 +335,9 @@ class SettingsApiController extends Controller
             ],
             'preferences' => $preferences,
             'api_keys' => $apiKeys,
+            'models' => $models,
+            'more_models' => $moreModels,
+            'ai_models' => $aiModels,
             'billing' => $this->billingPayload($user),
         ];
     }

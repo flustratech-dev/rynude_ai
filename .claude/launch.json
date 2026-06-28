@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "rynude",
+      "name": "laravel",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "serve", "--port=8940"],
-      "port": 8940
+      "runtimeArgs": ["artisan", "serve", "--host=127.0.0.1", "--port=8091"],
+      "port": 8091
     }
   ]
 }

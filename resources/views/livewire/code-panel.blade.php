@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5E5E5] dark:border-stone-700">
         <div class="flex items-center gap-3">
             <h2 class="font-serif text-2xl text-claude-800 dark:text-stone-200">Code</h2>
-            @if(!$isPremium)
+            @if(!(isset($isPremium) && $isPremium))
                 <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-claude-300 text-claude-500">Max</span>
             @endif
         </div>
@@ -20,7 +20,7 @@
 
     {{-- Content --}}
     <div class="flex-1 overflow-y-auto">
-        @if(!$isPremium)
+        @if(!(isset($isPremium) && $isPremium))
             {{-- Upgrade Gate --}}
             <div class="flex flex-col items-center justify-center h-full px-6 text-center">
                 <div class="w-20 h-20 rounded-2xl bg-claude-100 dark:bg-stone-800 flex items-center justify-center mb-6 group cursor-pointer">

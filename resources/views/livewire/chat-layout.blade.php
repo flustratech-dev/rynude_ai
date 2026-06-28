@@ -11,6 +11,9 @@
         isResizing: false,
         _onMove: null,
         _onUp: null,
+        conversationId: new URLSearchParams(window.location.search).get('conversation')
+            ? parseInt(new URLSearchParams(window.location.search).get('conversation'))
+            : null,
         get artifactPanelOpen() {
             return this.openArtifactId !== null && this.openArtifactId !== '' && this.openArtifactId !== undefined;
         },
@@ -18,6 +21,16 @@
             this.checkMobile();
             window.addEventListener('resize', () => this.checkMobile());
             window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: this.sidebarOpen } }));
+
+            window.addEventListener('selectConversation', (e) => {
+                if (e.detail && e.detail.conversationId) this.conversationId = e.detail.conversationId;
+            });
+            window.addEventListener('conversationCreated', (e) => {
+                if (e.detail && e.detail.id) this.conversationId = e.detail.id;
+            });
+            window.addEventListener('newChat', () => {
+                this.conversationId = null;
+            });
 
             this._onMove = (e) => {
                 if (!this.isResizing) return;

@@ -17,12 +17,27 @@
 
             {{-- Sidebar tabs --}}
             <div class="w-full md:w-[260px] bg-claude-bg-light dark:bg-claude-bg-dark border-b md:border-b-0 md:border-r border-claude-border-light dark:border-claude-border-dark p-3 md:p-4 flex md:flex-col gap-2 md:gap-1 flex-shrink-0 overflow-x-auto scrollbar-hide">
-                <template x-for="item in navItems" :key="item.id">
-                    <button @click="activeTab = item.id" class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap"
-                            :class="activeTab === item.id ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'">
-                        <span x-text="item.label"></span>
-                    </button>
-                </template>
+                {{-- Search --}}
+                <div class="relative hidden md:block mb-4">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" x-model="searchQuery" placeholder="Search" class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-sm focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500 text-gray-800 dark:text-stone-200">
+                </div>
+
+                <div class="px-3 py-1 hidden md:block mb-1">
+                    <span class="text-xs font-medium text-gray-500 dark:text-stone-400">Settings</span>
+                </div>
+
+                <div class="flex md:flex-col gap-2 md:gap-1 overflow-x-auto md:overflow-visible">
+                    <template x-for="item in filteredNavItems" :key="item.id">
+                        <button @click="activeTab = item.id" class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap"
+                                :class="activeTab === item.id ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'">
+                            <svg class="w-[18px] h-[18px] flex-shrink-0" :class="activeTab === item.id ? 'text-[#2D2825] dark:text-stone-200' : 'text-[#6B6B6B] dark:text-stone-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-html="item.icon"></svg>
+                            <span x-text="item.label"></span>
+                        </button>
+                    </template>
+                </div>
             </div>
 
             {{-- Main content --}}
@@ -46,19 +61,52 @@
                             <input x-model="name" @input.debounce.500ms="save('name')" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
-                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Nickname</label>
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What should Rynude call you?</label>
                             <input x-model="nickname" @input.debounce.500ms="save('nickname')" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
-                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Profession</label>
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What best describes your work?</label>
                             <select x-model="profession" @change="save('profession')" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
-                                <option value="">Select...</option><option value="developer">Software Developer</option><option value="designer">Designer</option><option value="data_scientist">Data Scientist</option><option value="product_manager">Product Manager</option><option value="student">Student</option><option value="researcher">Researcher</option><option value="writer">Writer</option><option value="marketer">Marketer</option><option value="business">Business</option><option value="other">Other</option>
+                                <option value="">Select...</option><option value="developer">Software Developer</option><option value="designer">Designer</option><option value="data_scientist">Data Scientist</option><option value="product_manager">Product Manager</option><option value="student">Student</option><option value="researcher">Researcher</option><option value="writer">Writer / Content Creator</option><option value="marketer">Marketer</option><option value="business">Business / Entrepreneur</option><option value="other">Other</option>
                             </select>
                         </div>
                     </div>
                     <div class="mt-8">
-                        <h3 class="text-[15px] text-[#2D2825] dark:text-stone-200 mb-1">Custom instructions</h3>
-                        <textarea x-model="customInstructions" @input.debounce.1000ms="save('custom_instructions')" class="w-full h-24 p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none"></textarea>
+                        <h3 class="text-[15px] text-[#2D2825] dark:text-stone-200 mb-1">Instructions for Rynude</h3>
+                        <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-4">
+                            Rynude will keep these in mind across chats and Cowork within <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Anthropic's guidelines</a>. <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Learn more</a>
+                        </p>
+                        <textarea x-model="customInstructions" @input.debounce.1000ms="save('custom_instructions')" class="w-full h-24 p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" placeholder="e.g. keep explanations brief and to the point"></textarea>
+                    </div>
+
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mt-12 mb-6">Preferences</h2>
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Appearance</label>
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                                <button @click="theme='system'; saveAppearance()" class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='system'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'" title="System Theme">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <button @click="theme='light'; saveAppearance()" class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='light'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'" title="Light Theme">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"></path></svg>
+                                </button>
+                                <button @click="theme='dark'; saveAppearance()" class="p-1.5 px-3 transition-colors" :class="theme==='dark'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'" title="Dark Theme">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 block">Response language</label><p class="text-[13px] text-gray-500 dark:text-stone-400">The language Rynude will reply in.</p></div>
+                            <select x-model="language" @change="save('language')" class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                <option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="zh">中文</option><option value="ar">العربية</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center justify-between pb-8">
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Chat font</label>
+                            <select x-model="chatFont" @change="save('chat_font')" class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                <option value="default">Default (System)</option><option value="serif">Serif</option><option value="mono">Monospace</option><option value="inter">Inter</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -75,7 +123,7 @@
                             </div>
                         </div>
                         <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
-                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Font size</label><p class="text-[13px] text-gray-500 dark:text-stone-400">Adjust text size.</p></div>
+                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Font size</label><p class="text-[13px] text-gray-500 dark:text-stone-400">Adjust the text size in chats.</p></div>
                             <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
                                 <button @click="fontSize='small'; saveAppearance()" class="px-3 py-1.5 transition-colors border-r border-claude-border-light dark:border-claude-border-dark" style="font-size:12px" :class="fontSize==='small'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">A</button>
                                 <button @click="fontSize='medium'; saveAppearance()" class="px-3 py-1.5 transition-colors border-r border-claude-border-light dark:border-claude-border-dark" style="font-size:15px" :class="fontSize==='medium'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">A</button>
@@ -91,7 +139,7 @@
                             </div>
                         </div>
                         <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
-                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Compact mode</label><p class="text-[13px] text-gray-500 dark:text-stone-400">Reduce spacing.</p></div>
+                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Compact mode</label><p class="text-[13px] text-gray-500 dark:text-stone-400">Reduce spacing to fit more on screen.</p></div>
                             <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer" :class="compactMode?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="compactMode=!compactMode; saveAppearance()">
                                 <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="compactMode?'translate-x-5':'translate-x-[2px]'"></span>
                             </div>
@@ -99,80 +147,431 @@
                     </div>
                 </div>
 
-                {{-- Rest of tabs --}}
+                {{-- Account tab --}}
+                <div x-show="activeTab === 'account'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Account</h2>
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Email address</label>
+                            <div class="text-[15px] text-gray-500 dark:text-stone-400" x-text="email"></div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
+                            <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Full name</label>
+                            <div class="text-[15px] text-gray-500 dark:text-stone-400" x-text="name"></div>
+                        </div>
+                        <div class="flex items-start justify-between border-t border-red-100 dark:border-red-900/40 pt-6">
+                            <div>
+                                <label class="text-[15px] text-red-600 dark:text-red-400 font-medium block mb-1">Delete account</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Permanently delete your account and all of its contents from Rynude. This action cannot be undone.</p>
+                            </div>
+                            <button @click="deleteAccount()" class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100">Delete account</button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Data & Privacy tab --}}
                 <div x-show="activeTab === 'data'" x-cloak x-transition>
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Data & Privacy</h2>
                     <div class="space-y-8">
                         <div class="flex items-start justify-between">
-                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export all chats</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Download a JSON copy of all conversations.</p></div>
+                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export all chats</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Download a complete copy of all your conversations as a JSON file.</p></div>
                             <button @click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800">Export JSON</button>
                         </div>
                         <div class="flex items-start justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
-                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on conversations</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Allow using conversations to improve models.</p></div>
+                            <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on conversations</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Allow Rynude to use your conversations to improve the models.</p></div>
                             <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 mt-1" :class="allowTraining?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="allowTraining=!allowTraining; save('allow_training')">
                                 <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="allowTraining?'translate-x-5':'translate-x-[2px]'"></span>
                             </div>
                         </div>
                         <div class="flex items-start justify-between border-t border-red-100 dark:border-red-900/40 pt-6">
-                            <div><label class="text-[15px] text-red-600 dark:text-red-400 font-medium block mb-1">Delete all chats</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Permanently delete all conversations.</p></div>
+                            <div><label class="text-[15px] text-red-600 dark:text-red-400 font-medium block mb-1">Delete all chats</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Permanently delete all of your conversations. This action cannot be undone.</p></div>
                             <button @click="deleteAllChats()" class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100">Delete all</button>
                         </div>
                     </div>
                 </div>
 
-                <div x-show="activeTab === 'api-keys'" x-cloak x-transition>
-                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">API Keys</h2>
-                    <div class="space-y-4">
-                        <div><label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Anthropic</label><input type="password" x-model="anthropicApiKey" placeholder="sk-ant-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4"></div>
-                        <div><label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">OpenAI</label><input type="password" x-model="openaiApiKey" placeholder="sk-proj-..." class="w-full px-3 py-2.5 rounded-lg border ... mb-4"></div>
-                        <div><label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Google AI</label><input type="password" x-model="googleApiKey" placeholder="AIza..." class="w-full px-3 py-2.5 rounded-lg border ... mb-4"></div>
-                        <div><label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Mistral</label><input type="password" x-model="mistralApiKey" placeholder="..." class="w-full px-3 py-2.5 rounded-lg border ... mb-6"></div>
-                        <div><label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">9Router</label><input type="password" x-model="nineRouterApiKey" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border ... mb-6"></div>
-                        <div><label class="flex items-center gap-3 cursor-pointer mb-4"><div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors" :class="useProxy?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="useProxy=!useProxy"><span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition" :class="useProxy?'translate-x-4':'translate-x-[3px]'"></span></div><div><span class="text-[15px] text-[#2D2825] dark:text-stone-200 font-medium">Custom Proxy</span></div></label></div>
-                        <div x-show="useProxy" class="space-y-4"><input type="url" x-model="proxyBaseUrl" placeholder="https://openrouter.ai/api/v1" class="w-full px-3 py-2.5 rounded-lg border ..."><input type="password" x-model="proxyApiKey" placeholder="sk-or-..." class="w-full px-3 py-2.5 rounded-lg border ..."></div>
-                        <div class="flex justify-end"><button @click="saveApiKeys()" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547]">Save Keys</button></div>
+                {{-- Shortcuts tab --}}
+                <div x-show="activeTab === 'shortcuts'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Keyboard Shortcuts</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                        <template x-for="sc in [
+                            ['New chat', ['Ctrl', 'K']],
+                            ['Send message', ['Ctrl', 'Enter']],
+                            ['New line', ['Shift', 'Enter']],
+                            ['Toggle sidebar', ['Ctrl', 'Shift', 'S']],
+                            ['Open settings', ['Ctrl', 'Shift', ',']],
+                            ['Show shortcuts', ['Ctrl', '/']],
+                            ['Search chats', ['Ctrl', 'F']],
+                            ['Close panel / modal', ['Esc']],
+                        ]">
+                            <div class="flex items-center justify-between py-2 border-b border-claude-border-light dark:border-claude-border-dark">
+                                <span class="text-[14px] text-[#2D2825] dark:text-stone-300" x-text="sc[0]"></span>
+                                <div class="flex items-center gap-1">
+                                    <template x-for="k in sc[1]">
+                                        <kbd class="px-2 py-1 bg-[#F3F2EE] dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-md text-[12px] font-mono text-gray-600 dark:text-stone-300 shadow-sm" x-text="k"></kbd>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
-                <div x-show="activeTab === 'billing'" x-cloak x-transition>
-                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Usage</h2>
-                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
-                        <div class="flex items-center justify-between mb-2"><span class="text-[15px] font-medium">Token usage</span><span class="text-[13px] text-gray-500" x-text="tokensUsed.toLocaleString()+' used · '+tokensLimit.toLocaleString()+' remaining'"></span></div>
-                        <div class="w-full h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full overflow-hidden"><div class="h-full bg-[#D97757] rounded-full" :style="'width:'+Math.min(100,Math.round(tokensUsed/Math.max(1,tokensUsed+tokensLimit)*100))+'%'"></div></div>
+                {{-- Privacy tab --}}
+                <div x-show="activeTab === 'privacy'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Privacy</h2>
+                    <div class="space-y-8">
+                        <div>
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on your conversations</label>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Allow Rynude to use your conversations to train our models. This helps us improve Rynude for everyone.</p>
+                                </div>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer mt-1" :class="allowTraining?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="allowTraining=!allowTraining; save('allow_training')">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200" :class="allowTraining?'translate-x-5':'translate-x-[2px]'"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export data</label>
+                                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Download a complete copy of all your conversations as a JSON file.</p>
+                                </div>
+                                <button @click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800">Export data</button>
+                            </div>
+                        </div>
                     </div>
-                    <template x-for="row in tokenBreakdown" :key="row.model">
-                        <div class="flex items-center justify-between text-[13px] py-1"><span x-text="row.model"></span><span x-text="row.total.toLocaleString()"></span></div>
-                    </template>
+                </div>
+
+                {{-- Billing tab --}}
+                <div x-show="activeTab === 'billing'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Quota & Usage</h2>
+                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[15px] font-medium">Token usage</span>
+                            <span class="text-[13px] text-gray-500" x-text="tokensUsed.toLocaleString()+' used · '+tokensLimit.toLocaleString()+' remaining'"></span>
+                        </div>
+                        <div class="w-full h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#D97757] rounded-full" :style="'width:'+Math.min(100,Math.round(tokensUsed/Math.max(1,tokensUsed+tokensLimit)*100))+'%'"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <template x-for="row in tokenBreakdown" :key="row.model">
+                            <div class="flex items-center justify-between text-[13px] py-1.5 border-b border-stone-100 dark:border-stone-800">
+                                <span class="font-medium text-stone-800 dark:text-stone-200" x-text="row.model"></span>
+                                <span class="text-stone-500" x-text="row.total.toLocaleString()"></span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 {{-- Capabilities tab --}}
                 <div x-show="activeTab === 'capabilities'" x-cloak x-transition>
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Capabilities</h2>
                     <div class="space-y-8">
-                        <div class="flex items-start justify-between"><div><label class="text-[15px] font-medium">Web Search</label><p class="text-[13.5px] text-gray-500">Allow searching the web for up-to-date information.</p></div><div class="relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer mt-1" :class="capWebSearch?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="capWebSearch=!capWebSearch; save('cap_web_search')"><span class="inline-block h-5 w-5 transform rounded-full bg-white shadow" :class="capWebSearch?'translate-x-5':'translate-x-[2px]'"></span></div></div>
-                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6"><div class="flex items-start justify-between"><div><label class="text-[15px] font-medium">Artifacts</label><p class="text-[13.5px] text-gray-500">Generate standalone artifacts like code and documents.</p></div><div class="relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer mt-1" :class="capArtifacts?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="capArtifacts=!capArtifacts; save('cap_artifacts')"><span class="inline-block h-5 w-5 transform rounded-full bg-white shadow" :class="capArtifacts?'translate-x-5':'translate-x-[2px]'"></span></div></div></div>
-                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6"><div class="flex items-start justify-between"><div><label class="text-[15px] font-medium">Code Execution</label><p class="text-[13.5px] text-gray-500">Run code in a secure sandbox.</p></div><div class="relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer mt-1" :class="capCodeExecution?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="capCodeExecution=!capCodeExecution; save('cap_code_execution')"><span class="inline-block h-5 w-5 transform rounded-full bg-white shadow" :class="capCodeExecution?'translate-x-5':'translate-x-[2px]'"></span></div></div></div>
+                        <div class="flex items-start justify-between">
+                            <div><label class="text-[15px] font-medium text-stone-800 dark:text-stone-200">Web Search</label><p class="text-[13.5px] text-gray-500">Allow searching the web for up-to-date information.</p></div>
+                            <div class="relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer mt-1" :class="capWebSearch?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="capWebSearch=!capWebSearch; save('cap_web_search')">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow" :class="capWebSearch?'translate-x-5':'translate-x-[2px]'"></span>
+                            </div>
+                        </div>
+                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
+                            <div class="flex items-start justify-between">
+                                <div><label class="text-[15px] font-medium text-stone-800 dark:text-stone-200">Artifacts</label><p class="text-[13.5px] text-gray-500">Generate standalone artifacts like code and documents.</p></div>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer mt-1" :class="capArtifacts?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="capArtifacts=!capArtifacts; save('cap_artifacts')">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow" :class="capArtifacts?'translate-x-5':'translate-x-[2px]'"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border-t border-claude-border-light dark:border-claude-border-dark pt-6">
+                            <div class="flex items-start justify-between">
+                                <div><label class="text-[15px] font-medium text-stone-800 dark:text-stone-200">Code Execution</label><p class="text-[13.5px] text-gray-500">Run code in a secure sandbox.</p></div>
+                                <div class="relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer mt-1" :class="capCodeExecution?'bg-[#D97757]':'bg-gray-200 dark:bg-stone-600'" @click="capCodeExecution=!capCodeExecution; save('cap_code_execution')">
+                                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow" :class="capCodeExecution?'translate-x-5':'translate-x-[2px]'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Connectors tab --}}
+                <div x-show="activeTab === 'connectors'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Connectors</h2>
+                    <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Connect Rynude to your tools to let it read context and perform actions on your behalf.</p>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-[#F3F2EE] dark:bg-stone-700 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-700 dark:text-stone-300" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12.012 21.314l-8.914-5.145V5.88l8.914-5.145 8.914 5.145v10.289l-8.914 5.145zM4.698 15.34l7.314 4.22 7.314-4.22V6.898l-7.314-4.22-7.314 4.22v8.441z" />
+                                        <path d="M12.012 17.514l-5.614-3.245V7.78l5.614-3.245 5.614 3.245v6.489l-5.614 3.245zM8.098 13.54l3.914 2.22 3.914-2.22V9.098l-3.914-2.22-3.914 2.22v4.441z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Google Drive</h4>
+                                    <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-0.5">Access docs, sheets, and presentations.</p>
+                                </div>
+                            </div>
+                            <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">Connect</button>
+                        </div>
+                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-[#F3F2EE] dark:bg-stone-700 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-700 dark:text-stone-300" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.686c.223-.198-.054-.31-.346-.11l-6.4 4.024-2.76-.86c-.6-.185-.61-.6.125-.89l10.736-4.136c.498-.19.958.115.828.913z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Telegram</h4>
+                                    <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-0.5">Read messages and send replies.</p>
+                                </div>
+                            </div>
+                            <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">Connect</button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Hugging Face tab --}}
+                <div x-show="activeTab === 'huggingface'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Hugging Face Serverless</h2>
+                    <div class="space-y-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Hugging Face API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key (Token) dari akun Hugging Face Anda.</p>
+                                <input type="password" x-model="huggingfaceApiKey" placeholder="hf_..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 mb-4">
+                            </div>
+                            <div class="flex justify-end mt-4 mb-8">
+                                <button type="button" @click="saveHuggingface()" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Simpan Konfigurasi</button>
+                            </div>
+
+                            <div class="pt-6 border-t border-claude-border-light dark:border-claude-border-dark">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-bold text-[16px] text-[#2D2825] dark:text-stone-200">Custom Hugging Face Models</h3>
+                                    <button @click="createModelHF()" class="px-3 py-1.5 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">+ Add HF Model</button>
+                                </div>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400 mb-4">Tambahkan model spesifik (contoh: <code>zai-org/GLM-4.7-Flash</code>, <code>meta-llama/Meta-Llama-3-8B-Instruct</code>).</p>
+                                
+                                <div class="overflow-x-auto border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
+                                    <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
+                                        <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
+                                            <tr>
+                                                <th class="px-4 py-3 font-medium">Model ID</th>
+                                                <th class="px-4 py-3 font-medium">Name</th>
+                                                <th class="px-4 py-3 font-medium text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-[#E5E5E5] dark:divide-stone-700">
+                                            <template x-for="m in aiModels.filter(m => m.provider === 'huggingface')" :key="m.id">
+                                                <tr class="hover:bg-gray-50 dark:hover:bg-stone-700/30 transition-colors">
+                                                    <td class="px-4 py-3 font-mono text-[13px] text-gray-800 dark:text-stone-200" x-text="m.code"></td>
+                                                    <td class="px-4 py-3 font-medium text-gray-900 dark:text-stone-100" x-text="m.name"></td>
+                                                    <td class="px-4 py-3 text-right">
+                                                        <button @click="deleteModel(m)" class="text-red-500 hover:text-red-700 font-medium text-[13px]">Delete</button>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <tr x-show="aiModels.filter(m => m.provider === 'huggingface').length === 0">
+                                                <td colspan="3" class="px-4 py-4 text-center text-gray-500">Belum ada model Hugging Face.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {{-- AI Models tab --}}
                 <div x-show="activeTab === 'models'" x-cloak x-transition>
-                    <div class="flex items-center justify-between"><h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200">AI Models</h2></div>
-                    <template x-if="aiModels.length === 0"><p class="text-gray-500 text-sm mt-4">No custom models yet.</p></template>
-                    <template x-for="m in aiModels" :key="m.id">
-                        <div class="flex items-center justify-between py-3 border-b border-claude-border-light dark:border-claude-border-dark">
-                            <div><span class="font-medium text-[14px]" x-text="m.code"></span><br><span class="text-[12px] text-gray-500" x-text="m.provider"></span></div>
-                            <div class="flex gap-2"><button @click="toggleModelActive(m)" class="px-2 py-1 rounded text-[11px] font-medium" :class="m.is_active?'bg-green-100 text-green-700':'bg-red-100 text-red-700'" x-text="m.is_active?'Active':'Inactive'"></button><button @click="deleteModel(m)" class="text-red-500 hover:text-red-700 text-[13px]">Delete</button></div>
-                        </div>
-                    </template>
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200">AI Models Management</h2>
+                        <button @click="createModel()" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">+ Add Model</button>
+                    </div>
+                    <div class="overflow-x-auto border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
+                        <table class="w-full text-left text-sm text-gray-600 dark:text-stone-400">
+                            <thead class="bg-[#F3F2EE] dark:bg-stone-800 text-gray-700 dark:text-stone-300">
+                                <tr>
+                                    <th class="px-4 py-3 font-medium">Model Code</th>
+                                    <th class="px-4 py-3 font-medium">Name</th>
+                                    <th class="px-4 py-3 font-medium text-center">Status</th>
+                                    <th class="px-4 py-3 font-medium text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#E5E5E5] dark:divide-stone-700">
+                                <template x-for="m in aiModels" :key="m.id">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-stone-700/30 transition-colors">
+                                        <td class="px-4 py-3 font-mono text-[13px] text-gray-800 dark:text-stone-200" x-text="m.code"></td>
+                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-stone-100" x-text="m.name"></td>
+                                        <td class="px-4 py-3 text-center">
+                                            <button @click="toggleModelActive(m)" class="px-3 py-1 rounded-full text-[11px] font-medium transition-colors" :class="m.is_active?'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400':'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400'" x-text="m.is_active?'Active':'Inactive'"></button>
+                                        </td>
+                                        <td class="px-4 py-3 text-right">
+                                            <button @click="editModel(m)" class="text-[#D97757] hover:text-[#c66547] font-medium text-[13px] mr-3">Edit</button>
+                                            <button @click="deleteModel(m)" class="text-red-500 hover:text-red-700 font-medium text-[13px]">Delete</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="aiModels.length === 0">
+                                    <td colspan="4" class="px-4 py-4 text-center text-gray-500">Belum ada model AI.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {{-- Rynude Code tab --}}
                 <div x-show="activeTab === 'claude-code'" x-cloak x-transition>
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Rynude Code</h2>
-                    <p class="text-[14px] text-gray-500 mb-6">AI coding assistant that lives in your terminal.</p>
-                    <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg">npm install -g @anthropic-ai/rynude-code</div>
+                    <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Rynude Code is an AI coding assistant that lives in your terminal. It understands your codebase and helps you write code faster.</p>
+                    
+                    <div class="p-6 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-gray-50 dark:bg-stone-800/30 mb-8">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-[#2D2825] dark:bg-stone-900 text-white flex items-center justify-center font-mono text-sm">$&gt;</div>
+                            <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Install via npm</h3>
+                        </div>
+                        <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between">
+                            <span>npm install -g @anthropic-ai/rynude-code</span>
+                            <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard" onclick="navigator.clipboard.writeText('npm install -g @anthropic-ai/rynude-code')">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200 mb-3">Authentication</h3>
+                    <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-4">Run the following command in your terminal to authenticate with your Anthropic account:</p>
+                    <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between mb-6">
+                        <span>rynude auth login</span>
+                        <button class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard" onclick="navigator.clipboard.writeText('rynude auth login')">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
                 </div>
+
+                {{-- API Keys tab --}}
+                <div x-show="activeTab === 'api-keys'" x-cloak x-transition>
+                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">API Keys & Quota</h2>
+                    <div class="space-y-6">
+                        <div class="p-4 bg-[#FBFBFA] dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
+                            <h3 class="text-sm font-medium text-gray-900 dark:text-stone-100 mb-1">Status Kuota</h3>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500 dark:text-stone-400">Sisa Kuota Token Anda:</span>
+                                <span class="text-lg font-bold text-[#D97757]" x-text="tokensLimit.toLocaleString() + ' Tokens'"></span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Anthropic API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Anthropic Anda untuk model Rynude.</p>
+                                <div class="flex gap-2">
+                                    <input type="password" x-model="anthropicApiKey" placeholder="sk-ant-..." class="flex-1 px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                    <button @click="validateKey('anthropic', anthropicApiKey)" class="px-3 py-2 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-gray-50 dark:bg-stone-900 text-sm font-medium hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors">Validate</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">OpenAI API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key OpenAI Anda untuk model GPT.</p>
+                                <div class="flex gap-2">
+                                    <input type="password" x-model="openaiApiKey" placeholder="sk-proj-..." class="flex-1 px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                    <button @click="validateKey('openai', openaiApiKey)" class="px-3 py-2 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-gray-50 dark:bg-stone-900 text-sm font-medium hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors">Validate</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Google AI API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Google AI Anda untuk model Gemini.</p>
+                                <div class="flex gap-2">
+                                    <input type="password" x-model="googleApiKey" placeholder="AIza..." class="flex-1 px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                    <button @click="validateKey('google', googleApiKey)" class="px-3 py-2 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-gray-50 dark:bg-stone-900 text-sm font-medium hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors">Validate</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">Mistral API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key Mistral Anda untuk model Mistral.</p>
+                                <div class="flex gap-2">
+                                    <input type="password" x-model="mistralApiKey" placeholder="..." class="flex-1 px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                    <button @click="validateKey('mistral', mistralApiKey)" class="px-3 py-2 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-gray-50 dark:bg-stone-900 text-sm font-medium hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors">Validate</button>
+                                </div>
+                            </div>
+                            <div class="pt-2 border-t border-claude-border-light dark:border-claude-border-dark"></div>
+                            <div>
+                                <label class="block text-[15px] text-[#2D2825] dark:text-stone-200 font-medium mb-2">9Router API Key</label>
+                                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-2">Masukkan API Key 9Router Anda.</p>
+                                <div class="flex gap-2">
+                                    <input type="password" x-model="nineRouterApiKey" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                    <button @click="validateKey('nine_router', nineRouterApiKey)" class="px-3 py-2 rounded-lg border border-[#E5E5E5] dark:border-stone-700 bg-gray-50 dark:bg-stone-900 text-sm font-medium hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors">Validate</button>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-claude-border-light dark:border-claude-border-dark">
+                                <label class="flex items-center gap-3 cursor-pointer mb-4">
+                                    <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ease-in-out" :class="useProxy ? 'bg-[#D97757]' : 'bg-gray-200 dark:bg-stone-600'" @click="useProxy = !useProxy">
+                                        <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition duration-200 ease-in-out" :class="useProxy ? 'translate-x-4' : 'translate-x-[3px]'"></span>
+                                    </div>
+                                    <div>
+                                        <span class="text-[15px] text-[#2D2825] dark:text-stone-200 font-medium">Gunakan Custom Proxy API</span>
+                                        <p class="text-[13px] text-gray-500 dark:text-stone-400">Gunakan endpoint OpenAI-compatible pihak ketiga (misal: OpenRouter, API2D).</p>
+                                    </div>
+                                </label>
+
+                                <div x-show="useProxy" x-collapse>
+                                    <div class="space-y-4 pt-2">
+                                        <div>
+                                            <label class="block text-[14px] text-[#2D2825] dark:text-stone-200 font-medium mb-1.5">Proxy Base URL</label>
+                                            <input type="url" x-model="proxyBaseUrl" placeholder="https://openrouter.ai/api/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[14px] text-[#2D2825] dark:text-stone-200 font-medium mb-1.5">Proxy API Key</label>
+                                            <input type="password" x-model="proxyApiKey" placeholder="sk-or-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end mt-4">
+                                <button type="button" @click="saveApiKeys()" class="px-4 py-2 bg-[#D97757] text-white rounded-lg text-sm font-medium hover:bg-[#c66547] transition-colors">Simpan API Keys</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {{-- Add/Edit Model Dialog --}}
+    <div x-show="isModelModalOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" @click="isModelModalOpen = false"></div>
+        <div class="bg-white dark:bg-stone-900 border border-claude-border-light dark:border-claude-border-dark w-full max-w-md rounded-xl p-6 shadow-2xl relative z-10">
+            <h3 class="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4" x-text="editModelId ? 'Edit AI Model' : 'Add AI Model'"></h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Code</label>
+                    <input type="text" x-model="modelCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Name</label>
+                    <input type="text" x-model="modelName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Provider</label>
+                    <select x-model="modelProvider" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                        <option value="huggingface">Hugging Face</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="google">Google</option>
+                        <option value="mistral">Mistral</option>
+                        <option value="proxy">9Router / Proxy</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="modelIsActiveChk" x-model="modelIsActive" class="w-4 h-4 text-[#D97757] rounded border-stone-300 focus:ring-[#D97757]">
+                    <label for="modelIsActiveChk" class="ml-2 text-sm text-stone-600 dark:text-stone-400">Set as Active</label>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-stone-100 dark:border-stone-800">
+                <button @click="isModelModalOpen = false" class="px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">Cancel</button>
+                <button @click="storeModel()" class="px-4 py-1.5 text-sm text-white bg-[#D97757] hover:bg-[#c66547] rounded-lg">Save</button>
             </div>
         </div>
     </div>
@@ -181,21 +580,41 @@
 <script>
 function settingsState() {
     return {
-        open: false, activeTab: 'general', flashMessage: null, flashType: 'success',
-        name: '', nickname: '', profession: '', customInstructions: '',
+        open: false, activeTab: 'general', searchQuery: '', flashMessage: null, flashType: 'success',
+        name: '', email: '', nickname: '', profession: '', customInstructions: '',
         language: 'en', chatFont: 'default', theme: 'light', fontSize: 'medium', accentColor: '#D97757', compactMode: false,
         allowTraining: false, capWebSearch: true, capArtifacts: true, capCodeExecution: false,
         anthropicApiKey: '', openaiApiKey: '', nineRouterApiKey: '', googleApiKey: '', mistralApiKey: '',
         useProxy: false, proxyBaseUrl: '', proxyApiKey: '', huggingfaceApiKey: '',
         tokensUsed: 0, tokensLimit: 0, tokenBreakdown: [], aiModels: [],
         accentColors: ['#D97757','#5E72E4','#11998E','#E0529C','#F5A623','#8B5CF6'],
+
+        // Custom models dialog states
+        isModelModalOpen: false, editModelId: null, modelCode: '', modelName: '', modelIsActive: true, modelProvider: 'huggingface',
+
         navItems: [
-            {id:'general',label:'General'},{id:'appearance',label:'Appearance'},{id:'data',label:'Data & Privacy'},
-            {id:'capabilities',label:'Capabilities'},{id:'api-keys',label:'API Keys'},{id:'billing',label:'Billing'},
-            {id:'models',label:'AI Models'},{id:'claude-code',label:'Rynude Code'},
+            {id:'general',label:'General',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\"></path><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"></path>'},
+            {id:'appearance',label:'Appearance',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z\"></path>'},
+            {id:'account',label:'Account',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z\"></path>'},
+            {id:'data',label:'Data & Privacy',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75\"></path>'},
+            {id:'shortcuts',label:'Shortcuts',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M6 6.878V6a2.25 2.25 0 012.25-2.25h7.5A2.25 2.25 0 0118 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 004.5 9v.878m13.5-3A2.25 2.25 0 0119.5 9v.878m0 0a2.246 2.246 0 00-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0121 12v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6c0-.98.626-1.813 1.5-2.122\"></path>'},
+            {id:'privacy',label:'Privacy',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z\"></path>'},
+            {id:'billing',label:'Billing',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z\"></path>'},
+            {id:'capabilities',label:'Capabilities',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z\"></path>'},
+            {id:'connectors',label:'Connectors',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z\"></path>'},
+            {id:'huggingface',label:'Hugging Face',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z\"></path>'},
+            {id:'models',label:'AI Models',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z\"></path>'},
+            {id:'claude-code',label:'Rynude Code',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5\"></path>'},
+            {id:'api-keys',label:'API Keys',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z\"></path>'}
         ],
 
         get initials() { return this.name ? this.name.split(' ').map(s => s[0]).join('').toUpperCase().slice(0,2) : '?'; },
+
+        get filteredNavItems() {
+            var q = this.searchQuery.trim().toLowerCase();
+            if (!q) return this.navItems;
+            return this.navItems.filter(item => item.label.toLowerCase().includes(q));
+        },
 
         init: function() { this.loadSettings(); },
 
@@ -206,7 +625,9 @@ function settingsState() {
                     var profile = resp.profile || {};
                     var prefs = resp.preferences || {};
                     var billing = resp.billing || {};
+                    var keys = resp.api_keys || {};
                     this.name = profile.name || '';
+                    this.email = profile.email || '';
                     this.nickname = profile.nickname || '';
                     this.profession = profile.profession || '';
                     this.customInstructions = profile.custom_instructions || '';
@@ -221,6 +642,19 @@ function settingsState() {
                     this.tokensUsed = billing.tokens_used || 0;
                     this.tokensLimit = billing.tokens_limit || 0;
                     this.tokenBreakdown = billing.token_breakdown || [];
+                    this.aiModels = resp.ai_models || [];
+
+                    // API Keys
+                    this.anthropicApiKey = keys.anthropic ? '••••••••••••••••' : '';
+                    this.openaiApiKey = keys.openai ? '••••••••••••••••' : '';
+                    this.googleApiKey = keys.google ? '••••••••••••••••' : '';
+                    this.mistralApiKey = keys.mistral ? '••••••••••••••••' : '';
+                    this.nineRouterApiKey = keys.nine_router ? '••••••••••••••••' : '';
+                    this.useProxy = keys.use_proxy || false;
+                    this.proxyBaseUrl = keys.proxy_base_url || '';
+                    this.proxyApiKey = keys.proxy_api_key_set ? '••••••••••••••••' : '';
+                    this.huggingfaceApiKey = keys.huggingface_api_key_set ? '••••••••••••••••' : '';
+                    this.huggingfaceBaseUrl = keys.huggingface_base_url || 'https://api-inference.huggingface.co/v1';
                 }.bind(this));
         },
 
@@ -238,18 +672,35 @@ function settingsState() {
         },
 
         saveApiKeys: function() {
-            this._patch({
-                anthropic_api_key: this.anthropicApiKey,
-                openai_api_key: this.openaiApiKey,
-                nine_router_api_key: this.nineRouterApiKey,
-                google_api_key: this.googleApiKey,
-                mistral_api_key: this.mistralApiKey,
+            var payload = {
                 use_proxy: this.useProxy,
                 proxy_base_url: this.proxyBaseUrl,
-                proxy_api_key: this.proxyApiKey,
-            }).then(function() {
+            };
+            if (this.anthropicApiKey && this.anthropicApiKey !== '••••••••••••••••') payload.anthropic_api_key = this.anthropicApiKey;
+            if (this.openaiApiKey && this.openaiApiKey !== '••••••••••••••••') payload.openai_api_key = this.openaiApiKey;
+            if (this.googleApiKey && this.googleApiKey !== '••••••••••••••••') payload.google_api_key = this.googleApiKey;
+            if (this.mistralApiKey && this.mistralApiKey !== '••••••••••••••••') payload.mistral_api_key = this.mistralApiKey;
+            if (this.nineRouterApiKey && this.nineRouterApiKey !== '••••••••••••••••') payload.nine_router_api_key = this.nineRouterApiKey;
+            if (this.proxyApiKey && this.proxyApiKey !== '••••••••••••••••') payload.proxy_api_key = this.proxyApiKey;
+
+            this._patch(payload).then(function() {
                 this.flashMessage = 'API Keys saved successfully!';
                 this.flashType = 'success';
+                this.loadSettings();
+            }.bind(this));
+        },
+
+        saveHuggingface: function() {
+            var payload = {
+                huggingface_base_url: this.huggingfaceBaseUrl
+            };
+            if (this.huggingfaceApiKey && this.huggingfaceApiKey !== '••••••••••••••••') {
+                payload.huggingface_api_key = this.huggingfaceApiKey;
+            }
+            this._patch(payload).then(function() {
+                this.flashMessage = 'Hugging Face settings saved successfully!';
+                this.flashType = 'success';
+                this.loadSettings();
             }.bind(this));
         },
 
@@ -265,20 +716,98 @@ function settingsState() {
 
         deleteAllChats: function() {
             if (!confirm('Are you sure? This will permanently delete ALL your chats.')) return;
-            this._patch({_delete_chats: true}); // placeholder
+            var self = this;
+            this._patch({_action: 'delete_chats'}).then(function() {
+                self.flashMessage = 'All chats have been deleted.';
+                self.flashType = 'success';
+                self.loadSettings();
+                document.dispatchEvent(new CustomEvent('chatCreated'));
+            });
         },
 
-        exportAllChats: function(format) {
-            window.location.href = '/api/chats?export=' + format;
+        deleteAccount: function() {
+            if (!confirm('Are you absolutely sure? This will permanently delete your account, all conversations, projects, and data. This cannot be undone.')) return;
+            this._patch({_action: 'delete_account'}).then(function(resp) {
+                if (resp && resp.redirect) {
+                    window.location.href = resp.redirect;
+                }
+            });
+        },
+
+        // Models CRUD
+        createModel: function() {
+            this.editModelId = null;
+            this.modelCode = '';
+            this.modelName = '';
+            this.modelIsActive = true;
+            this.modelProvider = 'huggingface';
+            this.isModelModalOpen = true;
+        },
+
+        createModelHF: function() {
+            this.editModelId = null;
+            this.modelCode = '';
+            this.modelName = '';
+            this.modelIsActive = true;
+            this.modelProvider = 'huggingface';
+            this.isModelModalOpen = true;
+        },
+
+        editModel: function(model) {
+            this.editModelId = model.id;
+            this.modelCode = model.code;
+            this.modelName = model.name;
+            this.modelIsActive = model.is_active;
+            this.modelProvider = model.provider || 'huggingface';
+            this.isModelModalOpen = true;
+        },
+
+        storeModel: function() {
+            var self = this;
+            this._patch({
+                _action: 'store_model',
+                model_id: this.editModelId,
+                model_code: this.modelCode,
+                model_name: this.modelName,
+                model_provider: this.modelProvider,
+                model_is_active: this.modelIsActive
+            }).then(function() {
+                self.isModelModalOpen = false;
+                self.loadSettings();
+            });
         },
 
         toggleModelActive: function(model) {
-            // placeholder
+            var self = this;
+            this._patch({
+                _action: 'toggle_model',
+                model_id: model.id
+            }).then(function() {
+                self.loadSettings();
+            });
         },
 
         deleteModel: function(model) {
-            // placeholder
+            if (!confirm('Delete this AI model?')) return;
+            var self = this;
+            this._patch({
+                _action: 'delete_model',
+                model_id: model.id
+            }).then(function() {
+                self.loadSettings();
+            });
         },
+
+        validateKey: function(provider, key) {
+            if (!key || key === '••••••••••••••••') return;
+            fetch('/api/settings/validate-api-key', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({provider: provider, key: key})
+            }).then(function(r) { return r.json(); }).then(function(resp) {
+                alert(resp.message);
+            });
+        }
     };
 }
 </script>

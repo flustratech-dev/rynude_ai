@@ -4,6 +4,28 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <script>
+            // Globally inject CSRF token into all fetch requests
+            const originalFetch = window.fetch;
+            window.fetch = function() {
+                let [resource, config] = arguments;
+                if (!config) config = {};
+                if (config.method && !['GET', 'HEAD', 'OPTIONS'].includes(config.method.toUpperCase())) {
+                    config.headers = config.headers || {};
+                    const csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
+                    if (csrfToken) {
+                        if (config.headers instanceof Headers) {
+                            config.headers.set('X-CSRF-TOKEN', csrfToken);
+                        } else if (Array.isArray(config.headers)) {
+                            config.headers.push(['X-CSRF-TOKEN', csrfToken]);
+                        } else {
+                            config.headers['X-CSRF-TOKEN'] = csrfToken;
+                        }
+                    }
+                }
+                return originalFetch(resource, config);
+            };
+        </script>
 
         <title>{{ config('app.name', 'rynude') }}</title>
 
@@ -18,6 +40,9 @@
         <!-- Highlight.js -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+        <!-- Marked.js for Markdown rendering -->
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
         <!-- Theme Initialization -->
         <script>
@@ -211,13 +236,47 @@
                 });
             }
 
-            document.addEventListener('DOMContentLoaded', initCodeBlocks);
+            document.addEventListener('DOMContentLoaded', function() {
+                initCodeBlocks();
+
+                // Re-run on dynamic Alpine.js renders (streaming markdown)
+                var observer = new MutationObserver(function(mutations) {
+                    var hasNewNodes = mutations.some(function(m) { return m.addedNodes.length > 0; });
+                    if (hasNewNodes) initCodeBlocks();
+                });
+                var chatArea = document.getElementById('chat-interface-root');
+                if (chatArea) {
+                    observer.observe(chatArea, { childList: true, subtree: true });
+                }
+            });
             // Copy content dispatched from server components (share links, artifacts)
             document.addEventListener('copyToClipboard', (event) => {
                 const content = event.detail?.content ?? event.detail;
                 if (content && navigator.clipboard) {
                     navigator.clipboard.writeText(content).catch(() => {});
                 }
+            });
+
+            // When a new conversation is created via SPA, reload from API and refresh sidebar title
+            window.addEventListener('conversationCreated', function(e) {
+                var convId = e.detail && e.detail.id;
+                if (!convId) return;
+                // Fetch the conversation title and prepend to sidebar recents
+                fetch('/api/chats/' + convId, {headers:{'Accept':'application/json'}})
+                    .then(function(r){return r.json();})
+                    .then(function(resp) {
+                        if (!resp.data) return;
+                        var title = resp.data.title || 'New Chat';
+                        var container = document.getElementById('sidebar-recents');
+                        if (!container) return;
+                        // Don't duplicate
+                        if (document.querySelector('[data-conv-id="' + convId + '"]')) return;
+                        var el = document.createElement('div');
+                        el.setAttribute('data-conv-id', convId);
+                        el.className = 'relative group flex items-center w-full rounded-lg transition-colors bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium';
+                        el.innerHTML = '<button onclick="window.dispatchEvent(new CustomEvent(\'selectConversation\', {detail:{conversationId:' + convId + '}})); window.history.pushState({},\'\',' + "'/chat?conversation=" + convId + "'" + ');" class="flex-1 text-left px-2 py-1.5 text-[13px] truncate">' + title + '</button>';
+                        container.prepend(el);
+                    });
             });
         </script>
     </body>

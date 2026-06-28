@@ -146,6 +146,14 @@ class ChatApiController extends ApiController
 
         return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch) {
             try {
+                // First emit conversation ID so frontend can track it
+                echo 'data: ' . json_encode([
+                    'type' => 'init',
+                    'data' => ['conversation_id' => $conversation->id],
+                ]) . "\n\n";
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+
                 $generator = $streamingService->stream($conversation, $messages, $model, $webSearch);
 
                 foreach ($generator as $event) {

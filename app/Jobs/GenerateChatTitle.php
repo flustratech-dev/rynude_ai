@@ -37,7 +37,15 @@ class GenerateChatTitle implements ShouldQueue
     {
         try {
             if ($this->userId) {
-                Auth::loginUsingId($this->userId);
+                // Use setUser() — NOT loginUsingId() — to establish the user context
+                // for AiService (API keys / settings). loginUsingId() calls
+                // session->migrate(true), which regenerates and DELETES the live
+                // session file when this job runs inline under QUEUE_CONNECTION=sync,
+                // logging the web user out and rotating their CSRF token mid-request.
+                $user = User::find($this->userId);
+                if ($user) {
+                    Auth::setUser($user);
+                }
             }
 
             $aiService = new AiService();

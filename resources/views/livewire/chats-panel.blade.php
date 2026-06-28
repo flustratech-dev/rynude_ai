@@ -251,6 +251,7 @@ function chatsPanelState() {
         selectConversation: function(id) {
             window.dispatchEvent(new CustomEvent('close-panel'));
             window.dispatchEvent(new CustomEvent('selectConversation', { detail: { conversationId: id } }));
+            window.history.pushState({}, '', '/chat?conversation=' + id);
         },
 
         startRename: function(id) {

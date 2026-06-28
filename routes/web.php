@@ -15,8 +15,36 @@ Route::get('/dashboard', function () {
     return redirect()->route('chat');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/chat', function () {
-    return view('chat');
+Route::get('/chat', function (\Illuminate\Http\Request $request) {
+    $groups = [];
+    $selectedConversation = $request->query('conversation') ? (int)$request->query('conversation') : null;
+
+    if (auth()->check()) {
+        $conversations = \App\Models\Conversation::where('user_id', auth()->id())
+            ->whereNull('archived_at')
+            ->orderByDesc('updated_at')
+            ->limit(30)
+            ->get(['id', 'title', 'updated_at']);
+
+        $now = now();
+        foreach ($conversations as $conv) {
+            $diff = $conv->updated_at->diffInDays($now);
+            if ($diff === 0) {
+                $period = 'Today';
+            } elseif ($diff === 1) {
+                $period = 'Yesterday';
+            } elseif ($diff <= 7) {
+                $period = 'Past 7 days';
+            } elseif ($diff <= 30) {
+                $period = 'Past 30 days';
+            } else {
+                $period = 'Older';
+            }
+            $groups[$period][] = ['id' => $conv->id, 'title' => $conv->title ?: 'New Chat'];
+        }
+    }
+
+    return view('chat', compact('groups', 'selectedConversation'));
 })->name('chat');
 
 // Phase 1 (Routing Migration): the /code and /design pages now through

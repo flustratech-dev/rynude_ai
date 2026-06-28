@@ -2,7 +2,7 @@
     x-data="{
         open: false,
         showCopied: false,
-        updateCommand: '{{ $updateCommand }}',
+        updateCommand: '{{ isset($updateCommand) ? $updateCommand : '' }}',
         closeModal() {
             this.open = false;
         },
@@ -13,7 +13,7 @@
             });
         }
     }"
-    @open-system-update.window="open = true; updateCommand = $event.detail?.command || '{{ $updateCommand }}'"
+    @open-system-update.window="open = true; updateCommand = $event.detail?.command || '{{ isset($updateCommand) ? $updateCommand : '' }}'"
     @keydown.escape.window="if (open) closeModal()"
 >
     <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm sm:p-6 transition-opacity"

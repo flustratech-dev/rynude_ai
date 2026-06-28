@@ -11,8 +11,8 @@ use Tests\TestCase;
 /**
  * Phase 1 (Routing Migration) — page entry points.
  *
- * Verifies that /code and /design now enter through the new controllers, and
- * that /code and /design redirect to chat now that Livewire components are retired.
+ * Verifies that /code and /design enter through the new controllers: /code now
+ * renders the Claude Code page, while /design still redirects to chat.
  */
 class PageRoutesTest extends TestCase
 {
@@ -30,15 +30,17 @@ class PageRoutesTest extends TestCase
         $this->get('/design')->assertRedirect('/login');
     }
 
-    // ── Controller entry points redirect to chat ────────────────────────
+    // ── Controller entry points ─────────────────────────────────────────
 
-    public function test_code_page_redirects_to_chat(): void
+    public function test_code_page_renders_for_authenticated_user(): void
     {
         $user = User::factory()->create();
 
+        // /code now renders the Claude Code page (ClaudeCodeController returns
+        // view('code')) instead of redirecting to chat.
         $this->actingAs($user)
             ->get('/code')
-            ->assertRedirect(route('chat'));
+            ->assertOk();
     }
 
     public function test_design_page_redirects_to_chat(): void

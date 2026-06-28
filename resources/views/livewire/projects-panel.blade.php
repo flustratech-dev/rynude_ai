@@ -595,6 +595,7 @@ function projectsPanelState() {
         openProjectChat: function(chatId) {
             window.dispatchEvent(new CustomEvent('close-panel'));
             window.dispatchEvent(new CustomEvent('openChat', {detail: {chatId: chatId}}));
+            window.history.pushState({}, '', '/chat?conversation=' + chatId);
         },
 
         timeAgo: function(iso) {

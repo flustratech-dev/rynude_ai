@@ -146,7 +146,7 @@ class ChatStreamingService
             'type' => 'done',
             'data' => [
                 'message_id' => $assistantMessage->id,
-                'artifact_id' => $artifactData ? $artifactData['artifact']->id : null,
+                'artifact_id' => $artifact ? $artifact->id : null,
                 'stopped' => $stopped,
             ],
         ];

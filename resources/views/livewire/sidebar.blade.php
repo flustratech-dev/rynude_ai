@@ -1,5 +1,5 @@
 <div
-    x-data="{ open: {{ Js::from($sidebarOpen) }} }"
+    x-data="{ open: true }"
     @sidebar-toggle.window="open = $event.detail.open"
     class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark font-claude-response"
 >
@@ -53,7 +53,7 @@
 
         {{-- Navigation --}}
         <div class="px-2 mt-1 space-y-0.5">
-            @if($hasUpdate)
+            @if($hasUpdate ?? false)
             <button
                 @click="window.dispatchEvent(new CustomEvent('open-system-update'))"
                 class="w-full flex items-center justify-between px-2 py-1.5 mb-1 rounded-lg text-[13px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-colors border border-blue-200 dark:border-blue-500/20 shadow-sm"
@@ -71,7 +71,7 @@
             </button>
             @endif
 
-            <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('closeArtifactPanel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.location.href = '{{ route('chat') }}'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
+            <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('closeArtifactPanel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
                 <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
                     <svg class="w-[18px] h-[18px] text-gray-500 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
@@ -177,7 +177,7 @@
         </div>
 
         {{-- Recents --}}
-        <div class="mt-4 px-2 flex-1 overflow-hidden flex flex-col">
+        <div class="mt-4 px-2 flex-1 overflow-hidden flex flex-col" x-data="sidebarRecentsState()" x-init="init()">
             <div class="flex items-center justify-between px-2 py-1">
                 <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400">Recents</span>
                 <button @click="activePanel = activePanel === 'chats' ? null : 'chats'; window.dispatchEvent(new CustomEvent('closeArtifactPanel'))" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
@@ -187,36 +187,30 @@
                 </button>
             </div>
             
-            <div class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1">
-                @forelse($groups as $period => $items)
-                    @foreach($items as $conversation)
-                        <div class="relative group flex items-center w-full rounded-lg transition-colors {{ $selectedConversation === $conversation['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200 hover:font-medium' }}">
-                            <button
-                                @click="activePanel = null; window.dispatchEvent(new CustomEvent('closeArtifactPanel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.location.href = '/chat?conversation={{ $conversation['id'] }}'"
-                                class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
-                            >
-                                {{ $conversation['title'] }}
-                            </button>
-                            <button
-                                @click="if(confirm('Are you sure you want to delete this chat?')) {
-                                    fetch('/api/chats/{{ $conversation['id'] }}', {
-                                        method: 'DELETE',
-                                        headers: {
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                            'Accept': 'application/json'
-                                        }
-                                    }).then(() => window.location.reload());
-                                }"
-                                class="absolute right-1 p-1 hidden group-hover:flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors bg-[#EAE9E5] dark:bg-stone-800"
-                                title="Delete"
-                            >
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
-                        </div>
-                    @endforeach
-                @empty
-                    <div class="px-2 py-2 text-[13px] text-gray-400 dark:text-stone-500">No recent chats</div>
-                @endforelse
+            <div id="sidebar-recents" class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1">
+                <template x-for="(items, groupName) in groupedRecents" :key="groupName">
+                    <div>
+                        <div class="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2 pt-2.5 pb-1 uppercase tracking-wider" x-text="groupName"></div>
+                        <template x-for="c in items" :key="c.id">
+                            <div class="relative group flex items-center w-full rounded-lg transition-colors"
+                                 :class="conversationId === c.id ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200'">
+                                <button
+                                    @click="activePanel = null; window.dispatchEvent(new CustomEvent('closeArtifactPanel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('selectConversation', { detail: { conversationId: c.id } })); window.history.pushState({}, '', '/chat?conversation=' + c.id);"
+                                    class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
+                                    x-text="c.title"
+                                ></button>
+                                <button
+                                    @click="if(confirm('Are you sure you want to delete this chat?')) { deleteChat(c.id); }"
+                                    class="absolute right-1 p-1 hidden group-hover:flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors bg-[#EAE9E5] dark:bg-stone-800"
+                                    title="Delete"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+                <div x-show="recents.length === 0" class="px-2 py-2 text-[13px] text-gray-400 dark:text-stone-500">No recent chats</div>
             </div>
         </div>
 
@@ -450,7 +444,7 @@
             </svg>
         </button>
 
-        @if($hasUpdate)
+        @if($hasUpdate ?? false)
         <button
             @click="window.dispatchEvent(new CustomEvent('open-system-update'))"
             class="p-2 rounded-lg mb-1 transition-colors w-full flex items-center justify-center text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 relative"
@@ -466,7 +460,7 @@
         </button>
         @endif
 
-        <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('closeArtifactPanel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.location.href = '{{ route('chat') }}'" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
+        <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('closeArtifactPanel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
             <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
                 <svg class="w-[20px] h-[20px] text-gray-500 dark:text-stone-400 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
@@ -590,3 +584,70 @@
         @endauth
     </div>
 </div>
+
+<script>
+function sidebarRecentsState() {
+    return {
+        recents: [],
+        conversationId: null,
+        init() {
+            var self = this;
+            this.loadRecents();
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var convId = urlParams.get('conversation');
+            if (convId) this.conversationId = parseInt(convId);
+
+            window.addEventListener('selectConversation', function(e) {
+                if (e.detail && e.detail.conversationId) self.conversationId = e.detail.conversationId;
+            });
+            window.addEventListener('conversationCreated', function(e) {
+                self.loadRecents();
+                if (e.detail && e.detail.id) self.conversationId = e.detail.id;
+            });
+            window.addEventListener('conversationDeleted', function() {
+                self.loadRecents();
+            });
+            window.addEventListener('newChat', function() {
+                self.conversationId = null;
+            });
+        },
+        loadRecents() {
+            var self = this;
+            fetch('/api/chats', {headers:{'Accept':'application/json'}})
+                .then(function(r){return r.json()})
+                .then(function(resp){
+                    if (resp.data) {
+                        self.recents = resp.data;
+                    }
+                });
+        },
+        deleteChat(id) {
+            var self = this;
+            fetch('/api/chats/' + id, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json'
+                }
+            }).then(function() {
+                self.loadRecents();
+                window.dispatchEvent(new CustomEvent('conversationDeleted', { detail: { id: id } }));
+                if (self.conversationId === id) {
+                    window.dispatchEvent(new CustomEvent('newChat'));
+                    window.history.pushState({}, '', '/chat');
+                }
+            });
+        },
+        get groupedRecents() {
+            var groups = {};
+            this.recents.forEach(function(item) {
+                var g = item.group || 'Older';
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(item);
+            });
+            return groups;
+        }
+    }
+}
+</script>
