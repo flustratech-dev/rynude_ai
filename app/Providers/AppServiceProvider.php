@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
         );
         $this->app->bind(
             \App\Contracts\ToolExecutionTrackerInterface::class,
-            \App\Services\ToolExecutionTracker::class
+            \App\Services\Orchestrator\ToolExecutionTracker::class
         );
     }
 
