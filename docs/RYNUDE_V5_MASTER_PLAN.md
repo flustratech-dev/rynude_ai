@@ -1,120 +1,358 @@
 # RYNUDE AI V5
 
-## Mission
+## Vision
 
-Transform RYNUDE into a model-agnostic AI Research Operating System capable of producing Claude-level outputs using GPT, Claude, Gemini, DeepSeek, Qwen and future LLMs.
+RYNUDE is a model-agnostic AI Research Operating System.
+
+The goal is not to depend on Claude.
+
+The goal is to force every model (GPT, Claude, Gemini, DeepSeek, Qwen and future models) to follow the same high-quality reasoning process.
+
+RYNUDE should provide Claude-level or better outputs through architecture rather than model dependency.
 
 ---
 
-# PHASE A - CLAUDE EQUIVALENT FOUNDATION
+# CORE PRINCIPLES
 
-## 1. Universal Thinking Pipeline
+1. Planning Before Generation
+2. Research Before Writing
+3. Reflection Before Publishing
+4. Quality Scoring Before Delivery
+5. Memory Before Context Loss
+6. Academic Consistency Across Entire Project
 
-All models must pass through:
+---
+
+# PHASE 1 - MODEL NORMALIZATION LAYER
+
+## Goal
+
+Make all models behave similarly.
+
+## Components
+
+### Model Adapter
+
+Normalize prompts and outputs.
+
+Supported Models:
+
+* GPT
+* Claude
+* Gemini
+* DeepSeek
+* Qwen
+
+### Universal System Prompt
+
+All models must receive:
+
+Task Analysis
+Execution Plan
+Reasoning Instructions
+Quality Standards
+
+### Output Normalizer
+
+Convert responses into a standard format.
+
+### Quality Scoring Engine
+
+Evaluate:
+
+* Accuracy
+* Completeness
+* Consistency
+* Academic Quality
+* Formatting
+
+Quality Score Range:
+
+0-100
+
+Rules:
+
+Score < 85
+
+Regenerate automatically.
+
+---
+
+# PHASE 2 - UNIVERSAL THINKING PIPELINE
 
 User Request
+
 ↓
+
 Task Analyzer
+
 ↓
+
 Planning Engine
+
 ↓
+
 Research Engine
+
 ↓
+
 Writing Engine
+
 ↓
+
 Reflection Engine
+
 ↓
-Artifact Renderer
+
+Quality Scoring Engine
+
+↓
+
+Final Output
 
 ---
 
-## 2. Planning First Policy
+## Planning First Policy
 
 Before generation:
 
 TASK ANALYSIS
 
-Goal:
-Audience:
-Deliverable:
-Constraints:
-Success Criteria:
+Goal
 
-Execution Plan:
-1.
-2.
-3.
+Audience
+
+Deliverable
+
+Constraints
+
+Success Criteria
+
+Execution Plan
 
 ---
 
-## 3. Reflection Loop
+## Reflection Loop
 
-After generation:
-
-CHECKLIST
+Verify:
 
 □ Goal achieved
-□ References present
-□ Consistency verified
-□ Missing sections identified
-□ Formatting valid
 
-Auto-regenerate if quality score below threshold.
+□ References included
+
+□ Consistency maintained
+
+□ Missing information detected
+
+□ Formatting correct
 
 ---
 
-## 4. Multi Pass Writing
+## Multi Pass Writing
 
-Draft 1
+Draft
+
 ↓
+
 Improve
+
 ↓
-Academic Review
+
+Review
+
 ↓
+
 Final
 
 ---
 
-# PHASE B - SUPERIOR THESIS MODE
+# PHASE 3 - MEMORY SYSTEM
 
-## Agent 1 - Research Analyst
+## Project Memory
+
+project.json
+
+Store:
+
+Title
+
+Research Topic
+
+Variables
+
+Methodology
+
+University
+
+Supervisor Notes
+
+Project Status
+
+---
+
+## Long Context Compression
+
+Store:
+
+Research Topic
+
+Methodology
+
+Completed Chapters
+
+Important Decisions
+
+Pending Tasks
+
+---
+
+## Persistent Knowledge Layer
+
+memory/
+
+project_memory.md
+
+research_memory.md
+
+writing_memory.md
+
+decision_log.md
+
+---
+
+# PHASE 4 - THESIS KNOWLEDGE GRAPH
+
+Purpose:
+
+Maintain consistency across all chapters.
+
+Store:
+
+Research Variables
+
+Theory
+
+Framework
+
+Hypotheses
+
+Methodology
+
+Population
+
+Sample
+
+Instruments
+
+Analysis Method
+
+Detect:
+
+Contradictions
+
+Theory Changes
+
+Method Changes
+
+Variable Changes
+
+Automatically generate warnings.
+
+---
+
+# PHASE 5 - RESEARCH WORKFLOW ENGINE
+
+Research Request
+
+↓
+
+Research Planner
+
+↓
+
+Reference Collector
+
+↓
+
+Gap Detector
+
+↓
+
+Outline Builder
+
+↓
+
+Academic Writer
+
+↓
+
+Academic Reviewer
+
+↓
+
+Final Research Output
+
+---
+
+# PHASE 6 - THESIS AGENT SYSTEM
+
+## Agent 1
+
+Research Analyst
 
 Responsibilities:
 
-* Literature review
-* Theory discovery
-* Research gap identification
-* Reference collection
+* Literature Review
+* Theory Discovery
+* Gap Identification
+* Reference Collection
 
-## Agent 2 - Methodology Expert
+---
 
-Responsibilities:
+## Agent 2
 
-* Method validation
-* Population review
-* Sample review
-* Instrument review
-
-## Agent 3 - Academic Writer
+Methodology Expert
 
 Responsibilities:
 
-* Chapter generation
-* Academic writing
+* Population Review
+* Sample Review
+* Instrument Review
+* Method Validation
 
-## Agent 4 - Academic Reviewer
+---
+
+## Agent 3
+
+Academic Writer
 
 Responsibilities:
 
-* Supervisor simulation
-* Thesis review
+* Chapter Writing
+* Academic Formatting
 
-## Agent 5 - Examiner Simulator
+---
+
+## Agent 4
+
+Academic Reviewer
 
 Responsibilities:
 
-* Examiner simulation
-* Defense preparation
+* Supervisor Simulation
+* Academic Review
+
+---
+
+## Agent 5
+
+Examiner Simulator
+
+Responsibilities:
+
+* Defense Preparation
+* Weakness Detection
+* Question Simulation
 
 Output:
 
@@ -126,16 +364,22 @@ Recommendations
 
 ---
 
-# PHASE C - KILLER THESIS FEATURES
+# PHASE 7 - ACADEMIC QUALITY ENGINE
 
 ## Literature Matrix Generator
 
 Generate:
 
 Author
+
+Year
+
 Method
+
 Variables
+
 Findings
+
 Gap
 
 ---
@@ -144,10 +388,13 @@ Gap
 
 Detect:
 
-* Research Gap
-* Practical Gap
-* Methodological Gap
-* Theoretical Gap
+Research Gap
+
+Practical Gap
+
+Methodological Gap
+
+Theoretical Gap
 
 ---
 
@@ -155,21 +402,29 @@ Detect:
 
 Validate:
 
-* DOI
-* Citation quality
-* Predatory journals
+DOI
+
+Publisher
+
+Citation Integrity
+
+Predatory Journal Risk
 
 ---
 
 ## Consistency Checker
 
-Verify:
+Validate:
 
 Bab 1
+
 Bab 2
+
 Bab 3
 
-Remain synchronized.
+Bab 4
+
+Bab 5
 
 ---
 
@@ -177,64 +432,46 @@ Remain synchronized.
 
 Validate:
 
-* University format
-* Numbering
-* Tables
-* Figures
-* References
+University Format
+
+Numbering
+
+Tables
+
+Figures
+
+References
 
 ---
 
-# PHASE D - MEMORY SYSTEM
-
-## Project Memory
-
-project.json
-
-Contains:
-
-* Judul
-* Metode
-* Variabel
-* Kampus
-* Progress
-
----
-
-## Long Context Compression
-
-Store:
-
-Research Topic
-Methodology
-Completed Chapters
-Important Decisions
-
-Inject automatically.
-
----
-
-## Persistent Knowledge Layer
-
-memory/
-
-project_memory.md
-research_memory.md
-writing_memory.md
-
----
-
-# PHASE E - ARTIFACT SYSTEM
+# PHASE 8 - ARTIFACT SYSTEM REWRITE
 
 Investigate:
 
-* State management
-* Websocket events
-* Cache invalidation
-* Session persistence
+Frontend State
 
-Fix:
+Backend Events
 
-* Immediate artifact rendering
-* Session retention
-* Event tracing
+Realtime Updates
+
+Authentication
+
+Caching
+
+---
+
+## Fix Targets
+
+Artifact appears immediately after generation.
+
+No page refresh required.
+
+No logout after refresh.
+
+Realtime artifact updates.
+
+Event tracing enabled.
+
+Audit logging enabled.
+
+Performance monitoring enabled.
