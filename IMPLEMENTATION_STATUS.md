@@ -22,7 +22,12 @@
 - [x] Repository cleanup
 
 ## Sprint 3: Orchestrator Integration
-- [ ] Emit events before and after stages (understand, plan, research, write, review, complete)
+- [x] Add `workflowId` to `AgentEvent`
+- [x] Add pipeline stage enums (`START`, `COMPLETED`, `ERROR`, etc.)
+- [x] Create temporary `AgentOrchestrator`
+- [x] Integrate `ActivityStreamService` in Orchestrator
+- [x] Emit events before and after stages (understand, plan, research, write, review, complete)
+- [x] Add test coverage (ordering, failure scenarios)
 
 ## Sprint 4: Tool Visibility
 - [ ] ToolStart Event

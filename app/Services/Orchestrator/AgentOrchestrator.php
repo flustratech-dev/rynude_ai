@@ -2,6 +2,8 @@
 
 namespace App\Services\Orchestrator;
 
+use App\Contracts\ToolExecutionTrackerInterface;
+use App\Enums\ToolCategory;
 use App\Services\ActivityStreamService;
 use App\Models\AgentEvent;
 use App\Enums\AgentEventType;
@@ -11,17 +13,18 @@ use Illuminate\Support\Str;
 class AgentOrchestrator
 {
     public function __construct(
-        private readonly ActivityStreamService $activityStream
+        private readonly ActivityStreamService $activityStream,
+        private readonly ToolExecutionTrackerInterface $toolTracker
     ) {}
 
     public function execute(string $sessionId, string $agentId, string $workflowId): void
     {
         try {
-            $this->runStage($sessionId, $agentId, $workflowId, 'UNDERSTAND', fn() => $this->understand());
-            $this->runStage($sessionId, $agentId, $workflowId, 'PLAN', fn() => $this->plan());
-            $this->runStage($sessionId, $agentId, $workflowId, 'RESEARCH', fn() => $this->research());
-            $this->runStage($sessionId, $agentId, $workflowId, 'WRITE', fn() => $this->write());
-            $this->runStage($sessionId, $agentId, $workflowId, 'REVIEW', fn() => $this->review());
+            $this->runStage($sessionId, $agentId, $workflowId, 'UNDERSTAND', fn() => $this->understand($sessionId, $agentId, $workflowId, 'UNDERSTAND'));
+            $this->runStage($sessionId, $agentId, $workflowId, 'PLAN', fn() => $this->plan($sessionId, $agentId, $workflowId, 'PLAN'));
+            $this->runStage($sessionId, $agentId, $workflowId, 'RESEARCH', fn() => $this->research($sessionId, $agentId, $workflowId, 'RESEARCH'));
+            $this->runStage($sessionId, $agentId, $workflowId, 'WRITE', fn() => $this->write($sessionId, $agentId, $workflowId, 'WRITE'));
+            $this->runStage($sessionId, $agentId, $workflowId, 'REVIEW', fn() => $this->review($sessionId, $agentId, $workflowId, 'REVIEW'));
             
             // Workflow completed
             $this->emitEvent($sessionId, $agentId, $workflowId, AgentEventType::COMPLETED, null, 'Workflow completed successfully');
@@ -59,28 +62,35 @@ class AgentOrchestrator
         $this->activityStream->emit($event);
     }
 
-    private function understand(): void
+    private function understand(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
-        // Dummy implementation
+        $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'AnalyzeContextTool', ToolCategory::RESEARCH, $stage);
+        $this->toolTracker->updateStatus($toolId, [], 50);
+        $this->toolTracker->completeTool($toolId, ['result' => 'Context analyzed']);
     }
 
-    private function plan(): void
+    private function plan(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
-        // Dummy implementation
+        $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'PlanningTool', ToolCategory::SYSTEM, $stage);
+        $this->toolTracker->updateStatus($toolId, [], 100);
+        $this->toolTracker->completeTool($toolId, ['plan' => 'Step 1, Step 2']);
     }
 
-    private function research(): void
+    private function research(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
-        // Dummy implementation
+        $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'WebSearchTool', ToolCategory::RESEARCH, $stage);
+        $this->toolTracker->completeTool($toolId, ['query' => 'observability']);
     }
 
-    private function write(): void
+    private function write(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
-        // Dummy implementation
+        $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'CodeEditorTool', ToolCategory::WRITING, $stage);
+        $this->toolTracker->completeTool($toolId, ['files' => 1]);
     }
 
-    private function review(): void
+    private function review(string $sessionId, string $agentId, string $workflowId, string $stage): void
     {
-        // Dummy implementation
+        $toolId = $this->toolTracker->startTool($sessionId, $workflowId, $agentId, 'ReviewTool', ToolCategory::REVIEW, $stage);
+        $this->toolTracker->completeTool($toolId, ['status' => 'approved']);
     }
 }
