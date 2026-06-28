@@ -210,6 +210,25 @@ class ChatInterface extends Component
         $this->activeProjectId = null;
     }
 
+    /**
+     * Pick a random conversation-starter and send it immediately.
+     * Used by the "Surprise me" chip on the empty-state screen.
+     */
+    public function sendSurpriseMessage(): void
+    {
+        $surprises = [
+            'Tell me something genuinely fascinating that most people don\'t know.',
+            'Explain a surprisingly complex topic using one unexpected analogy.',
+            'Give me a creative writing prompt, then write a short but vivid response to it.',
+            'What\'s one underrated skill that would make someone\'s life measurably better?',
+            'Describe the most counterintuitive thing that is actually true.',
+            'Write a short poem about the feeling of starting something new.',
+            'What\'s the most interesting unsolved problem in science right now?',
+        ];
+        $this->prompt = $surprises[array_rand($surprises)];
+        $this->sendMessage();
+    }
+
     #[On('startProjectChat')]
     public function startProjectChat($projectId, $initialPrompt = null, $initialModel = null, $webSearch = false)
     {
@@ -931,8 +950,6 @@ class ChatInterface extends Component
         $emitter = app(\App\Contracts\EventEmitterInterface::class);
         $emitter->subscribe(function (\App\Domain\AgentEvent $event) {
             // Push events to frontend via Livewire stream
-            // Need a sleep here to visibly show the UI updating, as the dummy orchestrator is instant
-            usleep(500000); // 0.5 sec per event for testing visibility
             $this->stream(
                 to: 'agent-stream-target',
                 content: '<div x-data x-init="window.dispatchEvent(new CustomEvent(\'agent-stream-event\', { detail: ' . htmlspecialchars(json_encode($event->toArray()), ENT_QUOTES, 'UTF-8') . ' }))"></div>',
