@@ -37,15 +37,15 @@ V5 Development
 
 Current Sprint:
 
-Sprint 1 — Implementation in progress (Steps 1–3 complete, paused for review per user rules)
+Sprint 1 — Implementation in progress (Steps 1–4 complete, paused for review per user rules)
 
 Overall Progress:
 
-30% — Steps 1 (migrations) + 2 (DTOs) + 3 (ModelAdapter base + AnthropicAdapter) of Section 12 implementation order complete
+40% — Steps 1 (migrations) + 2 (DTOs) + 3 (ModelAdapter base + AnthropicAdapter) + 4 (OpenAI / Google / Mistral adapters + extended registry) of Section 12 implementation order complete
 
 Project State:
 
-Sprint 1 Implementation — Steps 1, 2 & 3 complete and tested; awaiting review before Step 4
+Sprint 1 Implementation — Steps 1, 2, 3 & 4 complete and tested; awaiting review before Step 5 (OutputNormalizer + extractors)
 
 Reference:
 
@@ -584,6 +584,133 @@ Next Sprint Step:
 Step 4 — Remaining adapters (OpenAI, Google, Mistral) + extend
 ModelAdapterRegistry to route to them. `kr/claude*` and `use_proxy` paths
 become OpenAIAdapter consumers.
+
+---
+
+## 2026-06-28 — Sprint 1 Step 4
+
+Sprint:
+
+Sprint 1
+
+Status:
+
+In Progress — Step 4 complete, awaiting review
+
+Completed Work:
+
+* Step 4: OpenAIAdapter, GoogleAdapter, MistralAdapter — each wraps its
+  existing provider (OpenAIProvider, GoogleProvider, MistralProvider)
+  untouched and translates the provider's two native event surfaces
+  (`streamResponse` strings / `streamAgentTurn` arrays) into uniform
+  `NormalizedEvent` sequences.
+* ModelAdapterRegistry extended to route all four adapter families by
+  model-code prefix, mirroring `AiService::resolveProvider`. `kr/claude*`
+  and `mmf/mimo*` (9Router proxy) now correctly resolve to OpenAIAdapter
+  rather than throwing. Unknown codes fall back to OpenAIAdapter — same
+  fallback AiService uses — because OpenAIProvider internally dispatches
+  HuggingFace / Ollama / proxy endpoints based on user settings.
+
+Files Added:
+
+* app/Services/AI/Normalization/Adapters/OpenAIAdapter.php
+* app/Services/AI/Normalization/Adapters/GoogleAdapter.php
+* app/Services/AI/Normalization/Adapters/MistralAdapter.php
+* tests/Feature/Normalization/OpenAIAdapterTest.php       (16 tests)
+* tests/Feature/Normalization/GoogleAdapterTest.php       (15 tests)
+* tests/Feature/Normalization/MistralAdapterTest.php      (15 tests)
+
+Files Modified:
+
+* app/Services/AI/Normalization/ModelAdapterRegistry.php — extended
+  routing for gpt / o-series / gemini / mistral-family / kr-claude /
+  mmf-mimo, with OpenAIAdapter as the fallback. `supports()` now reports
+  the honest answer (true for known prefixes, false for unknowns) while
+  `for()` falls back so the pipeline never throws on a configured model.
+* tests/Feature/Normalization/ModelAdapterRegistryTest.php — replaced
+  Step 3's "throws on non-anthropic" tests with the new routing
+  assertions (12 tests).
+* docs/IMPLEMENTATION_STATUS.md — this entry + status header bump.
+
+(No changes to OpenAIProvider.php, GoogleProvider.php, MistralProvider.php,
+ChatInterface.php, AiService.php, or any other existing service. Design
+invariant §1.3.1 preserved: providers are not rewritten in Sprint 1.
+ChatInterface remains untouched per the explicit user requirement.)
+
+Test Results:
+
+* 46 new adapter tests + 6 net-new registry tests / 130 assertions —
+  ALL PASS
+  (16 OpenAIAdapter + 15 GoogleAdapter + 15 MistralAdapter +
+   6 net-new registry assertions on top of the rewritten registry suite)
+* Combined Sprint 1 total (Steps 1+2+3+4): 109 new tests / 359
+  assertions — ALL PASS in the Pipeline/Normalization/DTO suites
+* Full suite: 160 / 161 pass. The single failure
+  (`AgentToolsTest::test_list_files_respects_depth_and_gitignore`)
+  is the same pre-existing failure documented in Steps 1+2 and Step 3.
+  No regression introduced by Step 4.
+
+Important Decisions:
+
+* **OpenAIAdapter handles three families.** Genuine OpenAI (gpt-*, o-series),
+  9Router proxies (kr/claude-*, mmf/mimo-*), and HuggingFace / Ollama / generic
+  proxies all route through `OpenAIProvider`. The adapter reports
+  `nativeTools=false` and `jsonMode=false` for the router routes
+  (`kr/*`, `mmf/*`) because the underlying endpoints either reject the
+  `tools` param or can't round-trip tool messages — matches the existing
+  `OpenAIProvider::resolveConfig` behaviour. The pipeline can read these
+  capability flags before deciding to engage tools; AgentRunner's
+  ReAct-text fallback is still the runtime safety net.
+* **No thinking convention for OpenAI / Google / Mistral.** None of these
+  providers surface reasoning deltas through their current streaming
+  APIs. `capabilities()->thinking` returns `false` across the board, and
+  the `streamResponse` translator does NOT special-case any prefix —
+  unlike `AnthropicAdapter`, a leading `[Thinking] ` is passed through as
+  literal text. This is asserted by a dedicated test in `OpenAIAdapterTest`.
+* **Context windows by model family.** Capability values are hardcoded by
+  model-code prefix because the providers themselves don't expose this
+  metadata. Values are conservative for unknown variants
+  (e.g. unknown `gemini-*` → 128k, unknown `mistral-*` → 32k) so the
+  pipeline never over-promises context to upstream stages.
+* **Vision flags by model family.** `OpenAIAdapter` enables vision only
+  for `gpt-4*`, `gpt-5*`, `o3*`, `o4*`. `GoogleAdapter` enables vision
+  for all Gemini codes (Gemini is multimodal-first). `MistralAdapter`
+  enables vision only for `pixtral-*`. Tested per model.
+* **Registry fallback to OpenAIAdapter.** Step 3's "throw on unknown"
+  was a Step-3-only safeguard. Step 4 mirrors `AiService::resolveProvider`,
+  which falls back to OpenAIProvider for unknown codes. This is the
+  correct behaviour for HuggingFace / Ollama / proxy-routed models whose
+  codes are user-configured rather than prefix-based. `supports()` still
+  returns `false` for unknown codes so callers can detect the fallback if
+  needed.
+* **DB-driven routing intentionally NOT consulted by the registry.**
+  `AiService::resolveProvider` peeks at the `ai_models` table (provider
+  column for `huggingface` / `ollama` / etc.) and at `users.use_proxy`.
+  The registry deliberately stays free of those concerns — they are
+  resolved inside `OpenAIProvider::resolveConfig` at request time, where
+  the Auth context is available. Keeping the registry stateless means the
+  pipeline does not require an active HTTP request to look up an adapter.
+* **Translation surface kept identical across adapters.** The three new
+  adapters share the same skeleton as `AnthropicAdapter`: `streamText` for
+  no-tools paths, `streamAgentTurn` for tool paths, `buildMessages` for
+  system-prompt prepending. No shared base / trait is extracted yet —
+  premature abstraction would lock in the current shape before the
+  OutputNormalizer (Step 5) reveals what each adapter really needs.
+
+Risks:
+
+* None new. The Step 4 surface is read-only relative to the legacy
+  ChatInterface path. `AiService::resolveProvider()` is still the only
+  resolver used in production; the registry is dormant until the
+  GenerationCoordinator (Step 13) wires it up. `ChatInterface` has not
+  been modified per the explicit user requirement.
+
+Next Sprint Step:
+
+Step 5 — OutputNormalizer + extractors (ArtifactExtractor,
+ReasoningExtractor, CitationExtractor, RefusalDetector). This is the
+first piece that consumes the NormalizedEvent stream produced by the
+adapters and turns it into the persisted `NormalizedOutput` DTO.
 
 ---
 
