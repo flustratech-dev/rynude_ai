@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\MessageArtifact;
+use App\Services\PdfRenderer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -122,6 +123,38 @@ class ArtifactApiController extends ApiController
         $this->ownedByIdentifier($artifact->identifier)->delete();
 
         return response()->json(['deleted' => true]);
+    }
+
+    public function downloadPdf(Request $request, MessageArtifact $artifact)
+    {
+        $this->authorizeOwnership($artifact);
+        $mode = $request->query('mode');
+        $data = $artifact->toArray();
+        $binary = app(PdfRenderer::class)->render($data, $mode);
+        $filename = Str::slug($artifact->title ?: 'document') . '.pdf';
+        return response()->streamDownload(fn () => echo $binary, $filename, ['Content-Type' => 'application/pdf']);
+    }
+
+    public function downloadMarkdown(MessageArtifact $artifact)
+    {
+        $this->authorizeOwnership($artifact);
+        $content = PdfRenderer::stripFrontMatter($artifact->content ?? '');
+        $filename = Str::slug($artifact->title ?: 'document') . '.md';
+        return response()->streamDownload(fn () => echo $content, $filename, ['Content-Type' => 'text/markdown; charset=utf-8']);
+    }
+
+    public function downloadFile(MessageArtifact $artifact)
+    {
+        $this->authorizeOwnership($artifact);
+        $ext = $this->extensionForLanguage($artifact->language ?? 'txt');
+        $filename = Str::slug($artifact->title ?: 'artifact') . '.' . $ext;
+        return response()->streamDownload(fn () => echo $artifact->content ?? '', $filename, ['Content-Type' => 'text/plain; charset=utf-8']);
+    }
+
+    private function extensionForLanguage(string $language): string
+    {
+        $map = ['html'=>'html','javascript'=>'js','js'=>'js','jsx'=>'jsx','typescript'=>'ts','ts'=>'ts','tsx'=>'tsx','react'=>'jsx','python'=>'py','py'=>'py','php'=>'php','css'=>'css','json'=>'json','markdown'=>'md','md'=>'md','svg'=>'svg','sql'=>'sql','java'=>'java','go'=>'go','rust'=>'rs','ruby'=>'rb','c'=>'c','cpp'=>'cpp','csharp'=>'cs','bash'=>'sh','shell'=>'sh','yaml'=>'yaml','xml'=>'xml'];
+        return $map[strtolower($language)] ?? 'txt';
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────

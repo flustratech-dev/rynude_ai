@@ -262,6 +262,7 @@ class ChatApiController extends ApiController
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'archived' => ['sometimes', 'boolean'],
+            'unshare' => ['sometimes', 'boolean'],
         ]);
 
         // Rename (ChatsPanel::renameConversation caps the title at 255 chars).
@@ -272,6 +273,11 @@ class ChatApiController extends ApiController
         // Archive / unarchive (ChatsPanel::archiveConversation sets/clears the flag).
         if (array_key_exists('archived', $validated)) {
             $conversation->archived_at = $validated['archived'] ? now() : null;
+        }
+
+        // Unshare (ChatsPanel::unshareConversation clears the share token).
+        if (array_key_exists('unshare', $validated) && $validated['unshare']) {
+            $conversation->share_token = null;
         }
 
         $conversation->save();
@@ -309,6 +315,49 @@ class ChatApiController extends ApiController
                 'share_url' => route('chat.shared', $conversation->share_token),
             ],
         ]);
+    }
+
+    public function export(Request $request, Conversation $conversation)
+    {
+        $this->authorizeOwnership($conversation);
+
+        $format = $request->query('format', 'md');
+        $conversation->load('messages');
+
+        $title = $conversation->title ?: 'chat';
+        $slug = Str::slug($title) ?: 'chat';
+
+        if ($format === 'json') {
+            $payload = [
+                'title' => $conversation->title,
+                'created_at' => optional($conversation->created_at)->toIso8601String(),
+                'messages' => $conversation->messages->map(fn ($m) => [
+                    'role' => $m->role,
+                    'content' => $m->content,
+                    'created_at' => optional($m->created_at)->toIso8601String(),
+                ])->toArray(),
+            ];
+            $data = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            return response()->streamDownload(function () use ($data) {
+                echo $data;
+            }, $slug . '.json', ['Content-Type' => 'application/json']);
+        }
+
+        // Default: Markdown
+        $lines = ["# {$title}", ''];
+        foreach ($conversation->messages as $m) {
+            $who = $m->role === 'user' ? 'You' : 'Rynude';
+            $lines[] = "## {$who}";
+            $lines[] = '';
+            $lines[] = $m->content;
+            $lines[] = '';
+        }
+        $md = implode("\n", $lines);
+
+        return response()->streamDownload(function () use ($md) {
+            echo $md;
+        }, $slug . '.md', ['Content-Type' => 'text/markdown; charset=utf-8']);
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────

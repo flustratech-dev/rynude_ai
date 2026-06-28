@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('chats/{conversation}', [ChatApiController::class, 'update'])->name('chats.update');
     Route::delete('chats/{conversation}', [ChatApiController::class, 'destroy'])->name('chats.destroy');
     Route::post('chats/{conversation}/share', [ChatApiController::class, 'share'])->name('chats.share');
+    Route::get('chats/{conversation}/export', [ChatApiController::class, 'export'])->name('chats.export');
 
     // ── Artifacts ───────────────────────────────────────────────────────
     Route::get('artifacts', [ArtifactApiController::class, 'index'])->name('artifacts.index');
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::get('artifacts/{artifact}', [ArtifactApiController::class, 'show'])->name('artifacts.show');
     Route::patch('artifacts/{artifact}', [ArtifactApiController::class, 'update'])->name('artifacts.update');
     Route::delete('artifacts/{artifact}', [ArtifactApiController::class, 'destroy'])->name('artifacts.destroy');
+    Route::get('artifacts/{artifact}/download/pdf', [ArtifactApiController::class, 'downloadPdf'])->name('artifacts.download.pdf');
+    Route::get('artifacts/{artifact}/download/markdown', [ArtifactApiController::class, 'downloadMarkdown'])->name('artifacts.download.markdown');
+    Route::get('artifacts/{artifact}/download/file', [ArtifactApiController::class, 'downloadFile'])->name('artifacts.download.file');
 
     // ── Cowork tasks ────────────────────────────────────────────────────
     Route::get('tasks', [CoworkApiController::class, 'index'])->name('tasks.index');
@@ -61,8 +65,12 @@ Route::middleware('auth')->group(function () {
     // ── Projects ────────────────────────────────────────────────────────
     Route::get('projects', [ProjectApiController::class, 'index'])->name('projects.index');
     Route::post('projects', [ProjectApiController::class, 'store'])->name('projects.store');
+    Route::get('projects/{project}', [ProjectApiController::class, 'show'])->name('projects.show');
     Route::patch('projects/{project}', [ProjectApiController::class, 'update'])->name('projects.update');
     Route::delete('projects/{project}', [ProjectApiController::class, 'destroy'])->name('projects.destroy');
+    Route::post('projects/{project}/files', [ProjectApiController::class, 'uploadFile'])->name('projects.files.upload');
+    Route::delete('projects/{project}/files/{file}', [ProjectApiController::class, 'deleteFile'])->name('projects.files.delete');
+    Route::post('projects/{project}/duplicate', [ProjectApiController::class, 'duplicate'])->name('projects.duplicate');
 
     // ── Designs ─────────────────────────────────────────────────────────
     Route::get('designs', [DesignApiController::class, 'index'])->name('designs.index');
