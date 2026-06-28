@@ -17,9 +17,9 @@ use Tests\TestCase;
  *
  * As each endpoint group gains real behaviour (see the dedicated *ApiTest
  * feature tests), it moves out of the pending provider below. Implemented
- * groups so far: Settings, Projects, Designs, Chat (CRUD + share), Artifacts
- * (CRUD). Still pending: chat send/stop (Phase 5 streaming), artifact store
- * (Phase 5 — artifacts are created by the streamed generation), all Cowork.
+ * groups so far: Settings, Projects, Designs, Chat (CRUD + share + streaming),
+ * Artifacts (CRUD). Still pending: artifact store (Phase 5 — artifacts are
+ * created by the streamed generation), all Cowork.
  */
 class ApiRouteStructureTest extends TestCase
 {
@@ -34,8 +34,10 @@ class ApiRouteStructureTest extends TestCase
     public static function apiEndpointProvider(): array
     {
         return array_merge(static::pendingApiEndpointProvider(), [
-            // Chat (implemented: CRUD + share)
+            // Chat (implemented: CRUD + share + streaming)
             'chat list'        => ['get', '/api/chats'],
+            'chat send'        => ['post', '/api/chats/send'],
+            'chat stop'        => ['post', '/api/chats/stop'],
             'chat show'        => ['get', '/api/chats/1'],
             'chat update'      => ['patch', '/api/chats/1'],
             'chat destroy'     => ['delete', '/api/chats/1'],
@@ -75,10 +77,6 @@ class ApiRouteStructureTest extends TestCase
     public static function pendingApiEndpointProvider(): array
     {
         return [
-            // Chat — streaming entry points still owned by Phase 5.
-            'chat send'        => ['post', '/api/chats/send'],
-            'chat stop'        => ['post', '/api/chats/stop'],
-
             // Artifacts — creation happens inside the streamed generation (Phase 5).
             'artifacts store'  => ['post', '/api/artifacts'],
 
