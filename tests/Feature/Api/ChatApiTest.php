@@ -311,20 +311,6 @@ class ChatApiTest extends TestCase
         $this->assertNull($conversation->fresh()->share_token);
     }
 
-    // ── streaming endpoints (Phase 5) ────────────────────────────────────
-
-    public function test_send_and_stop_remain_not_implemented_pending_streaming(): void
-    {
-        $user = User::factory()->create();
-
-        foreach (['/api/chats/send', '/api/chats/stop'] as $uri) {
-            $this->actingAs($user)->postJson($uri)
-                ->assertStatus(501)
-                ->assertJsonPath('status', 'not_implemented')
-                ->assertJsonPath('migration.phase', 'Phase 5');
-        }
-    }
-
     // ── auth ─────────────────────────────────────────────────────────────
 
     public function test_chat_endpoints_require_authentication(): void
