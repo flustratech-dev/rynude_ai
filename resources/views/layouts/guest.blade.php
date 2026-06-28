@@ -21,7 +21,7 @@
         @else
             <div class="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]">
                 <div class="mb-8">
-                    <a wire:navigate.hover href="/" class="flex items-center gap-2 text-[#2D2825]">
+                    <a href="/" class="flex items-center gap-2 text-[#2D2825]">
                     </a>
                 </div>
 

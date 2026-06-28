@@ -5,7 +5,7 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a wire:navigate.hover href="{{ route('dashboard') }}">
+                    <a href="{{ route('dashboard') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
@@ -52,7 +52,7 @@
                         </x-slot>
                     </x-dropdown>
                 @else
-                    <a wire:navigate.hover href="{{ route('login') }}" class="text-sm text-gray-500 hover:text-gray-700">Login</a>
+                    <a href="{{ route('login') }}" class="text-sm text-gray-500 hover:text-gray-700">Login</a>
                 @endauth
             </div>
 
@@ -102,7 +102,7 @@
                 </div>
             @else
                 <div class="px-4 py-2">
-                    <a wire:navigate.hover href="{{ route('login') }}" class="text-sm text-gray-500 hover:text-gray-700">Login</a>
+                    <a href="{{ route('login') }}" class="text-sm text-gray-500 hover:text-gray-700">Login</a>
                 </div>
             @endauth
         </div>
