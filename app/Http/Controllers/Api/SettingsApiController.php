@@ -2,27 +2,265 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Models\Message;
+use App\Models\TokenUsage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
- * Settings REST surface (Phase 1 scaffold).
+ * Settings REST surface.
  *
- * Target logic source: App\Livewire\SettingsModal
+ * Migrated from App\Livewire\SettingsModal. The Livewire component auto-saves
+ * individual fields via wire:model.live "updated*" hooks and a handful of
+ * explicit save buttons (saveProfile, saveAppearance, saveApiKeys). The REST
+ * surface collapses those into:
+ *   - GET   /api/settings                    -> SettingsModal::mount() snapshot
+ *   - PATCH /api/settings                    -> the various save / updated hooks
+ *   - POST  /api/settings/validate-api-key   -> key format validation
+ *
+ * Security: raw API keys are never returned to the client. show() only reports
+ * whether each provider key is configured; update() accepts new keys but the
+ * response echoes presence booleans, never the secret itself.
  */
-class SettingsApiController extends ApiController
+class SettingsApiController extends Controller
 {
+    /**
+     * Preference keys stored inside the user's `preferences` JSON column, mapped
+     * to their default value. Mirrors SettingsModal::mount().
+     */
+    private const PREFERENCE_DEFAULTS = [
+        'nickname' => '',
+        'profession' => '',
+        'language' => 'en',
+        'chat_font' => 'default',
+        'theme' => 'light',
+        'font_size' => 'medium',
+        'accent_color' => '#D97757',
+        'compact_mode' => false,
+        'allow_training' => false,
+        'cap_web_search' => true,
+        'cap_artifacts' => true,
+        'cap_code_execution' => false,
+    ];
+
+    /** Provider key => the User column that stores it. */
+    private const API_KEY_COLUMNS = [
+        'anthropic' => 'anthropic_api_key',
+        'openai' => 'openai_api_key',
+        'nine_router' => 'nine_router_api_key',
+        'google' => 'google_api_key',
+        'mistral' => 'mistral_api_key',
+        'huggingface' => 'huggingface_api_key',
+    ];
+
     public function show(): JsonResponse
     {
-        return $this->pendingMigration('settings.show', 'App\\Livewire\\SettingsModal');
+        $user = Auth::user();
+
+        return response()->json($this->settingsPayload($user));
     }
 
-    public function update(): JsonResponse
+    public function update(Request $request): JsonResponse
     {
-        return $this->pendingMigration('settings.update', 'App\\Livewire\\SettingsModal::updateProfile');
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            // Profile (direct columns)
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['sometimes', 'required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'custom_instructions' => ['sometimes', 'nullable', 'string', 'max:10000'],
+
+            // Profile (preferences)
+            'nickname' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'profession' => ['sometimes', 'nullable', 'string', 'max:255'],
+
+            // Preferences
+            'language' => ['sometimes', 'string', 'max:10'],
+            'chat_font' => ['sometimes', 'string', 'max:50'],
+            'theme' => ['sometimes', 'string', Rule::in(['light', 'dark', 'auto'])],
+            'font_size' => ['sometimes', 'string', Rule::in(['small', 'medium', 'large'])],
+            'accent_color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'compact_mode' => ['sometimes', 'boolean'],
+            'allow_training' => ['sometimes', 'boolean'],
+            'cap_web_search' => ['sometimes', 'boolean'],
+            'cap_artifacts' => ['sometimes', 'boolean'],
+            'cap_code_execution' => ['sometimes', 'boolean'],
+
+            // API keys + proxy
+            'anthropic_api_key' => ['sometimes', 'nullable', 'string'],
+            'openai_api_key' => ['sometimes', 'nullable', 'string'],
+            'nine_router_api_key' => ['sometimes', 'nullable', 'string'],
+            'google_api_key' => ['sometimes', 'nullable', 'string'],
+            'mistral_api_key' => ['sometimes', 'nullable', 'string'],
+            'huggingface_api_key' => ['sometimes', 'nullable', 'string'],
+            'huggingface_base_url' => ['sometimes', 'nullable', 'url'],
+            'use_proxy' => ['sometimes', 'boolean'],
+            'proxy_base_url' => ['sometimes', 'nullable', 'url'],
+            'proxy_api_key' => ['sometimes', 'nullable', 'string'],
+        ]);
+
+        // ── Direct columns on the user model ────────────────────────────
+        $directColumns = [
+            'name', 'email', 'custom_instructions',
+            'anthropic_api_key', 'openai_api_key', 'nine_router_api_key',
+            'google_api_key', 'mistral_api_key', 'huggingface_api_key',
+            'huggingface_base_url', 'use_proxy', 'proxy_base_url', 'proxy_api_key',
+        ];
+        foreach ($directColumns as $column) {
+            if (array_key_exists($column, $validated)) {
+                $user->{$column} = $validated[$column];
+            }
+        }
+
+        // ── Preference keys merged into the JSON column ─────────────────
+        $prefs = $user->preferences ?? [];
+        foreach (array_keys(self::PREFERENCE_DEFAULTS) as $key) {
+            if (array_key_exists($key, $validated)) {
+                $prefs[$key] = $validated[$key];
+            }
+        }
+        $user->preferences = $prefs;
+
+        $user->save();
+
+        return response()->json($this->settingsPayload($user->fresh()));
     }
 
-    public function validateApiKey(): JsonResponse
+    public function validateApiKey(Request $request): JsonResponse
     {
-        return $this->pendingMigration('settings.validate-api-key', 'App\\Livewire\\SettingsModal::validateApiKey');
+        $validated = $request->validate([
+            'provider' => ['required', 'string', Rule::in(array_keys(self::API_KEY_COLUMNS))],
+            'key' => ['required', 'string'],
+        ]);
+
+        $valid = $this->keyFormatLooksValid($validated['provider'], $validated['key']);
+
+        return response()->json([
+            'provider' => $validated['provider'],
+            'valid' => $valid,
+            'message' => $valid
+                ? 'API key format looks valid.'
+                : 'API key format is not valid for this provider.',
+        ]);
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────
+
+    /**
+     * Build the settings snapshot. Mirrors the state SettingsModal::mount()
+     * hydrates, minus the raw secrets (only presence booleans are exposed).
+     *
+     * @return array<string, mixed>
+     */
+    private function settingsPayload($user): array
+    {
+        $prefs = $user->preferences ?? [];
+
+        $preferences = [];
+        foreach (self::PREFERENCE_DEFAULTS as $key => $default) {
+            $value = $prefs[$key] ?? $default;
+            // Normalise the booleans the way the Livewire component did.
+            if (is_bool($default)) {
+                $value = (bool) $value;
+            }
+            $preferences[$key] = $value;
+        }
+
+        $apiKeys = [];
+        foreach (self::API_KEY_COLUMNS as $provider => $column) {
+            $apiKeys[$provider] = !empty($user->{$column});
+        }
+        $apiKeys['use_proxy'] = (bool) ($user->use_proxy ?? false);
+        $apiKeys['proxy_base_url'] = $user->proxy_base_url ?? '';
+        $apiKeys['proxy_api_key_set'] = !empty($user->proxy_api_key);
+        $apiKeys['huggingface_base_url'] = $user->huggingface_base_url ?? 'https://api-inference.huggingface.co/v1';
+
+        return [
+            'profile' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'nickname' => $preferences['nickname'],
+                'profession' => $preferences['profession'],
+                'custom_instructions' => $user->custom_instructions ?? '',
+            ],
+            'preferences' => $preferences,
+            'api_keys' => $apiKeys,
+            'billing' => $this->billingPayload($user),
+        ];
+    }
+
+    /**
+     * Token usage / billing summary. Mirrors SettingsModal::loadTokenUsage()
+     * with the estimateTokensUsed() fallback.
+     *
+     * @return array<string, mixed>
+     */
+    private function billingPayload($user): array
+    {
+        $rows = TokenUsage::where('user_id', $user->id)
+            ->selectRaw('model, provider, SUM(input_tokens) as input_total, SUM(output_tokens) as output_total')
+            ->groupBy('model', 'provider')
+            ->orderByRaw('SUM(input_tokens + output_tokens) DESC')
+            ->get();
+
+        $total = 0;
+        $breakdown = [];
+        foreach ($rows as $row) {
+            $sum = (int) $row->input_total + (int) $row->output_total;
+            $total += $sum;
+            $breakdown[] = [
+                'model' => $row->model,
+                'provider' => $row->provider,
+                'input' => (int) $row->input_total,
+                'output' => (int) $row->output_total,
+                'total' => $sum,
+            ];
+        }
+
+        $tokensUsed = $total > 0 ? $total : $this->estimateTokensUsed($user->id);
+
+        return [
+            'plan' => 'Free',
+            'tokens_used' => $tokensUsed,
+            'tokens_limit' => (int) ($user->token_balance ?? 0),
+            'tracked_tokens' => $total,
+            'token_breakdown' => $breakdown,
+        ];
+    }
+
+    private function estimateTokensUsed($userId): int
+    {
+        $charCount = Message::whereHas('conversation', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        })->sum(DB::raw('LENGTH(content)'));
+
+        return (int) ceil($charCount / 4);
+    }
+
+    /**
+     * Lightweight, offline format validation for a provider's API key. Avoids
+     * making live network calls (which would be non-deterministic in tests and
+     * leak the key off-box); checks the recognisable provider prefixes/length.
+     */
+    private function keyFormatLooksValid(string $provider, string $key): bool
+    {
+        $key = trim($key);
+        if ($key === '') {
+            return false;
+        }
+
+        return match ($provider) {
+            'anthropic' => str_starts_with($key, 'sk-ant-') && strlen($key) >= 20,
+            'openai' => str_starts_with($key, 'sk-') && strlen($key) >= 20,
+            'huggingface' => str_starts_with($key, 'hf_') && strlen($key) >= 8,
+            'google' => strlen($key) >= 20,
+            'mistral' => strlen($key) >= 20,
+            'nine_router' => strlen($key) >= 8,
+            default => false,
+        };
     }
 }

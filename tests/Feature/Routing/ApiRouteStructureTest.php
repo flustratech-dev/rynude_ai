@@ -7,26 +7,57 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Phase 1 (Routing Migration) — API route structure for the future migration.
+ * API route structure for the Livewire -> pure Laravel migration.
  *
- * Every endpoint in the new /api surface is exercised here. In Phase 1 each one
- * is registered, authenticated and returns a uniform 501 "not implemented"
- * contract (its logic is migrated in later phases). These tests lock in:
+ * Every endpoint in the new /api surface is exercised here. These tests lock in:
  *   - the route exists and resolves (no 404),
  *   - authentication is enforced (guest -> 401 for JSON requests),
- *   - the not-implemented contract shape is stable.
+ *   - endpoints whose logic has NOT yet been migrated still return the uniform
+ *     501 "not implemented" contract.
  *
- * As each endpoint gains real behaviour in Phase 4/5, the corresponding
- * not-implemented assertion will be replaced by a behavioural one.
+ * As each endpoint group gains real behaviour (see the dedicated *ApiTest
+ * feature tests), it moves out of the pending provider below. Implemented
+ * groups so far: Settings, Projects, Designs.
  */
 class ApiRouteStructureTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
+     * Every registered /api endpoint, regardless of implementation status.
+     * Used to assert authentication is enforced across the whole surface.
+     *
      * @return array<string, array{0: string, 1: string}>
      */
     public static function apiEndpointProvider(): array
+    {
+        return array_merge(static::pendingApiEndpointProvider(), [
+            // Settings (implemented)
+            'settings show'    => ['get', '/api/settings'],
+            'settings update'  => ['patch', '/api/settings'],
+            'settings vkey'    => ['post', '/api/settings/validate-api-key'],
+
+            // Projects (implemented)
+            'projects list'    => ['get', '/api/projects'],
+            'projects store'   => ['post', '/api/projects'],
+            'projects update'  => ['patch', '/api/projects/1'],
+            'projects delete'  => ['delete', '/api/projects/1'],
+
+            // Designs (implemented)
+            'designs list'     => ['get', '/api/designs'],
+            'designs store'    => ['post', '/api/designs'],
+            'designs update'   => ['patch', '/api/designs/1'],
+            'designs delete'   => ['delete', '/api/designs/1'],
+        ]);
+    }
+
+    /**
+     * Endpoints whose business logic still lives in a Livewire component and
+     * therefore still return the 501 "not implemented" contract.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function pendingApiEndpointProvider(): array
     {
         return [
             // Chat
@@ -51,23 +82,6 @@ class ApiRouteStructureTest extends TestCase
             'tasks update'     => ['patch', '/api/tasks/1'],
             'tasks delete'     => ['delete', '/api/tasks/1'],
             'tasks run'        => ['post', '/api/tasks/1/run'],
-
-            // Settings
-            'settings show'    => ['get', '/api/settings'],
-            'settings update'  => ['patch', '/api/settings'],
-            'settings vkey'    => ['post', '/api/settings/validate-api-key'],
-
-            // Projects
-            'projects list'    => ['get', '/api/projects'],
-            'projects store'   => ['post', '/api/projects'],
-            'projects update'  => ['patch', '/api/projects/1'],
-            'projects delete'  => ['delete', '/api/projects/1'],
-
-            // Designs
-            'designs list'     => ['get', '/api/designs'],
-            'designs store'    => ['post', '/api/designs'],
-            'designs update'   => ['patch', '/api/designs/1'],
-            'designs delete'   => ['delete', '/api/designs/1'],
         ];
     }
 
@@ -80,7 +94,7 @@ class ApiRouteStructureTest extends TestCase
     }
 
     /**
-     * @dataProvider apiEndpointProvider
+     * @dataProvider pendingApiEndpointProvider
      */
     public function test_api_endpoint_returns_not_implemented_contract(string $method, string $uri): void
     {
