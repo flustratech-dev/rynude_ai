@@ -10,25 +10,7 @@ class EventStore implements AgentEventRepositoryInterface
     /** @var AgentEvent[] */
     private array $events = [];
 
-    public function persist(AgentEvent $event): void
-    {
-        $this->save($event);
-    }
 
-    public function retrieve(string $sessionId): array
-    {
-        return $this->findBySession($sessionId);
-    }
-
-    public function queryBySession(string $sessionId): array
-    {
-        return $this->findBySession($sessionId);
-    }
-
-    public function queryByTimeRange(string $sessionId, DateTimeImmutable $start, DateTimeImmutable $end): array
-    {
-        return $this->findByTimeRange($sessionId, $start, $end);
-    }
 
     public function save(AgentEvent $event): void
     {

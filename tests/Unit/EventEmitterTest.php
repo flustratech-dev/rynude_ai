@@ -23,7 +23,8 @@ class EventEmitterTest extends TestCase
         $event = new AgentEvent(
             'evt_1',
             new DateTimeImmutable(),
-            'sess_1',
+            'sess_123',
+            'agent_1',
             AgentEventType::THINKING,
             'Thinking'
         );

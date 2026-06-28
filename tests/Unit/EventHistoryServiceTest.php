@@ -15,13 +15,13 @@ class EventHistoryServiceTest extends TestCase
     {
         $store = new EventStore();
         
-        $event1 = new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', AgentEventType::THINKING, 'M1');
-        $event2 = new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', AgentEventType::PLANNING, 'M2');
-        $event3 = new AgentEvent('evt_3', new DateTimeImmutable('2023-10-10T12:00:00Z'), 'sess_1', AgentEventType::WRITING, 'M3');
+        $event1 = new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', 'agent_1', AgentEventType::THINKING, 'M1');
+        $event2 = new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', 'agent_1', AgentEventType::PLANNING, 'M2');
+        $event3 = new AgentEvent('evt_3', new DateTimeImmutable('2023-10-10T12:00:00Z'), 'sess_1', 'agent_1', AgentEventType::WRITING, 'M3');
         
-        $store->persist($event1);
-        $store->persist($event2);
-        $store->persist($event3);
+        $store->save($event1);
+        $store->save($event2);
+        $store->save($event3);
         
         $service = new EventHistoryService($store);
         
@@ -41,11 +41,11 @@ class EventHistoryServiceTest extends TestCase
     {
         $store = new EventStore();
         
-        $event1 = new AgentEvent('evt_1', new DateTimeImmutable(), 'sess_1', AgentEventType::THINKING, 'M1');
-        $event2 = new AgentEvent('evt_2', new DateTimeImmutable(), 'sess_1', AgentEventType::PLANNING, 'M2');
+        $event1 = new AgentEvent('evt_1', new DateTimeImmutable(), 'sess_1', 'agent_1', AgentEventType::THINKING, 'M1');
+        $event2 = new AgentEvent('evt_2', new DateTimeImmutable(), 'sess_1', 'agent_1', AgentEventType::PLANNING, 'M2');
         
-        $store->persist($event1);
-        $store->persist($event2);
+        $store->save($event1);
+        $store->save($event2);
         
         $service = new EventHistoryService($store);
         

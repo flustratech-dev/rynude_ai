@@ -19,6 +19,7 @@ class AgentEventTest extends TestCase
             'evt_123',
             $timestamp,
             'sess_456',
+            'agent_789',
             AgentEventType::THINKING,
             'Thinking about the request...',
             ['tool' => 'none']
@@ -28,6 +29,7 @@ class AgentEventTest extends TestCase
         $this->assertEquals('UTC', $event->timestamp->getTimezone()->getName());
         $this->assertEquals('2023-10-10T10:00:00.000000Z', $event->timestamp->format('Y-m-d\TH:i:s.u\Z'));
         $this->assertEquals('sess_456', $event->sessionId);
+        $this->assertEquals('agent_789', $event->agentId);
         $this->assertEquals(AgentEventType::THINKING, $event->eventType);
         $this->assertEquals('Thinking about the request...', $event->message);
         $this->assertEquals(['tool' => 'none'], $event->metadata);
@@ -39,6 +41,7 @@ class AgentEventTest extends TestCase
             'evt_123',
             '2023-10-10T10:00:00Z',
             'sess_456',
+            'agent_789',
             'thinking',
             'Thinking about the request...',
             ['tool' => 'none']
@@ -56,6 +59,7 @@ class AgentEventTest extends TestCase
             'evt_123',
             '2023-10-10T10:00:00Z',
             'sess_456',
+            'agent_789',
             'invalid_type',
             'Message'
         );
@@ -70,6 +74,7 @@ class AgentEventTest extends TestCase
             '',
             '2023-10-10T10:00:00Z',
             'sess_456',
+            'agent_789',
             AgentEventType::PLANNING,
             'Message'
         );
@@ -81,6 +86,7 @@ class AgentEventTest extends TestCase
             'evt_123',
             '2023-10-10T10:00:00Z',
             'sess_456',
+            'agent_789',
             AgentEventType::COMPLETED,
             'Done',
             ['foo' => 'bar']

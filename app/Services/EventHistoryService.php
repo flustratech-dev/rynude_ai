@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Contracts\AgentEventRepositoryInterface;
+use App\Repositories\AgentEventRepositoryInterface;
 use App\Models\AgentEvent;
 use App\Contracts\EventHistoryServiceInterface;
 

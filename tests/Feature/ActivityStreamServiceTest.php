@@ -37,7 +37,7 @@ class ActivityStreamServiceTest extends TestCase
         $notified = false;
         $emitter->subscribe(function (AgentEvent $event) use (&$notified, $store) {
             $notified = true;
-            $store->persist($event);
+            $store->save($event);
         });
 
         $service = new ActivityStreamService($emitter, $historyService, $streamProvider);
@@ -46,6 +46,7 @@ class ActivityStreamServiceTest extends TestCase
             'evt_1',
             new DateTimeImmutable(),
             'sess_1',
+            'agent_1',
             AgentEventType::THINKING,
             'Message'
         );
@@ -77,14 +78,14 @@ class ActivityStreamServiceTest extends TestCase
         $streamProvider = new FakeStreamProvider();
         
         $emitter->subscribe(function (AgentEvent $event) use ($store) {
-            $store->persist($event);
+            $store->save($event);
         });
 
         $service = new ActivityStreamService($emitter, $historyService, $streamProvider);
         
         $events = [
-            new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', AgentEventType::THINKING, 'M1'),
-            new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', AgentEventType::PLANNING, 'M2'),
+            new AgentEvent('evt_1', new DateTimeImmutable('2023-10-10T10:00:00Z'), 'sess_1', 'agent_1', AgentEventType::THINKING, 'M1'),
+            new AgentEvent('evt_2', new DateTimeImmutable('2023-10-10T11:00:00Z'), 'sess_1', 'agent_1', AgentEventType::PLANNING, 'M2'),
         ];
 
         $service->emitBatch($events);
