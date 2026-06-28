@@ -9,8 +9,12 @@ use App\Domain\AgentEvent;
 use App\Domain\Enums\AgentEventType;
 use DateTimeImmutable;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 class EventHistoryServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_can_paginate_history()
     {
         $store = new EventStore();

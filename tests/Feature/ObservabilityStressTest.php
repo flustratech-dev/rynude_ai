@@ -19,6 +19,7 @@ class ObservabilityStressTest extends TestCase
     
     public function test_concurrent_workflow_isolation()
     {
+        \Illuminate\Support\Facades\Redis::spy();
         $orchestrator = app(AgentOrchestrator::class);
         $emitter = app(EventEmitterInterface::class);
         
