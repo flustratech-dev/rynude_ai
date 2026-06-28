@@ -138,10 +138,31 @@ class ChatInterface extends Component
         }
     }
 
+    /**
+     * Persist the in-progress prompt to the active conversation every couple of
+     * seconds (debounce lives on the wire:model in the view). Survives refresh,
+     * accidental tab close, browser crash. Cleared on send / new chat.
+     */
+    public function updatedPrompt($value): void
+    {
+        if (! $this->conversationId) {
+            return; // No conversation yet — nothing to attach a draft to.
+        }
+        $draft = trim((string) $value);
+        Conversation::where('id', $this->conversationId)
+            ->where('user_id', Auth::id())
+            ->update(['draft_prompt' => $draft === '' ? null : $draft]);
+    }
+
     public function loadConversation()
     {
         $conversation = Conversation::with(['messages.artifacts', 'messages.attachments'])->find($this->conversationId);
         if ($conversation && $conversation->user_id === Auth::id()) {
+            // Restore the in-progress draft prompt (if any) so refreshing the
+            // tab or switching chats doesn't lose what the user was typing.
+            if (! empty($conversation->draft_prompt) && trim($this->prompt) === '') {
+                $this->prompt = (string) $conversation->draft_prompt;
+            }
             $this->messages = [];
             foreach ($conversation->messages as $msg) {
                 $artifactData = null;
@@ -239,7 +260,6 @@ class ChatInterface extends Component
                 'type' => $artifact->type,
                 'language' => $artifact->language,
                 'title' => $artifact->title,
-                'content' => $artifact->content,
             ];
             $this->dispatch('openArtifact', artifact: $artifactData);
         }
@@ -362,6 +382,155 @@ class ChatInterface extends Component
     }
 
     /**
+     * Build artifact-aware system-prompt context for the current turn.
+     *
+     * - Always includes a compact outline of the most recent skripsi-style
+     *   artifact, so the AI knows the chapter structure without re-reading
+     *   the whole body.
+     * - If the user mentions a specific "Bab N" (Arabic or Roman), extracts
+     *   that chapter's text from the artifact and includes it verbatim — so
+     *   "perbaiki Bab 2" works without the user pasting Bab 2.
+     */
+    private function buildArtifactContext(\App\Models\Conversation $conversation, string $userText): string
+    {
+        $artifact = \App\Models\MessageArtifact::query()
+            ->whereHas('message', fn ($q) => $q->where('conversation_id', $conversation->id))
+            ->whereIn('language', ['markdown', 'md'])
+            ->latest('id')
+            ->first();
+
+        if (! $artifact) {
+            return '';
+        }
+
+        $context = "\n\n--- ACTIVE DOCUMENT CONTEXT ---\n"
+            . "The user is currently working on this document (artifact id #{$artifact->id}, title: \"{$artifact->title}\"). "
+            . "When the user asks to revise, continue, or expand a chapter, treat THIS document as the source of truth.\n";
+
+        // Outline (always include — cheap).
+        $outline = is_array($artifact->outline_json) ? $artifact->outline_json : \App\Models\MessageArtifact::extractOutline($artifact->content);
+        if (! empty($outline)) {
+            $context .= "\nDocument outline (heading tree):\n";
+            foreach ($outline as $h) {
+                $indent = str_repeat('  ', max(0, ($h['level'] ?? 1) - 1));
+                $context .= $indent . '- ' . trim((string) ($h['text'] ?? '')) . "\n";
+            }
+        }
+
+        // Detect Bab N reference.
+        $requestedBab = $this->detectBabReference($userText);
+        if ($requestedBab !== null) {
+            $excerpt = $this->extractBab($artifact->content, $requestedBab);
+            if ($excerpt !== null) {
+                $context .= "\nThe user referenced **BAB {$requestedBab}**. Verbatim contents of that chapter from the active document (use this as the basis for your revision/continuation, do NOT ask the user what was there):\n\n";
+                $context .= "```markdown\n" . $excerpt . "\n```\n";
+            }
+        }
+
+        return $context;
+    }
+
+    /**
+     * Extract a chapter number from "BAB 2", "Bab II", "perbaiki bab iii", etc.
+     * Returns the chapter number as an integer, or null if no reference found.
+     */
+    private function detectBabReference(string $text): ?int
+    {
+        if (! preg_match('/\bbab\s+([ivxlcdm]+|\d{1,2})\b/i', $text, $m)) {
+            return null;
+        }
+        $token = strtolower($m[1]);
+        if (ctype_digit($token)) {
+            $n = (int) $token;
+            return ($n >= 1 && $n <= 99) ? $n : null;
+        }
+        // Roman numeral parser (good up to 99).
+        static $rom = ['i' => 1, 'v' => 5, 'x' => 10, 'l' => 50, 'c' => 100, 'd' => 500, 'm' => 1000];
+        $sum = 0;
+        $len = strlen($token);
+        for ($i = 0; $i < $len; $i++) {
+            $cur = $rom[$token[$i]] ?? 0;
+            $next = $i + 1 < $len ? ($rom[$token[$i + 1]] ?? 0) : 0;
+            $sum += ($cur < $next) ? -$cur : $cur;
+        }
+        return ($sum >= 1 && $sum <= 99) ? $sum : null;
+    }
+
+    /**
+     * Extract the markdown body of "BAB N …" (level-1 heading) from a document.
+     * Returns the chapter text (capped at 6000 chars) or null when not found.
+     */
+    private function extractBab(?string $markdown, int $bab): ?string
+    {
+        if (empty($markdown)) {
+            return null;
+        }
+        $roman = $this->intToRoman($bab);
+        // Match a level-1 heading whose text starts with "BAB N" or "BAB <roman>".
+        $pattern = '/^#\s+BAB\s+(?:' . $bab . '|' . preg_quote($roman, '/') . ')\b.*$/mi';
+        if (! preg_match($pattern, $markdown, $m, PREG_OFFSET_CAPTURE)) {
+            return null;
+        }
+        $start = $m[0][1];
+        // End at the next level-1 heading, or EOF.
+        $rest = substr($markdown, $start + strlen($m[0][0]));
+        if (preg_match('/\n#\s+/', $rest, $nextM, PREG_OFFSET_CAPTURE)) {
+            $end = $start + strlen($m[0][0]) + $nextM[0][1];
+            $chapter = substr($markdown, $start, $end - $start);
+        } else {
+            $chapter = substr($markdown, $start);
+        }
+
+        $chapter = trim((string) $chapter);
+        if (mb_strlen($chapter) > 6000) {
+            $chapter = mb_substr($chapter, 0, 6000) . "\n\n[... chapter truncated]";
+        }
+        return $chapter;
+    }
+
+    private function intToRoman(int $n): string
+    {
+        $map = [1000 => 'M', 900 => 'CM', 500 => 'D', 400 => 'CD', 100 => 'C', 90 => 'XC',
+                50 => 'L', 40 => 'XL', 10 => 'X', 9 => 'IX', 5 => 'V', 4 => 'IV', 1 => 'I'];
+        $out = '';
+        foreach ($map as $v => $r) {
+            while ($n >= $v) { $out .= $r; $n -= $v; }
+        }
+        return $out;
+    }
+
+    /**
+     * Build a compact, line-per-message textual digest of conversation messages
+     * that fell out of the recent-window slice. Uses a heuristic (first
+     * sentence per message, capped) — cheap, deterministic, no extra LLM call
+     * (ConversationMemoryService handles the deep summarization separately).
+     */
+    private function buildMiddleDigest(array $messages): string
+    {
+        if (empty($messages)) {
+            return '';
+        }
+        $out = [];
+        foreach ($messages as $m) {
+            $role = ($m['role'] ?? '') === 'user' ? 'User' : 'Assistant';
+            $text = trim((string) ($m['content'] ?? ''));
+            if ($text === '') continue;
+            $text = preg_replace('/<antArtifact[^>]*>.*?<\/antArtifact>/is', '[artifact]', $text) ?? $text;
+            $first = preg_split('/(?<=[.!?])\s/', $text, 2)[0] ?? $text;
+            if (mb_strlen($first) > 240) {
+                $first = mb_substr($first, 0, 240) . '…';
+            }
+            $out[] = $role . ': ' . $first;
+            // Keep the digest itself bounded so we don't undo the savings.
+            if (count($out) >= 80) {
+                $out[] = '... (' . (count($messages) - count($out) + 1) . ' more earlier messages omitted)';
+                break;
+            }
+        }
+        return implode("\n", $out);
+    }
+
+    /**
      * Push a short "what the assistant is doing right now" status to the UI. Uses a
      * dedicated wire:stream target so it updates live, mid-request, independent of the
      * answer text. Keeps the user informed during web search, generation, etc.
@@ -438,7 +607,14 @@ class ChatInterface extends Component
 
         $this->prompt = '';
         $this->attachments = [];
-        
+
+        // Clear the autosaved draft now that the message is on its way.
+        if ($this->conversationId) {
+            Conversation::where('id', $this->conversationId)
+                ->where('user_id', Auth::id())
+                ->update(['draft_prompt' => null]);
+        }
+
         $this->dispatch('messageAdded');
     }
 
@@ -474,21 +650,31 @@ class ChatInterface extends Component
             return;
         }
 
-        // Prepare sliding window context
-        $messagesForAi = [];
-        $historySize = 100;
-        
-        $userMessages = array_filter($this->messages, fn($m) => $m['role'] !== 'system');
-        $userMessages = array_values($userMessages);
+        // Prepare sliding window context.
+        //
+        // Strategy: keep the first 2 messages (often: opening request setting
+        // the task) + the last (historySize - 2) messages verbatim. The middle
+        // chunk is condensed into a textual digest that gets folded into the
+        // system prompt below so the AI still has peripheral awareness of what
+        // was discussed without paying the token cost of every old message.
+        //
+        // Provider compatibility: we do NOT insert synthetic user/assistant
+        // messages (Anthropic requires strict alternation); the digest rides
+        // along in the system prompt instead. Persistent memory + per-chapter
+        // outline (above) handle the deeper "what did we decide" questions.
+        $historySize = 200;
+        $keepFirst = 2;
+
+        $userMessages = array_values(array_filter($this->messages, fn ($m) => $m['role'] !== 'system'));
         $totalMsgs = count($userMessages);
-        
+        $middleDigest = '';
+
         if ($totalMsgs > $historySize) {
-            $firstMessage = $userMessages[0] ?? null;
-            $recentMessages = array_slice($userMessages, -($historySize - 1));
-            if ($firstMessage) {
-                $messagesForAi[] = $firstMessage;
-            }
-            $messagesForAi = array_merge($messagesForAi, $recentMessages);
+            $firstMessages = array_slice($userMessages, 0, $keepFirst);
+            $recentMessages = array_slice($userMessages, -($historySize - $keepFirst));
+            $middleMessages = array_slice($userMessages, $keepFirst, $totalMsgs - $keepFirst - ($historySize - $keepFirst));
+            $middleDigest = $this->buildMiddleDigest($middleMessages);
+            $messagesForAi = array_merge($firstMessages, $recentMessages);
         } else {
             $messagesForAi = $userMessages;
         }
@@ -501,6 +687,7 @@ class ChatInterface extends Component
             . "When the user asks for a PDF, DOCX, or document, they are interacting with an external system that handles the file conversion. Therefore, you are STRICTLY FORBIDDEN from apologizing, claiming you cannot generate PDFs, or suggesting external tools like Word, Google Docs, Pandoc, or Typora. Your ONLY allowed response is to immediately generate the content as Markdown inside an <antArtifact> block. The system will seamlessly convert your Markdown artifact into the requested file format. Failure to use <antArtifact> or explaining your limitations will break the application.\n\n"
             . "DOCUMENT GENERATION (when the user asks for a document, report, paper, makalah, laporan, skripsi, jurnal, artikel, file, PDF, DOCX, etc., OR when they ask to 'continue' a previous chapter/document):\n"
             . "- Write a markdown artifact (language=\"markdown\"). The system renders it to a polished PDF or document for the user automatically.\n"
+            . "- WARNING: The content inside the <antArtifact> block is exported directly to the final PDF/DOCX. DO NOT include any conversational text, meta-commentary, or formatting explanations (e.g., 'Berikut adalah laporannya...' or 'Penjelasan Format:') INSIDE the artifact. ALL conversational text MUST be placed OUTSIDE the <antArtifact> block.\n"
             . "- If the user asks you to continue a document (e.g., 'lanjut bab 2'), you MUST generate a NEW <antArtifact> block containing the continuation. DO NOT just reply with raw text.\n"
             . "- If the user asks you to merge, combine, or join multiple attached documents, ACT AS AN INTELLIGENT EDITOR: do NOT just blindly copy-paste text. Clean up the text by removing redundant page numbers, repeating headers/footers, and fixing broken sentences across page breaks. Smooth out transitions between documents.\n"
             . "- Diagrams, flowcharts, charts, org/structure figures: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Do NOT use ASCII diagrams or mermaid. Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X.Y Caption text</figcaption></figure>. If the extracted text mentions a diagram but it's missing, creatively generate an SVG diagram to replace it!\n"
@@ -600,9 +787,17 @@ class ChatInterface extends Component
                     $baseSystemPrompt .= "\n\nProject Knowledge Files:\n";
                     foreach ($project->files as $file) {
                         if (\Illuminate\Support\Facades\Storage::exists($file->file_path)) {
-                            // Extract document text, increase limit for large context
                             $content = \Illuminate\Support\Facades\Storage::get($file->file_path);
-                            $baseSystemPrompt .= "\n--- Document: {$file->file_name} ---\n" . substr($content, 0, 2000000) . "\n";
+                            // Cap each file at 200KB. The old 2MB cap routinely blew the
+                            // context window for cheap models (Haiku ~200K tokens) and
+                            // wasted cost on long files where only the early sections
+                            // ever mattered. If the user attaches huge corpora they
+                            // should ask Rynude to summarize per-file first.
+                            $truncated = substr($content, 0, 200000);
+                            $note = strlen($content) > 200000
+                                ? "\n[... file truncated at 200KB; total " . number_format(strlen($content)) . " bytes — ask user to split or summarize if more is needed]"
+                                : '';
+                            $baseSystemPrompt .= "\n--- Document: {$file->file_name} ---\n" . $truncated . $note . "\n";
                         }
                     }
                 }
@@ -619,6 +814,35 @@ class ChatInterface extends Component
         $memoryService = app(\App\Services\AI\ConversationMemoryService::class);
         if ($conversation) {
             $baseSystemPrompt .= $memoryService->formatForPrompt($conversation);
+        }
+
+        // Artifact-aware context: when the user references a chapter ("perbaiki
+        // Bab 2", "lanjut bab III", "tambah ke BAB 4"), pull the matching
+        // section from the most recent skripsi artifact in this chat so the
+        // AI can revise it instead of asking what's there. Without this the
+        // AI has only chat-message text — never the artifact body itself.
+        if ($conversation) {
+            $lastUserText = '';
+            for ($i = count($messagesForAi) - 1; $i >= 0; $i--) {
+                if (($messagesForAi[$i]['role'] ?? '') === 'user') {
+                    $lastUserText = (string) $messagesForAi[$i]['content'];
+                    break;
+                }
+            }
+            $artifactContext = $this->buildArtifactContext($conversation, $lastUserText);
+            if ($artifactContext !== '') {
+                $baseSystemPrompt .= $artifactContext;
+            }
+        }
+
+        // Middle-message digest from the sliding window (only present when the
+        // conversation has overflowed the recent-window). Keeps the AI loosely
+        // aware of what was discussed in the dropped middle without paying
+        // per-token cost for the full messages.
+        if ($middleDigest !== '') {
+            $baseSystemPrompt .= "\n\n--- EARLIER CONVERSATION DIGEST ---\n"
+                . "These exchanges fell outside the recent message window. They're summarised here so you stay aware of the thread; lean on PERSISTENT MEMORY (above) for durable facts.\n\n"
+                . $middleDigest;
         }
 
         // Web search: ground the answer in current information when enabled.
@@ -667,6 +891,41 @@ class ChatInterface extends Component
         $fullResponse = '';
         $stopped = false;
         $artifactAnnounced = false;
+
+        // Markdown re-parsing on every chunk is O(n²) over response length; for
+        // a 50 KB markdown reply with hundreds of small chunks that turns into
+        // megabytes of redundant parser work. We throttle: only re-render when
+        // ≥120 new chars have accumulated OR 100 ms have passed. The final
+        // chunk after the loop always flushes the latest state.
+        $lastRenderedLen = 0;
+        $lastRenderTs = microtime(true);
+        $loadingHtml = '<div class="mt-3 inline-flex items-center gap-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl p-2 pr-4 bg-white dark:bg-stone-800 shadow-sm max-w-full">
+                <div class="w-10 h-10 bg-[#F9F8F6] dark:bg-stone-700 rounded-lg flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 text-[#D97757] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate">Generating Artifact...</h4>
+                    <p class="text-[12px] text-stone-500 mt-0.5 truncate">Writing content</p>
+                </div>
+            </div>';
+        $pattern = '/<(?:antA|a)rtifact\b[^>]*>([\s\S]*?)(?:<\/(?:antA|a)rtifact>|$)/i';
+
+        $renderFrame = function () use (&$fullResponse, $pattern, $loadingHtml, &$artifactAnnounced) {
+            $displayContent = preg_replace_callback($pattern, fn () => $loadingHtml, $fullResponse) ?? $fullResponse;
+            if (preg_match('/<(?:antA|a)rtifact\b/i', $displayContent, $m, PREG_OFFSET_CAPTURE)) {
+                $displayContent = substr($displayContent, 0, $m[0][1]) . $loadingHtml;
+                if (! $artifactAnnounced) {
+                    $this->streamActivity('Writing artifact…');
+                    $artifactAnnounced = true;
+                }
+            }
+            $this->stream(
+                to: 'message-stream',
+                content: \Illuminate\Support\Str::markdown($displayContent),
+                replace: true,
+            );
+        };
+
         foreach ($stream as $chunk) {
             // Stop generation requested by the user
             if (\Illuminate\Support\Facades\Cache::get($stopKey)) {
@@ -676,39 +935,19 @@ class ChatInterface extends Component
             }
 
             $fullResponse .= $chunk;
-            
-            $displayContent = $fullResponse;
-            $pattern = '/<(?:antA|a)rtifact\b[^>]*>([\s\S]*?)(?:<\/(?:antA|a)rtifact>|$)/i';
-            
-            $loadingHtml = '<div class="mt-3 inline-flex items-center gap-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl p-2 pr-4 bg-white dark:bg-stone-800 shadow-sm max-w-full">
-                <div class="w-10 h-10 bg-[#F9F8F6] dark:bg-stone-700 rounded-lg flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5 text-[#D97757] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <h4 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate">Generating Artifact...</h4>
-                    <p class="text-[12px] text-stone-500 mt-0.5 truncate">Writing content</p>
-                </div>
-            </div>';
-
-            $displayContent = preg_replace_callback($pattern, function($matches) use ($loadingHtml) {
-                return $loadingHtml;
-            }, $displayContent);
-
-            if (preg_match('/<(?:antA|a)rtifact\b/i', $displayContent, $m, PREG_OFFSET_CAPTURE)) {
-                $displayContent = substr($displayContent, 0, $m[0][1]) . $loadingHtml;
-                if (!$artifactAnnounced) {
-                    $this->streamActivity('Writing artifact…');
-                    $artifactAnnounced = true;
-                }
+            $now = microtime(true);
+            $delta = strlen($fullResponse) - $lastRenderedLen;
+            $stale = ($now - $lastRenderTs) * 1000 >= 100; // ms
+            if ($delta < 120 && ! $stale) {
+                continue;
             }
-
-            $htmlDisplay = \Illuminate\Support\Str::markdown($displayContent);
-
-            $this->stream(
-                to: 'message-stream',
-                content: $htmlDisplay,
-                replace: true
-            );
+            $lastRenderedLen = strlen($fullResponse);
+            $lastRenderTs = $now;
+            $renderFrame();
+        }
+        // Final flush so the user sees the very last bytes of the stream.
+        if ($lastRenderedLen < strlen($fullResponse)) {
+            $renderFrame();
         }
 
         // If the user stopped an empty generation, store a small placeholder
@@ -746,6 +985,8 @@ class ChatInterface extends Component
                 'language' => $language ?: 'text',
                 'title' => $title,
                 'content' => $content,
+                'user_id' => Auth::id(),                        // denormalized owner for fast ownership checks
+                'outline_json' => MessageArtifact::extractOutline($content), // heading tree for Bab-N lookup
             ]);
 
             $artifactData = [
@@ -756,7 +997,10 @@ class ChatInterface extends Component
                 'content' => $artModel->content,
             ];
             $fullResponse = $cleanResponse;
-            $this->dispatch('openArtifact', artifact: $artifactData);
+            // Soft signal — ChatLayout decides whether to auto-open. If the user
+            // has navigated to another panel, it stays closed; they can still
+            // open it from the "View artifact" badge in the message.
+            $this->dispatch('artifactReady', id: $artModel->id);
         } else {
             $assistantMessage = Message::create([
                 'conversation_id' => $this->conversationId,
@@ -772,47 +1016,31 @@ class ChatInterface extends Component
         ];
 
         // Refresh the durable conversation memory once enough new messages have
-        // accumulated. Runs after the answer has streamed so it never delays output,
-        // and uses the currently selected model so it always hits an available provider.
+        // accumulated. Dispatched as a queued job so the user round-trip ends
+        // immediately. With the default sync queue driver it still runs inline.
         if ($conversation && $memoryService->shouldRefresh($conversation, count($this->messages))) {
-            $this->streamActivity('Updating memory…');
-            $memoryService->refresh(
-                $conversation,
-                $this->messages,
+            \App\Jobs\RefreshConversationMemory::dispatch(
+                $conversation->id,
                 $this->selectedModel ?? 'claude-haiku-4-5'
             );
         }
 
-        // Generate a title for new chats. This runs after the answer has already
-        // streamed, so it doesn't block visible output. Done inline (not queued) so
-        // the title — and the sidebar refresh — appear immediately without depending
-        // on a running queue worker.
+        // Generate a title for new chats via a job (sync driver = inline). The
+        // user-visible round-trip ends here regardless of how long the title
+        // model takes. We refresh the sidebar optimistically; the title pops
+        // in when the job finishes.
         if ($this->conversationId) {
-            $conversation = \App\Models\Conversation::find($this->conversationId);
-            if ($conversation && $conversation->title === 'New Chat') {
+            $conversationForTitle = \App\Models\Conversation::find($this->conversationId);
+            if ($conversationForTitle && $conversationForTitle->title === 'New Chat') {
                 $userMsg = collect($this->messages)->firstWhere('role', 'user');
                 if ($userMsg) {
-                    try {
-                        $titleAi = app(AiService::class);
-                        $titleStream = $titleAi->streamResponse([
-                            [
-                                'role' => 'user',
-                                'content' => "Provide a short, concise title (1-4 words max) for a chat that starts with this prompt: \"{$userMsg['content']}\". Reply ONLY with the title, no quotes, no extra text."
-                            ]
-                        ], $this->selectedModel ?? 'claude-haiku-4-5');
-
-                        $title = '';
-                        foreach ($titleStream as $chunk) {
-                            $title .= $chunk;
-                        }
-                        $title = trim(str_replace('"', '', $title));
-                        if (!empty($title)) {
-                            $conversation->update(['title' => $title]);
-                            $this->dispatch('chatCreated');
-                        }
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error('Inline Title Gen Failed: ' . $e->getMessage());
-                    }
+                    \App\Jobs\GenerateChatTitle::dispatch(
+                        $conversationForTitle,
+                        (string) $userMsg['content'],
+                        $this->selectedModel ?? 'claude-haiku-4-5',
+                        Auth::id(),
+                    );
+                    $this->dispatch('chatCreated');
                 }
             }
         }

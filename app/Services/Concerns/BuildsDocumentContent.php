@@ -132,20 +132,23 @@ trait BuildsDocumentContent
         $fontKey = strtolower(trim((string) ($meta['font'] ?? '')));
         $font = $fontMap[$fontKey] ?? 'freeserif';
 
-        $fontSize = (float) ($meta['font_size'] ?? 12);
+        $isJurnal = ($meta['mode'] ?? '') === 'jurnal';
+        $defaultFontSize = $isJurnal ? 10 : 12;
+        $fontSize = (float) ($meta['font_size'] ?? $defaultFontSize);
         if ($fontSize < 8 || $fontSize > 20) {
-            $fontSize = 12;
+            $fontSize = $defaultFontSize;
         }
 
         $spacingMap = ['1' => 1.0, '1.0' => 1.0, '1.15' => 1.15, '1.5' => 1.5, '2' => 2.0, '2.0' => 2.0, 'single' => 1.0, 'double' => 2.0];
         $spacingKey = strtolower(trim((string) ($meta['line_spacing'] ?? '')));
-        $lineSpacing = $spacingMap[$spacingKey] ?? ($academic ? 1.5 : 1.45);
+        $lineSpacing = $spacingMap[$spacingKey] ?? ($isJurnal ? 1.0 : ($academic ? 1.5 : 1.45));
 
         $align = strtolower(trim((string) ($meta['align'] ?? '')));
         $align = in_array($align, ['justify', 'left'], true) ? $align : ($academic ? 'justify' : 'left');
 
-        // Margins in mm; defaults follow the chosen mode (skripsi = 4-3-3-3 cm).
-        $defT = $academic ? 30 : 25;
+        // Margins in mm; defaults follow standard academic 4-3-3-3 cm convention
+        // (top-right-bottom-left). Casual documents use 2.5 cm all-round.
+        $defT = $academic ? 40 : 25;
         $defR = $academic ? 30 : 25;
         $defB = $academic ? 30 : 25;
         $defL = $academic ? 40 : 25;
@@ -242,12 +245,7 @@ trait BuildsDocumentContent
         return is_file($path) ? $path : null;
     }
 
-    /**
-     * Strip a leading YAML front-matter block so on-screen markdown previews don't
-     * render the raw metadata. Used by the artifact preview blades and the .md export.
-     */
-    public static function stripFrontMatter(string $content): string
-    {
-        return preg_replace('/^(?:\xEF\xBB\xBF)?\s*---\r?\n.*?\r?\n---[ \t]*\r?\n/s', '', $content, 1) ?? $content;
-    }
+    // NOTE: stripFrontMatter is intentionally NOT defined here. Both renderers
+    // expose it as a public static helper via PdfRenderer::stripFrontMatter for
+    // backward compatibility (views/components reference it by that path).
 }

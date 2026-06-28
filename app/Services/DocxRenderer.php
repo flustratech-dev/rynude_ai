@@ -81,6 +81,15 @@ class DocxRenderer
         $font = self::FONT_MAP[$fmt['font']] ?? 'Times New Roman';
         $size = $fmt['fontSize'];
 
+        // Tell Word to recalculate all fields (TOC, page numbers) the first time
+        // the user opens the document — without this the TOC stays empty until
+        // someone presses F9 / "Update Field". This is global PHPWord settings,
+        // not per-document, but it is idempotent.
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+        if (method_exists(\PhpOffice\PhpWord\Settings::class, 'setUpdateFields')) {
+            \PhpOffice\PhpWord\Settings::setUpdateFields(true);
+        }
+
         $phpWord = new PhpWord();
         $phpWord->getDocInfo()->setTitle($title);
         $phpWord->setDefaultFontName($font);
@@ -93,20 +102,25 @@ class DocxRenderer
         ]);
 
         // Black, chosen-font heading styles so Word doesn't fall back to its blue
-        // built-in "Heading 1". Sizes mirror PdfRenderer::css().
+        // built-in "Heading 1". Sizes mirror PdfRenderer::css(). Academic h1 is
+        // ALL CAPS to match the PDF's text-transform:uppercase on chapter titles.
         $h1 = $academic ? ($size + 2) : ($size + 6);
         $h2 = $academic ? $size : ($size + 2);
         $h3 = $academic ? $size : ($size + 0.5);
         $headingSizes = [1 => $h1, 2 => $h2, 3 => $h3, 4 => $size, 5 => $size, 6 => $size];
         foreach ($headingSizes as $depth => $hsize) {
-            $phpWord->addTitleStyle(
-                $depth,
-                ['name' => $font, 'size' => $hsize, 'bold' => true, 'color' => '000000'],
-                ['spaceBefore' => 160, 'spaceAfter' => 120, 'keepNext' => true]
-            );
+            $fontStyle = ['name' => $font, 'size' => $hsize, 'bold' => true, 'color' => '000000'];
+            $paragraphStyle = ['spaceBefore' => 160, 'spaceAfter' => 120, 'keepNext' => true];
+            if ($academic && $depth === 1) {
+                $fontStyle['allCaps'] = true;
+                $paragraphStyle['alignment'] = Jc::CENTER;
+            }
+            $phpWord->addTitleStyle($depth, $fontStyle, $paragraphStyle);
         }
 
-        $bodyHtml = $this->stripSvg($bodyHtml);
+        // Track SVG-derived PNGs so we can unlink them after the Word file is written.
+        $tempPngs = [];
+        $bodyHtml = $this->convertSvgToImages($bodyHtml, $tempPngs);
         $pageNum = $fmt['pageNumber'];
         $margins = $this->marginTwips($fmt['margins']);
 
@@ -114,14 +128,15 @@ class DocxRenderer
             // 1) Cover page — its own section, carries no page number.
             $this->buildCover($phpWord, $title, $meta, $margins, $font, $size);
 
-            // 2) Table of Contents — restarts page numbering. (Arabic: Word cannot
-            //    emit Roman numerals via PHPWord; the field is populated on open.)
+            // 2) Table of Contents — restarts page numbering at 1 with Roman
+            //    numerals (the format conversion is applied as a post-process
+            //    step on the raw XML; PHPWord only emits w:start natively).
             $toc = $phpWord->addSection($this->sectionSettings($margins, 1));
             $this->applyPageNumber($toc, $pageNum, $font);
             $toc->addText('DAFTAR ISI', ['name' => $font, 'size' => $size + 2, 'bold' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 240]);
             $toc->addTOC(['name' => $font, 'size' => $size], ['tabLeader' => \PhpOffice\PhpWord\Style\TOC::TAB_LEADER_DOT], 1, 3);
 
-            // 3) Body — restarts numbering at 1; each BAB (h1) starts a fresh page.
+            // 3) Body — restarts numbering at 1 (Arabic); each BAB (h1) starts a fresh page.
             $body = $phpWord->addSection($this->sectionSettings($margins, 1));
             $this->applyPageNumber($body, $pageNum, $font);
             $this->addBodyWithChapterBreaks($body, $bodyHtml);
@@ -131,7 +146,116 @@ class DocxRenderer
             Html::addHtml($section, $bodyHtml, false, false);
         }
 
-        return $this->writeToString($phpWord);
+        $output = $this->writeToString($phpWord);
+
+        // Skripsi / laporan: rewrite the TOC section's page-number format to Roman.
+        // PHPWord's section writer only emits <w:pgNumType w:start="…"/> — never
+        // the format — so we post-process the document XML.
+        // Section order built above is: 1=cover, 2=toc, 3=body.
+        if ($academic) {
+            $output = $this->applyRomanTocNumbering($output);
+        }
+
+        // Clean up rasterized SVG PNGs now that they're embedded in the .docx.
+        foreach ($tempPngs as $path) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Post-process a generated DOCX binary so the 2nd section (DAFTAR ISI) uses
+     * Roman numerals (i, ii, iii…) and the 3rd section (body) resets to Arabic.
+     * This is the standard skripsi pagination convention and cannot be expressed
+     * through PHPWord's public API as of v1.4.
+     */
+    private function applyRomanTocNumbering(string $docxBinary): string
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'docx-pp');
+        if ($tmp === false) {
+            return $docxBinary;
+        }
+        @file_put_contents($tmp, $docxBinary);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tmp) !== true) {
+            @unlink($tmp);
+            return $docxBinary;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml === false) {
+            $zip->close();
+            @unlink($tmp);
+            return $docxBinary;
+        }
+
+        // We expect three sectPr elements (cover, toc, body) in order. The TOC
+        // section is the 2nd; the body is the 3rd. Inject/replace pgNumType.
+        $modifiedXml = $this->rewritePgNumType($xml, [
+            2 => 'lowerRoman',   // DAFTAR ISI: i, ii, iii…
+            3 => 'decimal',      // body: 1, 2, 3…
+        ]);
+
+        if ($modifiedXml !== $xml) {
+            $zip->deleteName('word/document.xml');
+            $zip->addFromString('word/document.xml', $modifiedXml);
+        }
+        $zip->close();
+
+        $patched = @file_get_contents($tmp);
+        @unlink($tmp);
+        return $patched !== false ? $patched : $docxBinary;
+    }
+
+    /**
+     * Replace (or insert) `<w:pgNumType>` inside the Nth `<w:sectPr>` of a
+     * document.xml. The numbering format is set to the requested `w:fmt`,
+     * preserving any existing `w:start` value. Uses string parsing (no DOM)
+     * because the namespace declarations make XPath finicky and a regex over
+     * the well-defined sectPr block is robust enough.
+     *
+     * @param array<int,string> $sectionFormats 1-indexed section → fmt value
+     */
+    private function rewritePgNumType(string $xml, array $sectionFormats): string
+    {
+        if (! preg_match_all('/<w:sectPr\b[^>]*>.*?<\/w:sectPr>/s', $xml, $matches, PREG_OFFSET_CAPTURE)) {
+            return $xml;
+        }
+
+        // Walk matches from the END so byte offsets stay valid as we splice.
+        $sectionCount = count($matches[0]);
+        for ($i = $sectionCount - 1; $i >= 0; $i--) {
+            $sectionIndex = $i + 1; // 1-indexed
+            if (! isset($sectionFormats[$sectionIndex])) {
+                continue;
+            }
+            $fmt = $sectionFormats[$sectionIndex];
+            $block = $matches[0][$i][0];
+            $offset = $matches[0][$i][1];
+
+            // Existing pgNumType: keep w:start (if any), set/override w:fmt.
+            if (preg_match('/<w:pgNumType\b[^\/>]*\/>/', $block, $pm, PREG_OFFSET_CAPTURE)) {
+                $oldTag = $pm[0][0];
+                $start = '';
+                if (preg_match('/w:start="[^"]*"/', $oldTag, $sm)) {
+                    $start = ' ' . $sm[0];
+                }
+                $newTag = '<w:pgNumType w:fmt="' . $fmt . '"' . $start . '/>';
+                $newBlock = str_replace($oldTag, $newTag, $block);
+            } else {
+                // No pgNumType — insert one just before </w:sectPr>.
+                $insert = '<w:pgNumType w:fmt="' . $fmt . '" w:start="1"/>';
+                $newBlock = str_replace('</w:sectPr>', $insert . '</w:sectPr>', $block);
+            }
+
+            $xml = substr($xml, 0, $offset) . $newBlock . substr($xml, $offset + strlen($block));
+        }
+
+        return $xml;
     }
 
     /**
@@ -319,10 +443,106 @@ class DocxRenderer
         return array_map(fn ($mm) => (int) round($mm * 56.6929), $margins);
     }
 
-    /** Strip inline <svg> blocks the Word HTML parser can't render. */
-    private function stripSvg(string $html): string
+    /**
+     * Convert inline `<svg>…</svg>` blocks to `<img src="…png">` so PHPWord's
+     * HTML parser can embed them. Tries Imagick first (PHP extension), then the
+     * `rsvg-convert` CLI binary; if neither is available the block is replaced
+     * with a styled placeholder so the user knows a diagram was present (and
+     * not silently dropped, which was the old behaviour).
+     *
+     * Generated PNGs live in storage/app/docx-tmp and are cleaned up after the
+     * Word document is written ({@see writeToString}).
+     *
+     * @param array<int,string> &$cleanupPaths Receives the temp paths so the
+     *        caller can unlink them after the render is complete.
+     */
+    private function convertSvgToImages(string $html, array &$cleanupPaths): string
     {
-        return preg_replace('/<svg\b[^>]*>.*?<\/svg>/is', '', $html) ?? $html;
+        return preg_replace_callback('/<svg\b[^>]*>.*?<\/svg>/is', function ($m) use (&$cleanupPaths) {
+            $svg = $m[0];
+            // mPDF doesn't require an xmlns; the rasterizers DO.
+            if (! preg_match('/\bxmlns\s*=/', $svg)) {
+                $svg = preg_replace('/<svg\b/', '<svg xmlns="http://www.w3.org/2000/svg"', $svg, 1);
+            }
+
+            $pngPath = $this->rasterizeSvg($svg);
+            if ($pngPath === null) {
+                // Both rasterizers unavailable — emit a placeholder rather than
+                // silently dropping the diagram (the old stripSvg behaviour).
+                return '<p style="text-align:center;font-style:italic;color:#666;">[Diagram tidak dapat dirender di Word — tersedia di versi PDF]</p>';
+            }
+            $cleanupPaths[] = $pngPath;
+            // PHPWord Html parser accepts absolute file paths in src.
+            return '<p style="text-align:center;"><img src="' . htmlspecialchars($pngPath, ENT_QUOTES) . '" /></p>';
+        }, $html) ?? $html;
+    }
+
+    /**
+     * Rasterize a single SVG string to a PNG file. Returns the absolute path
+     * or null if no rasterizer is available / conversion failed.
+     */
+    private function rasterizeSvg(string $svg): ?string
+    {
+        $dir = storage_path('app/docx-tmp');
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        $base = $dir . DIRECTORY_SEPARATOR . 'svg-' . uniqid('', true);
+        $svgPath = $base . '.svg';
+        $pngPath = $base . '.png';
+        if (@file_put_contents($svgPath, $svg) === false) {
+            return null;
+        }
+
+        // 1) Imagick (PHP extension) — preferred, runs in-process.
+        if (class_exists('Imagick')) {
+            try {
+                $im = new \Imagick();
+                $im->setBackgroundColor(new \ImagickPixel('transparent'));
+                $im->readImageBlob($svg);
+                $im->setImageFormat('png32');
+                // Reasonable raster size for an embedded figure (~600px wide).
+                $width = $im->getImageWidth() ?: 600;
+                if ($width < 600) {
+                    $scale = 600 / $width;
+                    $im->resizeImage((int) ($width * $scale), 0, \Imagick::FILTER_LANCZOS, 1);
+                }
+                $im->writeImage($pngPath);
+                $im->destroy();
+                @unlink($svgPath);
+                return is_file($pngPath) ? $pngPath : null;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Imagick SVG→PNG failed: ' . $e->getMessage());
+            }
+        }
+
+        // 2) rsvg-convert CLI — common on Linux servers.
+        $rsvg = $this->findBinary('rsvg-convert');
+        if ($rsvg !== null) {
+            $cmd = escapeshellcmd($rsvg) . ' -f png -w 600 -o ' . escapeshellarg($pngPath) . ' ' . escapeshellarg($svgPath) . ' 2>&1';
+            @exec($cmd, $out, $code);
+            @unlink($svgPath);
+            if ($code === 0 && is_file($pngPath)) {
+                return $pngPath;
+            }
+            \Illuminate\Support\Facades\Log::warning('rsvg-convert failed (' . $code . '): ' . implode("\n", $out));
+        }
+
+        @unlink($svgPath);
+        return null;
+    }
+
+    /** Locate an executable in PATH (cross-platform). */
+    private function findBinary(string $name): ?string
+    {
+        $isWindows = strncasecmp(PHP_OS, 'WIN', 3) === 0;
+        $command = $isWindows ? "where {$name}" : "command -v {$name}";
+        @exec($command . ' 2>&1', $out, $code);
+        if ($code !== 0 || empty($out)) {
+            return null;
+        }
+        $path = trim($out[0]);
+        return $path !== '' && is_file($path) ? $path : null;
     }
 
     private function writeToString(PhpWord $phpWord): string

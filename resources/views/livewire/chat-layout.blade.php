@@ -3,12 +3,41 @@
         sidebarOpen: {{ Js::from($sidebarOpen) }},
         isMobile: false,
         activePanel: @entangle('activePanel'),
-        artifactPanelOpen: @entangle('artifactPanelOpen'),
+        openArtifactId: @entangle('openArtifactId'),
         shortcutsOpen: false,
+        artifactWidth: 50,
+        isResizing: false,
+        _onMove: null,
+        _onUp: null,
+        get artifactPanelOpen() {
+            return this.openArtifactId !== null && this.openArtifactId !== '' && this.openArtifactId !== undefined;
+        },
         init() {
             this.checkMobile();
             window.addEventListener('resize', () => this.checkMobile());
             window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: this.sidebarOpen } }));
+
+            // Resize logic. Stored on `this` so cleanup() can remove them; the
+            // old code added them anonymously and could never detach, leaking
+            // a new pair of document listeners on every Livewire re-mount.
+            this._onMove = (e) => {
+                if (!this.isResizing) return;
+                let newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
+                newWidth = Math.max(20, Math.min(newWidth, 80));
+                this.artifactWidth = newWidth;
+            };
+            this._onUp = () => {
+                if (this.isResizing) {
+                    this.isResizing = false;
+                    document.body.style.cursor = 'default';
+                }
+            };
+            document.addEventListener('mousemove', this._onMove);
+            document.addEventListener('mouseup', this._onUp);
+        },
+        destroy() {
+            if (this._onMove) document.removeEventListener('mousemove', this._onMove);
+            if (this._onUp) document.removeEventListener('mouseup', this._onUp);
         },
         handleShortcut(e) {
             const mod = e.metaKey || e.ctrlKey;
@@ -16,7 +45,11 @@
             // Esc closes any open overlay/panel
             if (e.key === 'Escape') {
                 if (this.shortcutsOpen) { this.shortcutsOpen = false; return; }
-                if (this.artifactPanelOpen || this.activePanel === 'artifacts') { this.artifactPanelOpen = false; if (this.activePanel === 'artifacts') this.activePanel = null; return; }
+                if (this.artifactPanelOpen || this.activePanel === 'artifacts') {
+                    if (this.artifactPanelOpen) { Livewire.dispatch('closeArtifactPanel'); }
+                    if (this.activePanel === 'artifacts') this.activePanel = null;
+                    return;
+                }
                 if (this.activePanel) { this.activePanel = null; return; }
                 return;
             }
@@ -27,7 +60,7 @@
             if (e.key.toLowerCase() === 'k' && !e.shiftKey) {
                 e.preventDefault();
                 this.activePanel = null;
-                this.artifactPanelOpen = false;
+                Livewire.dispatch('closeArtifactPanel');
                 Livewire.dispatch('newChat');
                 return;
             }
@@ -72,7 +105,6 @@
     @keydown.window="handleShortcut($event)"
     @show-shortcuts.window="shortcutsOpen = true"
     @toggle-sidebar.window="toggle()"
-    @close-artifact-panel.window="artifactPanelOpen = false; if (activePanel === 'artifacts') activePanel = null;"
     @close-customize.window="activePanel = null; sidebarOpen = true; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: true } }));"
 >
     {{-- ========== MOBILE SIDEBAR OVERLAY ========== --}}
@@ -93,7 +125,7 @@
             x-transition:leave-end="-translate-x-full"
             class="fixed inset-y-0 left-0 z-40 w-[300px] shadow-2xl bg-[#F9F8F6] dark:bg-claude-bg-dark"
         >
-            <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="mobile-sidebar" />
+            <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$openArtifactId !== null" :sidebarOpen="$sidebarOpen" key="mobile-sidebar" />
         </div>
     </div>
 
@@ -103,7 +135,7 @@
         :class="sidebarOpen ? 'w-[290px]' : 'w-[60px]'"
         class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:block bg-[#F9F8F6] dark:bg-claude-bg-dark"
     >
-        <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$artifactPanelOpen" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
+        <livewire:sidebar :activePanel="$activePanel" :artifactPanelOpen="$openArtifactId !== null" :sidebarOpen="$sidebarOpen" key="desktop-sidebar" />
     </div>
 
     {{-- ========== MAIN CONTENT ========== --}}
@@ -142,17 +174,17 @@
                 <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:design-panel key="panel-design" />
                 </div>
-                
+
                 <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
                     <livewire:customize-panel key="panel-customize" />
                 </div>
-                
+
                 <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full">
                     <livewire:chat-interface key="panel-chat-interface" />
                 </div>
             </div>
 
-            <div 
+            <div
                 x-show="artifactPanelOpen || activePanel === 'artifacts'"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
@@ -161,9 +193,21 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-x-0"
                 x-transition:leave-end="opacity-0 translate-x-8"
-                :class="activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-stone-800 w-full' : 'hidden md:flex w-[50%] min-w-[400px] border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative'"
+                :class="activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-stone-800 w-full' : 'hidden md:flex border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative'"
+                :style="activePanel !== 'artifacts' ? `width: ${artifactWidth}vw; min-width: 400px; max-width: 80vw;` : ''"
             >
-                <livewire:artifact-panel key="desktop-artifact-panel" />
+                <!-- Drag Handle -->
+                <div
+                    x-show="activePanel !== 'artifacts'"
+                    @mousedown="isResizing = true; document.body.style.cursor = 'col-resize';"
+                    class="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[#D97757] transition-colors z-30"
+                    style="transform: translateX(-50%);"
+                ></div>
+
+                <!-- Overlay to capture mouse events over iframe while dragging -->
+                <div x-show="isResizing" class="absolute inset-0 z-40 cursor-col-resize"></div>
+
+                <livewire:artifact-panel :openArtifactId="$openArtifactId" key="desktop-artifact-panel" />
             </div>
 
             <div
@@ -177,7 +221,7 @@
                 x-transition:leave-end="opacity-0 translate-y-8"
                 class="fixed inset-0 z-30 flex flex-col bg-white dark:bg-stone-800 md:hidden"
             >
-                <livewire:artifact-panel key="mobile-artifact-panel" />
+                <livewire:artifact-panel :openArtifactId="$openArtifactId" key="mobile-artifact-panel" />
             </div>
         </div>
     </div>

@@ -3,30 +3,72 @@
 namespace App\Livewire;
 
 use Livewire\Attributes\On;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Reactive;
 use Livewire\Component;
 
+/**
+ * Presents the open artifact (or the grid of all artifacts when nothing is open).
+ *
+ * Visibility is OWNED BY THE PARENT (`ChatLayout::$openArtifactId`) and passed
+ * down as a reactive prop. This component does NOT decide whether the panel is
+ * visible; it only renders the artifact whose id it receives.
+ *
+ * Why: the previous design had three sources of truth for "is the panel open?"
+ * (this component's `$isOpen`, ChatLayout's `$artifactPanelOpen`, Alpine's
+ * entangled copy). They drifted, raced, and the panel would auto-reopen or
+ * flicker. Now: one int on the parent, reactive prop down, never out of sync.
+ */
 class ArtifactPanel extends Component
 {
-    public $isOpen = false;
-    public $currentArtifact = null;
-    public $artifacts = [];
-    public $copied = false;
-    public $activeTab = 'code'; // 'code' or 'preview'
-    public $versions = [];
-    public $fullscreen = false;
-    public $searchQuery = '';
+    /** Comes from ChatLayout. Null = panel hidden. Int = id of the open artifact. */
+    #[Reactive]
+    public ?int $openArtifactId = null;
+
+    public $currentArtifact = null;        // metadata only (no content) for the open artifact
+    public array $artifacts = [];          // lightweight list for the grid
+    public bool $copied = false;
+    public string $activeTab = 'code';     // 'code' or 'preview'
+    public array $versions = [];
+    public bool $fullscreen = false;
+    public string $searchQuery = '';
 
     public function mount()
     {
         $this->loadArtifacts();
+        if ($this->openArtifactId) {
+            $this->loadCurrentArtifact($this->openArtifactId);
+        }
+    }
+
+    /**
+     * Reactive prop changed (parent set/cleared `openArtifactId`). Sync the
+     * locally-cached `currentArtifact` accordingly. No event ping-pong: the
+     * parent already decided what's open.
+     */
+    public function updatedOpenArtifactId($value): void
+    {
+        $id = $value === null || $value === '' ? null : (int) $value;
+        if ($id === null) {
+            $this->currentArtifact = null;
+            $this->versions = [];
+            return;
+        }
+        if ($id === 0) {
+            // Sentinel used by ChatLayout::showArtifactPanel() to make the panel
+            // visible for the unsaved "New artifact" form. createNewArtifact()
+            // already populated $currentArtifact in memory — do not clobber it.
+            return;
+        }
+        $this->loadCurrentArtifact($id);
     }
 
     /**
      * Load the lightweight artifact list for the grid. Deliberately omits the
      * (potentially huge) `content` column: it would otherwise be serialised into the
      * Livewire snapshot on every request — typing in search, switching tabs, etc. —
-     * which is the main source of lag. Full content is fetched on demand in
-     * openArtifact() / switchVersion().
+     * which is the main source of lag. Full content is fetched on demand by the
+     * computed `artifactContent`.
      */
     private function loadArtifacts(): void
     {
@@ -45,49 +87,52 @@ class ArtifactPanel extends Component
             ->toArray();
     }
 
+    /**
+     * Load metadata for a single artifact (ownership-checked). Content is
+     * read lazily by the computed `artifactContent` so toggling tabs/versions
+     * doesn't serialise the full body into the Livewire snapshot.
+     */
+    private function loadCurrentArtifact(int $id): void
+    {
+        $model = \App\Models\MessageArtifact::find($id);
+        if (! $model || ! $this->ownsArtifact($model)) {
+            $this->currentArtifact = null;
+            $this->versions = [];
+            return;
+        }
+        $array = $model->toArray();
+        unset($array['content']);
+        $this->currentArtifact = $array;
+        $this->loadVersions($id);
+    }
+
     public function generateTemplate($type)
     {
         $prompt = "Create a new artifact for: " . $type . ". Please generate a full, working example.";
         $this->dispatch('sendPromptFromArtifact', prompt: $prompt);
     }
 
-    #[On('openArtifact')]
-    public function showArtifact($artifact)
+    #[Computed]
+    public function artifactContent()
     {
-        // Only trust the id from the event payload: re-load the artifact from the DB
-        // with an ownership check so a spoofed browser event can't inject arbitrary
-        // content into the panel. A brand-new artifact (no id yet) is accepted inline.
-        $id = is_array($artifact) ? ($artifact['id'] ?? null) : null;
-
-        if ($id) {
-            $model = \App\Models\MessageArtifact::find($id);
-            if (! $model || ! $this->ownsArtifact($model)) {
-                return;
-            }
-            $this->currentArtifact = $model->toArray();
-            $this->loadVersions($id);
-        } else {
-            $this->currentArtifact = is_array($artifact) ? $artifact : null;
+        if ($this->openArtifactId) {
+            return \App\Models\MessageArtifact::where('id', $this->openArtifactId)->value('content') ?? '';
         }
-
-        $this->isOpen = true;
-        $this->loadArtifacts();
-        $this->dispatch('showArtifactPanel');
+        return $this->currentArtifact['content'] ?? '';
     }
 
+    /**
+     * Open an artifact from the grid. We don't mutate `openArtifactId` here
+     * (it's reactive from the parent); we bubble an `openArtifact` event up so
+     * ChatLayout becomes the single mutator of that state.
+     */
     public function openArtifact($id)
     {
-        // Always load full content fresh from the DB (the list omits it) and verify
-        // ownership before exposing the artifact.
         $model = \App\Models\MessageArtifact::find($id);
         if (! $model || ! $this->ownsArtifact($model)) {
             return;
         }
-
-        $this->currentArtifact = $model->toArray();
-        $this->isOpen = true;
-        $this->loadVersions($id);
-        $this->dispatch('showArtifactPanel');
+        $this->dispatch('openArtifact', id: (int) $id);
     }
 
     public function loadVersions($id)
@@ -101,7 +146,7 @@ class ArtifactPanel extends Component
             $allVersions = \App\Models\MessageArtifact::where('identifier', $model->identifier)
                 ->orderBy('created_at', 'asc')
                 ->get();
-                
+
             foreach ($allVersions as $index => $v) {
                 $this->versions[] = [
                     'id' => $v->id,
@@ -114,14 +159,13 @@ class ArtifactPanel extends Component
 
     /**
      * Load a specific version of the currently open artifact (same identifier).
+     * Bubbles via the parent so the URL/state stays in sync.
      */
     public function switchVersion($id)
     {
         $model = \App\Models\MessageArtifact::find($id);
         if ($model && $this->ownsArtifact($model)) {
-            $this->currentArtifact = $model->toArray();
-            $this->isOpen = true;
-            $this->loadVersions($id);
+            $this->dispatch('openArtifact', id: (int) $id);
         }
     }
 
@@ -176,10 +220,9 @@ class ArtifactPanel extends Component
             ->exists();
     }
 
+    /** Close the open artifact — bubbles to the parent which owns the state. */
     public function closeArtifact()
     {
-        $this->isOpen = false;
-        $this->currentArtifact = null;
         $this->dispatch('closeArtifactPanel');
     }
 
@@ -190,10 +233,11 @@ class ArtifactPanel extends Component
             return;
         }
 
-        $this->ownedByIdentifier($model->identifier)->delete();
+        $identifier = $model->identifier;
+        $this->ownedByIdentifier($identifier)->delete();
         $this->loadArtifacts();
 
-        if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $model->identifier) {
+        if ($this->currentArtifact && isset($this->currentArtifact['identifier']) && $this->currentArtifact['identifier'] === $identifier) {
             $this->closeArtifact();
         }
     }
@@ -233,23 +277,27 @@ class ArtifactPanel extends Component
 
     public function createNewArtifact()
     {
+        // For brand-new artifacts (no id yet) we keep the current in-memory shape
+        // and rely on the parent's `openArtifactId` staying null. The view's
+        // `currentArtifact && language === 'new'` branch handles the empty state.
         $this->currentArtifact = [
             'id' => null,
             'title' => 'Untitled',
             'language' => 'new',
             'type' => 'new',
-            'content' => ''
+            'content' => '',
         ];
-        $this->isOpen = true;
-        $this->dispatch('showArtifactPanel'); // Custom event to ensure it opens in split screen
+        // Bubble a sentinel open with id=0 so the parent shows the panel; the
+        // updatedOpenArtifactId hook treats unknown ids as a no-op for current state.
+        // (We use the existing dispatch path so the URL/state still stays consistent.)
+        $this->dispatch('showArtifactPanel');
     }
+
 
     public function copyCode()
     {
         if ($this->currentArtifact) {
-            // In a real app, this would use clipboard API via Alpine.js
-            $this->copied = true;
-            $this->dispatch('copyToClipboard', content: $this->currentArtifact['content']);
+            $this->dispatch('copyToClipboard', content: $this->artifactContent);
         }
     }
 
@@ -259,7 +307,9 @@ class ArtifactPanel extends Component
             return;
         }
 
-        $binary = app(\App\Services\PdfRenderer::class)->render($this->currentArtifact, $mode);
+        $artifactData = $this->currentArtifact;
+        $artifactData['content'] = $this->artifactContent;
+        $binary = app(\App\Services\PdfRenderer::class)->render($artifactData, $mode);
         $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'document') . '.pdf';
 
         return response()->streamDownload(function () use ($binary) {
@@ -273,7 +323,9 @@ class ArtifactPanel extends Component
             return;
         }
 
-        $binary = app(\App\Services\DocxRenderer::class)->render($this->currentArtifact, $mode);
+        $artifactData = $this->currentArtifact;
+        $artifactData['content'] = $this->artifactContent;
+        $binary = app(\App\Services\DocxRenderer::class)->render($artifactData, $mode);
         $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'document') . '.docx';
 
         return response()->streamDownload(function () use ($binary) {
@@ -289,7 +341,7 @@ class ArtifactPanel extends Component
 
         // Match the on-screen preview: strip the YAML front-matter so the .md is the
         // clean document body (same behaviour as the artifact preview blades).
-        $content = \App\Services\PdfRenderer::stripFrontMatter($this->currentArtifact['content'] ?? '');
+        $content = \App\Services\PdfRenderer::stripFrontMatter($this->artifactContent);
         $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'document') . '.md';
 
         return response()->streamDownload(function () use ($content) {
@@ -328,7 +380,7 @@ class ArtifactPanel extends Component
 
         $ext = $this->extensionForLanguage($this->currentArtifact['language'] ?? 'txt');
         $filename = \Illuminate\Support\Str::slug($this->currentArtifact['title'] ?: 'artifact') . '.' . $ext;
-        $content = $this->currentArtifact['content'] ?? '';
+        $content = $this->artifactContent;
 
         return response()->streamDownload(function () use ($content) {
             echo $content;
@@ -347,6 +399,16 @@ class ArtifactPanel extends Component
             return str_contains(strtolower($a['title'] ?? ''), $search)
                 || str_contains(strtolower($a['language'] ?? ''), $search);
         }));
+    }
+
+    /**
+     * Computed flag the view uses to decide between "show open artifact" and
+     * "show the grid". `currentArtifact` covers the brand-new (unsaved) case
+     * which has no `openArtifactId` but still wants the open layout.
+     */
+    public function getIsOpenProperty(): bool
+    {
+        return $this->openArtifactId !== null || $this->currentArtifact !== null;
     }
 
     public function render()

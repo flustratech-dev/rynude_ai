@@ -74,6 +74,87 @@
                         if (!_isCodePage) this.theme = newTheme;
                     }
                 }));
+
+                // Global PDF Viewer Component for Artifacts
+                Alpine.data('pdfViewer', (url) => ({
+                    url: url,
+                    loading: true,
+                    error: false,
+                    errorMsg: '',
+                    
+                    init() {
+                        this.loadPdfJs(() => {
+                            this.renderPdf();
+                        });
+                    },
+
+                    loadPdfJs(callback) {
+                        if (typeof window.pdfjsLib !== 'undefined') {
+                            callback();
+                            return;
+                        }
+                        if (window.pdfjsLoading) {
+                            document.addEventListener('pdfjs-loaded', callback, { once: true });
+                            return;
+                        }
+                        window.pdfjsLoading = true;
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                        script.onload = () => {
+                            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                            window.pdfjsLib.GlobalWorkerOptions.standardFontDataUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/';
+                            window.pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/';
+                            window.pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
+                            document.dispatchEvent(new Event('pdfjs-loaded'));
+                            callback();
+                        };
+                        document.head.appendChild(script);
+                    },
+                    
+                    async renderPdf() {
+                        try {
+                            const loadingTask = window.pdfjsLib.getDocument(this.url);
+                            const pdf = await loadingTask.promise;
+                            
+                            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                const page = await pdf.getPage(pageNum);
+                                
+                                // Calculate scale to match ~210mm width nicely on high DPI
+                                const viewport = page.getViewport({scale: 1.5});
+                                
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'w-full max-w-[210mm] mx-auto shadow-md bg-white border border-[#E5E5E5] dark:border-stone-700 relative overflow-hidden';
+                                
+                                const canvas = document.createElement('canvas');
+                                const context = canvas.getContext('2d');
+                                canvas.height = viewport.height;
+                                canvas.width = viewport.width;
+                                canvas.className = 'w-full h-auto block';
+                                
+                                wrapper.appendChild(canvas);
+                                this.$refs.container.appendChild(wrapper);
+                                
+                                const renderContext = {
+                                    canvasContext: context,
+                                    viewport: viewport
+                                };
+                                await page.render(renderContext).promise;
+                                
+                                // Hide loading spinner as soon as the first page is fully rendered
+                                if (pageNum === 1) {
+                                    this.loading = false;
+                                }
+                            }
+                            // Fallback if no pages (shouldn't happen)
+                            this.loading = false;
+                        } catch (err) {
+                            this.loading = false;
+                            this.error = true;
+                            this.errorMsg = 'Gagal memuat pratinjau: ' + err.message;
+                            console.error(err);
+                        }
+                    }
+                }));
             });
         </script>
     </head>

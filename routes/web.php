@@ -57,6 +57,50 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    Route::get('/artifact/{id}/preview.pdf', function ($id) {
+        $model = \App\Models\MessageArtifact::where('id', $id)->firstOrFail();
+
+        $userId = auth()->id();
+        $owns = \App\Models\MessageArtifact::where('id', $id)
+                ->whereHas('message.conversation', fn ($q) => $q->where('user_id', $userId))
+                ->exists();
+
+        if (!$owns) {
+            abort(403);
+        }
+
+        // Extract mode from front-matter if present
+        $mode = null;
+        if (preg_match('/^---\r?\n(.*?)\r?\n---/s', $model->content, $matches)) {
+            if (preg_match('/mode:\s*(skripsi|laporan|jurnal|document)/i', $matches[1], $m)) {
+                $mode = strtolower(trim($m[1]));
+            }
+        }
+
+        // Cache the rendered PDF for 1 hour, keyed by id + content hash + mode.
+        // mPDF takes 1-30s for academic documents; switching tabs in the artifact
+        // panel used to fire a fresh render every time. The hash key invalidates
+        // automatically when the artifact content changes.
+        $cacheKey = sprintf(
+            'artifact_pdf:%d:%s:%s',
+            $id,
+            md5((string) $model->content),
+            $mode ?? 'auto'
+        );
+
+        $binary = Cache::remember($cacheKey, 3600, function () use ($model, $mode) {
+            return app(\App\Services\PdfRenderer::class)->render($model->toArray(), $mode);
+        });
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="preview.pdf"',
+            // Browser-side hint: same id + same content == same bytes.
+            'Cache-Control' => 'private, max-age=300',
+            'ETag' => '"' . md5($cacheKey) . '"',
+        ]);
+    })->name('artifact.preview.pdf');
 });
 
 require __DIR__.'/auth.php';

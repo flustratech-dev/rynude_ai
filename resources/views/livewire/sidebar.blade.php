@@ -7,7 +7,7 @@
     <div x-show="open" x-cloak class="h-full flex flex-col" x-data="{ searchOpen: false }">
         {{-- Top Header --}}
         <div class="flex items-center justify-between px-3 py-2.5 mt-0.5">
-            <button @click="activePanel = null; artifactPanelOpen = false" wire:click="startNewChat()" class="font-serif text-[20px] font-semibold text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
+            <button @click="activePanel = null; Livewire.dispatch('closeArtifactPanel')" wire:click="startNewChat()" class="font-serif text-[20px] font-semibold text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
             <div class="flex items-center gap-1">
                 <button
                     @click="searchOpen = !searchOpen; if(searchOpen) $nextTick(() => $refs.sidebarSearch?.focus())"
@@ -73,7 +73,7 @@
             </button>
             @endif
 
-            <button @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.startNewChat(), 10);" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
+            <button @click="activePanel = null; Livewire.dispatch('closeArtifactPanel'); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.startNewChat(), 10);" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
                 <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
                     <svg class="w-[18px] h-[18px] text-gray-500 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
@@ -83,7 +83,7 @@
             </button>
 
             <button
-                @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
+                @click="activePanel = activePanel === 'chats' ? null : 'chats'; Livewire.dispatch('closeArtifactPanel')"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
                 :class="activePanel === 'chats' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
             >
@@ -94,7 +94,7 @@
             </button>
 
             <button
-                @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
+                @click="activePanel = activePanel === 'projects' ? null : 'projects'; Livewire.dispatch('closeArtifactPanel')"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
                 :class="activePanel === 'projects' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
             >
@@ -106,7 +106,7 @@
             </button>
 
             <button
-                @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
+                @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; Livewire.dispatch('closeArtifactPanel')"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
                 :class="activePanel === 'artifacts' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
             >
@@ -119,7 +119,7 @@
             </button>
 
             <button
-                @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
+                @click="activePanel = activePanel === 'customize' ? null : 'customize'; Livewire.dispatch('closeArtifactPanel'); if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
                 :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50'"
             >
@@ -150,7 +150,7 @@
                 </a>
 
                 <button
-                    @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
+                    @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; Livewire.dispatch('closeArtifactPanel')"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
                     :class="activePanel === 'cowork' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
                 >
@@ -162,7 +162,7 @@
                 </button>
 
                 <button
-                    @click="activePanel = activePanel === 'design' ? null : 'design'; artifactPanelOpen = false"
+                    @click="activePanel = activePanel === 'design' ? null : 'design'; Livewire.dispatch('closeArtifactPanel')"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
                     :class="activePanel === 'design' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
                 >
@@ -182,7 +182,7 @@
         <div class="mt-4 px-2 flex-1 overflow-hidden flex flex-col">
             <div class="flex items-center justify-between px-2 py-1">
                 <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400">Recents</span>
-                <button @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
+                <button @click="activePanel = activePanel === 'chats' ? null : 'chats'; Livewire.dispatch('closeArtifactPanel')" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
                     <svg class="w-[14px] h-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
                     </svg>
@@ -194,7 +194,7 @@
                     @foreach($items as $conversation)
                         <div class="relative group flex items-center w-full rounded-lg transition-colors {{ $selectedConversation === $conversation['id'] ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200 hover:font-medium' }}">
                             <button
-                                @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.selectConversation({{ $conversation['id'] }}), 10);"
+                                @click="activePanel = null; Livewire.dispatch('closeArtifactPanel'); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.selectConversation({{ $conversation['id'] }}), 10);"
                                 class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
                             >
                                 {{ $conversation['title'] }}
@@ -461,7 +461,7 @@
         </button>
         @endif
 
-        <button @click="activePanel = null; artifactPanelOpen = false; if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.startNewChat(), 10);" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
+        <button @click="activePanel = null; Livewire.dispatch('closeArtifactPanel'); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; setTimeout(() => $wire.startNewChat(), 10);" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
             <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
                 <svg class="w-[20px] h-[20px] text-gray-500 dark:text-stone-400 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
@@ -472,7 +472,7 @@
         <div class="w-6 border-t border-gray-200 dark:border-stone-800 my-1"></div>
 
         <button
-            @click="activePanel = activePanel === 'chats' ? null : 'chats'; artifactPanelOpen = false"
+            @click="activePanel = activePanel === 'chats' ? null : 'chats'; Livewire.dispatch('closeArtifactPanel')"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'chats' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Chats"
@@ -483,7 +483,7 @@
         </button>
 
         <button
-            @click="activePanel = activePanel === 'projects' ? null : 'projects'; artifactPanelOpen = false"
+            @click="activePanel = activePanel === 'projects' ? null : 'projects'; Livewire.dispatch('closeArtifactPanel')"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'projects' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Projects"
@@ -495,7 +495,7 @@
         </button>
 
         <button
-            @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; artifactPanelOpen = false"
+            @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; Livewire.dispatch('closeArtifactPanel')"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'artifacts' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Artifacts"
@@ -508,7 +508,7 @@
         </button>
 
         <button
-            @click="activePanel = activePanel === 'customize' ? null : 'customize'; artifactPanelOpen = false; if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
+            @click="activePanel = activePanel === 'customize' ? null : 'customize'; Livewire.dispatch('closeArtifactPanel'); if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Customize"
@@ -533,7 +533,7 @@
         </a>
 
         <button
-            @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; artifactPanelOpen = false"
+            @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; Livewire.dispatch('closeArtifactPanel')"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
             :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Cowork"

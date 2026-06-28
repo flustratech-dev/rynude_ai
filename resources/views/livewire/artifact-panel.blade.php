@@ -1,5 +1,5 @@
 <div class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-stone-900 overflow-hidden shadow-2xl md:shadow-none {{ $fullscreen ? 'fixed inset-0 z-[60] !shadow-2xl' : '' }}">
-    @if($isOpen && $currentArtifact)
+    @if($this->isOpen && $currentArtifact)
         {{-- Panel Header --}}
         <div class="px-4 py-3 flex items-center justify-between bg-transparent shrink-0 z-10 relative">
             <div x-data="{ openMenu: false }" class="flex items-center gap-2 max-w-[50%] relative">
@@ -59,6 +59,13 @@
             {{-- Right: Actions --}}
             <div class="flex items-center gap-1.5">
                 @if($currentArtifact['language'] !== 'new')
+                    {{-- Global download indicator: any of the download actions fires
+                         a long-running server render (mPDF / PHPWord). Show a small
+                         spinner with text so the user knows we didn't freeze. --}}
+                    <div wire:loading wire:target="downloadAsPdf,downloadAsDocx,downloadAsFile,downloadAsMarkdown" class="flex items-center gap-1.5 px-2 text-[12px] text-[#D97757]">
+                        <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                        <span>Generating…</span>
+                    </div>
                     <button wire:click="copyCode" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300" title="Copy code">
                         @if($copied)
                             <svg class="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -117,9 +124,9 @@
                     <div class="w-px h-4 bg-[#E5E5E5] dark:bg-stone-700 mx-1 hidden md:block"></div>
                 @endif
                 
-                {{-- Close panel button --}}
+                {{-- Close panel button. Parent (ChatLayout) owns the open state;
+                     closeArtifact() dispatches `closeArtifactPanel` upstream. --}}
                 <button
-                    @click="artifactPanelOpen = false"
                     wire:click="closeArtifact"
                     class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 flex items-center justify-center hover:text-stone-800 dark:hover:text-stone-300"
                     title="Close"
@@ -182,7 +189,7 @@
                     </div>
                 </div>
             @else
-                <div class="flex-1 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-[1rem] shadow-sm overflow-hidden flex flex-col relative">
+                <div class="flex-1 overflow-hidden flex flex-col relative">
                 @if($activeTab === 'code')
                     {{-- Language indicator --}}
                     <div class="absolute top-0 right-0 px-3 py-1 bg-[#F3F2F1] dark:bg-stone-700 border-b border-l border-[#E5E5E5] dark:border-stone-700 rounded-bl-lg text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider z-10">
@@ -190,16 +197,16 @@
                     </div>
                     {{-- Code Area --}}
                     <div class="flex-1 overflow-auto bg-[#FBFBFA] dark:bg-stone-900 p-4 pt-8 text-[13px] leading-relaxed text-stone-800 dark:text-stone-200 font-mono" x-data x-init="$nextTick(() => { if (window.hljs) hljs.highlightAll(); })">
-                        <pre><code class="language-{{ $currentArtifact['language'] }}">{{ $currentArtifact['content'] }}</code></pre>
+                        <pre><code class="language-{{ $currentArtifact['language'] }}">{{ $this->artifactContent }}</code></pre>
                     </div>
                 @else
                     {{-- Preview Area --}}
-                    <div class="flex-1 overflow-auto bg-[#FAFAFA] dark:bg-stone-900 rounded-b-[1rem]">
+                    <div class="flex-1 overflow-auto bg-white dark:bg-stone-900">
                         @if($currentArtifact['language'] === 'html')
-                            <iframe sandbox="allow-scripts" srcdoc="{{ $currentArtifact['content'] }}" class="w-full h-full border-0 bg-white"></iframe>
+                            <iframe sandbox="allow-scripts" srcdoc="{{ $this->artifactContent }}" class="w-full h-full border-0 bg-white"></iframe>
                         @elseif($currentArtifact['language'] === 'react' || $currentArtifact['language'] === 'jsx' || $currentArtifact['language'] === 'tsx')
                             @php
-                            $reactHtml = '<!DOCTYPE html><html><head><meta charset="utf-8" /><script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div><script type="text/babel">'.$currentArtifact['content'].'
+                            $reactHtml = '<!DOCTYPE html><html><head><meta charset="utf-8" /><script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div><script type="text/babel">'.$this->artifactContent.'
                             const App = typeof window.App !== "undefined" ? window.App : (typeof App !== "undefined" ? App : (typeof Example !== "undefined" ? Example : () => <div>Component not found</div>));
                             const root = ReactDOM.createRoot(document.getElementById("root"));
                             root.render(<App />);</script></body></html>';
@@ -207,13 +214,28 @@
                             <iframe sandbox="allow-scripts" srcdoc="{{ $reactHtml }}" class="w-full h-full border-0 bg-white"></iframe>
                         @elseif($currentArtifact['language'] === 'svg')
                             <div class="flex items-center justify-center w-full h-full bg-white">
-                                {!! $currentArtifact['content'] !!}
+                                {!! $this->artifactContent !!}
                             </div>
-                        @elseif(in_array(strtolower($currentArtifact['language']), ['markdown', 'md']))
-                            <div class="p-4 md:p-8 bg-[#F3F2F1] dark:bg-stone-900 overflow-y-auto">
-                                <div class="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-stone-800 p-[15mm] md:p-[25mm] shadow-lg rounded-sm border border-[#E5E5E5] dark:border-stone-700">
-                                    <div class="prose prose-stone dark:prose-invert max-w-none w-full text-[16px] leading-[1.6] font-claude-response prose-p:mt-0 prose-p:mb-3 prose-p:pl-2 prose-p:pr-8 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline transition-colors prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-stone-800 prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2 text-[#0B0B0B] dark:text-stone-200" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;">
-                                        {!! \Illuminate\Support\Str::markdown(\App\Services\PdfRenderer::stripFrontMatter($currentArtifact['content'])) !!}
+                        @elseif(in_array(strtolower($currentArtifact['language']), ['markdown', 'md', 'pdf', 'document']))
+                            {{-- wire:ignore keeps the Alpine pdfViewer (and its rendered
+                                 canvases) alive across Livewire morphs. wire:key includes
+                                 the artifact id so a NEW artifact triggers a fresh mount,
+                                 while tab/search interactions leave it untouched. --}}
+                            <div wire:ignore wire:key="pdf-viewer-{{ $currentArtifact['id'] }}" class="h-full w-full overflow-y-auto custom-scrollbar bg-stone-100 dark:bg-stone-900" x-data="pdfViewer('{{ route('artifact.preview.pdf', ['id' => $currentArtifact['id']]) }}')">
+                                <div class="w-full min-h-full py-8 flex flex-col items-center">
+                                    <div x-ref="container" class="relative w-full max-w-[210mm] flex flex-col items-center gap-6">
+                                        {{-- Loading Spinner --}}
+                                        <div x-show="loading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-stone-900/80 z-10">
+                                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D97757]"></div>
+                                        </div>
+                                        {{-- Error Message --}}
+                                        <div x-show="error" class="p-6 bg-red-50 text-red-600 rounded-lg shadow-sm border border-red-200 mt-8">
+                                            <p class="font-medium flex items-center gap-2">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                Gagal memuat PDF
+                                            </p>
+                                            <p x-text="errorMsg" class="text-sm mt-1"></p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -228,10 +250,10 @@
                                 </div>
                             </div>
                         @else
-                            <div class="p-4 md:p-8 bg-[#F3F2F1] dark:bg-stone-900 overflow-y-auto">
-                                <div class="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-stone-800 p-[15mm] md:p-[25mm] shadow-lg rounded-sm border border-[#E5E5E5] dark:border-stone-700">
+                            <div class="p-4 md:p-8 overflow-y-auto bg-white dark:bg-stone-900 h-full">
+                                <div class="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white dark:bg-stone-900 p-[15mm] md:p-[25mm]">
                                     <div class="prose prose-stone dark:prose-invert max-w-none w-full text-[16px] leading-[1.6] font-claude-response prose-p:mt-0 prose-p:mb-3 prose-p:pl-2 prose-p:pr-8 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline transition-colors prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-stone-800 prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2 text-[#0B0B0B] dark:text-stone-200" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;">
-                                        {!! \Illuminate\Support\Str::markdown(\App\Services\PdfRenderer::stripFrontMatter($currentArtifact['content'])) !!}
+                                        {!! \Illuminate\Support\Str::markdown(\App\Services\PdfRenderer::stripFrontMatter($this->artifactContent)) !!}
                                     </div>
                                 </div>
                             </div>

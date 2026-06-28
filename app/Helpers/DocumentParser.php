@@ -8,9 +8,20 @@ class DocumentParser
 {
     public static function parseText($filePath, $mimeType = null, $fileName = null)
     {
-        $absolutePath = Storage::path($filePath);
+        // Attachments are uploaded via `->store('attachments', 'public')`, so the
+        // relative path is anchored to the `public` disk (storage/app/public/...),
+        // not the default `local` disk (storage/app/private/...). Resolving with
+        // Storage::path() — which uses the default disk — used to point at a
+        // non-existent file and silently return "", so PDFs reached the model
+        // as `[Attachment: name.pdf]` with no body and got ignored.
+        $absolutePath = Storage::disk('public')->path($filePath);
         if (!file_exists($absolutePath)) {
-            return "";
+            $fallback = Storage::path($filePath);
+            if (file_exists($fallback)) {
+                $absolutePath = $fallback;
+            } else {
+                return "";
+            }
         }
         
         $mimeType = $mimeType ?? mime_content_type($absolutePath);
