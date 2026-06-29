@@ -153,7 +153,7 @@ class DocxRenderer
                 $rest = preg_replace('/^\s*<h1\b[^>]*>.*?<\/h1>/is', '', $pengesahanHtml, 1);
                 $peng->addText(strtoupper($headingText), ['name' => $font, 'size' => $size + 2, 'bold' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 240]);
                 if (trim(strip_tags((string) $rest)) !== '') {
-                    Html::addHtml($peng, (string) $rest, false, false);
+                    Html::addHtml($peng, $this->sanitizeHtmlForPhpWord((string) $rest), false, false);
                 }
                 $idx++;
             }
@@ -192,7 +192,7 @@ class DocxRenderer
         } else {
             $section = $phpWord->addSection($this->sectionSettings($margins));
             $this->applyPageNumber($section, $pageNum, $font);
-            Html::addHtml($section, $bodyHtml, false, false);
+            Html::addHtml($section, $this->sanitizeHtmlForPhpWord($bodyHtml), false, false);
         }
 
         $output = $this->writeToString($phpWord);
@@ -353,6 +353,39 @@ class DocxRenderer
     }
 
     /**
+     * Sanitize HTML to be valid XML for PHPWord's parser. Converts self-closing
+     * tags like <br> to <br/>, ensures proper nesting, and removes malformed markup.
+     */
+    private function sanitizeHtmlForPhpWord(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        // Parse as HTML (permissive) then re-serialize as XHTML (strict)
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML(
+            '<?xml encoding="UTF-8"><body>' . $html . '</body>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+
+        $body = $dom->getElementsByTagName('body')->item(0);
+        if (!$body) {
+            return $html;
+        }
+
+        // Save as XML (not HTML) to get proper self-closing tags
+        $cleaned = '';
+        foreach ($body->childNodes as $node) {
+            $cleaned .= $dom->saveXML($node);
+        }
+
+        return $cleaned;
+    }
+
+    /**
      * Render the academic body block-by-block: headings (h1–h3) become real Title
      * elements so they feed the Table of Contents, while everything else is rendered
      * via the HTML helper. A page break precedes every BAB (h1) except the first —
@@ -370,7 +403,7 @@ class DocxRenderer
 
         $root = $dom->getElementById('__root');
         if (! $root) {
-            Html::addHtml($section, $bodyHtml, false, false);
+            Html::addHtml($section, $this->sanitizeHtmlForPhpWord($bodyHtml), false, false);
             return;
         }
 
@@ -396,7 +429,7 @@ class DocxRenderer
 
             $html = $dom->saveHTML($node);
             if (trim((string) $html) !== '') {
-                Html::addHtml($section, $html, false, false);
+                Html::addHtml($section, $this->sanitizeHtmlForPhpWord($html), false, false);
             }
         }
     }
