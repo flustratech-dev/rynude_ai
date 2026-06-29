@@ -182,70 +182,104 @@
 
     {{-- Active Chat --}}
     <template x-if="conversationId || messages.length > 0">
-        <div class="flex flex-col flex-1 overflow-hidden">
-            <div class="shrink-0 px-4 py-2 md:py-3 flex items-center border-b border-claude-border-light dark:border-claude-border-dark">
-                <button @click="openMemory()" type="button" class="flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#D97757] hover:bg-[#D97757]/5 rounded-lg transition-colors" title="Conversation memory">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 0 0-9 9c0 3.6 2.1 6.7 5.2 8.2.3 1.1 1.4 1.8 2.6 1.8h2.4c1.2 0 2.3-.7 2.6-1.8C18.9 17.7 21 14.6 21 11a9 9 0 0 0-9-9Z"/><path d="M9 21h6"/></svg>
-                    <span>Memory</span>
+        <div class="flex flex-col flex-1 overflow-hidden relative">
+            {{-- Floating conversation-memory button (Claude-style, top-right) --}}
+            <div class="absolute top-3 right-3 z-40">
+                <button @click="openMemory()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/80 dark:bg-stone-800/80 backdrop-blur-sm border border-claude-border-light dark:border-claude-border-dark rounded-full text-[12.5px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 shadow-sm transition-colors" title="Conversation memory">
+                    <svg class="w-3.5 h-3.5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a9 9 0 0 0-9 9c0 3.6 2.1 6.7 5.2 8.2.3 1.1 1.4 1.8 2.6 1.8h2.4c1.2 0 2.3-.7 2.6-1.8C18.9 17.7 21 14.6 21 11a9 9 0 0 0-9-9Z"/><path d="M9 21h6"/></svg>
+                    <span class="hidden sm:inline">Memory</span>
                 </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6" x-ref="messagesContainer">
-                <template x-for="(msg, idx) in messages" :key="'msg-' + idx">
-                    <div class="w-full mx-auto flex flex-col group/msg" :class="msg.role==='user'?'items-end':'items-start'">
-                        <div class="flex gap-3 max-w-[85%] md:max-w-[70%]" :class="msg.role==='user'?'flex-row-reverse':'flex-row'">
-                            <div :class="msg.role==='user'?'w-7 h-7 bg-[#D97757] text-white':'w-7 h-7 bg-stone-100 text-stone-500'" class="rounded-full flex items-center justify-center shrink-0 text-xs font-medium" x-text="msg.role==='user'?'U':'R'"></div>
-                            <div class="min-w-0">
-                                <template x-if="msg.role==='user'">
-                                    <div class="px-4 py-2.5 rounded-2xl bg-[#D97757] text-white text-[15px] leading-relaxed whitespace-pre-wrap break-words" x-text="msg.content"></div>
-                                </template>
-                                <template x-if="msg.role!=='user'">
-                                    <div class="px-4 py-2.5 rounded-2xl bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 text-[15px] leading-relaxed text-stone-800 dark:text-stone-200 break-words prose prose-stone dark:prose-invert max-w-none font-claude-response" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;" x-html="renderContent(msg.content)"></div>
-                                </template>
-                                <template x-if="msg.artifact">
-                                    <div @click="openArtifact(msg.artifact.id)" class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group">
-                                        <div class="w-8 h-8 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-stone-500 group-hover:text-[#D97757] transition-colors shrink-0">
-                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="msg.artifact.title"></div>
-                                            <div class="text-[11px] text-stone-400" x-text="msg.artifact.type"></div>
+            <div class="flex-1 overflow-y-auto" x-ref="messagesContainer" id="chat-scroll-container">
+                <div class="max-w-[42rem] mx-auto w-full py-4 md:py-6 px-3 md:px-4">
+                    <div class="space-y-1">
+                        <template x-for="(msg, idx) in messages" :key="'msg-' + idx">
+                            <div class="w-full mx-auto flex flex-col group/msg">
+                                {{-- User Message --}}
+                                <template x-if="msg.role === 'user'">
+                                    <div class="flex justify-end w-full">
+                                        <div class="flex flex-col items-end gap-2 max-w-[85%] md:max-w-[75%]">
+                                            <template x-if="msg.attachments && msg.attachments.length">
+                                                <div class="flex flex-wrap gap-2 justify-end w-full">
+                                                    <template x-for="(att, ai) in msg.attachments" :key="ai">
+                                                        <div class="relative bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm flex items-center gap-2 p-2.5" style="max-width: 200px;">
+                                                            <svg class="w-4 h-4 text-stone-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                                            <span class="text-xs text-stone-700 dark:text-stone-300 truncate" x-text="att.file_name || att.name"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="msg.content">
+                                                <div class="bg-stone-100 dark:bg-stone-800 border border-transparent text-stone-900 dark:text-stone-100 px-5 md:px-6 py-3 md:py-4 rounded-2xl md:rounded-3xl text-[15px] leading-relaxed break-words whitespace-pre-wrap w-full" x-text="msg.content"></div>
+                                            </template>
+                                            <div class="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
+                                                <button @click="navigator.clipboard.writeText(msg.content)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Copy">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                                </button>
+                                                <button @click="editMessage(idx)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Edit">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </template>
-                                <template x-if="msg.role!=='user'">
-                                    <div class="flex items-center gap-1 mt-1.5 px-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                                        <button @click="rateMessage(idx, 'up')" class="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-green-600 transition-colors" :class="msg.rating==='up'?'text-green-600':''">
-                                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-                                        </button>
-                                        <button @click="rateMessage(idx, 'down')" class="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-red-600 transition-colors" :class="msg.rating==='down'?'text-red-600':''">
-                                            <svg class="w-3.5 h-3.5 scale-y-[-1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-                                        </button>
-                                        <button @click="editMessage(idx)" class="p-1 rounded hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-600 transition-colors">
-                                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                        </button>
+
+                                {{-- Assistant Message --}}
+                                <template x-if="msg.role !== 'user'">
+                                    <div class="flex justify-start w-full gap-3 md:gap-4">
+                                        <div class="flex-shrink-0 mt-1">
+                                            <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757]" viewBox="0 0 100 100" fill="currentColor"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-stone-800 prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;" x-html="renderContent(msg.content)"></div>
+                                            <template x-if="msg.artifact">
+                                                <div @click="openArtifact(msg.artifact.id)" class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group not-prose">
+                                                    <div class="w-8 h-8 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-stone-500 group-hover:text-[#D97757] transition-colors shrink-0">
+                                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="msg.artifact.title"></div>
+                                                        <div class="text-[11px] text-stone-400" x-text="msg.artifact.type"></div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <div class="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 not-prose">
+                                                <button @click="navigator.clipboard.writeText(msg.content)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Copy">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                                </button>
+                                                <button @click="rateMessage(idx, 'up')" class="p-1.5 rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800" :class="msg.rating==='up'?'text-green-600':'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'" title="Good response">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14 9.5V5.25"/></svg>
+                                                </button>
+                                                <button @click="rateMessage(idx, 'down')" class="p-1.5 rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800" :class="msg.rating==='down'?'text-red-500':'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'" title="Bad response">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 15h2.25m8.024-9.75c.011.05.028.1.052.148.591 1.2.924 2.55.924 3.977a8.96 8.96 0 01-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398C20.613 14.547 19.833 15 19 15h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 00.303-.54m.023-8.25H16.48a4.5 4.5 0 01-1.423-.23l-3.114-1.04a4.5 4.5 0 00-1.423-.23H6.504c-.618 0-1.217.247-1.605.729A11.95 11.95 0 002.25 12c0 .434.023.863.068 1.285C2.427 14.306 3.346 15 4.372 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 007.5 19.5a2.25 2.25 0 002.25 2.25.75.75 0 00.75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 002.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
+                        </template>
+
+                        {{-- Streaming indicator --}}
+                        <div x-show="streaming" x-cloak class="flex justify-start w-full gap-3 md:gap-4 mt-1">
+                            <div class="flex-shrink-0 mt-1">
+                                <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757] animate-spin" viewBox="0 0 100 100" fill="currentColor"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[13px] text-[#D97757] font-medium mb-1">Rynude is thinking…</div>
+                                <div x-html="parseStreamContent(streamContent)" class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-stone-800 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;"></div>
+                            </div>
+                        </div>
+
+                        {{-- Stop button --}}
+                        <div x-show="streaming" x-cloak class="mt-4 flex justify-center w-full">
+                            <button @click="stopGeneration()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/></svg>
+                                Stop generating
+                            </button>
                         </div>
                     </div>
-                </template>
-
-                {{-- Streaming indicator --}}
-                <div x-show="streaming" class="w-full max-w-[42rem] mx-auto flex flex-col py-0.5 md:py-1 px-2 md:px-4 mt-1">
-                    <div class="flex items-center gap-2 text-[13px] text-stone-500">
-                        <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
-                        <span>Rynude is thinking...</span>
-                    </div>
-                    <div x-html="parseStreamContent(streamContent)" class="prose prose-stone dark:prose-invert max-w-none mt-2 font-claude-response" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;"></div>
-                </div>
-
-                {{-- Stop button --}}
-                <div x-show="streaming" class="flex justify-center">
-                    <button @click="stopGeneration()" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-sm hover:shadow-md text-[13px] font-medium text-stone-700 dark:text-stone-300 transition-all">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                        Stop generating
-                    </button>
                 </div>
             </div>
 

@@ -46,7 +46,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
 
-                <div x-show="flashMessage" x-init="setTimeout(() => flashMessage = null, 3000)" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType === 'success' ? 'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700' : 'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+                <div x-show="flashMessage" x-cloak x-effect="if (flashMessage) { clearTimeout($data._flashTimer); $data._flashTimer = setTimeout(() => flashMessage = null, 3000); }" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType === 'success' ? 'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700' : 'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
 
                 {{-- General tab --}}
                 <div x-show="activeTab === 'general'" x-transition>
@@ -544,6 +544,7 @@
         <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" @click="isModelModalOpen = false"></div>
         <div class="bg-white dark:bg-stone-900 border border-claude-border-light dark:border-claude-border-dark w-full max-w-md rounded-xl p-6 shadow-2xl relative z-10">
             <h3 class="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4" x-text="editModelId ? 'Edit AI Model' : 'Add AI Model'"></h3>
+            <div x-show="modelError" x-cloak class="mb-4 p-3 text-sm rounded-lg border text-red-800 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-900/40" x-text="modelError"></div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Code</label>
@@ -571,7 +572,7 @@
             </div>
             <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-stone-100 dark:border-stone-800">
                 <button @click="isModelModalOpen = false" class="px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">Cancel</button>
-                <button @click="storeModel()" class="px-4 py-1.5 text-sm text-white bg-[#D97757] hover:bg-[#c66547] rounded-lg">Save</button>
+                <button @click="storeModel()" :disabled="modelSaving" class="px-4 py-1.5 text-sm text-white bg-[#D97757] hover:bg-[#c66547] rounded-lg disabled:opacity-60 disabled:cursor-not-allowed" x-text="modelSaving ? 'Saving...' : 'Save'">Save</button>
             </div>
         </div>
     </div>
@@ -590,7 +591,7 @@ function settingsState() {
         accentColors: ['#D97757','#5E72E4','#11998E','#E0529C','#F5A623','#8B5CF6'],
 
         // Custom models dialog states
-        isModelModalOpen: false, editModelId: null, modelCode: '', modelName: '', modelIsActive: true, modelProvider: 'huggingface',
+        isModelModalOpen: false, editModelId: null, modelCode: '', modelName: '', modelIsActive: true, modelProvider: 'huggingface', modelError: null, modelSaving: false,
 
         navItems: [
             {id:'general',label:'General',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z\"></path><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"></path>'},
@@ -741,6 +742,8 @@ function settingsState() {
             this.modelName = '';
             this.modelIsActive = true;
             this.modelProvider = 'huggingface';
+            this.modelError = null;
+            this.modelSaving = false;
             this.isModelModalOpen = true;
         },
 
@@ -750,6 +753,8 @@ function settingsState() {
             this.modelName = '';
             this.modelIsActive = true;
             this.modelProvider = 'huggingface';
+            this.modelError = null;
+            this.modelSaving = false;
             this.isModelModalOpen = true;
         },
 
@@ -759,21 +764,59 @@ function settingsState() {
             this.modelName = model.name;
             this.modelIsActive = model.is_active;
             this.modelProvider = model.provider || 'huggingface';
+            this.modelError = null;
+            this.modelSaving = false;
             this.isModelModalOpen = true;
         },
 
         storeModel: function() {
             var self = this;
-            this._patch({
-                _action: 'store_model',
-                model_id: this.editModelId,
-                model_code: this.modelCode,
-                model_name: this.modelName,
-                model_provider: this.modelProvider,
-                model_is_active: this.modelIsActive
-            }).then(function() {
-                self.isModelModalOpen = false;
-                self.loadSettings();
+            this.modelError = null;
+
+            // Client-side guard so the user gets immediate feedback instead of a
+            // silent server-side validation rejection.
+            if (!this.modelCode.trim()) { this.modelError = 'Model Code is required.'; return; }
+            if (!this.modelName.trim()) { this.modelError = 'Model Name is required.'; return; }
+
+            this.modelSaving = true;
+            fetch('/api/settings', {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({
+                    _action: 'store_model',
+                    model_id: this.editModelId,
+                    model_code: this.modelCode.trim(),
+                    model_name: this.modelName.trim(),
+                    model_provider: this.modelProvider,
+                    model_is_active: this.modelIsActive
+                })
+            }).then(function(r) {
+                return r.json().catch(function(){ return {}; }).then(function(data) {
+                    return { status: r.status, ok: r.ok, data: data };
+                });
+            }).then(function(res) {
+                self.modelSaving = false;
+                if (res.ok) {
+                    // Success: refresh the list from the fresh payload and close.
+                    if (res.data && res.data.ai_models) self.aiModels = res.data.ai_models;
+                    self.isModelModalOpen = false;
+                    self.flashMessage = self.editModelId ? 'Model updated successfully!' : 'Model added successfully!';
+                    self.flashType = 'success';
+                    self.loadSettings();
+                    return;
+                }
+                // Surface the server error and keep the modal open.
+                if (res.status === 422 && res.data && res.data.errors) {
+                    var firstKey = Object.keys(res.data.errors)[0];
+                    self.modelError = res.data.errors[firstKey][0];
+                } else if (res.status === 419) {
+                    self.modelError = 'Your session expired. Please refresh the page and try again.';
+                } else {
+                    self.modelError = (res.data && res.data.message) ? res.data.message : 'Failed to save model. Please try again.';
+                }
+            }).catch(function() {
+                self.modelSaving = false;
+                self.modelError = 'Network error. Please check your connection and try again.';
             });
         },
 
