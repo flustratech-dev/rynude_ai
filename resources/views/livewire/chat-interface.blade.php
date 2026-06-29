@@ -61,20 +61,17 @@
     <template x-if="!conversationId && messages.length === 0">
         <div class="flex-1 flex flex-col justify-center items-center px-4 -mt-16 md:-mt-32">
             <div class="text-center mb-8">
-                <div class="flex items-center justify-center gap-3 md:gap-4">
-                    <svg viewBox="0 0 100 100" class="w-8 h-8 md:w-10 md:h-10 text-[#D97757] fill-current shrink-0" xmlns="http://www.w3.org/2000/svg"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
-                    <h1 class="font-claude-response text-[#2D2825] dark:text-[#E8E8E6] tracking-tight" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif; font-size:clamp(1.875rem,1.2rem+2vw,2.5rem);line-height:1.5;" x-text="'Welcome back, ' + userName"></h1>
-                </div>
+                <h1 class="font-claude-response text-[#2D2825] dark:text-[#E8E8E6] tracking-tight text-center" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif; font-size:clamp(2rem,1.5rem+2.5vw,3rem); font-weight: 500; line-height:1.3;" x-text="greeting"></h1>
             </div>
 
-            <div class="w-full max-w-full md:max-w-[42rem] mx-auto">
+            <div class="w-full max-w-full md:max-w-[48rem] mx-auto">
                 <form @submit.prevent="sendMessage()">
-                    <div class="relative w-full mx-auto bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-2xl md:rounded-3xl shadow-md flex flex-col focus-within:shadow-lg focus-within:border-claude-accent/50 dark:focus-within:border-claude-accent/50 animate-smooth transition-all duration-200">
+                    <div class="relative w-full mx-auto bg-white dark:bg-stone-850 border border-claude-border-light dark:border-claude-border-dark rounded-2xl md:rounded-3xl shadow-sm flex flex-col focus-within:shadow-md focus-within:border-claude-accent/30 dark:focus-within:border-claude-accent/30 animate-smooth transition-all duration-200">
                         <div x-show="uploading" class="px-4 pt-4 pb-2 flex items-center gap-3">
                             <div class="w-16 h-16 rounded-xl border border-claude-border-light dark:border-claude-border-dark bg-stone-50 dark:bg-stone-900 flex items-center justify-center">
                                 <svg class="animate-spin w-6 h-6 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
                             </div>
-                            <div><p class="text-[14px] font-medium text-stone-700 dark:text-stone-300">Uploading...</p><p class="text-[12px] text-stone-400 dark:text-stone-500">Processing your files</p></div>
+                            <div><p class="text-[14px] font-medium text-stone-700 dark:text-stone-300">Uploading...</p><p class="text-[12px] text-stone-400 dark:text-stone-550">Processing your files</p></div>
                         </div>
                         <div x-show="!uploading && attachments.length > 0" class="px-4 pt-4 pb-2 flex flex-wrap items-center gap-3">
                             <template x-for="(att, idx) in attachments" :key="idx">
@@ -93,7 +90,7 @@
                             rows="1"
                             class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[52px] max-h-48 overflow-y-auto"
                             placeholder="How can I help you today?"></textarea>
-
+ 
                         <div class="flex items-center justify-between w-full mt-4 pb-1">
                             <div class="relative">
                                 <button type="button" @click="$refs.fileInput.click()" class="p-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center">
@@ -158,22 +155,22 @@
                         </div>
                     </div>
                 </form>
-
+ 
                 <div class="flex items-center flex-wrap justify-center gap-2 mt-6">
-                    <button @click="prompt='Write a '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light border border-claude-border-light rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Write
+                    <button @click="prompt='Write a '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3.5 py-1.5 bg-transparent border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-500 dark:text-stone-400 hover:bg-[#F3F2F1] dark:hover:bg-stone-800/40 hover:text-stone-850 dark:hover:text-stone-200 hover:border-stone-400 dark:hover:border-stone-600 transition-colors duration-150">
+                        <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Write
                     </button>
-                    <button @click="prompt='Explain '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light border border-claude-border-light rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Explain
+                    <button @click="prompt='Explain '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3.5 py-1.5 bg-transparent border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-500 dark:text-stone-400 hover:bg-[#F3F2F1] dark:hover:bg-stone-800/40 hover:text-stone-850 dark:hover:text-stone-200 hover:border-stone-400 dark:hover:border-stone-600 transition-colors duration-150">
+                        <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Explain
                     </button>
-                    <button @click="prompt='Write code to '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light border border-claude-border-light rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code
+                    <button @click="prompt='Write code to '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3.5 py-1.5 bg-transparent border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-500 dark:text-stone-400 hover:bg-[#F3F2F1] dark:hover:bg-stone-800/40 hover:text-stone-850 dark:hover:text-stone-200 hover:border-stone-400 dark:hover:border-stone-600 transition-colors duration-150">
+                        <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code
                     </button>
-                    <button @click="prompt='Give me advice on '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light border border-claude-border-light rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>Advice
+                    <button @click="prompt='Give me advice on '; $refs.chatInput.focus()" class="flex items-center gap-2 px-3.5 py-1.5 bg-transparent border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-500 dark:text-stone-400 hover:bg-[#F3F2F1] dark:hover:bg-stone-800/40 hover:text-stone-850 dark:hover:text-stone-200 hover:border-stone-400 dark:hover:border-stone-600 transition-colors duration-150">
+                        <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>Advice
                     </button>
-                    <button @click="sendSurpriseMessage()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light border border-claude-border-light rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Surprise me
+                    <button @click="sendSurpriseMessage()" class="flex items-center gap-2 px-3.5 py-1.5 bg-transparent border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-500 dark:text-stone-400 hover:bg-[#F3F2F1] dark:hover:bg-stone-800/40 hover:text-stone-850 dark:hover:text-stone-200 hover:border-stone-400 dark:hover:border-stone-600 transition-colors duration-150">
+                        <svg class="w-4 h-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Surprise me
                     </button>
                 </div>
             </div>
@@ -379,7 +376,7 @@ function chatInterfaceState() {
         showMemory: false,
         memoryDraft: '',
         memoryUpdatedAt: null,
-        selectedModel: 'claude-haiku-4-5',
+        selectedModel: localStorage.getItem('rynude_selected_model') || 'claude-haiku-4-5',
         models: [],
         moreModels: [],
         sending: false,
@@ -400,9 +397,29 @@ function chatInterfaceState() {
             return m ? m.name : 'Select Model';
         },
 
+        get greeting() {
+            var hour = new Date().getHours();
+            var greet = 'Good evening';
+            if (hour >= 5 && hour < 12) {
+                greet = 'Good morning';
+            } else if (hour >= 12 && hour < 17) {
+                greet = 'Good afternoon';
+            }
+            var name = this.userName ? this.userName.trim().split(' ')[0] : '';
+            return name ? (greet + ', ' + name) : greet;
+        },
+
         init: function() {
             var self = this;
             this.userName = document.querySelector('meta[name=user-name]')?.content || '';
+
+            // Persist model selection to localStorage
+            this.$watch('selectedModel', function(value) {
+                if (value) {
+                    localStorage.setItem('rynude_selected_model', value);
+                }
+            });
+
             this.loadModels();
 
             // Load conversation from URL on initial page load
@@ -452,8 +469,10 @@ function chatInterfaceState() {
                 });
         },
 
-        loadConversation: function(id) {
-            this.loading = true;
+        loadConversation: function(id, silent) {
+            if (!silent) {
+                this.loading = true;
+            }
             var self = this;
             fetch('/api/chats/' + id, {headers:{'Accept':'application/json'}})
                 .then(function(r){return r.json()})
@@ -465,14 +484,20 @@ function chatInterfaceState() {
                         self.streamContent = '';
                         self.streaming = false;
                     }
-                    self.loading = false;
+                    if (!silent) {
+                        self.loading = false;
+                    }
                     // Scroll to bottom after render
                     setTimeout(function() {
                         var container = document.querySelector('[x-ref="messagesContainer"]');
                         if (container) container.scrollTop = container.scrollHeight;
                     }, 50);
                 })
-                .catch(function(){self.loading=false;});
+                .catch(function(){
+                    if (!silent) {
+                        self.loading = false;
+                    }
+                });
         },
 
         loadConversations: function() {
@@ -552,7 +577,7 @@ function chatInterfaceState() {
                             self.streaming = false;
                             self.sending = false;
                             if (self.conversationId) {
-                                self.loadConversation(self.conversationId);
+                                self.loadConversation(self.conversationId, true);
                             }
                             return;
                         }
@@ -666,7 +691,7 @@ function chatInterfaceState() {
         },
 
         openArtifact: function(id) {
-            window.dispatchEvent(new CustomEvent('openArtifact', {detail:{id:id}}));
+            window.dispatchEvent(new CustomEvent('open-artifact', {detail:{id:id}}));
         },
 
         rateMessage: function(idx, rating) {

@@ -57,7 +57,7 @@
             if (e.key === 'Escape') {
                 if (this.shortcutsOpen) { this.shortcutsOpen = false; return; }
                 if (this.artifactPanelOpen || this.activePanel === 'artifacts') {
-                    if (this.artifactPanelOpen) { window.dispatchEvent(new CustomEvent('closeArtifactPanel')); }
+                    if (this.artifactPanelOpen) { window.dispatchEvent(new CustomEvent('close-artifact-panel')); }
                     if (this.activePanel === 'artifacts') this.activePanel = null;
                     return;
                 }
@@ -70,7 +70,7 @@
             if (e.key.toLowerCase() === 'k' && !e.shiftKey) {
                 e.preventDefault();
                 this.activePanel = null;
-                window.dispatchEvent(new CustomEvent('closeArtifactPanel'));
+                window.dispatchEvent(new CustomEvent('close-artifact-panel'));
                 window.location.href = '/chat';
                 return;
             }

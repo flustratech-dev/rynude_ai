@@ -151,6 +151,60 @@ class ArtifactApiController extends ApiController
         return response()->streamDownload(function () use ($artifact) { echo $artifact->content ?? ''; }, $filename, ['Content-Type' => 'text/plain; charset=utf-8']);
     }
 
+    public function downloadDocx(Request $request, MessageArtifact $artifact)
+    {
+        $this->authorizeOwnership($artifact);
+        
+        $mode = $request->query('mode');
+        if (!$mode && preg_match('/^---\r?\n(.*?)\r?\n---/s', $artifact->content, $matches)) {
+            if (preg_match('/mode:\s*(skripsi|laporan|jurnal|document)/i', $matches[1], $m)) {
+                $mode = strtolower(trim($m[1]));
+            }
+        }
+        
+        $data = $artifact->toArray();
+        $binary = app(\App\Services\DocxRenderer::class)->render($data, $mode);
+        $filename = Str::slug($artifact->title ?: 'document') . '.docx';
+        return response()->streamDownload(
+            function () use ($binary) { echo $binary; },
+            $filename,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+        );
+    }
+
+    public function downloadTxt(MessageArtifact $artifact)
+    {
+        $this->authorizeOwnership($artifact);
+        $content = PdfRenderer::stripFrontMatter($artifact->content ?? '');
+        $filename = Str::slug($artifact->title ?: 'document') . '.txt';
+        return response()->streamDownload(
+            function () use ($content) { echo $content; },
+            $filename,
+            ['Content-Type' => 'text/plain; charset=utf-8']
+        );
+    }
+
+    public function downloadHtml(Request $request, MessageArtifact $artifact)
+    {
+        $this->authorizeOwnership($artifact);
+        
+        $mode = $request->query('mode');
+        if (!$mode && preg_match('/^---\r?\n(.*?)\r?\n---/s', $artifact->content, $matches)) {
+            if (preg_match('/mode:\s*(skripsi|laporan|jurnal|document)/i', $matches[1], $m)) {
+                $mode = strtolower(trim($m[1]));
+            }
+        }
+        
+        $data = $artifact->toArray();
+        $html = app(PdfRenderer::class)->renderHtml($data, $mode);
+        $filename = Str::slug($artifact->title ?: 'document') . '.html';
+        return response()->streamDownload(
+            function () use ($html) { echo $html; },
+            $filename,
+            ['Content-Type' => 'text/html; charset=utf-8']
+        );
+    }
+
     private function extensionForLanguage(string $language): string
     {
         $map = ['html'=>'html','javascript'=>'js','js'=>'js','jsx'=>'jsx','typescript'=>'ts','ts'=>'ts','tsx'=>'tsx','react'=>'jsx','python'=>'py','py'=>'py','php'=>'php','css'=>'css','json'=>'json','markdown'=>'md','md'=>'md','svg'=>'svg','sql'=>'sql','java'=>'java','go'=>'go','rust'=>'rs','ruby'=>'rb','c'=>'c','cpp'=>'cpp','csharp'=>'cs','bash'=>'sh','shell'=>'sh','yaml'=>'yaml','xml'=>'xml'];

@@ -47,8 +47,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('artifacts/{artifact}', [ArtifactApiController::class, 'update'])->name('artifacts.update');
     Route::delete('artifacts/{artifact}', [ArtifactApiController::class, 'destroy'])->name('artifacts.destroy');
     Route::get('artifacts/{artifact}/download/pdf', [ArtifactApiController::class, 'downloadPdf'])->name('artifacts.download.pdf');
+    Route::get('artifacts/{artifact}/download/docx', [ArtifactApiController::class, 'downloadDocx'])->name('artifacts.download.docx');
     Route::get('artifacts/{artifact}/download/markdown', [ArtifactApiController::class, 'downloadMarkdown'])->name('artifacts.download.markdown');
     Route::get('artifacts/{artifact}/download/file', [ArtifactApiController::class, 'downloadFile'])->name('artifacts.download.file');
+    Route::get('artifacts/{artifact}/download/txt', [ArtifactApiController::class, 'downloadTxt'])->name('artifacts.download.txt');
+    Route::get('artifacts/{artifact}/download/html', [ArtifactApiController::class, 'downloadHtml'])->name('artifacts.download.html');
 
     // ── Cowork tasks ────────────────────────────────────────────────────
     Route::get('tasks', [CoworkApiController::class, 'index'])->name('tasks.index');

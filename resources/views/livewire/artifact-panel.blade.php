@@ -62,18 +62,21 @@
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                     <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </button>
-                                <div x-show="openDl" x-cloak x-transition.opacity.duration.200ms class="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-50">
-                                    <button @click="openDl = false; downloadFile()" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> Download as file
-                                    </button>
+                                <div x-show="openDl" x-cloak x-transition.opacity.duration.200ms class="absolute top-full right-0 mt-1 w-52 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-50">
                                     <button @click="openDl = false; downloadPdf()" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg> Download as PDF
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg> PDF
                                     </button>
-                                    <button @click="openDl = false; downloadPdf('jurnal')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Jurnal PDF
+                                    <button @click="openDl = false; downloadDocx()" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> DOCX
                                     </button>
                                     <button @click="openDl = false; downloadMarkdown()" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy all
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg> Markdown
+                                    </button>
+                                    <button @click="openDl = false; downloadTxt()" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line><line x1="12" y1="15" x2="12" y2="11"></line></svg> TXT
+                                    </button>
+                                    <button @click="openDl = false; downloadHtml()" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-stone-700 flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> HTML
                                     </button>
                                 </div>
                             </div>
@@ -134,9 +137,24 @@
                                 <template x-if="['html','svg','react','jsx','tsx'].includes(currentArtifact.language)">
                                     <iframe :srcdoc="previewContent" class="w-full h-full border-0 bg-white" sandbox="allow-scripts"></iframe>
                                 </template>
-                                <template x-if="['markdown','md','pdf','document'].includes(currentArtifact.language)">
-                                    <div class="h-full w-full overflow-y-auto bg-stone-100 dark:bg-stone-900 p-8">
-                                        <div class="prose prose-stone dark:prose-invert max-w-[210mm] mx-auto bg-white dark:bg-stone-900 p-[25mm] text-[16px] leading-[1.6]" x-html="markdownContent"></div>
+                                <template x-if="currentPdfArtifactId && ['markdown','md','pdf','document'].includes(currentArtifact.language)">
+                                    <div class="h-full w-full overflow-y-auto custom-scrollbar bg-stone-100 dark:bg-stone-900" x-data="pdfViewer('/artifact/' + currentPdfArtifactId + '/preview.pdf')">
+                                        <div class="w-full min-h-full py-8 flex flex-col items-center">
+                                            <div x-ref="container" class="relative w-full max-w-[210mm] flex flex-col items-center gap-6">
+                                                {{-- Loading Spinner --}}
+                                                <div x-show="loading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-stone-900/80 z-10">
+                                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D97757]"></div>
+                                                </div>
+                                                {{-- Error Message --}}
+                                                <div x-show="error" class="p-6 bg-red-50 text-red-600 rounded-lg shadow-sm border border-red-200 mt-8">
+                                                    <p class="font-medium flex items-center gap-2">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                        Gagal memuat PDF
+                                                    </p>
+                                                    <p x-text="errorMsg" class="text-sm mt-1"></p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                                 <template x-if="currentArtifact.type === 'code' && !['html','svg','react','jsx','tsx','markdown','md','pdf','document'].includes(currentArtifact.language)">
@@ -246,6 +264,7 @@
 function artifactPanelState() {
     return {
         currentArtifact: null,
+        currentPdfArtifactId: null,
         artifacts: [],
         filteredArtifacts: [],
         activeTab: 'code',
@@ -258,11 +277,15 @@ function artifactPanelState() {
 
         init: function() {
             this.loadArtifacts();
-            window.addEventListener('openArtifact', function(e) {
-                if (e.detail && e.detail.id) this.loadArtifact(e.detail.id);
+            window.addEventListener('open-artifact', function(e) {
+                if (e.detail && e.detail.id) {
+                    this.currentPdfArtifactId = null;
+                    this.loadArtifact(e.detail.id);
+                }
             }.bind(this));
-            window.addEventListener('closeArtifactPanel', function() {
+            window.addEventListener('close-artifact-panel', function() {
                 this.currentArtifact = null;
+                this.currentPdfArtifactId = null;
                 this.loadArtifacts();
             }.bind(this));
         },
@@ -289,6 +312,7 @@ function artifactPanelState() {
 
         loadArtifact: function(id) {
             this.loading = true;
+            this.currentPdfArtifactId = null;
             fetch('/api/artifacts/' + id, {headers:{'Accept':'application/json'}})
                 .then(function(r){return r.json()})
                 .then(function(resp){
@@ -296,6 +320,9 @@ function artifactPanelState() {
                         this.currentArtifact = resp.data;
                         this.versions = resp.data.versions || [];
                         this.activeTab = 'preview';
+                        this.$nextTick(function() {
+                            this.currentPdfArtifactId = resp.data.id;
+                        }.bind(this));
                     }
                     this.loading = false;
                 }.bind(this))
@@ -324,20 +351,22 @@ function artifactPanelState() {
         },
 
         openArtifact: function(id) {
-            window.dispatchEvent(new CustomEvent('openArtifact', {detail: {id: id}}));
+            window.dispatchEvent(new CustomEvent('open-artifact', {detail: {id: id}}));
             this.loadArtifact(id);
         },
 
         closeArtifact: function() {
             this.currentArtifact = null;
+            this.currentPdfArtifactId = null;
             this.versions = [];
-            window.dispatchEvent(new CustomEvent('closeArtifactPanel'));
+            window.dispatchEvent(new CustomEvent('close-artifact-panel'));
             this.loadArtifacts();
         },
 
         createNewArtifact: function() {
+            this.currentPdfArtifactId = null;
             this.currentArtifact = {id:null, title:'Untitled', language:'new', type:'new', content:''};
-            window.dispatchEvent(new CustomEvent('showArtifactPanel'));
+            window.dispatchEvent(new CustomEvent('show-artifact-panel'));
         },
 
         generateTemplate: function(type) {
@@ -346,6 +375,7 @@ function artifactPanelState() {
         },
 
         switchVersion: function(id) {
+            this.currentPdfArtifactId = null;
             this.loadArtifact(id);
         },
 
@@ -442,6 +472,27 @@ function artifactPanelState() {
             if (!this.currentArtifact || !this.currentArtifact.id) return;
             this.downloading = true;
             window.location.href = '/api/artifacts/' + this.currentArtifact.id + '/download/file';
+            setTimeout(function(){this.downloading = false;}.bind(this), 3000);
+        },
+
+        downloadDocx: function() {
+            if (!this.currentArtifact || !this.currentArtifact.id) return;
+            this.downloading = true;
+            window.location.href = '/api/artifacts/' + this.currentArtifact.id + '/download/docx';
+            setTimeout(function(){this.downloading = false;}.bind(this), 3000);
+        },
+
+        downloadTxt: function() {
+            if (!this.currentArtifact || !this.currentArtifact.id) return;
+            this.downloading = true;
+            window.location.href = '/api/artifacts/' + this.currentArtifact.id + '/download/txt';
+            setTimeout(function(){this.downloading = false;}.bind(this), 3000);
+        },
+
+        downloadHtml: function() {
+            if (!this.currentArtifact || !this.currentArtifact.id) return;
+            this.downloading = true;
+            window.location.href = '/api/artifacts/' + this.currentArtifact.id + '/download/html';
             setTimeout(function(){this.downloading = false;}.bind(this), 3000);
         },
 
