@@ -323,10 +323,24 @@ function artifactPanelState() {
                         this.$nextTick(function() {
                             this.currentPdfArtifactId = resp.data.id;
                         }.bind(this));
+
+                        // Jika ada data message terkait, buka chat-nya
+                        if (resp.data.message && resp.data.message.conversation_id) {
+                            console.log('[Artifact] Opening related chat, conversation_id:', resp.data.message.conversation_id);
+                            // Delay kecil untuk memastikan event listener siap
+                            setTimeout(function() {
+                                this.openRelatedChat(resp.data.message.conversation_id);
+                            }.bind(this), 100);
+                        } else {
+                            console.log('[Artifact] No related chat found for artifact', id);
+                        }
                     }
                     this.loading = false;
                 }.bind(this))
-                .catch(function(){this.loading=false;}.bind(this));
+                .catch(function(err){
+                    console.error('[Artifact] Error loading artifact:', err);
+                    this.loading=false;
+                }.bind(this));
         },
 
         get artifactContent() {
@@ -372,6 +386,15 @@ function artifactPanelState() {
         generateTemplate: function(type) {
             var prompt = "Create a new artifact for: " + type + ". Please generate a full, working example.";
             window.dispatchEvent(new CustomEvent('sendPromptFromArtifact', {detail: {prompt: prompt}}));
+        },
+
+        openRelatedChat: function(conversationId) {
+            // Dispatch event openChat yang sudah ada di sistem
+            // Event listener mengharapkan chatId, bukan conversationId
+            console.log('[Artifact] Dispatching openChat event with chatId:', conversationId);
+            window.dispatchEvent(new CustomEvent('openChat', {
+                detail: { chatId: conversationId }
+            }));
         },
 
         switchVersion: function(id) {

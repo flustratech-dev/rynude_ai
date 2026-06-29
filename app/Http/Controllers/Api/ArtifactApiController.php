@@ -75,6 +75,9 @@ class ArtifactApiController extends ApiController
     {
         $this->authorizeOwnership($artifact);
 
+        // Eager load relationship message dan conversation untuk data chat terkait
+        $artifact->load('message.conversation');
+
         return response()->json(['data' => $this->transform($artifact, withContent: true)]);
     }
 
@@ -286,6 +289,25 @@ class ArtifactApiController extends ApiController
             $data['content'] = $artifact->content;
             $data['outline'] = $artifact->outline_json ?? [];
             $data['versions'] = $this->versionsFor($artifact);
+
+            // Tambahkan data message terkait untuk menampilkan chat
+            if ($artifact->message) {
+                $data['message'] = [
+                    'id' => $artifact->message->id,
+                    'conversation_id' => $artifact->message->conversation_id,
+                    'role' => $artifact->message->role,
+                    'content' => $artifact->message->content,
+                    'created_at' => optional($artifact->message->created_at)->toIso8601String(),
+                ];
+
+                // Tambahkan data conversation jika ada
+                if ($artifact->message->conversation) {
+                    $data['message']['conversation'] = [
+                        'id' => $artifact->message->conversation->id,
+                        'title' => $artifact->message->conversation->title,
+                    ];
+                }
+            }
         }
 
         return $data;
