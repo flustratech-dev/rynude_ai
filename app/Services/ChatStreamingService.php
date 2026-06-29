@@ -331,10 +331,48 @@ class ChatStreamingService
             . "- Write a markdown artifact (language=\"markdown\"). The system renders it to a polished PDF or document for the user automatically.\n"
             . "- WARNING: The content inside the <antArtifact> block is exported directly to the final PDF/DOCX. DO NOT include any conversational text, meta-commentary, or formatting explanations (e.g., 'Berikut adalah laporannya...' or 'Penjelasan Format:') INSIDE the artifact. ALL conversational text MUST be placed OUTSIDE the <antArtifact> block.\n"
             . "- If the user asks you to continue a document (e.g., 'lanjut bab 2'), you MUST generate a NEW <antArtifact> block containing the continuation. DO NOT just reply with raw text.\n"
-            . "- Diagrams, flowcharts, charts: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X.Y Caption text</figcaption></figure>.\n"
-            . "- For FORMAL / ACADEMIC documents (skripsi, laporan, thesis): begin the artifact content with a YAML front-matter block to trigger the academic layout.\n"
-            . "- CAPTION & NUMBERING RULES: figure captions below (Gambar X.Y), table captions above (Tabel X.Y), numbered by chapter.\n"
-            . "- For casual/simple documents, OMIT the front-matter; the renderer applies a clean general layout.";
+            . "- If the user asks you to merge, combine, or join multiple attached documents, ACT AS AN INTELLIGENT EDITOR: do NOT just blindly copy-paste text. Clean up the text by removing redundant page numbers, repeating headers/footers, and fixing broken sentences across page breaks. Smooth out transitions between documents.\n"
+            . "- Diagrams, flowcharts, charts, org/structure figures: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Do NOT use ASCII diagrams or mermaid. Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X.Y Caption</figcaption></figure>. If the source text mentions a diagram but it's missing, creatively generate an SVG diagram to replace it!\n"
+            . "- To include an image the user uploaded, reference it with markdown: ![Keterangan](attachments/<filename>) using the path from the conversation; the renderer resolves local uploads automatically.\n"
+            . "- For FORMAL / ACADEMIC documents (skripsi, laporan, thesis): begin the artifact content with a YAML front-matter block to trigger the academic layout (cover page, automatic DAFTAR ISI / Table of Contents, Roman→Arabic page numbering, 4-3-3-3 cm margins, Times New Roman 12pt, justified). Use exactly this shape (omit fields you don't know):\n"
+            . "---\nmode: skripsi            # skripsi | laporan | jurnal | document\njudul: <full title>\npenulis: <author name>\nnim: <student id>\nprodi: <study program>\nfakultas: <faculty>\nuniversitas: <university>\nkota: <city>\ntahun: <year>\npembimbing: <advisor>\n---\n"
+            . "Then structure chapters as level-1 headings (# BAB I PENDAHULUAN, # BAB II …) — each # heading starts a new page — with ## and ### for sub-sections (## 1.1 Latar Belakang). Headings are collected into the Table of Contents automatically.\n"
+            . "- OPTIONAL FORMAT OVERRIDES: to mimic a specific format (e.g. a template the user uploaded or described), add any of these keys to the front-matter. Omit them to use the defaults (Times New Roman 12pt, 1.5 spacing, 4-3-3-3 cm, page number bottom-center):\n"
+            . "font: <Times New Roman | Arial | Courier>   # body font\nfont_size: <11 | 12>                        # in pt (8–20)\nline_spacing: <1 | 1.15 | 1.5 | 2>          # 1=single, 2=double\nalign: <justify | left>\nmargin_top: <cm>\nmargin_right: <cm>\nmargin_bottom: <cm>\nmargin_left: <cm>\npage_number: <bottom-center | bottom-right | top-right | top-center | none>\n"
+            . "- MATCHING AN UPLOADED TEMPLATE/EXAMPLE: if the user attaches or pastes a sample document (contoh/template) and asks you to follow its format, replicate BOTH its structure (chapter order, section/heading names, the exact cover fields and their labels, daftar isi style) AND its formatting (set the font/font_size/line_spacing/margins/page_number front-matter fields to match what the sample uses). The attachment is provided as extracted text, so infer the font/margins/spacing from what is stated or what is conventional for that institution, and reproduce the wording of section titles faithfully.\n"
+            . "\n--- CAPTION & NUMBERING RULES (WAJIB untuk semua dokumen akademik) ---\n"
+            . "- Penomoran gambar & tabel BERBASIS BAB: angka pertama = nomor bab. Contoh: Gambar 3.1, Tabel 2.4.\n"
+            . "- GAMBAR (termasuk diagram, grafik, flowchart, screenshot): caption diletakkan DI BAWAH gambar, rata tengah. Gunakan format: <figure>...<figcaption>Gambar X.Y Keterangan</figcaption></figure>.\n"
+            . "- TABEL: judul/caption diletakkan DI ATAS tabel, rata tengah. Gunakan format: <div class='table-caption'>Tabel X.Y Keterangan</div> diikuti <table>...</table>.\n"
+            . "- Setiap gambar/tabel WAJIB dirujuk dalam teks SEBELUM kemunculannya. Contoh: '…seperti ditunjukkan pada Gambar 3.1.' atau '…dapat dilihat pada Tabel 2.1.'\n"
+            . "\n--- BOLD & ITALIC RULES ---\n"
+            . "- Bold: HANYA untuk judul bab, sub-bab, dan sub-sub-bab (heading). JANGAN bold teks biasa.\n"
+            . "- Italic WAJIB untuk: istilah/kata asing yang BELUM diserap ke Bahasa Indonesia (contoh: *retrieval-augmented generation*, *prompt*, *dataset*, *framework*, *preprocessing*, *fine-tuning*, *overfitting*).\n"
+            . "- Istilah asing yang sudah baku/diserap ditulis TEGAK (tanpa italic): internet, data, online, server, file, software.\n"
+            . "\n--- KUTIPAN LANGSUNG ---\n"
+            . "- Kutipan langsung > 40 kata: gunakan blockquote (> ...) dengan 1 spasi, menjorok dari margin kiri. Sertakan sumber sitasi.\n"
+            . "- Kutipan langsung ≤ 40 kata: tulis inline dalam teks dengan tanda kutip.\n"
+            . "\n--- DAFTAR PUSTAKA (IEEE Style default) ---\n"
+            . "- Gunakan gaya IEEE: sitasi dalam teks berbentuk [1], [2], [3].\n"
+            . "- Daftar pustaka diurutkan sesuai urutan kemunculan dalam teks (BUKAN alfabetis).\n"
+            . "- Format entri IEEE: [n] Inisial. Nama, \"Judul artikel,\" *Nama Jurnal*, vol. X, no. Y, pp. A–B, Tahun.\n"
+            . "- Utamakan sumber 5 tahun terakhir & terindeks (jurnal, prosiding).\n"
+            . "- Bungkus seluruh daftar pustaka dalam <div class='daftar-pustaka'>...</div>.\n"
+            . "\n--- LAMPIRAN ---\n"
+            . "- Diletakkan di bagian akhir setelah Daftar Pustaka.\n"
+            . "- Penomoran: # LAMPIRAN A Judul, # LAMPIRAN B Judul, dst.\n"
+            . "- Isi: source code inti, kuesioner, hasil pengujian, surat izin, dsb.\n"
+            . "\n--- MODE JURNAL / ARTIKEL (mode: jurnal) ---\n"
+            . "- Untuk artikel jurnal ilmiah, gunakan front-matter dengan mode: jurnal.\n"
+            . "- Layout otomatis 2 kolom, font 10pt, 1 spasi.\n"
+            . "- Struktur: Abstrak → Pendahuluan → Metode → Hasil & Pembahasan → Kesimpulan → Referensi.\n"
+            . "- TIDAK ada cover page dan Daftar Isi.\n"
+            . "- Caption gambar/tabel ukuran lebih kecil (8–9pt).\n"
+            . "- Panjang ringkas: 6–15 halaman.\n"
+            . "- Abstrak ≤ 250 kata, disertai kata kunci.\n"
+            . "\n--- COMPLETENESS (WAJIB) ---\n"
+            . "- Saat user minta skripsi/dokumen FULL, tulis dokumen LENGKAP dalam SATU artifact — front-matter (cover), seluruh bab berurutan (BAB I sampai bab penutup), lalu DAFTAR PUSTAKA. DILARANG berhenti separuh, DILARANG menulis placeholder seperti '[lanjutan]', '...dan seterusnya', atau '(bab berikutnya menyusul)', dan DILARANG meringkas bab yang diminta ditulis penuh. Jika dokumen benar-benar terlalu panjang untuk selesai dalam satu respons, tulis sebanyak mungkin konten yang lengkap & rapi, AKHIRI artifact dengan bersih di batas bab (tutup tag </antArtifact>), lalu DI LUAR artifact beri tahu user untuk mengetik 'lanjut bab berikutnya'.\n"
+            . "- For casual/simple documents, OMIT the front-matter; the renderer applies a clean general layout. Choose academic vs. casual based on what the user actually asked for.";
     }
 
     /**
@@ -343,8 +381,8 @@ class ChatStreamingService
     protected function getResponsePrinciples(): string
     {
         return "\n\nResponse principles (apply to every answer):\n"
-            . "- For non-trivial questions, reason through the problem step by step before answering, then present a clear, well-structured response.\n"
-            . "- Accuracy first: if you are unsure or lack the information, say so plainly instead of inventing facts.\n"
+            . "- For non-trivial questions, reason through the problem step by step before answering, then present a clear, well-structured response (use short headings or lists when they aid clarity).\n"
+            . "- Accuracy first: if you are unsure or lack the information, say so plainly instead of inventing facts, and separate what you know from what you are inferring.\n"
             . "- When web search results are provided below, ground your answer in them and cite the relevant source titles or links inline.\n"
             . "- Stay consistent with the Persistent Conversation Memory below when it is present.\n"
             . "- Keep answers focused — concise for simple asks, thorough for complex ones — and match the user's language.";
@@ -419,7 +457,7 @@ class ChatStreamingService
         if ($requestedBab !== null) {
             $excerpt = $this->extractBab($artifact->content, $requestedBab);
             if ($excerpt !== null) {
-                $context .= "\nThe user referenced **BAB {$requestedBab}**. Verbatim contents:\n\n";
+                $context .= "\nThe user referenced **BAB {$requestedBab}**. Verbatim contents of that chapter from the active document (use this as the basis for your revision/continuation, do NOT ask the user what was there):\n\n";
                 $context .= "```markdown\n" . $excerpt . "\n```\n";
             }
         }
@@ -476,7 +514,7 @@ class ChatStreamingService
             return ($n >= 1 && $n <= 99) ? $n : null;
         }
 
-        static $rom = ['i' => 1, 'v' => 5, 'x' => 10, 'l' => 50, 'c' => 100];
+        static $rom = ['i' => 1, 'v' => 5, 'x' => 10, 'l' => 50, 'c' => 100, 'd' => 500, 'm' => 1000];
         $sum = 0;
         $len = strlen($token);
         for ($i = 0; $i < $len; $i++) {

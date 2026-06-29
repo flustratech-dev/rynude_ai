@@ -59,15 +59,16 @@
 
     {{-- Empty State --}}
     <template x-if="!conversationId && messages.length === 0">
-        <div class="flex-1 flex flex-col justify-center items-center px-4 -mt-16 md:-mt-32">
-            <div class="text-center mb-8">
-                <div class="flex items-center justify-center gap-3 md:gap-4">
-                    <svg viewBox="0 0 100 100" class="w-8 h-8 md:w-10 md:h-10 text-[#D97757] fill-current shrink-0" xmlns="http://www.w3.org/2000/svg"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
-                    <h1 class="font-claude-response text-[#2D2825] dark:text-[#E8E8E6] tracking-tight" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif; font-size:clamp(2rem,1.5rem+2.5vw,3rem); font-weight: 500; line-height:1.2;" x-text="'Welcome back, ' + userName"></h1>
+        <div class="flex-1 flex flex-col justify-center -mt-6 md:-mt-16">
+            <div class="w-full mx-auto px-4" style="max-width: 650px;">
+            <div class="text-center mb-10">
+                <div class="flex items-center justify-center gap-4">
+                    <svg viewBox="0 0 100 100" class="w-11 h-11 md:w-[52px] md:h-[52px] text-[#D97757] fill-current shrink-0" xmlns="http://www.w3.org/2000/svg"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
+                    <h1 class="font-claude-response text-[#2D2825] dark:text-[#E8E8E6]" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif; font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2rem); font-weight: 300; line-height: 1.2; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" x-text="userName ? 'Welcome back, ' + userName : 'Welcome back'"></h1>
                 </div>
             </div>
 
-            <div class="w-full max-w-full md:max-w-[48rem] mx-auto">
+            <div class="w-full">
                 <form @submit.prevent="sendMessage()">
                     <div class="relative w-full mx-auto bg-white dark:bg-stone-850 border border-claude-border-light dark:border-claude-border-dark rounded-2xl md:rounded-3xl shadow-sm flex flex-col focus-within:shadow-md focus-within:border-claude-accent/30 dark:focus-within:border-claude-accent/30 animate-smooth transition-all duration-200">
                         <div x-show="uploading" class="px-4 pt-4 pb-2 flex items-center gap-3">
@@ -95,10 +96,76 @@
                             placeholder="How can I help you today?"></textarea>
  
                         <div class="flex items-center justify-between w-full mt-4 pb-1">
-                            <div class="relative">
-                                <button type="button" @click="$refs.fileInput.click()" class="p-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                            <div x-data="{ openPlus: false }" class="relative">
+                                <button @click="openPlus = !openPlus" type="button" class="p-2 text-stone-500 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" :class="openPlus ? 'bg-stone-100 dark:bg-stone-700 text-stone-800 dark:text-stone-200' : 'hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700'">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
                                 </button>
+
+                                <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute bottom-full left-0 mb-2 w-[240px] bg-white dark:bg-stone-900 border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5">
+                                    {{-- Add files --}}
+                                    <button type="button" @click="openPlus=false; $refs.fileInput.click()" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Add files or photos</span>
+                                        </div>
+                                        <span class="text-[12px] text-stone-400 font-medium">Ctrl+U</span>
+                                    </button>
+                                    {{-- Screenshot --}}
+                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
+                                        <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                                        <span class="text-[13px] text-stone-800 dark:text-stone-200">Take a screenshot</span>
+                                    </button>
+                                    {{-- Add to project --}}
+                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Add to project</span>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+
+                                    <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
+
+                                    {{-- Skills --}}
+                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13l2 2 4-4"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Skills</span>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                    {{-- Add connector --}}
+                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Add connector</span>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                    {{-- Add plugins --}}
+                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
+                                        <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-5"/><path d="M19 19a2 2 0 0 1-2 2H7.5A2.5 2.5 0 0 1 5 18.5V7a2 2 0 0 1 2-2h4.5a2.5 2.5 0 0 1 2.5 2.5V11l5-5Z"/></svg>
+                                        <span class="text-[13px] text-stone-800 dark:text-stone-200">Add plugins...</span>
+                                    </button>
+
+                                    <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
+
+                                    {{-- Research --}}
+                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
+                                        <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
+                                        <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
+                                    </button>
+                                    {{-- Web search toggle --}}
+                                    <button type="button" @click="webSearch = !webSearch; openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4" :class="webSearch ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Web search</span>
+                                        </div>
+                                        <svg x-show="webSearch" x-cloak class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="flex items-center gap-1 md:gap-1.5 text-stone-500">
                                 <div x-data="{ open: false, ext: true, subOpen: false, closeTimer: null }" class="relative">
@@ -380,8 +447,8 @@ function chatInterfaceState() {
         memoryDraft: '',
         memoryUpdatedAt: null,
         selectedModel: localStorage.getItem('rynude_selected_model') || 'claude-haiku-4-5',
-        models: [],
-        moreModels: [],
+        models: JSON.parse(localStorage.getItem('rynude_models_cache') || '[]'),
+        moreModels: JSON.parse(localStorage.getItem('rynude_more_models_cache') || '[]'),
         sending: false,
         streaming: false,
         streamContent: '',
@@ -460,16 +527,21 @@ function chatInterfaceState() {
 
         loadModels: function() {
             var self = this;
+            // Restore from cache immediately (already done in state init),
+            // then fetch fresh data in background without blocking render.
             fetch('/api/settings', {headers:{'Accept':'application/json'}})
                 .then(function(r){return r.json()})
                 .then(function(resp){
                     if (resp.models) {
                         self.models = resp.models;
+                        localStorage.setItem('rynude_models_cache', JSON.stringify(resp.models));
                     }
                     if (resp.more_models) {
                         self.moreModels = resp.more_models;
+                        localStorage.setItem('rynude_more_models_cache', JSON.stringify(resp.more_models));
                     }
-                });
+                })
+                .catch(function() { /* silent fail, cached data still shown */ });
         },
 
         loadConversation: function(id, silent) {

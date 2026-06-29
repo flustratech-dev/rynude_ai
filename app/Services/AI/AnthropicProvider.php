@@ -81,7 +81,10 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                     'cache_control' => ['type' => 'ephemeral']
                 ]
             ] : null,
-            'max_tokens' => $supportsThinking ? 16384 : 4096,
+            // 8192 (non-thinking) leaves room for long documents such as a full
+            // skripsi/laporan without truncating mid-chapter; thinking models get
+            // a larger ceiling that also has to cover the reasoning budget.
+            'max_tokens' => $supportsThinking ? 16384 : 8192,
             'stream' => true,
         ]);
 
@@ -276,7 +279,7 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 }
                 return $toolData;
             }, $tools, array_keys($tools)) : null,
-            'max_tokens' => $supportsThinking ? 16384 : 4096,
+            'max_tokens' => $supportsThinking ? 16384 : 8192,
             'stream' => true,
         ]);
 

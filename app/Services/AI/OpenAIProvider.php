@@ -282,7 +282,10 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                     'model' => $model,
                     'messages' => $openAiMessages,
                     'stream' => true,
-                    'max_tokens' => 4096,
+                    // Large ceiling so long documents (full skripsi/laporan) aren't
+                    // truncated mid-chapter. Most OpenAI-compatible / proxy models
+                    // accept 8192 output tokens.
+                    'max_tokens' => 8192,
                 ],
                 'stream' => true,
                 'verify' => false,

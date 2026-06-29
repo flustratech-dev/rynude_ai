@@ -11,14 +11,20 @@ class AiService
      */
     public function resolveProvider(string $model): LLMProviderInterface
     {
+        // Ollama is always local — resolve it first regardless of proxy setting
+        $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        if ($aiModel && $aiModel->provider === 'ollama') {
+            // Ollama exposes an OpenAI-compatible endpoint at http://127.0.0.1:11434/v1
+            return new OpenAIProvider();
+        }
+
         $user = \Illuminate\Support\Facades\Auth::user();
         if ($user && $user->use_proxy) {
-            // If proxy is enabled, all models route through OpenAI-compatible provider
+            // If proxy is enabled, all non-Ollama models route through OpenAI-compatible provider
             return new OpenAIProvider();
         }
 
         // Check if the model is registered with an explicit provider
-        $aiModel = \App\Models\AiModel::where('code', $model)->first();
         if ($aiModel && $aiModel->provider === 'huggingface') {
             return new OpenAIProvider();
         }

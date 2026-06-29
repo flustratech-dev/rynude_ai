@@ -117,7 +117,8 @@ trait OpenAiCompatToolStream
             'model' => $model,
             'messages' => $this->mapMessagesToOpenAi($messages),
             'stream' => true,
-            'max_tokens' => 4096,
+            // Higher ceiling so long document generations aren't cut off mid-chapter.
+            'max_tokens' => 8192,
         ];
         if (!empty($tools)) {
             $payload['tools'] = $this->mapToolsToOpenAi($tools);
