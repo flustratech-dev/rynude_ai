@@ -118,6 +118,9 @@ class PdfRenderer
         // FreeSerif. The Free* families already cover Latin + Greek + maths.
         $mpdf->autoScriptToLang = false;
         $mpdf->autoLangToFont = false;
+        // Auto-shrink any table wider than the printable area so nothing spills off
+        // the page edge (wide data tables in a skripsi/laporan still fit).
+        $mpdf->shrink_tables_to_fit = 1;
 
         $css = $this->css($academic, $fmt, $mode);
         $pageNum = $this->pageNumberMarkup($fmt['pageNumber']);
@@ -127,40 +130,73 @@ class PdfRenderer
             $mpdf->h2toc = ['H1' => 0, 'H2' => 1, 'H3' => 2];
             $mpdf->h2bookmarks = ['H1' => 0, 'H2' => 1, 'H3' => 2];
 
-            // Each BAB (h1) starts on a fresh page, but the FIRST one flows onto the
-            // body's opening page (avoids a blank leading page).
-            $body = preg_replace('/(?<!^)\s*<h1\b/i', '<pagebreak />$0', $bodyHtml);
-            // Above also matches the first h1 if it isn't at the very start; strip the
-            // single leading page break so the first chapter shares the body's first page.
-            $body = preg_replace('/^\s*<pagebreak \/>/', '', $body);
+            // Split the document into the three academic regions so the front matter
+            // sits in standard skripsi order with Roman page numbers while the
+            // chapters restart at Arabic 1:
+            //   pengesahan → BEFORE the DAFTAR ISI (Roman i…)
+            //   mid        → ABSTRAK/ABSTRACT, AFTER the DAFTAR ISI (Roman, listed in TOC)
+            //   chapters   → BAB I onward + DAFTAR PUSTAKA/LAMPIRAN (Arabic, restart at 1)
+            [$pengesahanHtml, $midHtml, $chaptersHtml] = $this->splitAcademicBody($bodyHtml);
+
+            // Lembar Pengesahan/Persetujuan signature tables render without borders.
+            $signTables = function (string $html): string {
+                return preg_replace_callback('/<table\b[^>]*>(.*?)<\/table>/is', function ($m) {
+                    if (preg_match('/(?:Pembimbing|Penguji|Menyetujui|Mengetahui|NIP\.|NIDN\.)/i', $m[1])) {
+                        return '<table class="no-border">' . $m[1] . '</table>';
+                    }
+                    return $m[0];
+                }, $html) ?? $html;
+            };
+            $pengesahanHtml = $signTables($pengesahanHtml);
+            $chaptersHtml = $signTables($chaptersHtml);
+
+            // Each h1 starts on a fresh page; strip the single leading break so the
+            // first item shares the page it opens on (no blank leading page).
+            $pageBreakH1 = function (string $html): string {
+                $html = preg_replace('/(?<!^)\s*<h1\b/i', '<pagebreak />$0', $html) ?? $html;
+                return preg_replace('/^\s*<pagebreak \/>/', '', $html) ?? $html;
+            };
+            $midHtml = $pageBreakH1($midHtml);
+            $chaptersHtml = $pageBreakH1($chaptersHtml);
+
+            $hasPengesahan = trim(strip_tags($pengesahanHtml)) !== '';
+            $hasMid = trim(strip_tags($midHtml)) !== '';
 
             $mpdf->WriteHTML('<style>' . $css . '</style>');
 
-            // 1) Cover page — written before any footer is set, so it carries no number.
+            // 1) Cover — unnumbered (written before any footer is set).
             $mpdf->WriteHTML($this->coverHtml($title, $meta));
 
-            // 2) Auto Table of Contents on a Roman-numbered page (i, ii, …); the body
-            //    that follows restarts with Arabic numerals (1, 2, …).
+            // 2) Halaman Pengesahan — placed BEFORE the DAFTAR ISI and left
+            //    unnumbered, matching the common skripsi convention where the cover
+            //    and pengesahan carry no page number and Roman numbering starts at
+            //    the DAFTAR ISI. (mPDF numbers auto-TOC pages separately, so keeping
+            //    pengesahan unnumbered is what yields a clean, contiguous sequence.)
+            if ($hasPengesahan) {
+                $mpdf->WriteHTML('<pagebreak />');
+                $mpdf->WriteHTML('<div class="body">' . $pengesahanHtml . '</div>');
+            }
+
+            // 3) DAFTAR ISI starts the Roman sequence at i. With mid matter
+            //    (ABSTRAK/ABSTRACT) the numbering continues Roman after the TOC;
+            //    without it, the chapters follow immediately so reset to Arabic 1 here.
             $tocPre = htmlspecialchars('<div class="toc-title">DAFTAR ISI</div>', ENT_QUOTES);
-            $mpdf->WriteHTML(
-                '<tocpagebreak toc-preHTML="' . $tocPre . '" '
-                . 'toc-resetpagenum="1" toc-pagenumstyle="i" '
-                . 'resetpagenum="1" pagenumstyle="1" links="on" />'
-            );
+            $tocAttrs = 'toc-preHTML="' . $tocPre . '" links="on" toc-resetpagenum="1" toc-pagenumstyle="i"';
+            $tocAttrs .= $hasMid ? ' pagenumstyle="i"' : ' resetpagenum="1" pagenumstyle="1"';
+            $mpdf->WriteHTML('<tocpagebreak ' . $tocAttrs . ' />');
 
-            // 3) Process Lembar Persetujuan / Pengesahan signature tables
-            $body = preg_replace_callback('/<table\b[^>]*>(.*?)<\/table>/is', function ($m) {
-                $content = $m[1];
-                if (preg_match('/(?:Pembimbing|Penguji|Menyetujui|NIP\.|NIDN\.)/i', $content)) {
-                    return '<table class="no-border">' . $content . '</table>';
-                }
-                return $m[0];
-            }, $body);
-
-            // 4) Page number set AFTER the TOC tag so the cover stays unnumbered while
-            //    the TOC page and body both get numbered at the requested position.
+            // Footer applied AFTER the TOC tag so the cover and pengesahan stay
+            // unnumbered while the TOC (filled at output time) and the rest get numbers.
             $this->applyPageNumber($mpdf, $pageNum);
-            $mpdf->WriteHTML('<div class="body">' . $body . '</div>');
+
+            // 4) ABSTRAK/ABSTRACT (Roman ii…, listed in TOC), then reset to Arabic.
+            if ($hasMid) {
+                $mpdf->WriteHTML('<div class="body">' . $midHtml . '</div>');
+                $mpdf->WriteHTML('<pagebreak resetpagenum="1" pagenumstyle="1" />');
+            }
+
+            // 5) BAB I onward (Arabic page 1).
+            $mpdf->WriteHTML('<div class="body">' . $chaptersHtml . '</div>');
         } elseif ($isJurnal) {
             // Jurnal/artikel mode: 2-column layout, no cover, no TOC.
             $this->applyPageNumber($mpdf, $pageNum);
@@ -326,21 +362,24 @@ class PdfRenderer
         $h3 = $academic ? 12 : ($size + 0.5);
 
         $base = <<<CSS
-        body { font-family: {$font}; font-size: {$size}pt; line-height: {$lh}; text-align: {$align}; color: #000; }
+        body { font-family: {$font}; font-size: {$size}pt; line-height: {$lh}; text-align: {$align}; color: #000; word-wrap: break-word; overflow-wrap: break-word; }
+        /* Keep all content inside the page: wrap long words/URLs instead of overflowing. */
+        h1, h2, h3, h4, h5, p, li, blockquote, figcaption, td, th { overflow-wrap: break-word; word-wrap: break-word; }
         .pf { font-family: {$font}; font-size: 11pt; color: #000; }
         h1, h2, h3, h4, h5 { font-family: {$font}; font-weight: bold; color: #000; }
-        a { color: #000; text-decoration: none; }
+        a { color: #000; text-decoration: none; word-break: break-all; }
         ul, ol { margin: 0 0 6pt 0; }
         li { margin-bottom: 2pt; }
         blockquote { border-left: none; padding-left: 1.27cm; color: #000; font-style: normal; margin: 8pt 0; line-height: 1.0; }
-        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 10pt; }
-        th, td { border: 0.6pt solid #000; padding: 5pt 7pt; text-align: left; vertical-align: top; }
+        table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 10pt; overflow: wrap; }
+        th, td { border: 0.6pt solid #000; padding: 5pt 7pt; text-align: left; vertical-align: top; overflow-wrap: break-word; word-break: break-word; }
         th { background: #efefef; font-weight: bold; }
         table.no-border, table.no-border th, table.no-border td { border: none !important; background: transparent !important; }
         table.no-border th, table.no-border td { text-align: center; vertical-align: bottom; }
         table.no-border p { text-indent: 0 !important; }
-        img, svg { max-width: 100%; }
+        img, svg { max-width: 100%; height: auto; }
         figure { text-align: center; margin: 12pt 0; }
+        figure svg, figure img { max-width: 100%; height: auto; }
         figcaption { font-size: 10pt; text-align: center; margin-top: 4pt; }
         .table-caption { font-size: 10pt; text-align: center; margin-bottom: 4pt; font-weight: bold; }
         .daftar-pustaka p { text-indent: 0 !important; margin: 0 0 6pt 0; line-height: 1.0; }

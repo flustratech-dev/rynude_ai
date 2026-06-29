@@ -124,22 +124,71 @@ class DocxRenderer
         $pageNum = $fmt['pageNumber'];
         $margins = $this->marginTwips($fmt['margins']);
 
+        $sectionFormats = [];
         if ($academic) {
-            // 1) Cover page — its own section, carries no page number.
-            $this->buildCover($phpWord, $title, $meta, $margins, $font, $size);
+            // Standard skripsi order:
+            //   COVER → HALAMAN PENGESAHAN → DAFTAR ISI → ABSTRAK/ABSTRACT → BAB I…
+            // Split the body so the front matter lands before/after the TOC exactly
+            // like the PDF. Page numbering: cover & pengesahan unnumbered, the TOC +
+            // ABSTRAK are Roman (i, ii…), the chapters restart at Arabic 1.
+            [$pengesahanHtml, $midHtml, $chaptersHtml] = $this->splitAcademicBody($bodyHtml);
+            $hasPengesahan = trim(strip_tags($pengesahanHtml)) !== '';
+            $hasMid = trim(strip_tags($midHtml)) !== '';
 
-            // 2) Table of Contents — restarts page numbering at 1 with Roman
-            //    numerals (the format conversion is applied as a post-process
-            //    step on the raw XML; PHPWord only emits w:start natively).
+            $roman = [];
+            $arabic = [];
+            $idx = 0;
+
+            // 1) Cover — own section, no page number.
+            $this->buildCover($phpWord, $title, $meta, $margins, $font, $size);
+            $idx++;
+
+            // 2) Halaman Pengesahan — BEFORE the DAFTAR ISI, unnumbered. The heading
+            //    is plain centered bold text (not a Title) so it is not pulled into
+            //    the DAFTAR ISI with a misleading page number.
+            if ($hasPengesahan) {
+                $peng = $phpWord->addSection($this->sectionSettings($margins));
+                $headingText = preg_match('/<h1\b[^>]*>(.*?)<\/h1>/is', $pengesahanHtml, $hm)
+                    ? trim(html_entity_decode(strip_tags($hm[1]))) : 'HALAMAN PENGESAHAN';
+                $rest = preg_replace('/^\s*<h1\b[^>]*>.*?<\/h1>/is', '', $pengesahanHtml, 1);
+                $peng->addText(strtoupper($headingText), ['name' => $font, 'size' => $size + 2, 'bold' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 240]);
+                if (trim(strip_tags((string) $rest)) !== '') {
+                    Html::addHtml($peng, (string) $rest, false, false);
+                }
+                $idx++;
+            }
+
+            // 3) DAFTAR ISI — Roman numbering starting at i (format applied as a
+            //    post-process; PHPWord only emits w:start natively).
             $toc = $phpWord->addSection($this->sectionSettings($margins, 1));
             $this->applyPageNumber($toc, $pageNum, $font);
             $toc->addText('DAFTAR ISI', ['name' => $font, 'size' => $size + 2, 'bold' => true], ['alignment' => Jc::CENTER, 'spaceAfter' => 240]);
             $toc->addTOC(['name' => $font, 'size' => $size], ['tabLeader' => \PhpOffice\PhpWord\Style\TOC::TAB_LEADER_DOT], 1, 3);
+            $idx++;
+            $roman[] = $idx;
 
-            // 3) Body — restarts numbering at 1 (Arabic); each BAB (h1) starts a fresh page.
+            // 4) ABSTRAK / ABSTRACT — Roman, continues after the TOC, listed in TOC.
+            if ($hasMid) {
+                $mid = $phpWord->addSection($this->sectionSettings($margins));
+                $this->applyPageNumber($mid, $pageNum, $font);
+                $this->addBodyWithChapterBreaks($mid, $midHtml);
+                $idx++;
+                $roman[] = $idx;
+            }
+
+            // 5) BAB I onward — Arabic, restarts at 1; each BAB (h1) on a fresh page.
             $body = $phpWord->addSection($this->sectionSettings($margins, 1));
             $this->applyPageNumber($body, $pageNum, $font);
-            $this->addBodyWithChapterBreaks($body, $bodyHtml);
+            $this->addBodyWithChapterBreaks($body, $chaptersHtml);
+            $idx++;
+            $arabic[] = $idx;
+
+            foreach ($roman as $s) {
+                $sectionFormats[$s] = 'lowerRoman';
+            }
+            foreach ($arabic as $s) {
+                $sectionFormats[$s] = 'decimal';
+            }
         } else {
             $section = $phpWord->addSection($this->sectionSettings($margins));
             $this->applyPageNumber($section, $pageNum, $font);
@@ -148,12 +197,13 @@ class DocxRenderer
 
         $output = $this->writeToString($phpWord);
 
-        // Skripsi / laporan: rewrite the TOC section's page-number format to Roman.
-        // PHPWord's section writer only emits <w:pgNumType w:start="…"/> — never
-        // the format — so we post-process the document XML.
-        // Section order built above is: 1=cover, 2=toc, 3=body.
-        if ($academic) {
-            $output = $this->applyRomanTocNumbering($output);
+        // Skripsi / laporan: rewrite the front-matter sections' page-number format
+        // to Roman and the body to Arabic. PHPWord's section writer only emits
+        // <w:pgNumType w:start="…"/> — never the format — so we post-process the XML.
+        // $sectionFormats maps 1-indexed section → w:fmt, computed above to account
+        // for the optional pengesahan / abstrak sections.
+        if ($academic && ! empty($sectionFormats)) {
+            $output = $this->applyRomanTocNumbering($output, $sectionFormats);
         }
 
         // Clean up rasterized SVG PNGs now that they're embedded in the .docx.
@@ -167,12 +217,14 @@ class DocxRenderer
     }
 
     /**
-     * Post-process a generated DOCX binary so the 2nd section (DAFTAR ISI) uses
-     * Roman numerals (i, ii, iii…) and the 3rd section (body) resets to Arabic.
+     * Post-process a generated DOCX binary so the front-matter sections (DAFTAR ISI
+     * and ABSTRAK) use Roman numerals (i, ii, iii…) and the body resets to Arabic.
      * This is the standard skripsi pagination convention and cannot be expressed
      * through PHPWord's public API as of v1.4.
+     *
+     * @param array<int,string> $sectionFormats 1-indexed section → w:fmt value
      */
-    private function applyRomanTocNumbering(string $docxBinary): string
+    private function applyRomanTocNumbering(string $docxBinary, array $sectionFormats): string
     {
         $tmp = tempnam(sys_get_temp_dir(), 'docx-pp');
         if ($tmp === false) {
@@ -193,12 +245,9 @@ class DocxRenderer
             return $docxBinary;
         }
 
-        // We expect three sectPr elements (cover, toc, body) in order. The TOC
-        // section is the 2nd; the body is the 3rd. Inject/replace pgNumType.
-        $modifiedXml = $this->rewritePgNumType($xml, [
-            2 => 'lowerRoman',   // DAFTAR ISI: i, ii, iii…
-            3 => 'decimal',      // body: 1, 2, 3…
-        ]);
+        // The sectPr elements appear in document order (1=cover, then pengesahan/
+        // toc/abstrak/body as present); $sectionFormats maps each to its w:fmt.
+        $modifiedXml = $this->rewritePgNumType($xml, $sectionFormats);
 
         if ($modifiedXml !== $xml) {
             $zip->deleteName('word/document.xml');
@@ -247,8 +296,12 @@ class DocxRenderer
                 $newTag = '<w:pgNumType w:fmt="' . $fmt . '"' . $start . '/>';
                 $newBlock = str_replace($oldTag, $newTag, $block);
             } else {
-                // No pgNumType — insert one just before </w:sectPr>.
-                $insert = '<w:pgNumType w:fmt="' . $fmt . '" w:start="1"/>';
+                // No pgNumType — insert one just before </w:sectPr>. Omit w:start so
+                // the section CONTINUES the running count (e.g. ABSTRAK following the
+                // DAFTAR ISI becomes ii, iii — not a second i). Sections that must
+                // restart are added with pageNumberingStart, so they already carry a
+                // w:start handled by the branch above.
+                $insert = '<w:pgNumType w:fmt="' . $fmt . '"/>';
                 $newBlock = str_replace('</w:sectPr>', $insert . '</w:sectPr>', $block);
             }
 

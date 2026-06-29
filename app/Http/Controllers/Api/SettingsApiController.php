@@ -55,6 +55,7 @@ class SettingsApiController extends Controller
         'google' => 'google_api_key',
         'mistral' => 'mistral_api_key',
         'huggingface' => 'huggingface_api_key',
+        'github' => 'github_token',
     ];
 
     public function show(): JsonResponse
@@ -98,6 +99,7 @@ class SettingsApiController extends Controller
             'mistral_api_key' => ['sometimes', 'nullable', 'string'],
             'huggingface_api_key' => ['sometimes', 'nullable', 'string'],
             'huggingface_base_url' => ['sometimes', 'nullable', 'url'],
+            'github_token' => ['sometimes', 'nullable', 'string'],
             'use_proxy' => ['sometimes', 'boolean'],
             'proxy_base_url' => ['sometimes', 'nullable', 'url'],
             'proxy_api_key' => ['sometimes', 'nullable', 'string'],
@@ -181,6 +183,7 @@ class SettingsApiController extends Controller
             'anthropic_api_key', 'openai_api_key', 'nine_router_api_key',
             'google_api_key', 'mistral_api_key', 'huggingface_api_key',
             'huggingface_base_url', 'use_proxy', 'proxy_base_url', 'proxy_api_key',
+            'github_token',
         ];
         foreach ($directColumns as $column) {
             if (array_key_exists($column, $validated)) {

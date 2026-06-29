@@ -113,12 +113,12 @@
                                         <span class="text-[12px] text-stone-400 font-medium">Ctrl+U</span>
                                     </button>
                                     {{-- Screenshot --}}
-                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
+                                    <button type="button" @click="takeScreenshot(); openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
                                         <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Take a screenshot</span>
                                     </button>
                                     {{-- Add to project --}}
-                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'projects' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
                                             <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                                             <span class="text-[13px] text-stone-800 dark:text-stone-200">Add to project</span>
@@ -129,7 +129,7 @@
                                     <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
 
                                     {{-- Skills --}}
-                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'customize' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
                                             <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13l2 2 4-4"/></svg>
                                             <span class="text-[13px] text-stone-800 dark:text-stone-200">Skills</span>
@@ -137,7 +137,7 @@
                                         <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                                     </button>
                                     {{-- Add connector --}}
-                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'customize' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
                                         <div class="flex items-center gap-2.5">
                                             <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                                             <span class="text-[13px] text-stone-800 dark:text-stone-200">Add connector</span>
@@ -145,7 +145,7 @@
                                         <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                                     </button>
                                     {{-- Add plugins --}}
-                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'customize' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
                                         <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-5"/><path d="M19 19a2 2 0 0 1-2 2H7.5A2.5 2.5 0 0 1 5 18.5V7a2 2 0 0 1 2-2h4.5a2.5 2.5 0 0 1 2.5 2.5V11l5-5Z"/></svg>
                                         <span class="text-[13px] text-stone-800 dark:text-stone-200">Add plugins...</span>
                                     </button>
@@ -153,9 +153,12 @@
                                     <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
 
                                     {{-- Research --}}
-                                    <button type="button" @click="openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center gap-2.5 group">
-                                        <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
-                                        <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
+                                    <button type="button" @click="researchMode = !researchMode; openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4" :class="researchMode ? 'text-[#D97757]' : 'text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/><path d="M11 8v6"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Research</span>
+                                        </div>
+                                        <svg x-show="researchMode" x-cloak class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                     </button>
                                     {{-- Web search toggle --}}
                                     <button type="button" @click="webSearch = !webSearch; openPlus=false" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
@@ -457,6 +460,7 @@ function chatInterfaceState() {
         attachments: [],
         uploading: false,
         webSearch: false,
+        researchMode: false,
         webSearchSupported: true,
         userName: '',
         selectedProject: null,
@@ -596,7 +600,8 @@ function chatInterfaceState() {
                 var payload = {
                     prompt: this.prompt.trim(),
                     model: this.selectedModel,
-                    web_search: this.webSearch ? 1 : 0
+                    web_search: this.webSearch ? 1 : 0,
+                    research_mode: this.researchMode ? 1 : 0
                 };
                 if (this.conversationId) payload.conversation_id = this.conversationId;
                 if (this.selectedProject) payload.project_id = this.selectedProject;
@@ -606,6 +611,7 @@ function chatInterfaceState() {
                 fd.append('prompt', this.prompt.trim());
                 fd.append('model', this.selectedModel);
                 fd.append('web_search', this.webSearch ? '1' : '0');
+                fd.append('research_mode', this.researchMode ? '1' : '0');
                 if (this.conversationId) fd.append('conversation_id', this.conversationId);
                 if (this.selectedProject) fd.append('project_id', this.selectedProject);
                 for (var i = 0; i < this.attachments.length; i++) {
@@ -744,6 +750,45 @@ function chatInterfaceState() {
 
         removeAttachment: function(idx) {
             this.attachments.splice(idx, 1);
+        },
+
+        takeScreenshot: function() {
+            var self = this;
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                alert('Screen capture is not supported in this browser or context.');
+                return;
+            }
+            navigator.mediaDevices.getDisplayMedia({ video: true })
+                .then(function(stream) {
+                    var video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.autoplay = true;
+                    video.onloadedmetadata = function() {
+                        setTimeout(function() {
+                            var canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            var ctx = canvas.getContext('2d');
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            
+                            stream.getTracks().forEach(function(track) { track.stop(); });
+                            
+                            canvas.toBlob(function(blob) {
+                                if (blob) {
+                                    var filename = 'Screenshot_' + new Date().toISOString().slice(0,19).replace(/[:T]/g, '_') + '.png';
+                                    var fileObj = new File([blob], filename, { type: 'image/png' });
+                                    self.attachments.push({
+                                        name: filename,
+                                        file: fileObj
+                                    });
+                                }
+                            }, 'image/png');
+                        }, 300);
+                    };
+                })
+                .catch(function(err) {
+                    console.error('Screenshot failed:', err);
+                });
         },
 
         autoResize: function(event) {

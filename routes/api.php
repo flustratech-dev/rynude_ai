@@ -34,6 +34,8 @@ Route::middleware('auth')->group(function () {
     Route::get('chats', [ChatApiController::class, 'index'])->name('chats.index');
     Route::post('chats/send', [ChatApiController::class, 'send'])->name('chats.send');
     Route::post('chats/stop', [ChatApiController::class, 'stop'])->name('chats.stop');
+    Route::post('chats/connect-repo', [ChatApiController::class, 'connectRepo'])->name('chats.connect-repo');
+    Route::post('chats/disconnect-repo', [ChatApiController::class, 'disconnectRepo'])->name('chats.disconnect-repo');
     Route::get('chats/{conversation}', [ChatApiController::class, 'show'])->name('chats.show');
     Route::patch('chats/{conversation}', [ChatApiController::class, 'update'])->name('chats.update');
     Route::delete('chats/{conversation}', [ChatApiController::class, 'destroy'])->name('chats.destroy');

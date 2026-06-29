@@ -207,7 +207,6 @@
             </div>
 
             <div
-                x-show="artifactPanelOpen || activePanel === 'artifacts'"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-x-8"
@@ -215,7 +214,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-x-0"
                 x-transition:leave-end="opacity-0 translate-x-8"
-                :class="activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-stone-800 w-full' : 'hidden md:flex border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative'"
+                :class="((artifactPanelOpen && !activePanel) || activePanel === 'artifacts') ? (activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-stone-800 w-full' : 'flex border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative') : 'hidden'"
                 :style="activePanel !== 'artifacts' ? `width: ${artifactWidth}vw; min-width: 400px; max-width: 80vw;` : ''"
             >
                 <!-- Drag Handle -->
@@ -233,7 +232,6 @@
             </div>
 
             <div
-                x-show="isMobile && (artifactPanelOpen || activePanel === 'artifacts')"
                 x-cloak
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 translate-y-8"
@@ -241,7 +239,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-y-0"
                 x-transition:leave-end="opacity-0 translate-y-8"
-                class="fixed inset-0 z-30 flex flex-col bg-white dark:bg-stone-800 md:hidden"
+                :class="(isMobile && ((artifactPanelOpen && !activePanel) || activePanel === 'artifacts')) ? 'fixed inset-0 z-30 flex flex-col bg-white dark:bg-stone-800 md:hidden' : 'hidden'"
             >
                 @include('livewire.artifact-panel')
             </div>

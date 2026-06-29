@@ -245,6 +245,64 @@ trait BuildsDocumentContent
         return is_file($path) ? $path : null;
     }
 
+    /**
+     * Split an academic body (HTML) into three ordered regions so the front matter
+     * lands in standard skripsi order across BOTH renderers (PDF + DOCX):
+     *   [0] pengesahan — the "Halaman/Lembar Pengesahan/Persetujuan" section, placed
+     *       BEFORE the DAFTAR ISI.
+     *   [1] mid        — everything before the first BAB that is NOT the pengesahan
+     *       (typically ABSTRAK / ABSTRACT), placed AFTER the DAFTAR ISI so it is
+     *       listed in the auto Table of Contents.
+     *   [2] chapters   — from the first "BAB …" heading to the end (BAB I-N plus
+     *       DAFTAR PUSTAKA / LAMPIRAN).
+     *
+     * Splitting is done on level-1 heading boundaries so each section stays intact.
+     *
+     * @return array{0:string,1:string,2:string}
+     */
+    protected function splitAcademicBody(string $html): array
+    {
+        // Break the HTML into segments, each starting at an <h1>. Any preamble
+        // before the first heading becomes the leading segment.
+        $segments = preg_split('/(?=<h1\b)/i', $html) ?: [$html];
+
+        $pengesahan = '';
+        $mid = '';
+        $chapters = '';
+        $seenBab = false;
+
+        foreach ($segments as $seg) {
+            if ($seg === '') {
+                continue;
+            }
+
+            $heading = preg_match('/^<h1\b[^>]*>(.*?)<\/h1>/is', $seg, $m)
+                ? trim(html_entity_decode(strip_tags($m[1])))
+                : '';
+
+            if ($seenBab) {
+                $chapters .= $seg;
+                continue;
+            }
+
+            // First chapter heading ("BAB I", "BAB 1", …) opens the chapter region;
+            // everything from here on (incl. Daftar Pustaka, Lampiran) is a chapter.
+            if ($heading !== '' && preg_match('/^BAB\b/i', $heading)) {
+                $seenBab = true;
+                $chapters .= $seg;
+                continue;
+            }
+
+            if ($heading !== '' && preg_match('/PENGESAHAN|PERSETUJUAN/i', $heading)) {
+                $pengesahan .= $seg;
+            } else {
+                $mid .= $seg;
+            }
+        }
+
+        return [$pengesahan, $mid, $chapters];
+    }
+
     // NOTE: stripFrontMatter is intentionally NOT defined here. Both renderers
     // expose it as a public static helper via PdfRenderer::stripFrontMatter for
     // backward compatibility (views/components reference it by that path).

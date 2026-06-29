@@ -37,7 +37,8 @@ class ChatStreamingService
         Conversation $conversation,
         array $messages,
         string $model,
-        bool $webSearch = false
+        bool $webSearch = false,
+        bool $researchMode = false
     ): \Generator {
         // Prevent PHP from killing the streaming process during long generations
         set_time_limit(0);
@@ -48,7 +49,7 @@ class ChatStreamingService
         }
 
         // Build the complete system prompt with all context
-        $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch);
+        $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode);
 
         // Apply sliding window context strategy
         $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt);
@@ -158,7 +159,8 @@ class ChatStreamingService
     protected function buildSystemPrompt(
         Conversation $conversation,
         array $messages,
-        bool $webSearch
+        bool $webSearch,
+        bool $researchMode = false
     ): string {
         $baseSystemPrompt = $this->getBaseArtifactInstructions();
         $baseSystemPrompt .= $this->getDocumentQualityInstructions();
@@ -219,11 +221,37 @@ class ChatStreamingService
         $baseSystemPrompt .= $this->buildArtifactContext($conversation, $lastUserText);
 
         // Web search results
-        if ($webSearch && $lastUserText !== '') {
+        if (($webSearch || $researchMode) && $lastUserText !== '') {
             $searchService = new \App\Services\WebSearchService();
-            $results = $searchService->search($lastUserText, 5);
+            $limit = $researchMode ? 10 : 5;
+            $results = $searchService->search($lastUserText, $limit);
             if (!empty($results)) {
                 $baseSystemPrompt .= $searchService->formatForPrompt($results);
+            }
+            if ($researchMode) {
+                $baseSystemPrompt .= "\n\nRESEARCH MODE INSTRUCTIONS:\nYou are in deep research mode. Formulate your answer by critically analyzing the search results. Highlight discrepancies, summarize key facts with links/urls directly in the text, and write in a detailed, academic or highly authoritative tone.";
+            }
+        }
+
+        // Connected Repository (GitHub) Context
+        $meta = $conversation->metadata ?? [];
+        if (!empty($meta['repo'])) {
+            $baseSystemPrompt .= "\n\nCONNECTED REPOSITORY: " . $meta['repo'] . "\n"
+                . "Reference this repository when the user asks about code, files, or implementation details. "
+                . "Assume the repo follows standard conventions for its detected tech stack.";
+        }
+
+        // Selected files context from repository
+        if (!empty($meta['selectedFilesContext'])) {
+            $baseSystemPrompt .= "\n\n=== SELECTED FILES CONTEXT ===\n"
+                . "The user has selected the following files from the repository to be included in your context. "
+                . "Use this actual source code to answer their questions or implement changes:\n\n";
+            
+            foreach ($meta['selectedFilesContext'] as $f) {
+                if (isset($f['path'], $f['content'])) {
+                    $baseSystemPrompt .= "--- FILE: " . $f['path'] . " ---\n"
+                        . "```\n" . $f['content'] . "\n```\n\n";
+                }
             }
         }
 
@@ -335,8 +363,17 @@ class ChatStreamingService
             . "- Diagrams, flowcharts, charts, org/structure figures: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Do NOT use ASCII diagrams or mermaid. Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X.Y Caption</figcaption></figure>. If the source text mentions a diagram but it's missing, creatively generate an SVG diagram to replace it!\n"
             . "- To include an image the user uploaded, reference it with markdown: ![Keterangan](attachments/<filename>) using the path from the conversation; the renderer resolves local uploads automatically.\n"
             . "- For FORMAL / ACADEMIC documents (skripsi, laporan, thesis): begin the artifact content with a YAML front-matter block to trigger the academic layout (cover page, automatic DAFTAR ISI / Table of Contents, Roman→Arabic page numbering, 4-3-3-3 cm margins, Times New Roman 12pt, justified). Use exactly this shape (omit fields you don't know):\n"
-            . "---\nmode: skripsi            # skripsi | laporan | jurnal | document\njudul: <full title>\npenulis: <author name>\nnim: <student id>\nprodi: <study program>\nfakultas: <faculty>\nuniversitas: <university>\nkota: <city>\ntahun: <year>\npembimbing: <advisor>\n---\n"
+            . "---\nmode: skripsi            # skripsi | laporan | jurnal | document\njudul: <full title>\npenulis: <author name>\nnim: <student id>\nprodi: <study program>\nfakultas: <faculty>\nuniversitas: <university>\nkota: <city>\ntahun: <year>\npembimbing: <advisor>\nlogo: <path/URL logo, mis. attachments/<filename> dari file yang diupload user — KOSONGKAN/hapus baris ini bila user tidak mengirim logo>\n---\n"
+            . "- LOGO COVER: Jika user mengirim/melampirkan gambar logo (kampus/instansi), SET field `logo:` ke path lampiran tersebut (mis. `attachments/logo-unri.png`) agar logo tampil di cover. Jika user HANYA menyebut nama universitas tanpa mengirim file gambar, JANGAN mengarang path logo dan JANGAN menulis field `logo` — cukup isi `universitas:` dengan namanya (nama itu otomatis tampil sebagai teks di cover). Sistem TIDAK bisa membuat logo dari nama; logo hanya muncul jika ada file gambar yang dikirim user.\n"
             . "Then structure chapters as level-1 headings (# BAB I PENDAHULUAN, # BAB II …) — each # heading starts a new page — with ## and ### for sub-sections (## 1.1 Latar Belakang). Headings are collected into the Table of Contents automatically.\n"
+            . "\n--- BAGIAN AWAL / FRONT MATTER (WAJIB untuk skripsi/laporan FULL, meski prompt user singkat) ---\n"
+            . "- Urutan halaman final yang dihasilkan sistem: COVER (otomatis dari front-matter) → HALAMAN PENGESAHAN → DAFTAR ISI (otomatis) → ABSTRAK → ABSTRACT → BAB I dst. Karena itu, di dalam artifact tulis heading level-1 BERURUTAN: # HALAMAN PENGESAHAN → # ABSTRAK → # ABSTRACT → # BAB I PENDAHULUAN. Sistem otomatis menempatkan COVER paling depan dan menyisipkan DAFTAR ISI tepat setelah HALAMAN PENGESAHAN.\n"
+            . "- Buat HALAMAN PENGESAHAN, ABSTRAK, dan ABSTRACT secara default; JANGAN menunggu user memintanya. TIDAK perlu KATA PENGANTAR.\n"
+            . "- # HALAMAN PENGESAHAN: berisi judul, nama+NIM penulis, dan tabel tanda tangan pembimbing/penguji (gunakan tabel berisi 'Pembimbing'/'NIP.' agar dirender tanpa garis).\n"
+            . "- # ABSTRAK: Bahasa Indonesia, 1 paragraf ≤ 250 kata (latar belakang singkat → tujuan → metode → hasil utama), diakhiri baris '**Kata Kunci:** kata1, kata2, kata3, kata4, kata5'. WAJIB ada walau user tidak menyebut abstrak.\n"
+            . "- # ABSTRACT: terjemahan bahasa Inggris dari ABSTRAK, diakhiri baris '**Keywords:** word1, word2, …'. Tulis seluruh isinya *italic* sesuai konvensi.\n"
+            . "- JANGAN menulis '# DAFTAR ISI', '# DAFTAR GAMBAR', '# DAFTAR TABEL', atau '# COVER' secara manual — COVER & DAFTAR ISI dibuat OTOMATIS oleh sistem dari front-matter & heading.\n"
+            . "- Agar tidak ada yang keluar dari halaman: untuk tabel lebar batasi jumlah kolom seperlunya & gunakan teks ringkas per sel; jangan menaruh URL/teks tanpa spasi yang sangat panjang.\n"
             . "- OPTIONAL FORMAT OVERRIDES: to mimic a specific format (e.g. a template the user uploaded or described), add any of these keys to the front-matter. Omit them to use the defaults (Times New Roman 12pt, 1.5 spacing, 4-3-3-3 cm, page number bottom-center):\n"
             . "font: <Times New Roman | Arial | Courier>   # body font\nfont_size: <11 | 12>                        # in pt (8–20)\nline_spacing: <1 | 1.15 | 1.5 | 2>          # 1=single, 2=double\nalign: <justify | left>\nmargin_top: <cm>\nmargin_right: <cm>\nmargin_bottom: <cm>\nmargin_left: <cm>\npage_number: <bottom-center | bottom-right | top-right | top-center | none>\n"
             . "- MATCHING AN UPLOADED TEMPLATE/EXAMPLE: if the user attaches or pastes a sample document (contoh/template) and asks you to follow its format, replicate BOTH its structure (chapter order, section/heading names, the exact cover fields and their labels, daftar isi style) AND its formatting (set the font/font_size/line_spacing/margins/page_number front-matter fields to match what the sample uses). The attachment is provided as extracted text, so infer the font/margins/spacing from what is stated or what is conventional for that institution, and reproduce the wording of section titles faithfully.\n"

@@ -66,6 +66,8 @@ class ChatApiController extends ApiController
             'conversation_id' => ['nullable', 'integer', 'exists:conversations,id'],
             'project_id' => ['nullable', 'integer', 'exists:projects,id'],
             'web_search' => ['nullable', 'boolean'],
+            'research_mode' => ['nullable', 'boolean'],
+            'repo_url' => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'max:50000'], // 50MB per file
         ]);
 
@@ -74,6 +76,8 @@ class ChatApiController extends ApiController
         $conversationId = $validated['conversation_id'] ?? null;
         $projectId = $validated['project_id'] ?? null;
         $webSearch = $validated['web_search'] ?? false;
+        $researchMode = $validated['research_mode'] ?? false;
+        $repoUrl = $validated['repo_url'] ?? null;
 
         // Create or load conversation
         if ($conversationId) {
@@ -81,10 +85,41 @@ class ChatApiController extends ApiController
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
         } else {
+            $metadata = [];
+            if ($repoUrl) {
+                $parsed = \App\Services\GitHubService::parseUrl($repoUrl);
+                if ($parsed) {
+                    $token = Auth::user()->github_token ?? null;
+                    $github = new \App\Services\GitHubService($token);
+                    $info = $github->getRepoInfo($parsed['owner'], $parsed['repo']);
+                    if ($info) {
+                        $tree = $github->fetchTree($parsed['owner'], $parsed['repo'], $info['default_branch']);
+                        $repoTree = [];
+                        foreach ($tree as $item) {
+                            $depth = substr_count($item['path'], '/');
+                            $name = basename($item['path']);
+                            $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'txt';
+                            $repoTree[] = [
+                                'type' => $item['type'] === 'tree' ? 'dir' : 'file',
+                                'name' => $name,
+                                'path' => $item['path'],
+                                'depth' => $depth,
+                                'extra' => $item['type'] === 'tree' ? false : strtolower($ext)
+                            ];
+                        }
+                        $metadata = [
+                            'repo' => $parsed['owner'] . '/' . $parsed['repo'],
+                            'repoTree' => $repoTree,
+                        ];
+                    }
+                }
+            }
+
             $conversation = Conversation::create([
                 'user_id' => Auth::id(),
                 'title' => 'New Chat',
                 'project_id' => $projectId,
+                'metadata' => $metadata,
             ]);
         }
 
@@ -144,7 +179,7 @@ class ChatApiController extends ApiController
         // Resolve the service before the closure so mocks can intercept it
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
-        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch) {
+        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode) {
             try {
                 // First emit conversation ID so frontend can track it
                 echo 'data: ' . json_encode([
@@ -154,7 +189,7 @@ class ChatApiController extends ApiController
                 if (ob_get_level() > 0) ob_flush();
                 flush();
 
-                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch);
+                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode);
 
                 foreach ($generator as $event) {
                     // Format as SSE: data: {...}\n\n
@@ -259,6 +294,7 @@ class ChatApiController extends ApiController
                 'created_at' => optional($conversation->created_at)->toIso8601String(),
                 'updated_at' => optional($conversation->updated_at)->toIso8601String(),
                 'messages' => $messages,
+                'metadata' => $conversation->metadata,
             ],
         ]);
     }
@@ -438,5 +474,88 @@ class ChatApiController extends ApiController
             return false;
         }
         return true;
+    }
+
+    public function connectRepo(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'repo_url' => ['required', 'string'],
+            'conversation_id' => ['nullable', 'integer', 'exists:conversations,id'],
+        ]);
+
+        $url = trim($validated['repo_url']);
+        $conversationId = $validated['conversation_id'] ?? null;
+
+        $parsed = \App\Services\GitHubService::parseUrl($url);
+        if (!$parsed) {
+            return response()->json(['error' => 'Only GitHub repository URLs are supported currently.'], 422);
+        }
+
+        $token = Auth::user()->github_token ?? null;
+        $github = new \App\Services\GitHubService($token);
+
+        $info = $github->getRepoInfo($parsed['owner'], $parsed['repo']);
+        if (!$info) {
+            return response()->json(['error' => 'Repository not found or requires a GitHub token in Settings.'], 404);
+        }
+
+        $tree = $github->fetchTree($parsed['owner'], $parsed['repo'], $info['default_branch']);
+        
+        $repoTree = [];
+        foreach ($tree as $item) {
+            $depth = substr_count($item['path'], '/');
+            $name = basename($item['path']);
+            $ext = pathinfo($name, PATHINFO_EXTENSION) ?: 'txt';
+            $repoTree[] = [
+                'type' => $item['type'] === 'tree' ? 'dir' : 'file',
+                'name' => $name,
+                'path' => $item['path'],
+                'depth' => $depth,
+                'extra' => $item['type'] === 'tree' ? false : strtolower($ext)
+            ];
+        }
+
+        $repoConnected = $parsed['owner'] . '/' . $parsed['repo'];
+
+        if ($conversationId) {
+            $conversation = Conversation::where('id', $conversationId)
+                ->where('user_id', Auth::id())
+                ->first();
+            if ($conversation) {
+                $meta = $conversation->metadata ?? [];
+                $meta['repo'] = $repoConnected;
+                $meta['repoTree'] = $repoTree;
+                $conversation->update(['metadata' => $meta]);
+            }
+        }
+
+        return response()->json([
+            'repo' => $repoConnected,
+            'repo_tree' => $repoTree,
+        ]);
+    }
+
+    public function disconnectRepo(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'conversation_id' => ['nullable', 'integer', 'exists:conversations,id'],
+        ]);
+
+        $conversationId = $validated['conversation_id'] ?? null;
+
+        if ($conversationId) {
+            $conversation = Conversation::where('id', $conversationId)
+                ->where('user_id', Auth::id())
+                ->first();
+            if ($conversation) {
+                $meta = $conversation->metadata ?? [];
+                $meta['repo'] = '';
+                $meta['repoTree'] = [];
+                $meta['selectedFilesContext'] = [];
+                $conversation->update(['metadata' => $meta]);
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 }
