@@ -562,6 +562,7 @@
                         <option value="anthropic">Anthropic</option>
                         <option value="google">Google</option>
                         <option value="mistral">Mistral</option>
+                        <option value="ollama">Ollama (Local)</option>
                         <option value="proxy">9Router / Proxy</option>
                     </select>
                 </div>

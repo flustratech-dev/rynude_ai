@@ -109,7 +109,7 @@ class SettingsApiController extends Controller
             'model_id' => ['sometimes', 'nullable', 'integer'],
             'model_code' => ['sometimes', 'required_if:_action,store_model', 'string'],
             'model_name' => ['sometimes', 'required_if:_action,store_model', 'string'],
-            'model_provider' => ['sometimes', 'required_if:_action,store_model', 'string'],
+            'model_provider' => ['sometimes', 'string'], // default ollama
             'model_is_active' => ['sometimes', 'boolean'],
         ]);
 
