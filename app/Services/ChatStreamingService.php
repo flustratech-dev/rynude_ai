@@ -345,7 +345,7 @@ class ChatStreamingService
      */
     protected function getBaseArtifactInstructions(): string
     {
-        return "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, files, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, PDF, DOCX, or any text-based file, you MUST generate a well-structured Markdown document (language=\"markdown\") inside the <antArtifact> tag. DO NOT EVER generate raw file byte streams or PostScript code. The system will automatically convert your Markdown into downloadable files for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide brief explanation outside the tag if needed.";
+        return "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, files, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, PDF, DOCX, or any text-based file, you MUST generate a well-structured Markdown document (language=\"markdown\") inside the <antArtifact> tag. DO NOT EVER generate raw file byte streams or PostScript code. The system will automatically convert your Markdown into downloadable files for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide detailed explanation OUTSIDE the tag describing your approach, structure, and key decisions.";
     }
 
     /**
@@ -366,7 +366,27 @@ class ChatStreamingService
             . "     • Concluding remarks at the END: 'Demikian laporan ini dibuat...', 'Sekian dan terima kasih'\n"
             . "  ✅ ALLOWED: ONLY the actual document content (front-matter, headings, body text, tables, figures, references)\n"
             . "  📍 ALL conversational text MUST be placed OUTSIDE the <antArtifact> block (before or after).\n"
-            . "- If the user asks you to continue a document (e.g., 'lanjut bab 2'), you MUST generate a NEW <antArtifact> block containing the continuation. DO NOT just reply with raw text.\n"
+            . "\n--- CHAT RESPONSE PROCESS EXPLANATION (for academic/thesis/report requests) ---\n"
+            . "When generating academic documents (skripsi, laporan, thesis, jurnal, makalah, research papers, reports):\n"
+            . "- OUTSIDE the <antArtifact> block, provide a DETAILED chat response explaining your process:\n"
+            . "  • Document structure overview: Explain the overall organization and why you structured it this way\n"
+            . "  • Chapter/section approach: Describe what each major section covers and your reasoning\n"
+            . "  • Content methodology: Explain how you developed the content (research approach, logical flow, argumentation strategy)\n"
+            . "  • Academic standards applied: Detail which academic conventions you followed (citation style, formatting rules, structural requirements)\n"
+            . "  • Design decisions: Explain key choices you made (topic organization, depth of coverage, source selection)\n"
+            . "  • Quality considerations: Describe how you ensured academic rigor and completeness\n"
+            . "- This process explanation should be EXTENSIVE (300-500 words minimum for full documents)\n"
+            . "- Write this explanation in a clear, educational tone that helps the user understand what was created and why\n"
+            . "- The goal is to provide transparency into your work process, NOT just to announce completion\n"
+            . "- Example structure for your chat response:\n"
+            . "  'I have created a comprehensive [document type] for you. Let me explain the approach and structure:\n\n"
+            . "   **Document Structure:** [Explain overall organization...]\n\n"
+            . "   **Content Development:** [Explain how you developed each section...]\n\n"
+            . "   **Academic Standards:** [Explain conventions followed...]\n\n"
+            . "   **Key Design Decisions:** [Explain important choices...]\n\n"
+            . "   The complete document is in the artifact below, ready for download as PDF/DOCX.'\n"
+            . "- REMEMBER: The artifact contains ONLY the clean document. The chat response contains ALL the meta-information and process explanation.\n"
+            . "\n- If the user asks you to continue a document (e.g., 'lanjut bab 2'), you MUST generate a NEW <antArtifact> block containing the continuation. DO NOT just reply with raw text.\n"
             . "- If the user asks you to merge, combine, or join multiple attached documents, ACT AS AN INTELLIGENT EDITOR: do NOT just blindly copy-paste text. Clean up the text by removing redundant page numbers, repeating headers/footers, and fixing broken sentences across page breaks. Smooth out transitions between documents.\n"
             . "- Diagrams, flowcharts, charts, org/structure figures: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Do NOT use ASCII diagrams or mermaid. Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X.Y Caption</figcaption></figure>. If the source text mentions a diagram but it's missing, creatively generate an SVG diagram to replace it!\n"
             . "- To include an image the user uploaded, reference it with markdown: ![Keterangan](attachments/<filename>) using the path from the conversation; the renderer resolves local uploads automatically.\n"
@@ -430,7 +450,7 @@ class ChatStreamingService
             . "- Accuracy first: if you are unsure or lack the information, say so plainly instead of inventing facts, and separate what you know from what you are inferring.\n"
             . "- When web search results are provided below, ground your answer in them and cite the relevant source titles or links inline.\n"
             . "- Stay consistent with the Persistent Conversation Memory below when it is present.\n"
-            . "- Keep answers focused — concise for simple asks, thorough for complex ones — and match the user's language.";
+            . "- Provide detailed, comprehensive responses by default. For simple factual questions, be direct but still thorough. For complex tasks, provide extensive explanations including your reasoning, approach, alternatives considered, and decision rationale. Err on the side of being more detailed rather than too brief. Match the user's language.";
     }
 
     /**
