@@ -4,6 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @auth
+        <meta name="user-name" content="{{ Auth::user()->name ?? '' }}">
+        @endauth
         <script>
             // Globally inject CSRF token into all fetch requests
             const originalFetch = window.fetch;
