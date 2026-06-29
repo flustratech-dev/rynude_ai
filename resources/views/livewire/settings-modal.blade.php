@@ -670,7 +670,27 @@ function settingsState() {
         },
 
         saveAppearance: function() {
-            this._patch({theme:this.theme,font_size:this.fontSize,accent_color:this.accentColor,compact_mode:this.compactMode});
+            // Apply theme IMMEDIATELY by directly manipulating DOM
+            var theme = this.theme;
+            var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            // Save to localStorage
+            localStorage.setItem('theme', theme);
+
+            // Log for debugging
+            console.log('Theme changed to:', theme, 'Dark class applied:', isDark);
+
+            // Dispatch event to sync with other components
+            document.dispatchEvent(new CustomEvent('theme-changed', {detail:{theme:theme}}));
+
+            // Save to API in background
+            this._patch({theme:theme,font_size:this.fontSize,accent_color:this.accentColor,compact_mode:this.compactMode});
         },
 
         saveApiKeys: function() {
@@ -711,9 +731,7 @@ function settingsState() {
                 method: 'PATCH',
                 headers: {'Content-Type':'application/json','Accept':'application/json'},
                 body: JSON.stringify(data)
-            }).then(function(r){return r.json()}).then(function(resp){
-                document.dispatchEvent(new CustomEvent('theme-changed', {detail:{theme:this.theme}}));
-            }.bind(this));
+            }).then(function(r){return r.json()});
         },
 
         deleteAllChats: function() {
