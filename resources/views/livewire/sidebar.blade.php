@@ -72,9 +72,9 @@
             @endif
 
             <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
-                <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
-                    <svg class="w-[18px] h-[18px] text-gray-500 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
+                <div class="flex items-center justify-center rounded-full size-[1.4rem] -mx-[0.2rem] border border-[#DCD7D2] dark:border-stone-600 bg-[#EAE6E1]/40 dark:bg-stone-700/30 transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
+                    <svg class="w-[14px] h-[14px] text-gray-600 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M12 5v14M5 12h14"/>
                     </svg>
                 </div>
                 <span>New chat</span>
@@ -461,9 +461,9 @@
         @endif
 
         <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
-            <div class="flex items-center justify-center transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
-                <svg class="w-[20px] h-[20px] text-gray-500 dark:text-stone-400 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41Z"/>
+            <div class="flex items-center justify-center rounded-full size-[1.4rem] -mx-[0.2rem] border border-[#DCD7D2] dark:border-stone-600 bg-[#EAE6E1]/40 dark:bg-stone-700/30 transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
+                <svg class="w-[14px] h-[14px] text-gray-600 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14"/>
                 </svg>
             </div>
         </button>
