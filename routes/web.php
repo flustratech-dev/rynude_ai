@@ -52,6 +52,11 @@ Route::get('/chat', function (\Illuminate\Http\Request $request) {
 Route::get('/code', [ClaudeCodeController::class, 'index'])->middleware(['auth', 'verified'])->name('code');
 Route::get('/design', [DesignController::class, 'index'])->middleware(['auth', 'verified'])->name('design');
 
+// API Keys management page
+Route::get('/api-keys', function () {
+    return view('api-keys');
+})->middleware(['auth', 'verified'])->name('api-keys');
+
 // Signal the active streaming generation to stop. Uses a cache flag that the
 // streaming loop in ChatInterface::generateResponse() polls each chunk.
 Route::post('/chat-stop', function (\Illuminate\Http\Request $request) {
