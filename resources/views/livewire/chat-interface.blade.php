@@ -262,7 +262,7 @@
             </div>
 
             <div class="flex-1 overflow-y-auto" x-ref="messagesContainer" id="chat-scroll-container">
-                <div class="max-w-[42rem] mx-auto w-full py-4 md:py-6 px-3 md:px-4">
+                <div class="mx-auto w-full py-4 md:py-6 px-3 md:px-4" style="max-width: 880px;">
                     <div class="space-y-1">
                         <template x-for="(msg, idx) in messages" :key="'msg-' + idx">
                             <div class="w-full mx-auto flex flex-col group/msg">
@@ -354,7 +354,7 @@
             </div>
 
             <div class="shrink-0 h-fit bg-background dark:bg-background">
-                <form @submit.prevent="sendMessage()" class="w-full max-w-[42rem] mx-auto pb-4 md:pb-6 px-3 md:px-4 pt-3 md:pt-4">
+                <form @submit.prevent="sendMessage()" class="w-full mx-auto pb-4 md:pb-6 px-3 md:px-4 pt-3 md:pt-4" style="max-width: 650px;">
                     <div class="relative bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-sm flex flex-col focus-within:shadow-lg focus-within:border-[#D97757]/50 transition-all duration-200">
                         <div x-show="uploading" class="px-4 pt-4 pb-2 flex items-center gap-3">
                             <svg class="animate-spin w-5 h-5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
