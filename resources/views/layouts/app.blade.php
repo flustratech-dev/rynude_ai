@@ -183,7 +183,7 @@
             });
         </script>
     </head>
-    <body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-stone-900" x-data="themeManager()">
+    <body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-[#2C2C2A]" x-data="themeManager()">
         <div class="min-h-screen">
             @isset($header)
                 <header class="bg-white shadow">
@@ -276,7 +276,7 @@
                         if (document.querySelector('[data-conv-id="' + convId + '"]')) return;
                         var el = document.createElement('div');
                         el.setAttribute('data-conv-id', convId);
-                        el.className = 'relative group flex items-center w-full rounded-lg transition-colors bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium';
+                        el.className = 'relative group flex items-center w-full rounded-lg transition-colors bg-[#EAE9E5] dark:bg-[#3A3A38] text-gray-900 dark:text-stone-200 font-medium';
                         el.innerHTML = '<button onclick="window.dispatchEvent(new CustomEvent(\'selectConversation\', {detail:{conversationId:' + convId + '}})); window.history.pushState({},\'\',' + "'/chat?conversation=" + convId + "'" + ');" class="flex-1 text-left px-2 py-1.5 text-[13px] truncate">' + title + '</button>';
                         container.prepend(el);
                     });

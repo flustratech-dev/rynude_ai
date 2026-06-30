@@ -19,14 +19,14 @@
         }
     </script>
 </head>
-<body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-stone-900">
+<body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-[#2C2C2A]">
     @php
         $lang = strtolower($artifact->language ?? '');
         $isHtml = $lang === 'html';
         $isMarkdown = in_array($lang, ['markdown', 'md']) || $artifact->type !== 'code';
     @endphp
 
-    <header class="border-b border-[#E5E5E5] dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 backdrop-blur sticky top-0 z-10">
+    <header class="border-b border-[#E5E5E5] dark:border-stone-700 bg-white/80 dark:bg-[#2C2C2A]/80 backdrop-blur sticky top-0 z-10">
         <div class="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-7 h-7 rounded-md bg-[#D97757] flex items-center justify-center text-white font-semibold text-sm shrink-0">R</div>
@@ -39,7 +39,7 @@
     <main class="max-w-4xl mx-auto px-5 py-8">
         @if ($isHtml)
             <iframe sandbox="allow-scripts allow-forms allow-popups"
-                    class="w-full rounded-xl border border-[#E5E5E5] dark:border-stone-800 bg-white"
+                    class="w-full rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-white"
                     style="height: 80vh;"
                     srcdoc="{{ $artifact->content }}"></iframe>
         @elseif ($isMarkdown)
@@ -50,7 +50,7 @@
             <pre class="rounded-xl overflow-x-auto bg-[#1E1E1E] border border-stone-700 p-4 text-[13px]"><code class="language-{{ $lang ?: 'text' }}">{{ $artifact->content }}</code></pre>
         @endif
 
-        <footer class="mt-10 pt-6 border-t border-[#E5E5E5] dark:border-stone-800 text-center text-xs text-stone-400">
+        <footer class="mt-10 pt-6 border-t border-[#E5E5E5] dark:border-stone-700 text-center text-xs text-stone-400">
             Published with {{ config('app.name', 'rynude') }}.
         </footer>
     </main>

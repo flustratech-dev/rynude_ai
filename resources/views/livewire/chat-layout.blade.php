@@ -214,7 +214,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-x-0"
                 x-transition:leave-end="opacity-0 translate-x-8"
-                :class="((artifactPanelOpen && !activePanel) || activePanel === 'artifacts') ? (activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-stone-800 w-full' : 'flex border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative') : 'hidden'"
+                :class="((artifactPanelOpen && !activePanel) || activePanel === 'artifacts') ? (activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-[#3A3A38] w-full' : 'flex border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-[#3A3A38] flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative') : 'hidden'"
                 :style="activePanel !== 'artifacts' ? `width: ${artifactWidth}vw; min-width: 400px; max-width: 80vw;` : ''"
             >
                 <!-- Drag Handle -->
@@ -239,7 +239,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-y-0"
                 x-transition:leave-end="opacity-0 translate-y-8"
-                :class="(isMobile && ((artifactPanelOpen && !activePanel) || activePanel === 'artifacts')) ? 'fixed inset-0 z-30 flex flex-col bg-white dark:bg-stone-800 md:hidden' : 'hidden'"
+                :class="(isMobile && ((artifactPanelOpen && !activePanel) || activePanel === 'artifacts')) ? 'fixed inset-0 z-30 flex flex-col bg-white dark:bg-[#3A3A38] md:hidden' : 'hidden'"
             >
                 @include('livewire.artifact-panel')
             </div>
@@ -282,7 +282,7 @@
                         <span class="text-[13.5px] text-stone-600 dark:text-stone-300">{{ $label }}</span>
                         <div class="flex items-center gap-1">
                             @foreach($keys as $key)
-                                <kbd class="px-2 py-1 min-w-[26px] text-center bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-md text-[11.5px] font-medium text-stone-600 dark:text-stone-300">{{ $key }}</kbd>
+                                <kbd class="px-2 py-1 min-w-[26px] text-center bg-stone-100 dark:bg-[#3A3A38] border border-stone-200 dark:border-stone-700 rounded-md text-[11.5px] font-medium text-stone-600 dark:text-stone-300">{{ $key }}</kbd>
                             @endforeach
                         </div>
                     </div>

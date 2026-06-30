@@ -19,8 +19,8 @@
         }
     </script>
 </head>
-<body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-stone-900">
-    <header class="border-b border-[#E5E5E5] dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 backdrop-blur sticky top-0 z-10">
+<body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-[#2C2C2A]">
+    <header class="border-b border-[#E5E5E5] dark:border-stone-700 bg-white/80 dark:bg-[#2C2C2A]/80 backdrop-blur sticky top-0 z-10">
         <div class="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
                 <div class="w-7 h-7 rounded-md bg-[#D97757] flex items-center justify-center text-white font-semibold text-sm">R</div>
@@ -38,7 +38,7 @@
             @forelse ($conversation->messages as $msg)
                 @if ($msg->role === 'user')
                     <div class="flex justify-end">
-                        <div class="max-w-[85%] bg-[#F0EEE6] dark:bg-stone-800 rounded-2xl px-4 py-3 text-[15px] whitespace-pre-wrap">{{ $msg->content }}</div>
+                        <div class="max-w-[85%] bg-[#F0EEE6] dark:bg-[#3A3A38] rounded-2xl px-4 py-3 text-[15px] whitespace-pre-wrap">{{ $msg->content }}</div>
                     </div>
                 @else
                     <div class="flex gap-3">
@@ -53,7 +53,7 @@
             @endforelse
         </div>
 
-        <footer class="mt-12 pt-6 border-t border-[#E5E5E5] dark:border-stone-800 text-center text-xs text-stone-400">
+        <footer class="mt-12 pt-6 border-t border-[#E5E5E5] dark:border-stone-700 text-center text-xs text-stone-400">
             This is a read-only snapshot shared from {{ config('app.name', 'rynude') }}.
         </footer>
     </main>

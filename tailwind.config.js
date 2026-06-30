@@ -25,9 +25,9 @@ export default {
                 foreground: 'hsl(var(--foreground))',
                 // Claude specific exact colors
                 'claude-bg-light': '#FDFCFB',
-                'claude-bg-dark': '#1A1A1A',
+                'claude-bg-dark': '#2C2C2A',
                 'claude-border-light': '#E5E5E5',
-                'claude-border-dark': '#333333',
+                'claude-border-dark': '#3A3A38',
                 'claude-accent': '#D97757', // Typical terracotta accent
                 primary: {
                     DEFAULT: 'hsl(var(--primary))',
@@ -66,9 +66,9 @@ export default {
                     '400': '#a8a8a3',
                     '500': '#7a7a75',
                     '600': '#525250',
-                    '700': '#3d3d3b',
-                    '800': '#282826',
-                    '900': '#1a1a19',
+                    '700': '#3A3A38',
+                    '800': '#2C2C2A',
+                    '900': '#232321',
                 },
             },
             borderRadius: {
