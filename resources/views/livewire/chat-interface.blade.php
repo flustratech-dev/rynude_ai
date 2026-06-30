@@ -354,7 +354,7 @@
             </div>
 
             <div class="shrink-0 h-fit bg-transparent">
-                <form @submit.prevent="sendMessage()" class="w-full mx-auto pb-4 md:pb-6 px-3 md:px-4 pt-3 md:pt-4" style="max-width: 650px;">
+                <form @submit.prevent="sendMessage()" class="w-full mx-auto pb-2 md:pb-3 px-3 md:px-4 pt-2 md:pt-3" style="max-width: 800px;">
                     <div class="relative bg-white dark:bg-[#3A3A38] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-sm flex flex-col focus-within:shadow-lg focus-within:border-[#D97757]/50 transition-all duration-200">
                         <div x-show="uploading" class="px-4 pt-4 pb-2 flex items-center gap-3">
                             <svg class="animate-spin w-5 h-5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
@@ -372,9 +372,9 @@
                             </template>
                         </div>
                         <textarea x-model="prompt" @input="autoResize($event)" @keydown.enter="if(!$event.shiftKey){$event.preventDefault();sendMessage()}" rows="2"
-                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[72px] max-h-48 overflow-y-auto"
+                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-2 pb-1 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[72px] max-h-48 overflow-y-auto"
                             placeholder="Message Rynude..."></textarea>
-                        <div class="flex items-center justify-between w-full mt-4 pb-1 px-1">
+                        <div class="flex items-center justify-between w-full mt-2 pb-1 px-1">
                             <button type="button" @click="$refs.fileInput2.click()" class="p-2 text-stone-500 hover:text-stone-800 rounded-xl hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                             </button>
