@@ -161,13 +161,18 @@ async function run() {
         spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
     }
     
-    if (fs.existsSync('./public/hot')) {
-        fs.unlinkSync('./public/hot');
-    }
+    // REMOVED: Don't delete public/hot - it's needed for Vite HMR
+    // if (fs.existsSync('./public/hot')) {
+    //     fs.unlinkSync('./public/hot');
+    // }
 
     // Amankan database SEBELUM optimize agar config-cache menunjuk ke lokasi yang benar.
     console.log(chalk.green('Mengamankan database Anda...'));
     protectDatabase();
+
+    // IMPORTANT: Clear old caches before optimizing to ensure fresh blade views
+    console.log(chalk.green('Membersihkan cache lama...'));
+    spawnSync('php', ['artisan', 'view:clear'], { stdio: 'ignore', shell: true });
 
     console.log(chalk.green('Mengoptimalkan sistem untuk performa maksimal...'));
     spawnSync('php', ['artisan', 'optimize'], { stdio: 'ignore', shell: true });

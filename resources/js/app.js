@@ -1,5 +1,17 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
+import mermaid from 'mermaid';
+
+// Initialize Mermaid.js
+mermaid.initialize({
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'loose',
+    fontFamily: 'inherit',
+});
+
+// Make mermaid globally available
+window.mermaid = mermaid;
 
 // Initialize Alpine.js
 window.Alpine = Alpine;

@@ -163,6 +163,7 @@ class ChatStreamingService
         bool $researchMode = false
     ): string {
         $baseSystemPrompt = $this->getBaseArtifactInstructions();
+        $baseSystemPrompt .= $this->getDiagramGenerationInstructions();
         $baseSystemPrompt .= $this->getDocumentQualityInstructions();
         $baseSystemPrompt .= $this->getResponsePrinciples();
 
@@ -438,6 +439,90 @@ class ChatStreamingService
             . "\n--- COMPLETENESS (WAJIB) ---\n"
             . "- Saat user minta skripsi/dokumen FULL, tulis dokumen LENGKAP dalam SATU artifact — front-matter (cover), seluruh bab berurutan (BAB I sampai bab penutup), lalu DAFTAR PUSTAKA. DILARANG berhenti separuh, DILARANG menulis placeholder seperti '[lanjutan]', '...dan seterusnya', atau '(bab berikutnya menyusul)', dan DILARANG meringkas bab yang diminta ditulis penuh. Jika dokumen benar-benar terlalu panjang untuk selesai dalam satu respons, tulis sebanyak mungkin konten yang lengkap & rapi, AKHIRI artifact dengan bersih di batas bab (tutup tag </antArtifact>), lalu DI LUAR artifact beri tahu user untuk mengetik 'lanjut bab berikutnya'.\n"
             . "- For casual/simple documents, OMIT the front-matter; the renderer applies a clean general layout. Choose academic vs. casual based on what the user actually asked for.";
+    }
+
+    /**
+     * Get diagram and visual generation instructions.
+     */
+    protected function getDiagramGenerationInstructions(): string
+    {
+        return "\n\n=== DIAGRAM & VISUAL GENERATION (CRITICAL PRIORITY) ===\n"
+            . "When the user requests ANY visual content (diagram, flowchart, chart, grafik, bagan, struktur, arsitektur, proses, alur, sequence diagram, class diagram, ERD, state diagram, gantt, pie chart, organizational chart, mind map, etc.), you MUST follow these rules:\n\n"
+            . "**OUTPUT FORMAT (NON-NEGOTIABLE):**\n"
+            . "- Use Mermaid syntax inside a markdown code block\n"
+            . "- The ```mermaid block must contain ONLY valid Mermaid syntax code - NO other text, NO labels, NO comments, NO headers like 'text', 'Copy code', etc.\n"
+            . "- Example of CORRECT format:\n"
+            . "```mermaid\n"
+            . "graph TD\n"
+            . "    A[Start] --> B{Decision}\n"
+            . "    B -->|Yes| C[Action]\n"
+            . "```\n\n"
+            . "**STRICT PROHIBITIONS:**\n"
+            . "- ❌ NEVER generate HTML <div>, <svg>, or any HTML tags for diagrams\n"
+            . "- ❌ NEVER generate ASCII art (using characters like |, -, +, etc.)\n"
+            . "- ❌ NEVER describe diagrams in plain text without code\n"
+            . "- ❌ NEVER use image URLs or external diagram tools\n"
+            . "- ❌ NEVER apologize or claim you cannot create diagrams\n\n"
+            . "**META-COMMENTARY RULES:**\n"
+            . "- ❌ DO NOT write introductory text like 'Berikut adalah diagramnya...', 'Here is the flowchart...', 'I'll create a diagram...'\n"
+            . "- ✅ Start DIRECTLY with the ```mermaid code block\n"
+            . "- ✅ Explanation/discussion goes AFTER the diagram block, never before\n\n"
+            . "**SUPPORTED MERMAID TYPES:**\n"
+            . "1. Flowchart/Process Flow: `graph TD` (top-down) or `graph LR` (left-right)\n"
+            . "2. Sequence Diagram: `sequenceDiagram`\n"
+            . "3. Class Diagram: `classDiagram`\n"
+            . "4. Entity Relationship Diagram: `erDiagram`\n"
+            . "5. Gantt Chart: `gantt`\n"
+            . "6. Pie Chart: `pie title Your Title`\n"
+            . "7. State Diagram: `stateDiagram-v2`\n"
+            . "8. User Journey: `journey`\n"
+            . "9. Git Graph: `gitGraph`\n"
+            . "10. Mindmap: `mindmap`\n\n"
+            . "**PLACEMENT CONTEXT:**\n"
+            . "- For STANDALONE diagrams (user only asks for diagram): Output the ```mermaid block directly in your response (NOT inside <antArtifact>)\n"
+            . "- For DOCUMENT-EMBEDDED diagrams (inside skripsi/laporan/proposal): Place the ```mermaid block INSIDE the <antArtifact> markdown content where the diagram should appear\n\n"
+            . "**LANGUAGE MATCHING:**\n"
+            . "- Use Bahasa Indonesia labels for Indonesian requests\n"
+            . "- Use English labels for English requests\n"
+            . "- Match the user's language in node labels, descriptions, and any text in the diagram\n\n"
+            . "**QUALITY STANDARDS:**\n"
+            . "- Use clear, descriptive labels for all nodes\n"
+            . "- AVOID special characters in labels: NO parentheses (), colons :, ampersands &, quotes \" inside node labels\n"
+            . "- If you need to show multiple items, use commas or 'dan/and': Instead of 'Input (A, B, C)' use 'Input A, B, C' or 'Input A dan B dan C'\n"
+            . "- Instead of 'System: Action' use 'System - Action' or 'System Action'\n"
+            . "- Instead of 'A & B' use 'A dan B' or 'A and B'\n"
+            . "- Include decision points with {curly braces} for diamonds\n"
+            . "- Use [square brackets] for processes/actions\n"
+            . "- Use (round brackets) or ([stadium shape]) for start/end points ONLY\n"
+            . "- Add edge labels with |text| or -->|text| for clarity\n"
+            . "- Keep diagrams organized and readable (avoid crossing lines when possible)\n\n"
+            . "**EXAMPLE 1 (Standalone - User asks: 'buat flowchart proses login'):**\n"
+            . "```mermaid\n"
+            . "graph TD\n"
+            . "    Start([Mulai]) --> Input[Input Username & Password]\n"
+            . "    Input --> Validate{Validasi Data?}\n"
+            . "    Validate -->|Valid| CheckDB[Cek Database]\n"
+            . "    Validate -->|Invalid| Error[Tampilkan Error]\n"
+            . "    CheckDB --> Auth{Autentikasi?}\n"
+            . "    Auth -->|Berhasil| Dashboard[Redirect ke Dashboard]\n"
+            . "    Auth -->|Gagal| Error\n"
+            . "    Error --> Input\n"
+            . "    Dashboard --> End([Selesai])\n"
+            . "```\n\n"
+            . "Flowchart di atas menunjukkan proses login dengan validasi data dan autentikasi database.\n\n"
+            . "**EXAMPLE 2 (In Document - Skripsi BAB III):**\n"
+            . "Inside the <antArtifact> markdown:\n"
+            . "## 3.2 Arsitektur Sistem\n\n"
+            . "Sistem ini menggunakan arsitektur client-server dengan komponen sebagai berikut:\n\n"
+            . "```mermaid\n"
+            . "graph LR\n"
+            . "    Client[Web Browser] --> Server[Laravel Backend]\n"
+            . "    Server --> DB[(MySQL Database)]\n"
+            . "    Server --> API[External API]\n"
+            . "```\n\n"
+            . "Gambar 3.1 menunjukkan arsitektur sistem yang terdiri dari...\n\n"
+            . "**CRITICAL REMINDER:**\n"
+            . "Every visual request MUST result in a ```mermaid block. The system will automatically render it into a beautiful diagram on the client side. Your job is ONLY to generate the Mermaid code, NOT the final rendered diagram.";
     }
 
     /**

@@ -831,12 +831,127 @@ function chatInterfaceState() {
 
         renderContent: function(content) {
             if (!content) return '';
+
+            // Detect and transform ```mermaid blocks before markdown parsing
+            var hasMermaid = false;
+            var self = this;
+            content = content.replace(/```mermaid\n([\s\S]*?)```/g, function(match, code) {
+                hasMermaid = true;
+                // Apply universal Mermaid syntax fixes for ALL models
+                code = self.fixMermaidSyntax(code);
+                // Generate unique ID for this diagram
+                var id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                return '<div class="mermaid-diagram my-4 p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 overflow-x-auto" id="' + id + '">' + code.trim() + '</div>';
+            });
+
+            // Parse markdown
+            var html = '';
             if (typeof marked !== 'undefined') {
                 try {
-                    return marked.parse(content);
-                } catch(e) {}
+                    html = marked.parse(content);
+                } catch(e) {
+                    html = content.replace(/\n/g, '<br>');
+                }
+            } else {
+                html = content.replace(/\n/g, '<br>');
             }
-            return content.replace(/\n/g, '<br>');
+
+            // Render mermaid diagrams after DOM insertion
+            if (hasMermaid && typeof window.mermaid !== 'undefined') {
+                setTimeout(function() {
+                    try {
+                        window.mermaid.run({
+                            querySelector: '.mermaid-diagram:not([data-processed="true"])'
+                        }).then(function() {
+                            // Mark as processed
+                            document.querySelectorAll('.mermaid-diagram:not([data-processed="true"])').forEach(function(el) {
+                                el.setAttribute('data-processed', 'true');
+                            });
+                        }).catch(function(error) {
+                            // Handle parse errors gracefully - show raw code
+                            console.error('Mermaid parse error:', error);
+                            document.querySelectorAll('.mermaid-diagram:not([data-processed="true"])').forEach(function(el) {
+                                var rawCode = el.textContent;
+                                el.innerHTML = '<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">' +
+                                    '<div class="flex items-start gap-2 mb-2">' +
+                                    '<svg class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' +
+                                    '<div class="flex-1"><p class="text-sm font-medium text-red-800 dark:text-red-300">Mermaid Syntax Error</p>' +
+                                    '<p class="text-xs text-red-600 dark:text-red-400 mt-1">The diagram code has syntax errors. Raw code shown below:</p></div>' +
+                                    '</div>' +
+                                    '<pre class="mt-2 p-3 bg-stone-900 text-stone-200 rounded text-xs overflow-x-auto"><code>' + rawCode.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>' +
+                                    '</div>';
+                                el.setAttribute('data-processed', 'true');
+                            });
+                        });
+                    } catch(e) {
+                        console.error('Mermaid rendering error:', e);
+                    }
+                }, 50);
+            }
+
+            return html;
+        },
+
+        /**
+         * Universal Mermaid Syntax Fixer
+         * Cleans up common errors from ALL AI models (weak & strong)
+         */
+        fixMermaidSyntax: function(code) {
+            if (!code) return '';
+
+            // 1. Remove common garbage text patterns
+            code = code.replace(/text\s+(Copy\s+)?code/gi, ''); // "text Copy code", "text code"
+            code = code.replace(/^(Copy\s+code|code)\s*/gim, ''); // Line starting with "Copy code" or "code"
+
+            // 2. Remove code block headers/footers that models sometimes add
+            code = code.replace(/^```\w*\s*/gm, ''); // Remove ```language at start of lines
+            code = code.replace(/```\s*$/gm, ''); // Remove closing ```
+
+            // 3. Fix special characters in node labels that break Mermaid parser
+
+            // Fix parentheses inside square brackets: [Text (A, B, C)] -> [Text A, B, C]
+            code = code.replace(/\[([^\]]*?)\(([^)]*?)\)([^\]]*?)\]/g, function(match, before, inside, after) {
+                return '[' + before.trim() + ' ' + inside.trim() + ' ' + after.trim() + ']';
+            });
+
+            // Fix colons in labels: [System: Action] -> [System - Action]
+            code = code.replace(/\[([^\]:]+):([^\]]+)\]/g, '[$1 -$2]');
+
+            // Replace ampersand with "dan" or "and" in labels
+            code = code.replace(/\[([^\]]*?)&([^\]]*?)\]/g, function(match, before, after) {
+                // Detect language - use "dan" for Indonesian, "and" for English
+                var useIndonesian = /[A-Z][a-z]*an|Sistem|Proses|Data|Validasi/i.test(code);
+                var connector = useIndonesian ? 'dan' : 'and';
+                return '[' + before.trim() + ' ' + connector + ' ' + after.trim() + ']';
+            });
+
+            // 4. Fix quote issues - remove unmatched quotes
+            code = code.replace(/["""]/g, '"'); // Normalize quote types
+            code = code.replace(/\[([^\]]*?)"([^\]]*?)\]/g, '[$1$2]'); // Remove quotes inside labels
+
+            // 5. Fix edge label syntax - normalize arrow labels
+            // Convert different arrow label formats to standard format
+            code = code.replace(/--\s*\[([^\]]+)\]\s*-->/g, '-->|$1|'); // --[Label]--> to -->|Label|
+            code = code.replace(/--\s*"([^"]+)"\s*-->/g, '-->|$1|'); // --"Label"--> to -->|Label|
+
+            // 6. Remove empty lines and clean up whitespace
+            code = code.split('\n').map(function(line) {
+                return line.trim();
+            }).filter(function(line) {
+                return line.length > 0 && line !== '```' && line !== '```mermaid';
+            }).join('\n');
+
+            // 7. Fix common node shape syntax errors
+            // Ensure start/end nodes use proper syntax
+            code = code.replace(/\(\[([^\]]+)\]\)/g, '([($1)])'); // Fix double brackets in stadium shape
+
+            // 8. Remove trailing semicolons (some models add them, Mermaid doesn't need them)
+            code = code.replace(/;+$/gm, '');
+
+            // 9. Fix multiple spaces on same line (preserve newlines)
+            code = code.replace(/  +/g, ' ');  // 2+ spaces → 1 space (but keep newlines)
+
+            return code.trim();
         },
         parseStreamContent: function(content) {
             if (!content) return '';
