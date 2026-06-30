@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-y-auto relative"
+<div class="h-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-hidden relative"
      x-data="projectsPanelState()"
      x-init="init()">
 
@@ -21,8 +21,8 @@
                 </div>
             </div>
 
-            <div class="flex flex-col lg:flex-row gap-12 flex-1">
-                <div class="flex-1 max-w-[700px] flex flex-col">
+            <div class="flex flex-col lg:flex-row gap-12 flex-1 min-h-0">
+                <div class="flex-1 max-w-[700px] flex flex-col min-h-0">
                     {{-- Chat input --}}
                     <div class="relative w-full mx-auto bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-2xl md:rounded-3xl shadow-sm flex flex-col focus-within:shadow-lg focus-within:border-claude-accent/50 dark:focus-within:border-claude-accent/50 animate-smooth transition-all duration-200 mb-8">
                         <textarea x-ref="projectChatInput"
@@ -36,10 +36,51 @@
                         ></textarea>
 
                         <div class="flex items-center justify-between w-full mt-4 pb-1">
-                            <div class="relative">
-                                <button type="button" class="p-2 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                            <div x-data="{ openPlus: false }" class="relative">
+                                <button @click="openPlus = !openPlus" type="button" class="p-2 text-stone-500 rounded-xl transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center" :class="openPlus ? 'bg-stone-100 dark:bg-[#3A3A38] text-stone-800 dark:text-stone-200' : 'hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38]'">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
                                 </button>
+
+                                <div x-show="openPlus" @click.away="openPlus = false" x-transition.opacity x-cloak class="absolute top-full left-0 mt-2 w-[240px] bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5">
+                                    <button type="button" @click="openPlus=false; $refs.projectFileInput.click()" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Add files or photos</span>
+                                        </div>
+                                        <span class="text-[12px] text-stone-400 font-medium">Ctrl+U</span>
+                                    </button>
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'projects' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Add to project</span>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+
+                                    <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
+
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'customize' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13l2 2 4-4"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Skills</span>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'customize' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group">
+                                        <div class="flex items-center gap-2.5">
+                                            <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                            <span class="text-[13px] text-stone-800 dark:text-stone-200">Add connector</span>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                    <button type="button" @click="openPlus=false; window.dispatchEvent(new CustomEvent('open-panel', { detail: 'customize' }))" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-2.5 group">
+                                        <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 5-5"/><path d="M19 19a2 2 0 0 1-2 2H7.5A2.5 2.5 0 0 1 5 18.5V7a2 2 0 0 1 2-2h4.5a2.5 2.5 0 0 1 2.5 2.5V11l5-5Z"/></svg>
+                                        <span class="text-[13px] text-stone-800 dark:text-stone-200">Add plugins...</span>
+                                    </button>
+                                </div>
+                                <input type="file" x-ref="projectFileInput" class="hidden" multiple>
                             </div>
                             <div class="flex items-center gap-1 md:gap-1.5 text-stone-500">
                                 <div x-data="{ open: false, ext: true, subOpen: false, closeTimer: null }" class="relative">
@@ -48,9 +89,9 @@
                                         <span class="text-[13px] text-stone-500 hidden sm:inline" x-show="ext">Extended</span>
                                         <svg class="w-3.5 h-3.5 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
                                     </button>
-                                    <div x-show="open" @click.away="open = false" x-cloak class="absolute bottom-full right-0 mb-2 w-[250px] bg-white border border-[#E5E5E5] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5">
+                                    <div x-show="open" @click.away="open = false" x-cloak class="absolute top-full right-0 mt-2 w-[250px] bg-white dark:bg-[#2C2C2A] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5">
                                         <template x-for="m in models" :key="m.code">
-                                            <button @click="selectedModel = m.code; open = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group" :class="!m.is_available ? 'opacity-50 cursor-not-allowed' : ''" :disabled="!m.is_available">
+                                            <button @click="selectedModel = m.code; open = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group" :class="!m.is_available ? 'opacity-50 cursor-not-allowed' : ''" :disabled="!m.is_available">
                                                 <div>
                                                     <div class="flex items-center gap-1.5">
                                                         <span class="text-[13px] text-stone-800 dark:text-stone-200" x-text="m.name"></span>
@@ -64,7 +105,7 @@
                                             </button>
                                         </template>
                                         <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
-                                        <div class="px-3 py-1.5 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors" @click="ext = !ext">
+                                        <div class="px-3 py-1.5 flex items-center justify-between cursor-pointer hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors" @click="ext = !ext">
                                             <div>
                                                 <div class="text-[13px] font-medium text-stone-800 dark:text-stone-200">Extended</div>
                                                 <p class="text-[11.5px] text-stone-500 mt-0.5">Always uses deep reasoning</p>
@@ -75,13 +116,13 @@
                                         </div>
                                         <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
                                         <div class="relative" @mouseenter="clearTimeout(closeTimer); subOpen = true" @mouseleave="closeTimer = setTimeout(function(){ subOpen = false }, 250)">
-                                            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-between group">
+                                            <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group">
                                                 <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200">More models</span>
                                                 <svg class="w-4 h-4 text-stone-400 group-hover:text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                                             </button>
-                                            <div x-show="subOpen" x-cloak class="absolute left-0 sm:left-auto sm:right-full sm:-mr-1 bottom-full mb-1 sm:mb-0 sm:bottom-[-8px] sm:top-auto mt-2 sm:mt-0 w-[200px] bg-white border border-[#E5E5E5] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] py-1.5 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                            <div x-show="subOpen" x-cloak class="absolute left-0 sm:left-auto sm:right-full sm:-mr-1 bottom-full mb-1 sm:mb-0 sm:bottom-[-8px] sm:top-auto mt-2 sm:mt-0 w-[200px] bg-white dark:bg-[#2C2C2A] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] py-1.5 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
                                                 <template x-for="m in moreModels" :key="m.code">
-                                                    <button @click="selectedModel = m.code; open = false; subOpen = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 transition-colors flex items-center justify-between group" :class="!m.is_available ? 'opacity-50 cursor-not-allowed' : ''" :disabled="!m.is_available">
+                                                    <button @click="selectedModel = m.code; open = false; subOpen = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group" :class="!m.is_available ? 'opacity-50 cursor-not-allowed' : ''" :disabled="!m.is_available">
                                                         <span class="text-[13px] font-medium text-stone-800" x-text="m.name"></span>
                                                         <svg x-show="selectedModel === m.code" class="w-4 h-4 text-[#2563EB]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                                                     </button>
@@ -102,7 +143,7 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col">
+                    <div class="flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                         <template x-if="!selectedProject.chats || selectedProject.chats.length === 0">
                             <div class="border-t border-[#E5E5E5] dark:border-stone-800 py-6 text-center"><p class="text-[14px] text-stone-500">No chats yet</p></div>
                         </template>
@@ -120,7 +161,7 @@
                     </div>
                 </div>
 
-                <div class="lg:w-[380px] flex flex-col shrink-0">
+                <div class="lg:w-[380px] flex flex-col shrink-0 min-h-0 overflow-y-auto custom-scrollbar">
                     <div class="bg-white dark:bg-[#2C2A29] border border-[#E5E5E5] dark:border-stone-700 rounded-2xl overflow-hidden">
                         <div class="p-5 border-b border-[#E5E5E5] dark:border-stone-700 relative group">
                             <div class="flex items-center justify-between mb-2">
@@ -223,7 +264,7 @@
 
     {{-- ============ PROJECTS LIST VIEW ============ --}}
     <template x-if="!selectedProject || !selectedProject.id">
-        <div class="max-w-[1000px] mx-auto w-full px-4 sm:px-8 py-6 sm:py-10 flex flex-col h-full">
+        <div class="max-w-[1000px] mx-auto w-full px-4 sm:px-8 py-6 sm:py-10 flex flex-col h-full overflow-y-auto custom-scrollbar">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h2 class="font-serif text-[28px] sm:text-[32px] text-[#2D2825] dark:text-stone-200">Projects</h2>
                 <div class="flex items-center gap-3">
@@ -421,6 +462,9 @@ function projectsPanelState() {
                             else m.is_available = available;
                         });
                         if (available) self.selectedModel = 'claude-haiku-4-5';
+                    }
+                    if (resp.more_models) {
+                        self.moreModels = resp.more_models;
                     }
                 });
         },
