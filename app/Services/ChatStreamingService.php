@@ -559,16 +559,36 @@ class ChatStreamingService
         }
 
         if ($project->files->count() > 0) {
+            $isBinaryExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp',
+                'docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt',
+                'zip', 'rar', '7z', 'tar', 'gz',
+                'mp3', 'mp4', 'avi', 'mkv', 'mov',
+                'exe', 'dll', 'so', 'bin', 'o', 'a',
+                'ttf', 'otf', 'woff', 'woff2', 'eot',
+            ];
+
             $context .= "\n\nProject Knowledge Files:\n";
             foreach ($project->files as $file) {
-                if (\Illuminate\Support\Facades\Storage::exists($file->file_path)) {
-                    $content = \Illuminate\Support\Facades\Storage::get($file->file_path);
-                    $truncated = substr($content, 0, 200000);
-                    $note = strlen($content) > 200000
-                        ? "\n[... file truncated at 200KB; total " . number_format(strlen($content)) . " bytes]"
-                        : '';
-                    $context .= "\n--- Document: {$file->file_name} ---\n" . $truncated . $note . "\n";
+                if (!\Illuminate\Support\Facades\Storage::exists($file->file_path)) {
+                    continue;
                 }
+
+                $ext = strtolower(pathinfo($file->file_name, PATHINFO_EXTENSION));
+                if (in_array($ext, $isBinaryExtensions, true)) {
+                    $context .= "\n--- Document: {$file->file_name} ---\n[Skipped: binary file type not supported for inline context]\n";
+                    continue;
+                }
+
+                $content = \Illuminate\Support\Facades\Storage::get($file->file_path);
+
+                $content = mb_convert_encoding($content, 'UTF-8', 'UTF-8');
+                $content = mb_scrub($content);
+
+                $truncated = mb_substr($content, 0, 200000);
+                $note = mb_strlen($content) > 200000
+                    ? "\n[... file truncated at 200KB; total " . number_format(strlen($content)) . " bytes]"
+                    : '';
+                $context .= "\n--- Document: {$file->file_name} ---\n" . $truncated . $note . "\n";
             }
         }
 

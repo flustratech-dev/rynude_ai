@@ -521,7 +521,10 @@ function chatInterfaceState() {
                     self.messages = [];
                     if (e.detail.projectId) self.selectedProject = e.detail.projectId;
                     if (e.detail.initialModel) self.selectedModel = e.detail.initialModel;
-                    if (e.detail.initialPrompt) self.prompt = e.detail.initialPrompt;
+                    if (e.detail.initialPrompt) {
+                        self.prompt = e.detail.initialPrompt;
+                        self.sendMessage();
+                    }
                 }
             });
             window.addEventListener('openChat', function(e) {
