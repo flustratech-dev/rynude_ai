@@ -156,11 +156,14 @@ async function run() {
     console.clear();
     console.log(chalk.gray('Menyiapkan lingkungan Rynude AI...'));
 
-    if (!fs.existsSync('./public/build')) {
-        console.log(chalk.yellow('Melakukan build aset pertama kali (hanya sekali ini saja)...'));
-        spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
-    }
-    
+    // CRITICAL: Always run npm install to ensure all dependencies (including mermaid) are installed
+    console.log(chalk.green('Memastikan semua dependencies terinstall...'));
+    spawnSync('npm', ['install'], { stdio: 'ignore', shell: true });
+
+    // CRITICAL: Always rebuild assets to ensure latest code is in public/build/
+    console.log(chalk.green('Membangun ulang aset frontend...'));
+    spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
+
     // REMOVED: Don't delete public/hot - it's needed for Vite HMR
     // if (fs.existsSync('./public/hot')) {
     //     fs.unlinkSync('./public/hot');
@@ -170,9 +173,12 @@ async function run() {
     console.log(chalk.green('Mengamankan database Anda...'));
     protectDatabase();
 
-    // IMPORTANT: Clear old caches before optimizing to ensure fresh blade views
-    console.log(chalk.green('Membersihkan cache lama...'));
+    // CRITICAL: Clear ALL caches before optimize to ensure fresh view compilations
+    console.log(chalk.green('Membersihkan semua cache...'));
     spawnSync('php', ['artisan', 'view:clear'], { stdio: 'ignore', shell: true });
+    spawnSync('php', ['artisan', 'config:clear'], { stdio: 'ignore', shell: true });
+    spawnSync('php', ['artisan', 'cache:clear'], { stdio: 'ignore', shell: true });
+    spawnSync('php', ['artisan', 'optimize:clear'], { stdio: 'ignore', shell: true });
 
     console.log(chalk.green('Mengoptimalkan sistem untuk performa maksimal...'));
     spawnSync('php', ['artisan', 'optimize'], { stdio: 'ignore', shell: true });
