@@ -57,6 +57,32 @@ Route::get('/api-keys', function () {
     return view('api-keys');
 })->middleware(['auth', 'verified'])->name('api-keys');
 
+// Download browser extension as zip
+Route::get('/api-keys/extension/download/{browser?}', function (string $browser = 'chrome') {
+    $extPath = base_path('browser-extension');
+    if (!is_dir($extPath)) {
+        abort(404, 'Extension not found');
+    }
+
+    $zipFile = tempnam(sys_get_temp_dir(), 'rynude-ext') . '.zip';
+    $zip = new ZipArchive();
+    if ($zip->open($zipFile, ZipArchive::CREATE) !== true) {
+        abort(500, 'Could not create zip');
+    }
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($extPath, RecursiveDirectoryIterator::SKIP_DOTS)
+    );
+    foreach ($files as $file) {
+        $relativePath = substr($file->getPathname(), strlen($extPath) + 1);
+        $zip->addFile($file->getPathname(), 'rynude-extension/' . $relativePath);
+    }
+    $zip->close();
+
+    $filename = 'rynude-extension-' . $browser . '.zip';
+    return response()->download($zipFile, $filename)->deleteFileAfterSend(true);
+})->middleware(['auth', 'verified'])->name('extension.download');
+
 // Signal the active streaming generation to stop. Uses a cache flag that the
 // streaming loop in ChatInterface::generateResponse() polls each chunk.
 Route::post('/chat-stop', function (\Illuminate\Http\Request $request) {
