@@ -1165,17 +1165,30 @@ function chatInterfaceState() {
         parseStreamContent: function(content) {
             if (!content) return '';
             
-            // Extract everything before the artifact, inside the artifact tag, and after
-            var match = content.match(/([\s\S]*?)<antArtifact[^>]*title="([^"]*)"[^>]*type="([^"]*)"[^>]*>([\s\S]*?)(?:<\/antArtifact>|$)([\s\S]*)/);
+            // Extract everything before the artifact, inside the artifact tag, and after.
+            // Attributes are parsed separately because models emit them in any order
+            // (the system prompt example puts type before title).
+            var match = content.match(/([\s\S]*?)<antArtifact\b([^>]*)>([\s\S]*?)(?:<\/antArtifact>|$)([\s\S]*)/i);
+            if (!match) {
+                // The opening tag is still arriving (no '>' yet): hide the
+                // partial raw tag and just show what came before it
+                var openIdx = content.search(/<antArtifact\b/i);
+                if (openIdx !== -1) {
+                    return this.renderContent(content.slice(0, openIdx));
+                }
+            }
             if (match) {
                 var pre = match[1];
-                var title = match[2];
-                var type = match[3];
-                var artifactContent = match[4];
-                var post = match[5] || '';
-                
+                var attrs = match[2];
+                var artifactContent = match[3];
+                var post = match[4] || '';
+                var title = (attrs.match(/title="([^"]*)"/i) || [])[1] || '';
+                var type = (attrs.match(/type="([^"]*)"/i) || [])[1] || '';
+                // No closing tag yet = the model is still writing the artifact
+                var isWriting = !/<\/antArtifact>/i.test(content);
+
                 var html = this.renderContent(pre);
-                
+
                 html += `
                     <div class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm max-w-full">
                         <div class="w-8 h-8 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-stone-500 shrink-0">
@@ -1183,15 +1196,31 @@ function chatInterfaceState() {
                         </div>
                         <div class="min-w-0">
                             <div class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate">` + (title || 'Generating...') + `</div>
-                            <div class="text-[11px] text-stone-400">` + type + `</div>
+                            <div class="text-[11px] text-stone-400">` + type + (isWriting ? ' — ' + artifactContent.length + ' karakter…' : '') + `</div>
                         </div>
                     </div>
                 `;
-                
+
+                // Live preview of the artifact text while it is being written:
+                // show the tail of the content in a compact dark box, so the
+                // user can watch the document grow in real time.
+                if (isWriting && artifactContent) {
+                    var tail = artifactContent.slice(-500);
+                    if (artifactContent.length > 500) {
+                        // Start the excerpt at a clean line boundary when possible
+                        var nl = tail.indexOf('\n');
+                        if (nl > -1 && nl < 200) tail = tail.slice(nl + 1);
+                    }
+                    var esc = tail.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    html += '<div class="mt-2 rounded-xl border border-claude-border-light dark:border-claude-border-dark not-prose" style="background:#1E1E1E;padding:12px;">'
+                        + '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:#D6D3D1;">'
+                        + esc + '<span class="animate-pulse">▌</span></pre></div>';
+                }
+
                 if (post) {
                     html += this.renderContent(post);
                 }
-                
+
                 return html;
             }
             return this.renderContent(content);
