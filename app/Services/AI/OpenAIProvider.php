@@ -333,8 +333,19 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                         if (empty($jsonStr) || $jsonStr === '[DONE]') continue;
 
                         $data = json_decode($jsonStr, true);
-                        if ($data && isset($data['choices'][0]['delta']['content'])) {
-                            yield $data['choices'][0]['delta']['content'];
+                        $delta = $data['choices'][0]['delta'] ?? [];
+
+                        // Reasoning models stream their thinking as a separate delta
+                        // field (`reasoning_content` on DeepSeek-style APIs, `reasoning`
+                        // on some proxies). Forward it as a structured chunk so the UI
+                        // can show it live without mixing it into the final answer.
+                        $reasoning = $delta['reasoning_content'] ?? $delta['reasoning'] ?? null;
+                        if (is_string($reasoning) && $reasoning !== '') {
+                            yield ['type' => 'thinking', 'text' => $reasoning];
+                        }
+
+                        if (isset($delta['content']) && $delta['content'] !== '') {
+                            yield $delta['content'];
                         } elseif ($data && isset($data['error'])) {
                             $errorMsg = is_string($data['error']) ? $data['error'] : ($data['error']['message'] ?? 'Unknown error');
                             yield "\n[Error from API: " . $errorMsg . "]";

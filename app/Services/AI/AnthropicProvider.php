@@ -19,6 +19,7 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
         }
         return str_contains($model, 'sonnet') || 
                str_contains($model, 'opus') || 
+               str_contains($model, 'fable') || 
                str_contains($model, 'thinking') || 
                str_contains($model, 'claude-3-5') ||
                str_contains($model, 'claude-3-7');
@@ -43,6 +44,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             'claude-haiku-4-6' => 'claude-3-5-haiku-20241022',
             'claude-haiku-4-5' => 'claude-3-5-haiku-20241022',
             'claude-opus-4-8' => 'claude-3-opus-20240229',
+            'fable-5' => 'claude-3-5-sonnet-20241022',
+            'claude-sonnet-5' => 'claude-3-5-sonnet-20241022',
         ];
         $apiModel = $modelMap[$model] ?? $model;
 
@@ -192,7 +195,9 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                             } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['text'])) {
                                 yield $data['delta']['text'];
                             } elseif ($data['type'] === 'content_block_delta' && isset($data['delta']['thinking'])) {
-                                yield "[Thinking] " . $data['delta']['thinking'];
+                                // Structured chunk so the UI can render thinking live
+                                // without it leaking into the saved answer text.
+                                yield ['type' => 'thinking', 'text' => $data['delta']['thinking']];
                             } elseif ($data['type'] === 'error') {
                                 yield "\n[Error from API: " . ($data['error']['message'] ?? 'Unknown error') . "]";
                             }
@@ -232,6 +237,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             'claude-haiku-4-6' => 'claude-3-5-haiku-20241022',
             'claude-haiku-4-5' => 'claude-3-5-haiku-20241022',
             'claude-opus-4-8' => 'claude-3-opus-20240229',
+            'fable-5' => 'claude-3-5-sonnet-20241022',
+            'claude-sonnet-5' => 'claude-3-5-sonnet-20241022',
         ];
         $apiModel = $modelMap[$model] ?? $model;
 

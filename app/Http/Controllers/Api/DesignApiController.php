@@ -85,6 +85,7 @@ class DesignApiController extends Controller
                 ['role' => 'system', 'content' => $system],
                 ['role' => 'user', 'content' => $design->prompt],
             ], 'claude-haiku-4-5') as $chunk) {
+                if (!is_string($chunk)) continue; // skip structured thinking deltas
                 $output .= $chunk;
             }
 

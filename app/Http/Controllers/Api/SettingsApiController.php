@@ -271,7 +271,13 @@ class SettingsApiController extends Controller
                 'code' => 'fable-5',
                 'name' => 'Fable 5',
                 'description' => 'For your toughest challenges',
-                'is_available' => false,
+                'is_available' => $available,
+            ],
+            [
+                'code' => 'claude-sonnet-5',
+                'name' => 'Sonnet 5',
+                'description' => 'Next-gen balanced performance',
+                'is_available' => $available,
             ],
             [
                 'code' => 'claude-opus-4-8',
@@ -279,18 +285,6 @@ class SettingsApiController extends Controller
                 'description' => 'For complex tasks',
                 'is_available' => $available,
             ],
-            [
-                'code' => 'claude-sonnet-4-6',
-                'name' => 'Sonnet 4.6',
-                'description' => 'Most efficient for everyday tasks',
-                'is_available' => $available,
-            ],
-            [
-                'code' => 'claude-haiku-4-5',
-                'name' => 'Haiku 4.5',
-                'description' => 'Fastest for quick answers',
-                'is_available' => $available,
-            ]
         ];
 
         $moreModels = [];
@@ -319,7 +313,7 @@ class SettingsApiController extends Controller
                 $is_available = true;
             }
 
-            if (!in_array($model->code, ['fable-5', 'claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5'])) {
+            if (!in_array($model->code, ['fable-5', 'claude-sonnet-5', 'claude-opus-4-8'])) {
                 $moreModels[] = [
                     'code' => $model->code,
                     'name' => $model->name,
@@ -327,6 +321,42 @@ class SettingsApiController extends Controller
                     'is_available' => $is_available,
                 ];
             }
+        }
+
+        // Sort: Claude first, then rest, HG (HuggingFace) at the very bottom
+        $claudeModels = [];
+        $gptModels = [];
+        $hgModels = [];
+        $otherModels = [];
+        foreach ($moreModels as $m) {
+            if (str_starts_with($m['name'], 'HG')) {
+                $hgModels[] = $m;
+            } elseif (str_starts_with($m['code'], 'claude') || str_starts_with($m['code'], 'kr/claude')) {
+                $claudeModels[] = $m;
+            } elseif (str_starts_with($m['code'], 'gpt')) {
+                $gptModels[] = $m;
+            } else {
+                $otherModels[] = $m;
+            }
+        }
+        $moreModels = array_merge($claudeModels, $gptModels, $otherModels, $hgModels);
+
+        // Fallback: ensure fugu-ultra appears (after haiku entries) even without DB seed
+        $fuguInDb = $allModels->firstWhere('code', 'fugu-ultra');
+        $fuguInMore = collect($moreModels)->firstWhere('code', 'fugu-ultra');
+        if (!$fuguInDb && !$fuguInMore) {
+            $insertAt = 0;
+            foreach ($moreModels as $i => $m) {
+                if (str_contains($m['code'], 'haiku')) {
+                    $insertAt = $i + 1;
+                }
+            }
+            array_splice($moreModels, $insertAt, 0, [[
+                'code' => 'fugu-ultra',
+                'name' => 'Fugu Ultra',
+                'description' => 'Fugu Ultra',
+                'is_available' => $available,
+            ]]);
         }
 
         $aiModels = \App\Models\AiModel::orderBy('created_at', 'desc')->get();

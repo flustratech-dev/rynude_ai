@@ -60,6 +60,7 @@ class GenerateChatTitle implements ShouldQueue
             $stream = $aiService->streamResponse($messages, $this->model);
             $title = '';
             foreach ($stream as $chunk) {
+                if (!is_string($chunk)) continue; // skip structured thinking deltas
                 $title .= $chunk;
             }
 

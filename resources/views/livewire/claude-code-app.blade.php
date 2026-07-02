@@ -538,9 +538,9 @@ function claudeCodeState() {
 
         init: function() {
             this.codeModels = [
+                {code:'fable-5',name:'Fable 5'},
+                {code:'claude-sonnet-5',name:'Sonnet 5'},
                 {code:'claude-opus-4-8',name:'Opus 4.8'},
-                {code:'claude-sonnet-4-6',name:'Sonnet 4.6'},
-                {code:'claude-haiku-4-5',name:'Haiku 4.5'},
             ];
             this.loadRecentSessions();
             this.loadSettings();

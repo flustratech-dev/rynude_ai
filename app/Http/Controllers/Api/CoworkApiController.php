@@ -122,6 +122,7 @@ class CoworkApiController extends Controller
 
             $output = '';
             foreach ($ai->streamResponse($messages, $task->model ?: 'claude-haiku-4-5') as $chunk) {
+                if (!is_string($chunk)) continue; // skip structured thinking deltas
                 $output .= $chunk;
             }
 

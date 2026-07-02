@@ -67,7 +67,7 @@ final class ModelAdapterRegistry
         if (str_starts_with($model, 'kr/')) {
             return false;
         }
-        return str_starts_with($model, 'claude');
+        return str_starts_with($model, 'claude') || str_starts_with($model, 'fable');
     }
 
     private function isOpenAiModel(string $model): bool

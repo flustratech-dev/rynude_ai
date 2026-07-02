@@ -204,6 +204,7 @@ EOT;
                     
                     $summaryText = "";
                     foreach ($aiService->streamResponse($summaryMessages, $model) as $chunk) {
+                        if (!is_string($chunk)) continue; // skip structured thinking deltas
                         $summaryText .= $chunk;
                     }
                     
@@ -342,8 +343,8 @@ EOT;
                 continue;
             } elseif ($command === '/model') {
                 $options = [
-                    'claude-sonnet-4-6' => 'Claude 3.5 Sonnet (Recommended)',
-                    'claude-haiku-4-6' => 'Claude 3.5 Haiku',
+                    'fable-5' => 'Fable 5 (Most Capable)',
+                    'claude-sonnet-5' => 'Sonnet 5',
                 ];
 
                 $dbModels = \App\Models\AiModel::where('is_active', true)->get();

@@ -72,6 +72,15 @@ class ChatStreamingService
                 break;
             }
 
+            // Providers may yield structured thinking/reasoning deltas as arrays;
+            // forward them live but keep them out of the stored answer text.
+            if (!is_string($chunk)) {
+                if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
+                    yield ['type' => 'thinking', 'data' => $chunk['text']];
+                }
+                continue;
+            }
+
             $fullResponse .= $chunk;
 
             // Yield content chunk to client

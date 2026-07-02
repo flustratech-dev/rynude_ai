@@ -39,11 +39,11 @@ final class AnthropicAdapter extends ModelAdapter
         $thinking = !$isHaiku && (
             str_contains($model, 'sonnet') ||
             str_contains($model, 'opus') ||
+            str_contains($model, 'fable') ||
             str_contains($model, 'thinking') ||
             str_contains($model, 'claude-3-5') ||
             str_contains($model, 'claude-3-7') ||
-            str_contains($model, 'claude-4') ||
-            str_contains($model, 'claude-fable')
+            str_contains($model, 'claude-4')
         );
 
         return new ModelCapability(

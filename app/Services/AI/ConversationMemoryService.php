@@ -236,6 +236,7 @@ PROMPT;
 
             $raw = '';
             foreach ($stream as $chunk) {
+                if (!is_string($chunk)) continue; // skip structured thinking deltas
                 $raw .= $chunk;
             }
             $raw = trim($raw);

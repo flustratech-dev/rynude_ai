@@ -440,9 +440,9 @@ function projectsPanelState() {
         loadModels: function() {
             var self = this;
             this.models = [
+                {code:'fable-5',name:'Fable 5',description:'For your toughest challenges',is_available:false},
+                {code:'claude-sonnet-5',name:'Sonnet 5',description:'Next-gen balanced performance',is_available:false},
                 {code:'claude-opus-4-8',name:'Opus 4.8',description:'For complex tasks',is_available:false},
-                {code:'claude-sonnet-4-6',name:'Sonnet 4.6',description:'Most efficient for everyday tasks',is_available:false},
-                {code:'claude-haiku-4-5',name:'Haiku 4.5',description:'Fastest for quick answers',is_available:false},
             ];
             fetch('/api/settings', {headers:{'Accept':'application/json'}})
                 .then(function(r){return r.json()})
@@ -458,8 +458,7 @@ function projectsPanelState() {
                         var hasMistral = u.mistral_api_key || u.mistralApiKey;
                         var available = hasAnthropic || hasProxy || hasRouter || hasHF || hasGoogle || hasMistral;
                         self.models.forEach(function(m){
-                            if (m.code === 'fable-5') m.is_available = false;
-                            else m.is_available = available;
+                            m.is_available = available;
                         });
                         if (available) self.selectedModel = 'claude-haiku-4-5';
                     }

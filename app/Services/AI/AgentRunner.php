@@ -29,6 +29,12 @@ class AgentRunner
         if (!($provider instanceof SupportsToolUse) || empty($schemas)) {
             $assistantText = '';
             foreach ($this->ai->streamResponse($messages, $model) as $chunk) {
+                if (!is_string($chunk)) {
+                    if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking') {
+                        yield ['type' => 'thinking', 'text' => $chunk['text'] ?? ''];
+                    }
+                    continue;
+                }
                 $assistantText .= $chunk;
                 yield ['type' => 'text', 'text' => $chunk];
             }
@@ -167,6 +173,12 @@ class AgentRunner
 
         $assistantText = '';
         foreach ($this->ai->streamResponse($baseMessages, $model) as $chunk) {
+            if (!is_string($chunk)) {
+                if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking') {
+                    yield ['type' => 'thinking', 'text' => $chunk['text'] ?? ''];
+                }
+                continue;
+            }
             $assistantText .= $chunk;
             yield ['type' => 'text', 'text' => $chunk];
         }
@@ -203,6 +215,12 @@ class AgentRunner
         for ($iter = 0; $iter < $maxIterations; $iter++) {
             $text = '';
             foreach ($this->ai->streamResponse($messages, $model) as $chunk) {
+                if (!is_string($chunk)) {
+                    if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking') {
+                        yield ['type' => 'thinking', 'text' => $chunk['text'] ?? ''];
+                    }
+                    continue;
+                }
                 $text .= $chunk;
             }
 
@@ -235,6 +253,12 @@ class AgentRunner
         $messages[] = ['role' => 'user', 'content' => 'Stop using tools now and give your best final answer from what you have gathered.'];
         $assistantText = '';
         foreach ($this->ai->streamResponse($messages, $model) as $chunk) {
+            if (!is_string($chunk)) {
+                if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking') {
+                    yield ['type' => 'thinking', 'text' => $chunk['text'] ?? ''];
+                }
+                continue;
+            }
             $assistantText .= $chunk;
             yield ['type' => 'text', 'text' => $chunk];
         }

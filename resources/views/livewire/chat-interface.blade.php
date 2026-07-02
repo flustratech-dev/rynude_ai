@@ -302,6 +302,15 @@
                                             <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757]" viewBox="0 0 100 100" fill="currentColor"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
                                         </div>
                                         <div class="flex-1 min-w-0">
+                                            <template x-if="msg.thinking">
+                                                <div x-data="{open:false}" class="mb-2 not-prose">
+                                                    <button type="button" @click="open=!open" class="flex items-center gap-2 text-[13px] font-medium text-stone-500 dark:text-stone-400">
+                                                        <span>Proses berpikir</span>
+                                                        <svg class="w-3.5 h-3.5" :style="open ? 'transform: rotate(180deg)' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                                    </button>
+                                                    <div x-show="open" x-cloak class="mt-2 px-3 py-1.5 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-stone-50 dark:bg-[#2C2C2A] text-[13px] text-stone-500 dark:text-stone-400 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar" style="font-style: italic;" x-text="msg.thinking"></div>
+                                                </div>
+                                            </template>
                                             <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-[#3A3A38] prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-[#3A3A38] prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;" x-html="renderContent(msg.content)"></div>
                                             <template x-if="msg.artifact">
                                                 <div @click="openArtifact(msg.artifact.id)" class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group not-prose">
@@ -337,7 +346,21 @@
                                 <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757] animate-spin" viewBox="0 0 100 100" fill="currentColor"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <div class="text-[13px] text-[#D97757] font-medium mb-1">Rynude is thinking…</div>
+                                <div x-show="!streamContent && !thinkingContent" class="mb-1">
+                                    <div class="text-[13px] text-[#D97757] font-medium">Rynude is thinking…</div>
+                                    <div x-show="waitStatus" class="text-[13px] text-stone-500 dark:text-stone-400 whitespace-pre-wrap" style="font-style: italic;" x-text="waitStatus"></div>
+                                </div>
+                                {{-- Live thinking / reasoning panel --}}
+                                <template x-if="thinkingContent">
+                                    <div class="mb-2 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-stone-50 dark:bg-[#2C2C2A] not-prose">
+                                        <button type="button" @click="thinkingOpen=!thinkingOpen" class="w-full text-left px-3 py-1.5 flex items-center gap-2 text-[13px] font-medium text-stone-500 dark:text-stone-400">
+                                            <svg class="w-3.5 h-3.5 animate-pulse text-[#D97757]" x-show="!streamContent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M4.9 19.1l2.2-2.2M16.9 7.1l2.2-2.2"/></svg>
+                                            <span x-text="streamContent ? 'Proses berpikir' : 'Sedang berpikir…'"></span>
+                                            <svg class="w-3.5 h-3.5" :style="thinkingOpen ? 'transform: rotate(180deg)' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                        </button>
+                                        <div x-show="thinkingOpen" x-ref="thinkingBox" class="px-3 pb-2 text-[13px] text-stone-500 dark:text-stone-400 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar" style="font-style: italic;" x-text="thinkingContent"></div>
+                                    </div>
+                                </template>
                                 <div x-html="parseStreamContent(streamContent)" class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-[#3A3A38] prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;"></div>
                             </div>
                         </div>
@@ -455,6 +478,15 @@ function chatInterfaceState() {
         sending: false,
         streaming: false,
         streamContent: '',
+        thinkingContent: '',
+        thinkingOpen: true,
+        contentQueue: '',
+        thinkQueue: '',
+        streamEnded: false,
+        pumpTimer: null,
+        lastThinking: '',
+        waitStatus: '',
+        waitTimer: null,
         loading: false,
         isDropping: false,
         attachments: [],
@@ -561,9 +593,22 @@ function chatInterfaceState() {
                 .then(function(resp){
                     if (resp.data) {
                         self.conversationId = resp.data.id;
-                        self.messages = resp.data.messages || [];
+                        var msgs = resp.data.messages || [];
+                        // Re-attach the just-streamed thinking text to the saved
+                        // assistant message (client-side only, until page reload)
+                        if (self.lastThinking) {
+                            for (var i = msgs.length - 1; i >= 0; i--) {
+                                if (msgs[i].role !== 'user') {
+                                    msgs[i].thinking = self.lastThinking;
+                                    break;
+                                }
+                            }
+                            self.lastThinking = '';
+                        }
+                        self.messages = msgs;
                         self.memoryDraft = resp.data.memory || '';
                         self.streamContent = '';
+                        self.thinkingContent = '';
                         self.streaming = false;
                     }
                     if (!silent) {
@@ -579,6 +624,18 @@ function chatInterfaceState() {
                     if (!silent) {
                         self.loading = false;
                     }
+                    // Reload failed after a finished stream: keep the streamed
+                    // reply on screen as a local message instead of losing it
+                    if (self.streaming && self.streamContent) {
+                        self.messages.push({
+                            role: 'assistant',
+                            content: self.streamContent.replace(/<antArtifact[\s\S]*?(?:<\/antArtifact>|$)/i, '').trim(),
+                            thinking: self.thinkingContent || null
+                        });
+                    }
+                    self.streamContent = '';
+                    self.thinkingContent = '';
+                    self.streaming = false;
                 });
         },
 
@@ -632,6 +689,13 @@ function chatInterfaceState() {
             self.attachments = [];
             self.streaming = true;
             self.streamContent = '';
+            self.thinkingContent = '';
+            self.thinkingOpen = true;
+            self.contentQueue = '';
+            self.thinkQueue = '';
+            self.streamEnded = false;
+            self.lastThinking = '';
+            self.startWaitFeed();
 
             fetch('/api/chats/send', {
                 method: 'POST',
@@ -640,6 +704,7 @@ function chatInterfaceState() {
             })
             .then(function(response) {
                 if (!response.ok) {
+                    self.stopWaitFeed();
                     self.streaming = false;
                     self.sending = false;
                     response.json().then(function(errData) {
@@ -658,11 +723,10 @@ function chatInterfaceState() {
                 function read() {
                     reader.read().then(function(result) {
                         if (result.done) {
-                            self.streaming = false;
-                            self.sending = false;
-                            if (self.conversationId) {
-                                self.loadConversation(self.conversationId, true);
-                            }
+                            // Let the typewriter pump drain the remaining queued
+                            // text before finalizing (finishStream does the rest).
+                            self.streamEnded = true;
+                            self.pumpStream();
                             return;
                         }
                         buffer += decoder.decode(result.value, {stream:true});
@@ -684,8 +748,17 @@ function chatInterfaceState() {
                                             }
                                         }
                                     } else if (data.type === 'content') {
-                                        self.streamContent += data.data;
+                                        // Queue tokens and reveal them gradually so the
+                                        // answer types out even if chunks arrive in bursts
+                                        self.contentQueue += data.data;
+                                        self.pumpStream();
+                                    } else if (data.type === 'thinking') {
+                                        self.thinkQueue += data.data;
+                                        self.pumpStream();
                                     } else if (data.type === 'error') {
+                                        self.stopWaitFeed();
+                                        self.contentQueue = '';
+                                        self.thinkQueue = '';
                                         self.streamContent = '<div class="text-red-500 font-medium">Error: ' + data.data + '</div>';
                                         self.streaming = false;
                                         self.sending = false;
@@ -709,6 +782,11 @@ function chatInterfaceState() {
                         read();
                     }).catch(function(err) {
                         console.error("Stream read error:", err);
+                        self.stopWaitFeed();
+                        self.streamContent += self.contentQueue;
+                        self.thinkingContent += self.thinkQueue;
+                        self.contentQueue = '';
+                        self.thinkQueue = '';
                         self.streaming = false;
                         self.sending = false;
                     });
@@ -718,9 +796,121 @@ function chatInterfaceState() {
             .catch(function(err) {
                 console.error("Fetch network error:", err);
                 alert("Network error sending message. Please check connection.");
+                self.stopWaitFeed();
                 self.streaming = false;
                 self.sending = false;
             });
+        },
+
+        // Typewriter pump: drains the queued thinking/content tokens a few
+        // characters per frame so the reply always types out gradually, even
+        // when the network delivers big bursts at once. Drain speed adapts to
+        // the backlog so a long queue never lags far behind the stream.
+        pumpStream: function() {
+            if (this.pumpTimer) return;
+            var self = this;
+
+            function take(queue, minChars, divisor, maxChars) {
+                var n = Math.max(minChars, Math.ceil(queue.length / divisor));
+                if (maxChars && n > maxChars) n = maxChars;
+                // Don't split a surrogate pair (emoji) across frames
+                var code = queue.charCodeAt(n - 1);
+                if (code >= 0xD800 && code <= 0xDBFF && n < queue.length) n++;
+                return n;
+            }
+
+            this.pumpTimer = setInterval(function() {
+                var moved = false;
+                if (self.thinkQueue.length > 0) {
+                    if (self.streamEnded) {
+                        // Answer is finished — dump the remaining reasoning at once
+                        self.thinkingContent += self.thinkQueue;
+                        self.thinkQueue = '';
+                    } else {
+                        // Reasoning reads best at a calm pace: hard-capped at
+                        // ~4 chars per frame (≈250 chars/s) no matter how big
+                        // the backlog gets — leftovers are flushed at finish
+                        var n = take(self.thinkQueue, 1, 200, 4);
+                        self.thinkingContent += self.thinkQueue.slice(0, n);
+                        self.thinkQueue = self.thinkQueue.slice(n);
+                    }
+                    moved = true;
+                }
+                if (self.contentQueue.length > 0) {
+                    var m = take(self.contentQueue, 3, 30);
+                    self.streamContent += self.contentQueue.slice(0, m);
+                    self.contentQueue = self.contentQueue.slice(m);
+                    moved = true;
+                }
+                if (moved) {
+                    var container = document.querySelector('[x-ref="messagesContainer"]');
+                    if (container) container.scrollTop = container.scrollHeight;
+                    var think = document.querySelector('[x-ref="thinkingBox"]');
+                    if (think) think.scrollTop = think.scrollHeight;
+                }
+                // Finalize as soon as the visible ANSWER is fully typed — never
+                // wait for a reasoning backlog (finishStream flushes it at once)
+                if (self.contentQueue.length === 0 && (self.streamEnded || !self.streaming)) {
+                    clearInterval(self.pumpTimer);
+                    self.pumpTimer = null;
+                    if (self.streamEnded) self.finishStream();
+                }
+            }, 16);
+        },
+
+        startWaitFeed: function() {
+            this.stopWaitFeed();
+            var self = this;
+            var steps = [
+                'Membaca pertanyaan…',
+                'Menganalisis konteks percakapan…',
+                'Mengumpulkan poin-poin penting…',
+                'Menyusun kerangka jawaban…',
+                'Menulis jawaban…',
+                'Masih menyusun jawaban, mohon tunggu…'
+            ];
+            var idx = 0;
+            this.waitStatus = steps[idx++];
+            this.waitTimer = setInterval(function() {
+                if (self.streamContent || self.thinkingContent || !self.streaming) {
+                    self.stopWaitFeed();
+                    return;
+                }
+                self.waitStatus += '\n' + steps[Math.min(idx++, steps.length - 1)];
+                // Keep the feed compact: show only the last few lines
+                var lines = self.waitStatus.split('\n');
+                if (lines.length > 4) self.waitStatus = lines.slice(-4).join('\n');
+            }, 1800);
+        },
+
+        stopWaitFeed: function() {
+            if (this.waitTimer) {
+                clearInterval(this.waitTimer);
+                this.waitTimer = null;
+            }
+            this.waitStatus = '';
+        },
+
+        finishStream: function() {
+            this.streamEnded = false;
+            this.sending = false;
+            this.stopWaitFeed();
+            // Reveal any reasoning still queued in one go — it's secondary to
+            // the finished answer and must not delay it
+            if (this.thinkQueue) {
+                this.thinkingContent += this.thinkQueue;
+                this.thinkQueue = '';
+            }
+            // Keep the thinking text so it can be re-attached to the saved message
+            this.lastThinking = this.thinkingContent;
+            if (this.conversationId) {
+                // Keep the streamed text on screen (streaming stays true) until
+                // loadConversation swaps in the saved message in the same render,
+                // so the reply never blinks out and back in.
+                this.loadConversation(this.conversationId, true);
+            } else {
+                this.streaming = false;
+            }
         },
 
         stopGeneration: function() {
@@ -731,7 +921,16 @@ function chatInterfaceState() {
                 headers: {'Content-Type':'application/json','Accept':'application/json'},
                 body: JSON.stringify({conversation_id: this.conversationId})
             })
-            .then(function(){self.streaming=false;self.sending=false;});
+            .then(function(){
+                // Show whatever is still queued right away, then let the
+                // reader's done-event finalize via finishStream()
+                self.stopWaitFeed();
+                self.streamContent += self.contentQueue;
+                self.thinkingContent += self.thinkQueue;
+                self.contentQueue = '';
+                self.thinkQueue = '';
+                self.sending = false;
+            });
         },
 
         handleFileUpload: function(event) {

@@ -49,7 +49,7 @@ class AiService
             return new OpenAIProvider();
         }
 
-        if (str_starts_with($model, 'claude')) {
+        if (str_starts_with($model, 'claude') || str_starts_with($model, 'fable')) {
             return $this->resolveClaudeProvider($user);
         }
 

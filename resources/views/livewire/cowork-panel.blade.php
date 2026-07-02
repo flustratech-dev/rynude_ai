@@ -126,9 +126,9 @@
                         <div>
                             <label class="block text-[12.5px] font-medium text-stone-600 dark:text-stone-300 mb-1.5">Model</label>
                             <select x-model="form.model" class="w-full px-3 py-2 bg-[#F9F8F6] dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-[13px] text-stone-800 dark:text-stone-200 focus:outline-none focus:border-[#D97757]">
+                                <option value="fable-5">Fable 5</option>
+                                <option value="claude-sonnet-5">Sonnet 5</option>
                                 <option value="claude-opus-4-8">Opus 4.8</option>
-                                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
-                                <option value="claude-haiku-4-5">Haiku 4.5</option>
                             </select>
                         </div>
                         <div>

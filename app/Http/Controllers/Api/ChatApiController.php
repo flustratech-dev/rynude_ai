@@ -180,6 +180,14 @@ class ChatApiController extends ApiController
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
         return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode) {
+            // Kill every buffering layer so each token reaches the browser
+            // immediately instead of arriving as one big burst at the end.
+            @ini_set('zlib.output_compression', '0');
+            @ini_set('output_buffering', 'off');
+            while (ob_get_level() > 0) {
+                @ob_end_flush();
+            }
+
             try {
                 // First emit conversation ID so frontend can track it
                 echo 'data: ' . json_encode([
