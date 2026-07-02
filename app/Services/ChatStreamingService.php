@@ -331,6 +331,8 @@ class ChatStreamingService
         $attrString = $matches[1];
         $content = trim($matches[2]);
 
+        [$content, $leaked] = $this->stripConversationalLeaks($content);
+
         $identifier = preg_match('/identifier="([^"]+)"/i', $attrString, $m) ? $m[1] : 'artifact-' . uniqid();
         $type = preg_match('/type="([^"]+)"/i', $attrString, $m) ? $m[1] : 'application/vnd.ant.code';
         $language = preg_match('/language="([^"]*)"/i', $attrString, $m) ? $m[1] : 'markdown';
@@ -340,6 +342,11 @@ class ChatStreamingService
         $cleanResponse = preg_replace($pattern, '', $fullResponse);
         $cleanResponse = trim($cleanResponse);
 
+        // Leaked conversational text belongs in the chat, not the document
+        if ($leaked !== '') {
+            $cleanResponse = trim($cleanResponse . "\n\n" . $leaked);
+        }
+
         return [
             'identifier' => $identifier,
             'type' => str_contains($type, 'code') ? 'code' : 'text',
@@ -348,6 +355,85 @@ class ChatStreamingService
             'content' => $content,
             'cleanResponse' => $cleanResponse,
         ];
+    }
+
+    /**
+     * Strip conversational text the model leaked inside the artifact — greetings
+     * before the document and closing remarks after it (e.g. "silakan beri tahu
+     * saya", "semoga bermanfaat"). Cues are deliberately conservative so real
+     * document sentences (surat penutup, kata pengantar) are never removed.
+     *
+     * @return array{0: string, 1: string} [cleanContent, leakedText] — leakedText is moved back to the chat response
+     */
+    protected function stripConversationalLeaks(string $content): array
+    {
+        $trailingCue = '/dokumen (di ?atas|ini|tersebut) (disusun|telah|sudah|siap)'
+            . '|beri ?tahu saya|jangan ragu|semoga (bermanfaat|membantu)'
+            . '|silakan (unduh|download|beri|hubungi|ketik|klik)'
+            . '|anda dapat (mengunduh|men-?download|mengedit|melanjutkan|mengetik)'
+            . '|siap (diunduh|di-?download|dikonversi)|ketik [\'"]?lanjut'
+            . '|let me know|feel free|hope this (helps|is helpful)|\bartifact\b/iu';
+        $leadingCue = '/^(tentu|baik,|oke|berikut|saya (akan|telah|sudah)'
+            . '|here (is|\'s)|sure|certainly|i(\'ve| have|\'ll| will))\b/iu';
+
+        // Front-matter, headings, tables, HTML, lists, hrs, citations = document content
+        $isDocLike = fn (string $p): bool => preg_match('/^(#|\||<|>|-{3,}|\d+\.|[-*+] |\[\d+\])/', $p) === 1;
+
+        $leaked = [];
+
+        // A "Sistematika Penulisan" section is a per-chapter rundown that belongs in
+        // the chat explanation, never in the rendered document — cut the whole section
+        // (its heading up to the next heading) and hand it back to the chat response.
+        $sistematika = '/^#{1,3}[^\n]*sistematika penulisan[^\n]*\n[\s\S]*?(?=^#{1,3} |\z)/im';
+        if (preg_match_all($sistematika, $content, $mm)) {
+            foreach ($mm[0] as $section) {
+                $leaked[] = trim($section);
+            }
+            $content = preg_replace($sistematika, '', $content) ?? $content;
+        }
+
+        $paragraphs = preg_split('/\n{2,}/', $content) ?: [$content];
+
+        while ($paragraphs) {
+            $last = trim((string) end($paragraphs));
+            if ($last === '') {
+                array_pop($paragraphs);
+                continue;
+            }
+            if (!$isDocLike($last) && preg_match($trailingCue, $last)) {
+                array_unshift($leaked, $last);
+                array_pop($paragraphs);
+                // Drop a horizontal rule the model left dangling before its remark
+                if ($paragraphs && preg_match('/^-{3,}$/', trim((string) end($paragraphs)))) {
+                    array_pop($paragraphs);
+                }
+                continue;
+            }
+            // Same case but the hr is glued to the last document paragraph with a single newline
+            if ($leaked && preg_match('/\n-{3,}\s*$/', rtrim((string) end($paragraphs)))) {
+                $trimmed = preg_replace('/\n-{3,}\s*$/', '', rtrim((string) end($paragraphs)));
+                if ($trimmed !== null) {
+                    $paragraphs[count($paragraphs) - 1] = $trimmed;
+                }
+            }
+            break;
+        }
+
+        while ($paragraphs) {
+            $first = trim((string) $paragraphs[0]);
+            if ($first === '') {
+                array_shift($paragraphs);
+                continue;
+            }
+            if (!$isDocLike($first) && preg_match($leadingCue, $first)) {
+                $leaked[] = $first;
+                array_shift($paragraphs);
+                continue;
+            }
+            break;
+        }
+
+        return [trim(implode("\n\n", $paragraphs)), trim(implode("\n\n", $leaked))];
     }
 
     /**
@@ -364,6 +450,7 @@ class ChatStreamingService
     protected function getDocumentQualityInstructions(): string
     {
         return "\n\nCRITICAL INSTRUCTION FOR PDF/DOCX REQUESTS:\n"
+            . "RESPONSE ORDER: write your process explanation FIRST in plain chat text, THEN open the <antArtifact> block containing ONLY the document, then close it. Do NOT write anything after </antArtifact>.\n"
             . "When the user asks for a PDF, DOCX, or document, they are interacting with an external system that handles the file conversion. Therefore, you are STRICTLY FORBIDDEN from apologizing, claiming you cannot generate PDFs, or suggesting external tools like Word, Google Docs, Pandoc, or Typora. Your ONLY allowed response is to immediately generate the content as Markdown inside an <antArtifact> block. The system will seamlessly convert your Markdown artifact into the requested file format. Failure to use <antArtifact> or explaining your limitations will break the application.\n\n"
             . "DOCUMENT GENERATION (when the user asks for a document, report, paper, makalah, laporan, skripsi, jurnal, artikel, file, PDF, DOCX, etc., OR when they ask to 'continue' a previous chapter/document):\n"
             . "- Write a markdown artifact (language=\"markdown\"). The system renders it to a polished PDF or document for the user automatically.\n"
@@ -374,8 +461,9 @@ class ChatStreamingService
             . "     • Meta-commentary: 'Penjelasan Format:', 'Catatan:', 'Format ini mengikuti...'\n"
             . "     • Instructions to user: 'Silakan download...', 'Anda dapat mengedit...'\n"
             . "     • Concluding remarks at the END: 'Demikian laporan ini dibuat...', 'Sekian dan terima kasih'\n"
+            . "     • Per-chapter rundown / uraian isi bab: 'BAB I — Bab ini menguraikan...', 'BAB II — Bab ini menyajikan...' dst. JANGAN menulis sub-bab 'Sistematika Penulisan' atau daftar ringkasan isi tiap bab di dalam artifact — uraian struktur per-bab HANYA boleh ada di chat response, di luar artifact.\n"
             . "  ✅ ALLOWED: ONLY the actual document content (front-matter, headings, body text, tables, figures, references)\n"
-            . "  📍 ALL conversational text MUST be placed OUTSIDE the <antArtifact> block (before or after).\n"
+            . "  📍 ALL conversational text MUST be placed OUTSIDE the <antArtifact> block, and always BEFORE the opening <antArtifact> tag (never after it, so nothing leaks into the document if the response is cut off).\n"
             . "\n--- CHAT RESPONSE PROCESS EXPLANATION (for academic/thesis/report requests) ---\n"
             . "When generating academic documents (skripsi, laporan, thesis, jurnal, makalah, research papers, reports):\n"
             . "- OUTSIDE the <antArtifact> block, provide a DETAILED chat response explaining your process:\n"
@@ -412,6 +500,14 @@ class ChatStreamingService
             . "- # ABSTRACT: terjemahan bahasa Inggris dari ABSTRAK, diakhiri baris '**Keywords:** word1, word2, …'. Tulis seluruh isinya *italic* sesuai konvensi.\n"
             . "- JANGAN menulis '# DAFTAR ISI', '# DAFTAR GAMBAR', '# DAFTAR TABEL', atau '# COVER' secara manual — COVER & DAFTAR ISI dibuat OTOMATIS oleh sistem dari front-matter & heading.\n"
             . "- Agar tidak ada yang keluar dari halaman: untuk tabel lebar batasi jumlah kolom seperlunya & gunakan teks ringkas per sel; jangan menaruh URL/teks tanpa spasi yang sangat panjang.\n"
+            . "\n--- STRUKTUR & ISI BAB (STANDAR AKADEMIK — ikuti pola ini kecuali user/template minta lain) ---\n"
+            . "- DILARANG KERAS membuat sub-bab 'Sistematika Penulisan' atau daftar rangkuman 'BAB I berisi... BAB II berisi...' DI DALAM artifact. Rangkuman isi tiap bab HANYA ditulis di chat response (di luar artifact) sebagai penjelasan proses.\n"
+            . "- Pembuka bab: boleh SATU paragraf pengantar singkat tentang cakupan bab ITU SENDIRI (contoh: 'Bab ini menguraikan landasan ilmiah yang menopang penelitian...'), TAPI dilarang merangkum isi bab-bab lain di situ.\n"
+            . "- BAB I PENDAHULUAN (skripsi/proposal): ## 1.1 Latar Belakang → ## 1.2 Perumusan Masalah → ## 1.3 Tujuan → ## 1.4 Batasan Masalah → (## 1.5 Hipotesis jika relevan) → ## 1.6 Rencana Kegiatan dengan sub-sub-bab tahapan (### 1.6.1 Tahap Kajian Pustaka, ### 1.6.2 Pengumpulan Data, ### 1.6.3 Perancangan dan Implementasi Sistem, ### 1.6.4 Pengujian dan Evaluasi) → ## 1.7 Jadwal Kegiatan berisi TABEL jadwal (Tabel 1.1: kolom = Kegiatan lalu bulan 1-6, isi sel pakai tanda ✓).\n"
+            . "- BAB II KAJIAN PUSTAKA / TINJAUAN PUSTAKA: ## 2.1 Penelitian Terdahulu WAJIB berisi tabel perbandingan (Tabel 2.1: Peneliti | Tahun | Judul/Fokus | Metode | Hasil | Perbedaan dengan Penelitian Ini; minimal 5 baris, semua dirujuk sitasi [n]) lalu paragraf sintesis yang menegaskan research gap → ## 2.2 Landasan Teori dengan sub-sub-bab bernomor per konsep inti (### 2.2.1, ### 2.2.2, ...), gunakan tabel ringkasan bila konsep bertahap/berkomponen (mis. Tabel 2.2 Tahapan, Tabel 2.3 Perbandingan Pendekatan) → ## 2.3 Kerangka Pemikiran dengan diagram SVG (Gambar 2.1) dan tabel Masukan-Proses-Luaran.\n"
+            . "- BAB III PERANCANGAN/METODOLOGI: ## 3.1 Gambaran Umum → ## 3.2 Arsitektur Sistem dengan diagram berlapis (Gambar 3.1) dan uraian per lapisan → perancangan metode dengan sub-sub-bab bernomor → ## Flowchart Sistem (Gambar 3.x) diikuti narasi alurnya → ## Skenario Pengujian dan Evaluasi dengan tabel distribusi pengujian & tabel metrik.\n"
+            . "- Setiap konsep/pemetaan yang berbentuk daftar berpasangan (kategori→contoh→sumber, teknik→prinsip→peran, metrik→definisi→indikator) sajikan sebagai TABEL bernomor, bukan bullet panjang.\n"
+            . "- Isi setiap sub-bab harus paragraf substantif utuh (bukan outline satu kalimat), dengan sitasi [n] pada klaim yang bersumber.\n"
             . "- OPTIONAL FORMAT OVERRIDES: to mimic a specific format (e.g. a template the user uploaded or described), add any of these keys to the front-matter. Omit them to use the defaults (Times New Roman 12pt, 1.5 spacing, 4-3-3-3 cm, page number bottom-center):\n"
             . "font: <Times New Roman | Arial | Courier>   # body font\nfont_size: <11 | 12>                        # in pt (8–20)\nline_spacing: <1 | 1.15 | 1.5 | 2>          # 1=single, 2=double\nalign: <justify | left>\nmargin_top: <cm>\nmargin_right: <cm>\nmargin_bottom: <cm>\nmargin_left: <cm>\npage_number: <bottom-center | bottom-right | top-right | top-center | none>\n"
             . "- MATCHING AN UPLOADED TEMPLATE/EXAMPLE: if the user attaches or pastes a sample document (contoh/template) and asks you to follow its format, replicate BOTH its structure (chapter order, section/heading names, the exact cover fields and their labels, daftar isi style) AND its formatting (set the font/font_size/line_spacing/margins/page_number front-matter fields to match what the sample uses). The attachment is provided as extracted text, so infer the font/margins/spacing from what is stated or what is conventional for that institution, and reproduce the wording of section titles faithfully.\n"
