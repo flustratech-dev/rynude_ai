@@ -24,6 +24,10 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
                 API Keys
             </button>
+            <button @click="tab='connect'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='connect'?'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-stone-800/50'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                Connect Account
+            </button>
         </div>
 
         {{-- ==================== HUGGING FACE TAB ==================== --}}
@@ -228,6 +232,466 @@
 
                     <div class="pt-2">
                         <button @click="saveKeys()" :disabled="saving" class="px-5 py-2 bg-[#D97757] hover:bg-[#c66547] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60" x-text="saving?'Saving...':'Save All API Keys'">Save All API Keys</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ==================== CONNECT ACCOUNT TAB ==================== --}}
+        <div x-show="tab==='connect'" x-transition x-data="{
+            extensionInstalled: false,
+            providers: {chatgpt: false, gemini: false, claude: false},
+            providerStatus: {},
+            flashMessage: null,
+            flashType: 'success',
+            ft: null,
+
+            init() {
+                // Check if extension is installed
+                this.checkExtension();
+                this.loadProviderStatus();
+
+                // Listen for extension events
+                window.addEventListener('rynude-extension-ready', () => {
+                    this.extensionInstalled = true;
+                    this.checkAllProviders();
+                });
+
+                window.addEventListener('rynude-provider-connected', (e) => {
+                    this.providers[e.detail.provider] = true;
+                    this.loadProviderStatus();
+                });
+
+                window.addEventListener('rynude-provider-disconnected', (e) => {
+                    this.providers[e.detail.provider] = false;
+                    this.providerStatus[e.detail.provider] = {};
+                });
+            },
+
+            async loadProviderStatus() {
+                try {
+                    const r = await fetch('/api/provider-tokens', { headers: { 'Accept': 'application/json' } });
+                    const data = await r.json();
+                    if (data) this.providerStatus = data;
+                } catch (e) {
+                    console.error('Failed to load provider status:', e);
+                }
+            },
+
+            checkExtension() {
+                if (window.rynudeExtension) {
+                    this.extensionInstalled = true;
+                    this.checkAllProviders();
+                }
+            },
+
+            async checkAllProviders() {
+                if (!window.rynudeExtension) return;
+                try {
+                    const status = await window.rynudeExtension.getStatus();
+                    this.providers.chatgpt = status.chatgpt?.connected || false;
+                    this.providers.gemini = status.gemini?.connected || false;
+                    this.providers.claude = status.claude?.connected || false;
+                } catch (error) {
+                    console.error('Failed to check providers:', error);
+                }
+            },
+
+            async refreshSession(provider) {
+                if (!window.rynudeExtension) return;
+                try {
+                    const status = await window.rynudeExtension.getStatus();
+                    this.providers[provider] = status[provider]?.connected || false;
+                    this.loadProviderStatus();
+                    this.flashMessage = `${provider.charAt(0).toUpperCase() + provider.slice(1)} session refreshed`;
+                    this.flashType = 'success';
+                } catch (error) {
+                    console.error('Failed to refresh session:', error);
+                }
+            },
+
+            async connectChatGPT() {
+                if (!window.rynudeExtension) {
+                    alert('Extension not installed. Please install Rynude Extension first.');
+                    return;
+                }
+
+                const success = await window.rynudeExtension.connectProvider('chatgpt');
+                if (success) {
+                    this.providers.chatgpt = true;
+                    this.loadProviderStatus();
+                    this.flashMessage = 'ChatGPT connected successfully!';
+                    this.flashType = 'success';
+                }
+            },
+
+            async connectGemini() {
+                if (!window.rynudeExtension) {
+                    alert('Extension not installed. Please install Rynude Extension first.');
+                    return;
+                }
+
+                const success = await window.rynudeExtension.connectProvider('gemini');
+                if (success) {
+                    this.providers.gemini = true;
+                    this.loadProviderStatus();
+                    this.flashMessage = 'Gemini connected successfully!';
+                    this.flashType = 'success';
+                }
+            },
+
+            async connectClaude() {
+                if (!window.rynudeExtension) {
+                    alert('Extension not installed. Please install Rynude Extension first.');
+                    return;
+                }
+
+                const success = await window.rynudeExtension.connectProvider('claude');
+                if (success) {
+                    this.providers.claude = true;
+                    this.loadProviderStatus();
+                    this.flashMessage = 'Claude connected successfully!';
+                    this.flashType = 'success';
+                }
+            },
+
+            async disconnectProvider(provider) {
+                if (!window.rynudeExtension) return;
+
+                const success = await window.rynudeExtension.disconnectProvider(provider);
+                if (success) {
+                    this.providers[provider] = false;
+                    this.flashMessage = `${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`;
+                    this.flashType = 'success';
+                }
+            }
+        }">
+            <div class="bg-white dark:bg-stone-900 rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
+                {{-- Flash Message --}}
+                <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+
+                <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-1">Connected Accounts</h2>
+                <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-6">Connect your free tier accounts from ChatGPT, Gemini, and Claude to use Rynude without API keys.</p>
+
+                {{-- Extension Setup Section --}}
+                <div class="mb-6 p-5 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/10 border-2 border-blue-200 dark:border-blue-900/30">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-[15px] font-bold text-[#2D2825] dark:text-stone-200 mb-2">Step 1: Install Rynude Extension</h3>
+                            <p class="text-[13px] text-gray-600 dark:text-stone-400 mb-4">
+                                The browser extension is required to connect your provider accounts securely. It will extract authentication tokens from your browser sessions.
+                            </p>
+
+                            <template x-if="!extensionInstalled">
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <a href="{{ route('extension.download', ['browser' => 'chrome']) }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[13px] font-medium transition-colors shadow-md">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                            </svg>
+                                            Download Extension (Chrome/Edge)
+                                        </a>
+                                        <a href="{{ route('extension.download', ['browser' => 'firefox']) }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[13px] font-medium transition-colors shadow-md">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                            </svg>
+                                            Download Extension (Firefox)
+                                        </a>
+                                    </div>
+                                    <button @click="extensionInstalled = true" class="text-[12px] text-blue-600 dark:text-blue-400 hover:underline">
+                                        I've installed the extension →
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template x-if="extensionInstalled">
+                                <div class="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg">
+                                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="text-[13px] font-medium text-green-800 dark:text-green-300">Extension installed! You can now connect your accounts below.</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Provider Cards Section --}}
+                <div class="space-y-4" x-show="extensionInstalled">
+                    <h3 class="text-[14px] font-semibold text-[#2D2825] dark:text-stone-200 mb-3">Step 2: Connect Your Accounts</h3>
+
+                    {{-- ChatGPT / OpenAI --}}
+                    <div class="p-5 rounded-xl border-2 transition-all" :class="providers.chatgpt ? 'border-green-200 dark:border-green-900/30 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-900/10' : 'border-claude-border-light dark:border-claude-border-dark hover:border-gray-300 dark:hover:border-stone-600'">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-stone-700 flex items-center justify-center text-gray-600 dark:text-stone-300 font-bold text-lg shadow-sm">
+                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-[15px] font-semibold text-[#2D2825] dark:text-stone-200">ChatGPT / OpenAI</h3>
+                                    <p class="text-[12px] text-gray-500 dark:text-stone-400 mt-0.5">GPT-4o, GPT-4, o1, o3</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.chatgpt ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>
+                                    <span x-text="providers.chatgpt ? 'Connected' : 'Not Connected'"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pl-[52px]">
+                            <template x-if="!providers.chatgpt">
+                                <div class="space-y-3">
+                                    <div class="text-[12.5px] text-gray-600 dark:text-stone-400 space-y-2">
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                            <span>Login to <a href="https://chatgpt.com" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">chatgpt.com</a> in a new tab</span>
+                                        </p>
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                            <span>The Rynude Extension will automatically detect your session</span>
+                                        </p>
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                            <span>Click the button below to connect</span>
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-3 pt-2">
+                                        <button @click="connectChatGPT()" class="inline-flex items-center gap-2 px-4 py-2 bg-[#2D2825] hover:bg-black dark:bg-stone-700 dark:hover:bg-stone-600 text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                            Connect ChatGPT Account
+                                        </button>
+                                        <a href="https://chatgpt.com" target="_blank" class="text-[12px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                            Open ChatGPT
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="providers.chatgpt">
+                                <div class="space-y-3">
+                                    <div class="space-y-1.5">
+                                        <div class="text-[12.5px] text-gray-600 dark:text-stone-400 flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5" :class="(providerStatus.chatgpt?.status||'active')==='active'?'text-green-600 dark:text-green-400':'text-yellow-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Status: <strong class="font-medium" :class="(providerStatus.chatgpt?.status||'active')==='active'?'text-green-700 dark:text-green-400':'text-yellow-600 dark:text-yellow-400'" x-text="(providerStatus.chatgpt?.status||'active').charAt(0).toUpperCase()+(providerStatus.chatgpt?.status||'active').slice(1)"></strong></span>
+                                        </div>
+                                        <div class="text-[12.5px] text-gray-600 dark:text-stone-400 flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Last sync: <strong class="font-medium" x-text="providerStatus.chatgpt?.last_validated||'Never'"></strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 pt-1">
+                                        <button @click="refreshSession('chatgpt')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-gray-50 dark:hover:bg-stone-700 text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                            Refresh Session
+                                        </button>
+                                        <button @click="disconnectProvider('chatgpt')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            Disconnect
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Google Gemini --}}
+                    <div class="p-5 rounded-xl border-2 transition-all" :class="providers.gemini ? 'border-green-200 dark:border-green-900/30 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-900/10' : 'border-claude-border-light dark:border-claude-border-dark hover:border-gray-300 dark:hover:border-stone-600'">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 font-bold text-lg shadow-sm">G</div>
+                                <div>
+                                    <h3 class="text-[15px] font-semibold text-[#2D2825] dark:text-stone-200">Google Gemini</h3>
+                                    <p class="text-[12px] text-gray-500 dark:text-stone-400 mt-0.5">Gemini 2.0 Flash, Pro, Ultra</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.gemini ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>
+                                    <span x-text="providers.gemini ? 'Connected' : 'Not Connected'"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pl-[52px]">
+                            <template x-if="!providers.gemini">
+                                <div class="space-y-3">
+                                    <div class="text-[12.5px] text-gray-600 dark:text-stone-400 space-y-2">
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                            <span>Login to <a href="https://gemini.google.com" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">gemini.google.com</a> with your Google account</span>
+                                        </p>
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                            <span>Extension will extract your session tokens automatically</span>
+                                        </p>
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                            <span>Click connect to use Gemini free tier in Rynude</span>
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-3 pt-2">
+                                        <button @click="connectGemini()" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                            Connect Gemini Account
+                                        </button>
+                                        <a href="https://gemini.google.com" target="_blank" class="text-[12px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                            Open Gemini
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="providers.gemini">
+                                <div class="space-y-3">
+                                    <div class="space-y-1.5">
+                                        <div class="text-[12.5px] text-gray-600 dark:text-stone-400 flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5" :class="(providerStatus.gemini?.status||'active')==='active'?'text-green-600 dark:text-green-400':'text-yellow-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Status: <strong class="font-medium" :class="(providerStatus.gemini?.status||'active')==='active'?'text-green-700 dark:text-green-400':'text-yellow-600 dark:text-yellow-400'" x-text="(providerStatus.gemini?.status||'active').charAt(0).toUpperCase()+(providerStatus.gemini?.status||'active').slice(1)"></strong></span>
+                                        </div>
+                                        <div class="text-[12.5px] text-gray-600 dark:text-stone-400 flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Last sync: <strong class="font-medium" x-text="providerStatus.gemini?.last_validated||'Never'"></strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 pt-1">
+                                        <button @click="refreshSession('gemini')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-gray-50 dark:hover:bg-stone-700 text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                            Refresh Session
+                                        </button>
+                                        <button @click="disconnectProvider('gemini')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            Disconnect
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Claude / Anthropic --}}
+                    <div class="p-5 rounded-xl border-2 transition-all" :class="providers.claude ? 'border-green-200 dark:border-green-900/30 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-900/10' : 'border-claude-border-light dark:border-claude-border-dark hover:border-gray-300 dark:hover:border-stone-600'">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold text-lg shadow-sm">C</div>
+                                <div>
+                                    <h3 class="text-[15px] font-semibold text-[#2D2825] dark:text-stone-200">Anthropic Claude</h3>
+                                    <p class="text-[12px] text-gray-500 dark:text-stone-400 mt-0.5">Claude Sonnet, Opus, Haiku</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.claude ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>
+                                    <span x-text="providers.claude ? 'Connected' : 'Not Connected'"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pl-[52px]">
+                            <template x-if="!providers.claude">
+                                <div class="space-y-3">
+                                    <div class="text-[12.5px] text-gray-600 dark:text-stone-400 space-y-2">
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                            <span>Login to <a href="https://claude.ai" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">claude.ai</a> with your account</span>
+                                        </p>
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                            <span>Extension captures your session cookies securely</span>
+                                        </p>
+                                        <p class="flex items-start gap-2">
+                                            <span class="inline-block w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                                            <span>Use Claude free tier directly in Rynude</span>
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-3 pt-2">
+                                        <button @click="connectClaude()" class="inline-flex items-center gap-2 px-4 py-2 bg-[#D97757] hover:bg-[#c66547] text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                            Connect Claude Account
+                                        </button>
+                                        <a href="https://claude.ai" target="_blank" class="text-[12px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                            Open Claude.ai
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="providers.claude">
+                                <div class="space-y-3">
+                                    <div class="space-y-1.5">
+                                        <div class="text-[12.5px] text-gray-600 dark:text-stone-400 flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5" :class="(providerStatus.claude?.status||'active')==='active'?'text-green-600 dark:text-green-400':'text-yellow-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Status: <strong class="font-medium" :class="(providerStatus.claude?.status||'active')==='active'?'text-green-700 dark:text-green-400':'text-yellow-600 dark:text-yellow-400'" x-text="(providerStatus.claude?.status||'active').charAt(0).toUpperCase()+(providerStatus.claude?.status||'active').slice(1)"></strong></span>
+                                        </div>
+                                        <div class="text-[12.5px] text-gray-600 dark:text-stone-400 flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span>Last sync: <strong class="font-medium" x-text="providerStatus.claude?.last_validated||'Never'"></strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 pt-1">
+                                        <button @click="refreshSession('claude')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-gray-50 dark:hover:bg-stone-700 text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                            Refresh Session
+                                        </button>
+                                        <button @click="disconnectProvider('claude')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            Disconnect
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- How It Works & Security Info --}}
+                <div class="mt-6 space-y-4" x-show="extensionInstalled">
+                    {{-- How it works --}}
+                    <div class="p-4 rounded-lg bg-gray-50 dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark">
+                        <div class="flex gap-3">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-stone-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <div class="text-[13px] text-gray-700 dark:text-stone-300">
+                                <p class="font-medium mb-1">How It Works</p>
+                                <p class="text-gray-600 dark:text-stone-400">The Rynude Extension extracts authentication tokens from your browser sessions when you login to ChatGPT, Gemini, or Claude. These tokens are stored locally and used to access the same APIs that the web apps use, allowing you to chat with your free tier accounts directly in Rynude.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Security & Privacy --}}
+                    <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30">
+                        <div class="flex gap-3">
+                            <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-2.25 0H5.25A2.25 2.25 0 003 12m0 0v6.75m0-6.75a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 12m0 0v6.75m0-6.75a2.25 2.25 0 00-2.25-2.25H5.25m15 0a2.25 2.25 0 012.25 2.25M21 12H9"/></svg>
+                            <div class="text-[13px] text-green-900 dark:text-green-300">
+                                <p class="font-medium mb-1">Security & Privacy</p>
+                                <p class="text-green-800 dark:text-green-400">Your session tokens are encrypted and stored locally on your machine. They are never sent to any third-party servers. Rynude only forwards your requests directly to the provider APIs using your own credentials.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Important Notice --}}
+                    <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30">
+                        <div class="flex gap-3">
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                            <div class="text-[13px] text-amber-900 dark:text-amber-300">
+                                <p class="font-medium mb-1">Important Notice</p>
+                                <ul class="list-disc list-inside text-amber-800 dark:text-amber-400 space-y-1">
+                                    <li>This feature uses reverse-engineered APIs and may violate provider Terms of Service</li>
+                                    <li>Your account could be banned if detected by providers</li>
+                                    <li>Sessions may expire and require re-login</li>
+                                    <li>Free tier rate limits and quotas still apply</li>
+                                    <li>Use at your own risk - recommended for local/personal use only</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

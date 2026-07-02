@@ -27,6 +27,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // session cookie isn't split across hosts — fixes "logout on refresh"
         // and the chat showing no answer (its /api/* calls were bouncing to login).
         $middleware->prependToGroup('web', \App\Http\Middleware\EnforceCanonicalHost::class);
+
+        // Exclude provider-token routes from CSRF so the browser extension
+        // (which can't read the CSRF token from its service worker) can POST
+        // session tokens back to the app. The routes are still protected by
+        // the web middleware's session auth.
+        $middleware->validateCsrfTokens(except: [
+            'api/provider-tokens',
+            'api/provider-tokens/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

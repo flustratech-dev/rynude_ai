@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ChatApiController;
 use App\Http\Controllers\Api\CoworkApiController;
 use App\Http\Controllers\Api\DesignApiController;
 use App\Http\Controllers\Api\ProjectApiController;
+use App\Http\Controllers\Api\ProviderTokenController;
 use App\Http\Controllers\Api\SettingsApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -82,4 +83,9 @@ Route::middleware('auth')->group(function () {
     Route::post('designs', [DesignApiController::class, 'store'])->name('designs.store');
     Route::patch('designs/{design}', [DesignApiController::class, 'update'])->name('designs.update');
     Route::delete('designs/{design}', [DesignApiController::class, 'destroy'])->name('designs.destroy');
+
+    // ── Provider Web Tokens (from browser extension) ─────────────────────
+    Route::post('provider-tokens', [ProviderTokenController::class, 'store'])->name('provider-tokens.store');
+    Route::get('provider-tokens', [ProviderTokenController::class, 'index'])->name('provider-tokens.index');
+    Route::delete('provider-tokens/{provider}', [ProviderTokenController::class, 'destroy'])->name('provider-tokens.destroy');
 });

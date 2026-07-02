@@ -2,7 +2,9 @@
 
 namespace App\Services\AI;
 
+use App\Models\ProviderWebToken;
 use App\Services\AI\Contracts\LLMProviderInterface;
+use Illuminate\Support\Facades\Auth;
 
 class AiService
 {
@@ -11,16 +13,15 @@ class AiService
      */
     public function resolveProvider(string $model): LLMProviderInterface
     {
+        $user = Auth::user();
+
         // Ollama is always local — resolve it first regardless of proxy setting
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
         if ($aiModel && $aiModel->provider === 'ollama') {
-            // Ollama exposes an OpenAI-compatible endpoint at http://127.0.0.1:11434/v1
             return new OpenAIProvider();
         }
 
-        $user = \Illuminate\Support\Facades\Auth::user();
         if ($user && $user->use_proxy) {
-            // If proxy is enabled, all non-Ollama models route through OpenAI-compatible provider
             return new OpenAIProvider();
         }
 
@@ -29,35 +30,80 @@ class AiService
             return new OpenAIProvider();
         }
         if ($aiModel && $aiModel->provider === 'google') {
-            return new GoogleProvider();
+            return $this->resolveGoogleProvider($user);
         }
         if ($aiModel && $aiModel->provider === 'mistral') {
-            return new MistralProvider();
+            return $this->resolveMistralProvider($user);
         }
 
         // Route by model-name prefix for Google (Gemini) and Mistral models.
         if (str_starts_with($model, 'gemini')) {
-            return new GoogleProvider();
+            return $this->resolveGoogleProvider($user);
         }
         if (str_starts_with($model, 'mistral') || str_starts_with($model, 'magistral') || str_starts_with($model, 'ministral') || str_starts_with($model, 'open-mistral') || str_starts_with($model, 'open-mixtral') || str_starts_with($model, 'codestral')) {
-            return new MistralProvider();
+            return $this->resolveMistralProvider($user);
         }
 
-        // Hardcode Kiro/9Router models to always use OpenAI Provider (since 9Router uses OpenAI compatible endpoint)
+        // Hardcode Kiro/9Router models to always use OpenAI Provider
         if (str_starts_with($model, 'kr/claude')) {
             return new OpenAIProvider();
         }
 
         if (str_starts_with($model, 'claude')) {
-            return new AnthropicProvider();
+            return $this->resolveClaudeProvider($user);
         }
 
         if (str_starts_with($model, 'gpt')) {
-            return new OpenAIProvider();
+            return $this->resolveOpenAIProvider($user);
         }
 
-        // Default or generic fallback
         return new OpenAIProvider();
+    }
+
+    private function resolveClaudeProvider($user): LLMProviderInterface
+    {
+        if ($user && !empty($user->anthropic_api_key)) {
+            return new AnthropicProvider();
+        }
+        if ($user && $this->hasWebToken($user, 'claude')) {
+            return new WebAiProvider();
+        }
+        return new AnthropicProvider();
+    }
+
+    private function resolveGoogleProvider($user): LLMProviderInterface
+    {
+        if ($user && !empty($user->google_api_key)) {
+            return new GoogleProvider();
+        }
+        if ($user && $this->hasWebToken($user, 'gemini')) {
+            return new WebAiProvider();
+        }
+        return new GoogleProvider();
+    }
+
+    private function resolveOpenAIProvider($user): LLMProviderInterface
+    {
+        if ($user && !empty($user->openai_api_key)) {
+            return new OpenAIProvider();
+        }
+        if ($user && $this->hasWebToken($user, 'chatgpt')) {
+            return new WebAiProvider();
+        }
+        return new OpenAIProvider();
+    }
+
+    private function resolveMistralProvider($user): LLMProviderInterface
+    {
+        return new MistralProvider();
+    }
+
+    private function hasWebToken($user, string $provider): bool
+    {
+        return ProviderWebToken::where('user_id', $user->id)
+            ->where('provider', $provider)
+            ->where('status', 'active')
+            ->exists();
     }
 
     /**
