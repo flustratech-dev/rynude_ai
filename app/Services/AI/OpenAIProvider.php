@@ -85,7 +85,16 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 
     private function guzzle(): \GuzzleHttp\Client
     {
-        $stack = \GuzzleHttp\HandlerStack::create(new \GuzzleHttp\Handler\CurlHandler());
+        // CurlHandler buffers the ENTIRE response body before returning, which
+        // silently breaks 'stream' => true (tokens only arrive after the whole
+        // generation finishes). Route streaming requests to StreamHandler —
+        // exactly what Guzzle's default handler chain does — while keeping
+        // curl (with the IPv4 pin) for regular requests.
+        $curl = new \GuzzleHttp\Handler\CurlHandler();
+        $handler = ini_get('allow_url_fopen')
+            ? \GuzzleHttp\Handler\Proxy::wrapStreaming($curl, new \GuzzleHttp\Handler\StreamHandler())
+            : $curl;
+        $stack = \GuzzleHttp\HandlerStack::create($handler);
         return new \GuzzleHttp\Client([
             'handler' => $stack,
             'curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4],
@@ -243,9 +252,14 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             ];
         }
 
-        $handler = new \GuzzleHttp\Handler\CurlHandler();
+        // See guzzle(): CurlHandler alone would buffer the whole SSE body and
+        // defeat streaming — wrap it so 'stream' => true uses StreamHandler.
+        $curl = new \GuzzleHttp\Handler\CurlHandler();
+        $handler = ini_get('allow_url_fopen')
+            ? \GuzzleHttp\Handler\Proxy::wrapStreaming($curl, new \GuzzleHttp\Handler\StreamHandler())
+            : $curl;
         $stack = \GuzzleHttp\HandlerStack::create($handler);
-        
+
         $client = new \GuzzleHttp\Client([
             'handler' => $stack,
             'curl' => [

@@ -184,9 +184,17 @@ class ChatApiController extends ApiController
             // immediately instead of arriving as one big burst at the end.
             @ini_set('zlib.output_compression', '0');
             @ini_set('output_buffering', 'off');
+            if (function_exists('apache_setenv')) {
+                @apache_setenv('no-gzip', '1');
+            }
             while (ob_get_level() > 0) {
                 @ob_end_flush();
             }
+
+            // SSE comment padding: defeats fixed-size buffers in some web
+            // servers/antivirus proxies that hold back small responses.
+            echo ':' . str_repeat(' ', 2048) . "\n\n";
+            flush();
 
             try {
                 // First emit conversation ID so frontend can track it
