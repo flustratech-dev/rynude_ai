@@ -261,6 +261,7 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
 
             $body = $response->getBody();
             $buffer = '';
+            $wasTruncated = false;
             while (!$body->eof()) {
                 $buffer .= $body->read(1024);
 
@@ -283,6 +284,9 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
                             }
                         }
                     }
+                    if (($data['candidates'][0]['finishReason'] ?? null) === 'MAX_TOKENS') {
+                        $wasTruncated = true;
+                    }
                     if (isset($data['usageMetadata'])) {
                         $inputTokens = $data['usageMetadata']['promptTokenCount'] ?? $inputTokens;
                         $outputTokens = $data['usageMetadata']['candidatesTokenCount'] ?? $outputTokens;
@@ -291,6 +295,10 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
                         yield "\n[Error from API: " . ($data['error']['message'] ?? 'Unknown error') . "]";
                     }
                 }
+            }
+
+            if ($wasTruncated) {
+                yield ['type' => 'truncated'];
             }
 
             if ($user) {

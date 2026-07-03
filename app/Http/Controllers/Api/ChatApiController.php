@@ -229,6 +229,11 @@ class ChatApiController extends ApiController
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
         return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId) {
+            // Keep generating even if the browser disconnects (refresh/closed
+            // tab): the answer still gets saved, and the client can catch up
+            // via stream-resume from the StreamBuffer mirror below.
+            ignore_user_abort(true);
+
             // Kill every buffering layer so each token reaches the browser
             // immediately instead of arriving as one big burst at the end.
             @ini_set('zlib.output_compression', '0');
@@ -254,9 +259,15 @@ class ChatApiController extends ApiController
                 if (ob_get_level() > 0) ob_flush();
                 flush();
 
+                // Mirror progress so a disconnected client can resume.
+                $buffer = new \App\Services\StreamBuffer($conversation->id);
+                $buffer->start();
+
                 $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId);
 
                 foreach ($generator as $event) {
+                    $buffer->apply($event);
+
                     // Format as SSE: data: {...}\n\n
                     echo 'data: ' . json_encode($event) . "\n\n";
 
@@ -267,7 +278,13 @@ class ChatApiController extends ApiController
                     flush();
                 }
 
+                $buffer->flush();
+
             } catch (\Exception $e) {
+                if (isset($buffer)) {
+                    $buffer->apply(['type' => 'error', 'data' => $e->getMessage()]);
+                }
+
                 // Send error event
                 echo 'data: ' . json_encode([
                     'type' => 'error',
@@ -308,6 +325,107 @@ class ChatApiController extends ApiController
         \Illuminate\Support\Facades\Cache::put('chat_stop_' . $conversationId, true, 120);
 
         return response()->json(['stopped' => true]);
+    }
+
+    /**
+     * Reattach to a generation that is (or was) running for this conversation.
+     *
+     * The client reports how many BYTES of content/thinking it already has
+     * (UTF-8 byte counts match PHP strlen exactly, unlike JS string length);
+     * the missing tail is streamed as normal SSE events, followed by the
+     * stored artifact/done/error event. Emits {type: "gone"} when no buffer
+     * exists (finished long ago or expired).
+     */
+    public function streamResume(Request $request, Conversation $conversation)
+    {
+        $this->authorizeOwnership($conversation);
+
+        $contentLen = max(0, (int) $request->query('content_len', 0));
+        $thinkingLen = max(0, (int) $request->query('thinking_len', 0));
+
+        return response()->stream(function () use ($conversation, $contentLen, $thinkingLen) {
+            set_time_limit(0);
+
+            @ini_set('zlib.output_compression', '0');
+            @ini_set('output_buffering', 'off');
+            while (ob_get_level() > 0) {
+                @ob_end_flush();
+            }
+
+            $emit = function (array $event) {
+                echo 'data: ' . json_encode($event) . "\n\n";
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+            };
+
+            // SSE comment padding (see send()).
+            echo ':' . str_repeat(' ', 2048) . "\n\n";
+            flush();
+
+            $deadline = microtime(true) + 600;
+            $ticks = 0;
+
+            while (true) {
+                $state = \App\Services\StreamBuffer::read($conversation->id);
+
+                if (!$state) {
+                    $emit(['type' => 'gone', 'data' => null]);
+                    return;
+                }
+
+                // Stream the tail the client hasn't seen yet.
+                if (strlen($state['content']) > $contentLen) {
+                    $emit(['type' => 'content', 'data' => substr($state['content'], $contentLen)]);
+                    $contentLen = strlen($state['content']);
+                }
+                if (strlen($state['thinking']) > $thinkingLen) {
+                    $emit(['type' => 'thinking', 'data' => substr($state['thinking'], $thinkingLen)]);
+                    $thinkingLen = strlen($state['thinking']);
+                }
+
+                if ($state['status'] === 'error') {
+                    $emit(['type' => 'error', 'data' => $state['error'] ?? 'Unknown error']);
+                    return;
+                }
+
+                if ($state['status'] === 'done') {
+                    if (!empty($state['artifact'])) {
+                        $emit(['type' => 'artifact', 'data' => $state['artifact']]);
+                    }
+                    $emit(['type' => 'done', 'data' => $state['done']]);
+                    return;
+                }
+
+                // Writer stopped updating (crashed worker / killed process).
+                if ((microtime(true) - ($state['updated_at'] ?? 0)) > 90 || microtime(true) > $deadline) {
+                    $emit(['type' => 'error', 'data' => 'Generation stalled on the server.']);
+                    return;
+                }
+
+                // Periodic SSE comment: connection_aborted() only notices a
+                // dead client after an actual write.
+                if ((++$ticks % 10) === 0) {
+                    echo ": ping\n\n";
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                }
+
+                if (connection_aborted()) {
+                    return;
+                }
+
+                usleep(200000);
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
     }
 
     /**

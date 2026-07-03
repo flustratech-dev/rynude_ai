@@ -94,21 +94,35 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
         $outputTokens = 0;
 
         try {
-            $response = $client->post($baseUrl . '/chat/completions', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ],
-                'json' => [
-                    'model' => $model,
-                    'messages' => $mistralMessages,
+            // Retry transient failures with backoff, same pattern as the other
+            // providers.
+            $response = null;
+            $retryDelay = 1;
+            for ($attempt = 0; $attempt <= 2; $attempt++) {
+                $response = $client->post($baseUrl . '/chat/completions', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $apiKey,
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json',
+                    ],
+                    'json' => [
+                        'model' => $model,
+                        'messages' => $mistralMessages,
+                        'stream' => true,
+                    ],
                     'stream' => true,
-                ],
-                'stream' => true,
-                'http_errors' => false,
-                'timeout' => 300,
-            ]);
+                    'http_errors' => false,
+                    'timeout' => 300,
+                ]);
+
+                $status = $response->getStatusCode();
+                if (($status === 429 || $status >= 500) && $attempt < 2) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                break;
+            }
 
             if ($response->getStatusCode() === 429) {
                 yield "\n[Error: Rate limit exceeded. Please try again later.]";
@@ -122,6 +136,7 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
 
             $body = $response->getBody();
             $buffer = '';
+            $wasTruncated = false;
             while (!$body->eof()) {
                 $buffer .= $body->read(1024);
 
@@ -144,7 +159,14 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
                         $inputTokens = $data['usage']['prompt_tokens'] ?? $inputTokens;
                         $outputTokens = $data['usage']['completion_tokens'] ?? $outputTokens;
                     }
+                    if (($data['choices'][0]['finish_reason'] ?? null) === 'length') {
+                        $wasTruncated = true;
+                    }
                 }
+            }
+
+            if ($wasTruncated) {
+                yield ['type' => 'truncated'];
             }
 
             if ($user) {

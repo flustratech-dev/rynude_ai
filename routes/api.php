@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('chats/messages/{message}/rating', [ChatApiController::class, 'rateMessage'])->name('chats.messages.rating');
     Route::post('chats/{conversation}/regenerate', [ChatApiController::class, 'regenerate'])->name('chats.regenerate');
     Route::post('chats/{conversation}/switch-branch', [ChatApiController::class, 'switchBranch'])->name('chats.switch-branch');
+    Route::get('chats/{conversation}/stream-resume', [ChatApiController::class, 'streamResume'])->name('chats.stream-resume');
     Route::get('chats/{conversation}', [ChatApiController::class, 'show'])->name('chats.show');
     Route::patch('chats/{conversation}', [ChatApiController::class, 'update'])->name('chats.update');
     Route::delete('chats/{conversation}', [ChatApiController::class, 'destroy'])->name('chats.destroy');

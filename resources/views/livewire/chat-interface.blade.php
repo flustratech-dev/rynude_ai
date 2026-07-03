@@ -428,6 +428,14 @@
                                 Stop generating
                             </button>
                         </div>
+
+                        {{-- Continue button: the reply hit the model's output limit --}}
+                        <div x-show="canContinue && !streaming" x-cloak class="mt-4 flex justify-center w-full">
+                            <button @click="continueGeneration()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors shadow-sm">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                Jawaban terpotong — Lanjutkan
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -558,6 +566,8 @@ function chatInterfaceState() {
         doneMeta: null,
         pendingArtifact: null,
         lastUsedModel: '',
+        canContinue: false,
+        resumeAttempts: 0,
 
         get selectedModelName() {
             var all = this.models.concat(this.moreModels);
@@ -595,6 +605,17 @@ function chatInterfaceState() {
             var convId = urlParams.get('conversation');
             if (convId) {
                 self.loadConversation(parseInt(convId));
+
+                // A generation was streaming when this tab was refreshed —
+                // the server kept it running, so reattach and replay it.
+                var activeStream = null;
+                try { activeStream = sessionStorage.getItem('rynude_active_stream'); } catch(e) {}
+                if (activeStream && activeStream === convId) {
+                    self.conversationId = parseInt(convId);
+                    self.sending = true;
+                    self.beginStreamingState(self.selectedModel);
+                    self.resumeStream();
+                }
             }
 
             window.addEventListener('selectConversation', function(e) {
@@ -674,10 +695,16 @@ function chatInterfaceState() {
                         }
                         self.messages = msgs;
                         self.memoryDraft = resp.data.memory || '';
-                        self.streamContent = '';
-                        self.thinkingContent = '';
-                        self.streaming = false;
-                        self.finalizing = false;
+                        // Don't clear live-stream state while a resume/send is
+                        // in flight (e.g. the initial page load racing with a
+                        // reconnect to a stream that survived the refresh).
+                        if (!self.sending) {
+                            self.streamContent = '';
+                            self.thinkingContent = '';
+                            self.streaming = false;
+                            self.finalizing = false;
+                            self.canContinue = false;
+                        }
                     }
                     if (!silent) {
                         self.loading = false;
@@ -785,6 +812,12 @@ function chatInterfaceState() {
             this.doneMeta = null;
             this.pendingArtifact = null;
             this.lastUsedModel = model || this.selectedModel;
+            this.canContinue = false;
+            this.resumeAttempts = 0;
+            // Mark the stream as active so a refreshed tab can reconnect to it
+            if (this.conversationId) {
+                try { sessionStorage.setItem('rynude_active_stream', String(this.conversationId)); } catch(e) {}
+            }
             this.startWaitFeed();
         },
 
@@ -813,8 +846,9 @@ function chatInterfaceState() {
                         if (result.done) {
                             // Let the typewriter pump drain the remaining queued
                             // text before finalizing (finishStream does the rest).
-                            // Skip if the 'done' event already kicked it off.
-                            if (!self.finalizing) {
+                            // Skip when already finalized or when an error/gone
+                            // event ended the stream (streaming is false then).
+                            if (!self.finalizing && self.streaming) {
                                 self.streamEnded = true;
                                 self.pumpStream();
                             }
@@ -833,6 +867,7 @@ function chatInterfaceState() {
                                         if (data.data && data.data.conversation_id) {
                                             var isNew = !self.conversationId;
                                             self.conversationId = data.data.conversation_id;
+                                            try { sessionStorage.setItem('rynude_active_stream', String(self.conversationId)); } catch(e) {}
                                             window.history.replaceState({}, '', '/chat?conversation=' + self.conversationId);
                                             if (isNew) {
                                                 window.dispatchEvent(new CustomEvent('conversationCreated', { detail: { id: self.conversationId } }));
@@ -853,6 +888,11 @@ function chatInterfaceState() {
                                         self.streamContent = '<div class="text-red-500 font-medium">Error: ' + data.data + '</div>';
                                         self.streaming = false;
                                         self.sending = false;
+                                        try { sessionStorage.removeItem('rynude_active_stream'); } catch(e) {}
+                                    } else if (data.type === 'gone') {
+                                        // No stream buffer on the server: the generation
+                                        // finished (and was saved) while we were away
+                                        self.abandonResume();
                                     } else if (data.type === 'done') {
                                         // Carries message_id/artifact_id so the finalized
                                         // local message is actionable before the reload
@@ -880,14 +920,11 @@ function chatInterfaceState() {
                         if (container) container.scrollTop = container.scrollHeight;
                         read();
                     }).catch(function(err) {
+                        // Connection dropped mid-stream: the server keeps
+                        // generating (ignore_user_abort) — reattach instead of
+                        // giving up.
                         console.error("Stream read error:", err);
-                        self.stopWaitFeed();
-                        self.streamContent += self.contentQueue;
-                        self.thinkingContent += self.thinkQueue;
-                        self.contentQueue = '';
-                        self.thinkQueue = '';
-                        self.streaming = false;
-                        self.sending = false;
+                        self.resumeStream();
                     });
                 }
                 read();
@@ -899,6 +936,78 @@ function chatInterfaceState() {
             this.stopWaitFeed();
             this.streaming = false;
             this.sending = false;
+            try { sessionStorage.removeItem('rynude_active_stream'); } catch(e) {}
+        },
+
+        // Reattach to a generation the server kept running after the SSE
+        // connection dropped (network hiccup or page refresh). The server
+        // replays only the tail we haven't seen; byte lengths are used because
+        // they match PHP's strlen exactly (JS .length counts UTF-16 units).
+        resumeStream: function() {
+            var self = this;
+            if (!this.conversationId) { this.failStream(); return; }
+            if (this.resumeAttempts >= 3) { this.failStream(); return; }
+            this.resumeAttempts++;
+            var enc = new TextEncoder();
+            var contentLen = enc.encode(this.streamContent + this.contentQueue).length;
+            var thinkingLen = enc.encode(this.thinkingContent + this.thinkQueue).length;
+            fetch('/api/chats/' + this.conversationId + '/stream-resume?content_len=' + contentLen + '&thinking_len=' + thinkingLen, {
+                headers: {'Accept': 'text/event-stream'}
+            })
+            .then(function(response) { self.handleStreamResponse(response); })
+            .catch(function() { setTimeout(function() { self.resumeStream(); }, 1000); });
+        },
+
+        // Resume gave up: keep whatever partial answer we have as a local
+        // message instead of losing it.
+        failStream: function() {
+            this.stopWaitFeed();
+            this.streamContent += this.contentQueue;
+            this.thinkingContent += this.thinkQueue;
+            this.contentQueue = '';
+            this.thinkQueue = '';
+            var content = (this.streamContent || '').replace(/<antArtifact[\s\S]*?(?:<\/antArtifact>|$)/i, '').trim();
+            if (content || this.thinkingContent) {
+                this.messages.push({
+                    id: null,
+                    role: 'assistant',
+                    content: content,
+                    thinking: this.thinkingContent || null,
+                    model: this.lastUsedModel || this.selectedModel,
+                    artifact: null,
+                    attachments: []
+                });
+            }
+            this.streamContent = '';
+            this.thinkingContent = '';
+            this.streamEnded = false;
+            this.streaming = false;
+            this.sending = false;
+            try { sessionStorage.removeItem('rynude_active_stream'); } catch(e) {}
+        },
+
+        // The server has no buffer for this conversation anymore: the answer
+        // finished (and was saved) while we were away. Show the saved thread.
+        abandonResume: function() {
+            this.stopWaitFeed();
+            this.contentQueue = '';
+            this.thinkQueue = '';
+            this.streamContent = '';
+            this.thinkingContent = '';
+            this.streamEnded = false;
+            this.streaming = false;
+            this.sending = false;
+            try { sessionStorage.removeItem('rynude_active_stream'); } catch(e) {}
+            if (this.conversationId) {
+                this.loadConversation(this.conversationId, true);
+            }
+        },
+
+        continueGeneration: function() {
+            if (this.sending || this.streaming) return;
+            this.canContinue = false;
+            this.prompt = 'Lanjutkan persis dari titik terakhir jawabanmu terpotong. Jangan mengulang bagian yang sudah ditulis dan jangan menambahkan kalimat pembuka.';
+            this.sendMessage();
         },
 
         // Typewriter pump: drains the queued thinking/content tokens a few
@@ -1026,6 +1135,9 @@ function chatInterfaceState() {
                     attachments: []
                 });
             }
+            // Answer hit the model's output limit — offer to continue it
+            this.canContinue = !!(this.doneMeta && this.doneMeta.truncated);
+            try { sessionStorage.removeItem('rynude_active_stream'); } catch(e) {}
             // Keep the thinking text so it can be re-attached to the saved message
             this.lastThinking = this.thinkingContent;
             this.streamContent = '';

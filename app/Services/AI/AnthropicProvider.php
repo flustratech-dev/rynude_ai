@@ -168,10 +168,11 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
         try {
             $body = $response->getBody();
             $buffer = '';
+            $wasTruncated = false;
             while (!$body->eof()) {
                 $chunk = $body->read(1024);
                 $buffer .= $chunk;
-                
+
                 while (($pos = strpos($buffer, "\n")) !== false) {
                     $line = substr($buffer, 0, $pos);
                     $buffer = substr($buffer, $pos + 1);
@@ -185,6 +186,9 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 
                         $data = json_decode($jsonStr, true);
                         if ($data && isset($data['type'])) {
+                            if ($data['type'] === 'message_delta' && (($data['delta']['stop_reason'] ?? null) === 'max_tokens')) {
+                                $wasTruncated = true;
+                            }
                             if ($data['type'] === 'message_start' && isset($data['message']['usage']['input_tokens'])) {
                                 $usage = $data['message']['usage'] ?? [];
                                 $inputTokens += $usage['input_tokens'] ?? 0;
@@ -209,6 +213,12 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
                 }
             }
             
+            // Answer hit the max_tokens ceiling: signal it so the UI can offer
+            // a "Continue" action.
+            if ($wasTruncated) {
+                yield ['type' => 'truncated'];
+            }
+
             // Deduct tokens and record usage
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
                 \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);

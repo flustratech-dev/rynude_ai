@@ -268,25 +268,40 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         }
         
         try {
-            $response = $client->post($baseUrl . '/chat/completions', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => $model,
-                    'messages' => $openAiMessages,
+            // Transient failures (rate limit / provider overload) get a couple
+            // of retries with backoff before surfacing an error, mirroring the
+            // pattern already proven in AnthropicProvider.
+            $response = null;
+            $retryDelay = 1;
+            for ($attempt = 0; $attempt <= 2; $attempt++) {
+                $response = $client->post($baseUrl . '/chat/completions', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $apiKey,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'json' => [
+                        'model' => $model,
+                        'messages' => $openAiMessages,
+                        'stream' => true,
+                        // Large ceiling so long documents (full skripsi/laporan) aren't
+                        // truncated mid-chapter. Most OpenAI-compatible / proxy models
+                        // accept 8192 output tokens.
+                        'max_tokens' => 8192,
+                    ],
                     'stream' => true,
-                    // Large ceiling so long documents (full skripsi/laporan) aren't
-                    // truncated mid-chapter. Most OpenAI-compatible / proxy models
-                    // accept 8192 output tokens.
-                    'max_tokens' => 8192,
-                ],
-                'stream' => true,
-                'verify' => false,
-                'http_errors' => false,
-                'timeout' => 300,
-            ]);
+                    'verify' => false,
+                    'http_errors' => false,
+                    'timeout' => 300,
+                ]);
+
+                $status = $response->getStatusCode();
+                if (($status === 429 || $status >= 500) && $attempt < 2) {
+                    sleep($retryDelay);
+                    $retryDelay *= 2;
+                    continue;
+                }
+                break;
+            }
 
             if ($response->getStatusCode() === 429) {
                 yield "\n[Error: Rate limit exceeded. Please try again later.]";
@@ -307,6 +322,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             $buffer = '';
             $fullBody = '';
             $hasDataChunks = false;
+            $wasTruncated = false;
             $inputTokens = 0;
             $outputTokens = 0;
 
@@ -350,8 +366,17 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                             $inputTokens = $data['usage']['prompt_tokens'] ?? $inputTokens;
                             $outputTokens = $data['usage']['completion_tokens'] ?? $outputTokens;
                         }
+                        if (($data['choices'][0]['finish_reason'] ?? null) === 'length') {
+                            $wasTruncated = true;
+                        }
                     }
                 }
+            }
+
+            // Answer hit the max_tokens ceiling: signal it so the UI can offer
+            // a "Continue" action.
+            if ($wasTruncated) {
+                yield ['type' => 'truncated'];
             }
 
             // Record any usage the endpoint reported.

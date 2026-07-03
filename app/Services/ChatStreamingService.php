@@ -64,6 +64,7 @@ class ChatStreamingService
 
         $fullResponse = '';
         $stopped = false;
+        $truncated = false;
 
         foreach ($stream as $chunk) {
             // Check if user requested stop
@@ -78,6 +79,10 @@ class ChatStreamingService
             if (!is_string($chunk)) {
                 if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
                     yield ['type' => 'thinking', 'data' => $chunk['text']];
+                } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
+                    // Answer hit the provider's max_tokens ceiling — reported
+                    // via the done event so the UI can offer "Continue".
+                    $truncated = true;
                 }
                 continue;
             }
@@ -145,6 +150,7 @@ class ChatStreamingService
                 'message_id' => $assistantMessage->id,
                 'artifact_id' => $artifact ? $artifact->id : null,
                 'stopped' => $stopped,
+                'truncated' => $truncated,
             ],
         ];
 
