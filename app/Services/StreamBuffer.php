@@ -42,7 +42,7 @@ class StreamBuffer
             'status' => 'running',
             'content' => '',
             'thinking' => '',
-            'artifact' => null,
+            'artifacts' => [],
             'citations' => null,
             'done' => null,
             'error' => null,
@@ -71,7 +71,7 @@ class StreamBuffer
                 $this->state['thinking'] .= (string) $data;
                 break;
             case 'artifact':
-                $this->state['artifact'] = $data;
+                $this->state['artifacts'][] = $data;
                 break;
             case 'citations':
                 $this->state['citations'] = $data;

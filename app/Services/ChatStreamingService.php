@@ -60,7 +60,11 @@ class ChatStreamingService
 
         // Models without native reasoning can still "think" via prompted
         // <sim_thinking> tags that we strip back out of the answer below.
-        $simulateThinking = $thinking && !$this->modelHasNativeReasoning($model);
+        // Local Ollama models are exempt: on CPU the extra reasoning pass
+        // doubles an already long time-to-answer.
+        $isLocalModel = str_starts_with($model, 'rynude-ollama')
+            || \App\Models\AiModel::where('code', $model)->value('provider') === 'ollama';
+        $simulateThinking = $thinking && !$isLocalModel && !$this->modelHasNativeReasoning($model);
 
         // Build the complete system prompt with all context
         $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
@@ -70,8 +74,8 @@ class ChatStreamingService
             ->for($model)
             ->adaptSystemPrompt($systemPrompt);
 
-        // Apply sliding window context strategy
-        $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt);
+        // Apply sliding window context strategy (token budget per model)
+        $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt, $model);
 
         // Clear any stale stop flag before we begin streaming
         $stopKey = 'chat_stop_' . $conversation->id;
@@ -81,6 +85,7 @@ class ChatStreamingService
         $stream = $this->aiService->streamResponse($messagesForAi, $model);
 
         $fullResponse = '';
+        $thinkingText = '';
         $stopped = false;
         $truncated = false;
         $simState = ['phase' => $simulateThinking ? 'detect' : 'off', 'buf' => ''];
@@ -97,6 +102,7 @@ class ChatStreamingService
             // forward them live but keep them out of the stored answer text.
             if (!is_string($chunk)) {
                 if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
+                    $thinkingText .= $chunk['text'];
                     yield ['type' => 'thinking', 'data' => $chunk['text']];
                 } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
                     // Answer hit the provider's max_tokens ceiling — reported
@@ -111,6 +117,7 @@ class ChatStreamingService
             // a plain passthrough.
             foreach ($this->splitSimThinking($chunk, $simState) as $piece) {
                 if ($piece['type'] === 'thinking') {
+                    $thinkingText .= $piece['text'];
                     yield ['type' => 'thinking', 'data' => $piece['text']];
                 } else {
                     $fullResponse .= $piece['text'];
@@ -122,6 +129,7 @@ class ChatStreamingService
         // Flush anything the sim-thinking scanner was still holding back
         foreach ($this->flushSimThinking($simState) as $piece) {
             if ($piece['type'] === 'thinking') {
+                $thinkingText .= $piece['text'];
                 yield ['type' => 'thinking', 'data' => $piece['text']];
             } else {
                 $fullResponse .= $piece['text'];
@@ -134,25 +142,26 @@ class ChatStreamingService
             $fullResponse = '_Generation stopped._';
         }
 
-        // Parse artifact if present
-        $artifactData = $this->parseArtifact($fullResponse);
+        // Parse artifacts if present (a reply may carry several)
+        $parsedArtifacts = $this->parseArtifacts($fullResponse);
 
         // Save assistant message to database
         $assistantMessage = Message::create([
             'conversation_id' => $conversation->id,
             'role' => 'assistant',
-            'content' => $artifactData ? $artifactData['cleanResponse'] : $fullResponse,
+            'content' => $parsedArtifacts ? $parsedArtifacts['cleanResponse'] : $fullResponse,
             'model' => $model,
             'parent_id' => $parentMessageId,
             'citations' => !empty($citations) ? $citations : null,
+            'thinking' => trim($thinkingText) !== '' ? $thinkingText : null,
         ]);
 
-        // Create artifact and link to the actual message. Reusing an earlier
-        // identifier makes this a new VERSION; command="update" additionally
+        // Create artifacts and link to the actual message. Reusing an earlier
+        // identifier makes it a new VERSION; command="update" additionally
         // applies find/replace pairs onto the previous version instead of
         // requiring a full rewrite.
-        $artifact = null;
-        if ($artifactData) {
+        $artifacts = [];
+        foreach (($parsedArtifacts['items'] ?? []) as $artifactData) {
             $previous = MessageArtifact::where('identifier', $artifactData['identifier'])
                 ->whereHas('message', fn ($q) => $q->where('conversation_id', $conversation->id))
                 ->orderByDesc('id')
@@ -167,7 +176,7 @@ class ChatStreamingService
                 }
             }
 
-            $artifact = MessageArtifact::create([
+            $artifacts[] = MessageArtifact::create([
                 'message_id' => $assistantMessage->id,
                 'identifier' => $artifactData['identifier'],
                 'type' => $artifactData['type'],
@@ -180,8 +189,8 @@ class ChatStreamingService
             ]);
         }
 
-        // Yield artifact metadata if one was created
-        if ($artifact) {
+        // Yield metadata for every artifact that was created
+        foreach ($artifacts as $artifact) {
             yield [
                 'type' => 'artifact',
                 'data' => [
@@ -192,6 +201,7 @@ class ChatStreamingService
                 ],
             ];
         }
+        $artifact = $artifacts[0] ?? null;
 
         // Web sources used for this reply (rendered as chips under the answer)
         if (!empty($citations)) {
@@ -221,6 +231,13 @@ class ChatStreamingService
         // Refresh durable conversation memory if needed
         if ($this->memoryService->shouldRefresh($conversation, count($messages) + 1)) {
             \App\Jobs\RefreshConversationMemory::dispatch($conversation->id, $model)
+                ->onConnection('database');
+        }
+
+        // Refresh the cross-conversation user profile at most every 6 hours
+        $user = Auth::user();
+        if ($user && (!$user->ai_memory_synced_at || $user->ai_memory_synced_at->lt(now()->subHours(6)))) {
+            \App\Jobs\RefreshUserMemory::dispatch($user->id, $model)
                 ->onConnection('database');
         }
 
@@ -257,6 +274,14 @@ class ChatStreamingService
         // Custom instructions from user settings
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
             $baseSystemPrompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
+        }
+
+        // Cross-conversation user memory (durable profile distilled from
+        // earlier chats by RefreshUserMemory)
+        if (Auth::check() && !empty(trim((string) Auth::user()->ai_memory))) {
+            $baseSystemPrompt .= "\n\n--- USER MEMORY (facts about this user from previous conversations) ---\n"
+                . trim((string) Auth::user()->ai_memory)
+                . "\n--- END USER MEMORY ---";
         }
 
         // Language preference
@@ -563,20 +588,55 @@ class ChatStreamingService
 
     /**
      * Apply sliding window strategy to message history.
-     * Keep first 2 messages + last N messages, digest the middle.
+     * Keep first 2 messages + as many recent messages as the model's token
+     * budget allows (was: a fixed count of 200, which overflowed small-context
+     * models on long messages and wasted budget on short ones); the middle is
+     * digested into the system prompt.
      */
-    protected function applySlidingWindow(array $messages, string $systemPrompt): array
+    protected function applySlidingWindow(array $messages, string $systemPrompt, string $model = ''): array
     {
         $historySize = 200;
         $keepFirst = 2;
+        $keepRecentMin = 4;
+
+        // Rough estimate: 4 chars ≈ 1 token, plus per-message overhead.
+        $estimate = fn (array $m): int => intdiv(strlen((string) ($m['content'] ?? '')), 4) + 8;
+
+        // Reserve 40% of the context window for the reply + provider overhead.
+        $maxCtx = 128000;
+        try {
+            if ($model !== '') {
+                $maxCtx = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
+                    ->for($model)->capabilities()->maxContextTokens ?: 128000;
+            }
+        } catch (\Throwable $e) {
+            // Unknown model — keep the default.
+        }
+        $budget = max(4000, (int) ($maxCtx * 0.6) - intdiv(strlen($systemPrompt), 4));
 
         $userMessages = array_values(array_filter($messages, fn($m) => $m['role'] !== 'system'));
         $totalMsgs = count($userMessages);
 
-        if ($totalMsgs > $historySize) {
-            $firstMessages = array_slice($userMessages, 0, $keepFirst);
-            $recentMessages = array_slice($userMessages, -($historySize - $keepFirst));
-            $middleMessages = array_slice($userMessages, $keepFirst, $totalMsgs - $keepFirst - ($historySize - $keepFirst));
+        // Walk backwards collecting recent messages until the budget runs out
+        // (always keep at least the last few so the thread stays coherent).
+        $firstMessages = array_slice($userMessages, 0, $keepFirst);
+        $used = array_sum(array_map($estimate, $firstMessages));
+        $recentCount = 0;
+        for ($i = $totalMsgs - 1; $i >= $keepFirst; $i--) {
+            $cost = $estimate($userMessages[$i]);
+            if ($recentCount >= $keepRecentMin && ($used + $cost) > $budget) {
+                break;
+            }
+            if ($recentCount >= $historySize - $keepFirst) {
+                break;
+            }
+            $used += $cost;
+            $recentCount++;
+        }
+
+        if ($totalMsgs > $keepFirst + $recentCount) {
+            $recentMessages = $recentCount > 0 ? array_slice($userMessages, -$recentCount) : [];
+            $middleMessages = array_slice($userMessages, $keepFirst, $totalMsgs - $keepFirst - $recentCount);
 
             $middleDigest = $this->buildMiddleDigest($middleMessages);
             if ($middleDigest !== '') {
@@ -608,48 +668,52 @@ class ChatStreamingService
     }
 
     /**
-     * Parse <antArtifact> tags from response and return parsed data.
-     * Does NOT create the artifact in the database - caller must do that after creating the message.
+     * Parse ALL <antArtifact> blocks from the response. Earlier code kept only
+     * the first block while stripping every block from the visible text — any
+     * additional artifact was silently lost.
      *
-     * @return array|null ['identifier' => string, 'type' => string, 'language' => string, 'title' => string, 'content' => string, 'cleanResponse' => string] or null
+     * @return array|null ['items' => array<int, array>, 'cleanResponse' => string] or null
      */
-    protected function parseArtifact(string $fullResponse): ?array
+    protected function parseArtifacts(string $fullResponse): ?array
     {
         $pattern = '/<(?:antA|a)rtifact\b([^>]*)>([\s\S]*?)(?:<\/(?:antA|a)rtifact>|$)/i';
 
-        if (!preg_match($pattern, $fullResponse, $matches)) {
+        if (!preg_match_all($pattern, $fullResponse, $matches, PREG_SET_ORDER)) {
             return null;
         }
 
-        $attrString = $matches[1];
-        $content = trim($matches[2]);
+        // Remove every artifact block from the visible text
+        $cleanResponse = trim((string) preg_replace($pattern, '', $fullResponse));
 
-        [$content, $leaked] = $this->stripConversationalLeaks($content);
+        $items = [];
+        foreach ($matches as $match) {
+            $attrString = $match[1];
+            $content = trim($match[2]);
 
-        $identifier = preg_match('/identifier="([^"]+)"/i', $attrString, $m) ? $m[1] : 'artifact-' . uniqid();
-        $type = preg_match('/type="([^"]+)"/i', $attrString, $m) ? $m[1] : 'application/vnd.ant.code';
-        $language = preg_match('/language="([^"]*)"/i', $attrString, $m) ? $m[1] : 'markdown';
-        $title = preg_match('/title="([^"]+)"/i', $attrString, $m) ? $m[1] : 'Document';
-        $command = preg_match('/command="([^"]+)"/i', $attrString, $m) ? strtolower($m[1]) : 'create';
+            [$content, $leaked] = $this->stripConversationalLeaks($content);
 
-        // Remove the artifact block from the visible text
-        $cleanResponse = preg_replace($pattern, '', $fullResponse);
-        $cleanResponse = trim($cleanResponse);
+            // Leaked conversational text belongs in the chat, not the document
+            if ($leaked !== '') {
+                $cleanResponse = trim($cleanResponse . "\n\n" . $leaked);
+            }
 
-        // Leaked conversational text belongs in the chat, not the document
-        if ($leaked !== '') {
-            $cleanResponse = trim($cleanResponse . "\n\n" . $leaked);
+            $identifier = preg_match('/identifier="([^"]+)"/i', $attrString, $m) ? $m[1] : 'artifact-' . uniqid();
+            $type = preg_match('/type="([^"]+)"/i', $attrString, $m) ? $m[1] : 'application/vnd.ant.code';
+            $language = preg_match('/language="([^"]*)"/i', $attrString, $m) ? $m[1] : 'markdown';
+            $title = preg_match('/title="([^"]+)"/i', $attrString, $m) ? $m[1] : 'Document';
+            $command = preg_match('/command="([^"]+)"/i', $attrString, $m) ? strtolower($m[1]) : 'create';
+
+            $items[] = [
+                'identifier' => $identifier,
+                'type' => str_contains($type, 'code') ? 'code' : 'text',
+                'language' => $language ?: 'text',
+                'title' => $title,
+                'content' => $content,
+                'command' => $command,
+            ];
         }
 
-        return [
-            'identifier' => $identifier,
-            'type' => str_contains($type, 'code') ? 'code' : 'text',
-            'language' => $language ?: 'text',
-            'title' => $title,
-            'content' => $content,
-            'command' => $command,
-            'cleanResponse' => $cleanResponse,
-        ];
+        return ['items' => $items, 'cleanResponse' => $cleanResponse];
     }
 
     /**
@@ -973,7 +1037,8 @@ class ChatStreamingService
             . "- Stay consistent with the Persistent Conversation Memory below when it is present.\n"
             . "- Provide detailed, comprehensive responses by default. For simple factual questions, be direct but still thorough. For complex tasks, provide extensive explanations including your reasoning, approach, alternatives considered, and decision rationale. Err on the side of being more detailed rather than too brief. Match the user's language.\n"
             . "- Choose the right format for the content. Use a Markdown table ONLY when the data is genuinely tabular: several items compared across the same attributes (comparisons, specifications, schedules, price lists, pros/cons of multiple options). One table like that per answer is usually enough. Do NOT use tables for narrative explanations, definitions, concepts, a single item's description, or step-by-step instructions — those read better as prose or lists. This guidance applies both to chat answers and to documents inside <antArtifact>.\n"
-            . "- For enumerations and step-by-step explanations, use NUMBERED lists (1. 2. 3.), each item starting with a short bold label followed by the explanation — not a wall of plain dots.";
+            . "- For enumerations and step-by-step explanations, use NUMBERED lists (1. 2. 3.), each item starting with a short bold label followed by the explanation — not a wall of plain dots.\n"
+            . "- RUNNABLE ANALYSIS CODE: when the user needs a calculation, statistic, or data analysis whose OUTPUT matters (not the code itself), provide ONE self-contained JavaScript snippet inside a ```js-run fenced block that prints its results with console.log(...). The app shows a Run button and executes it safely for the user. This fence is an explicit exception to the artifact rule — every other kind of code still goes inside <antArtifact>.";
     }
 
     /**

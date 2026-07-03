@@ -409,8 +409,11 @@ class ChatApiController extends ApiController
                 }
 
                 if ($state['status'] === 'done') {
-                    if (!empty($state['artifact'])) {
-                        $emit(['type' => 'artifact', 'data' => $state['artifact']]);
+                    // 'artifact' (singular) = buffer written before the
+                    // multi-artifact upgrade; replay whichever shape exists.
+                    $artifactEvents = $state['artifacts'] ?? (!empty($state['artifact']) ? [$state['artifact']] : []);
+                    foreach ($artifactEvents as $artifactEvent) {
+                        $emit(['type' => 'artifact', 'data' => $artifactEvent]);
                     }
                     if (!empty($state['citations'])) {
                         $emit(['type' => 'citations', 'data' => $state['citations']]);
@@ -562,17 +565,14 @@ class ChatApiController extends ApiController
             ->groupBy(fn ($m) => $m->parent_id . ':' . $m->role);
 
         $messages = $thread->map(function ($msg) use ($siblingGroups) {
-            $artifactData = null;
-            if ($msg->artifacts->isNotEmpty()) {
-                $art = $msg->artifacts->first();
-                $artifactData = [
-                    'id' => $art->id,
-                    'type' => $art->type,
-                    'language' => $art->language,
-                    'title' => $art->title,
-                    'content' => $art->content,
-                ];
-            }
+            $artifactList = $msg->artifacts->map(fn ($art) => [
+                'id' => $art->id,
+                'type' => $art->type,
+                'language' => $art->language,
+                'title' => $art->title,
+                'content' => $art->content,
+            ])->values();
+            $artifactData = $artifactList->first();
 
             $attachments = $msg->attachments->map(fn ($att) => [
                 'file_path' => $att->file_path,
@@ -595,11 +595,13 @@ class ChatApiController extends ApiController
                 'content' => $msg->content,
                 'rating' => $msg->rating,
                 'model' => $msg->model,
+                'thinking' => $msg->thinking,
                 'citations' => $msg->citations,
                 'sibling_ids' => $siblingIds,
                 'sibling_index' => $siblingIds ? array_search($msg->id, $siblingIds) : 0,
                 'sibling_count' => count($siblingIds),
                 'artifact' => $artifactData,
+                'artifacts' => $artifactList,
                 'attachments' => $attachments,
             ];
         })->values();

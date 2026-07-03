@@ -365,12 +365,12 @@
                                                         <span>Proses berpikir</span>
                                                         <svg class="w-3.5 h-3.5" :style="open ? 'transform: rotate(180deg)' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                                                     </button>
-                                                    <div x-show="open" x-cloak class="mt-2 px-3 py-1.5 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-stone-50 dark:bg-[#2C2C2A] text-[13px] text-stone-500 dark:text-stone-400 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar" style="font-style: italic;" x-text="msg.thinking"></div>
+                                                    <div x-show="open" x-cloak class="mt-2 text-[13px] text-stone-500 dark:text-stone-400 max-h-64 overflow-y-auto custom-scrollbar prose prose-stone dark:prose-invert max-w-none prose-p:my-1 prose-li:my-0 prose-table:my-2" style="font-style: italic; border-left: 2px solid rgba(168,162,158,0.35); padding-left: 12px; font-size: 13px;" x-html="renderContent(msg.thinking)"></div>
                                                 </div>
                                             </template>
                                             <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-[#3A3A38] prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-[#3A3A38] prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;" x-html="renderContent(msg.content)"></div>
-                                            <template x-if="msg.artifact">
-                                                <div @click="openArtifact(msg.artifact.id)" class="artifact-card mt-3 w-full flex items-center gap-4 border border-claude-border-light dark:border-claude-border-dark rounded-2xl p-3 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer not-prose">
+                                            <template x-for="(art, artIdx) in ((msg.artifacts && msg.artifacts.length) ? msg.artifacts : (msg.artifact ? [msg.artifact] : []))" :key="'art-' + idx + '-' + artIdx">
+                                                <div @click="openArtifact(art.id)" class="artifact-card mt-3 w-full flex items-center gap-4 border border-claude-border-light dark:border-claude-border-dark rounded-2xl p-3 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer not-prose">
                                                     {{-- Tilted paper sheet, straightens on hover (see .artifact-paper) --}}
                                                     <div class="relative w-12 h-12 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 overflow-hidden shrink-0">
                                                         <div class="artifact-paper absolute bg-white dark:bg-stone-200 border border-stone-200 dark:border-stone-400 shadow-sm flex items-center justify-center" style="width: 30px; height: 38px; left: 9px; top: 10px; border-radius: 3px;">
@@ -378,10 +378,10 @@
                                                         </div>
                                                     </div>
                                                     <div class="flex-1 min-w-0">
-                                                        <div class="text-[14px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="msg.artifact.title"></div>
-                                                        <div class="text-[13px] text-stone-400" x-text="msg.artifact.type === 'code' ? 'Code' : 'Document'"></div>
+                                                        <div class="text-[14px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="art.title"></div>
+                                                        <div class="text-[13px] text-stone-400" x-text="art.type === 'code' ? 'Code' : 'Document'"></div>
                                                     </div>
-                                                    <button type="button" @click.stop="window.open('/api/artifacts/' + msg.artifact.id + '/download/' + (msg.artifact.type === 'code' ? 'file' : 'docx'), '_blank')" class="shrink-0 px-4 py-1.5 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[13px] font-medium text-stone-700 dark:text-stone-300 bg-white dark:bg-[#3A3A38] hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">Download</button>
+                                                    <button type="button" @click.stop="window.open('/api/artifacts/' + art.id + '/download/' + (art.type === 'code' ? 'file' : 'docx'), '_blank')" class="shrink-0 px-4 py-1.5 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[13px] font-medium text-stone-700 dark:text-stone-300 bg-white dark:bg-[#3A3A38] hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">Download</button>
                                                 </div>
                                             </template>
                                             {{-- Web sources cited by this reply --}}
@@ -452,13 +452,13 @@
                                 </div>
                                 {{-- Live thinking / reasoning panel --}}
                                 <template x-if="thinkingContent">
-                                    <div class="mb-2 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-stone-50 dark:bg-[#2C2C2A] not-prose">
-                                        <button type="button" @click="thinkingOpen=!thinkingOpen" class="w-full text-left px-3 py-1.5 flex items-center gap-2 text-[13px] font-medium text-stone-500 dark:text-stone-400">
+                                    <div class="mb-2 not-prose">
+                                        <button type="button" @click="thinkingOpen=!thinkingOpen" class="text-left flex items-center gap-2 text-[13px] font-medium text-stone-500 dark:text-stone-400">
                                             <svg class="w-3.5 h-3.5 animate-pulse text-[#D97757]" x-show="!streamContent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M4.9 19.1l2.2-2.2M16.9 7.1l2.2-2.2"/></svg>
                                             <span x-text="streamContent ? 'Proses berpikir' : 'Sedang berpikir…'"></span>
                                             <svg class="w-3.5 h-3.5" :style="thinkingOpen ? 'transform: rotate(180deg)' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                                         </button>
-                                        <div x-show="thinkingOpen" x-ref="thinkingBox" class="px-3 pb-2 text-[13px] text-stone-500 dark:text-stone-400 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar" style="font-style: italic;" x-text="thinkingContent"></div>
+                                        <div x-show="thinkingOpen" x-ref="thinkingBox" class="mt-2 text-[13px] text-stone-500 dark:text-stone-400 max-h-64 overflow-y-auto custom-scrollbar prose prose-stone dark:prose-invert max-w-none prose-p:my-1 prose-li:my-0 prose-table:my-2" style="font-style: italic; border-left: 2px solid rgba(168,162,158,0.35); padding-left: 12px; font-size: 13px;" x-html="renderContent(thinkingContent)"></div>
                                     </div>
                                 </template>
                                 {{-- Class list must stay identical to the final assistant message div so the layout doesn't shift when the stream finalizes --}}
@@ -635,7 +635,7 @@ function chatInterfaceState() {
         editingIdx: null,
         editDraft: '',
         doneMeta: null,
-        pendingArtifact: null,
+        pendingArtifacts: [],
         lastUsedModel: '',
         canContinue: false,
         resumeAttempts: 0,
@@ -951,7 +951,7 @@ function chatInterfaceState() {
             this.finalizing = false;
             this.lastThinking = '';
             this.doneMeta = null;
-            this.pendingArtifact = null;
+            this.pendingArtifacts = [];
             this.pendingCitations = null;
             this.lastUsedModel = model || this.selectedModel;
             this.canContinue = false;
@@ -1054,7 +1054,7 @@ function chatInterfaceState() {
                                         self.streamEnded = true;
                                         self.pumpStream();
                                     } else if (data.type === 'artifact') {
-                                        self.pendingArtifact = data.data || null;
+                                        if (data.data) self.pendingArtifacts.push(data.data);
                                     } else if (data.type === 'citations') {
                                         self.pendingCitations = data.data || null;
                                     }
@@ -1279,7 +1279,8 @@ function chatInterfaceState() {
                     content: content,
                     thinking: this.thinkingContent || null,
                     model: this.lastUsedModel || this.selectedModel,
-                    artifact: this.pendingArtifact || null,
+                    artifact: this.pendingArtifacts[0] || null,
+                    artifacts: this.pendingArtifacts.slice(),
                     citations: this.pendingCitations || null,
                     attachments: []
                 });
@@ -1293,7 +1294,7 @@ function chatInterfaceState() {
             this.thinkingContent = '';
             this.streaming = false;
             this.doneMeta = null;
-            this.pendingArtifact = null;
+            this.pendingArtifacts = [];
             if (this.conversationId) {
                 // Swap in the authoritative thread (ids, artifacts, branch info)
                 // whenever the server is ready — the UI is already settled.
@@ -1513,6 +1514,18 @@ function chatInterfaceState() {
                 return '\n<div class="mermaid-diagram my-4 p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 overflow-x-auto" id="' + id + '" data-mermaid-pending="true"></div>\n';
             });
 
+            // Runnable analysis snippets (```js-run): rendered as a code box
+            // with a Run button, executed in a sandboxed iframe. Same
+            // placeholder pattern as mermaid so markdown never mangles code.
+            var hasJsRun = false;
+            window._rynudeJsRun = window._rynudeJsRun || {};
+            content = content.replace(/```js-run\r?\n([\s\S]*?)```/g, function(match, code) {
+                hasJsRun = true;
+                var id = 'jsrun-' + Math.random().toString(36).substr(2, 9);
+                window._rynudeJsRun[id] = code;
+                return '\n<div class="jsrun-block not-prose" id="' + id + '" data-jsrun-pending="true"></div>\n';
+            });
+
             // Protect LaTeX math from the markdown parser (same placeholder
             // trick as mermaid); rendered with KaTeX after parsing.
             var mathChunks = [];
@@ -1554,6 +1567,26 @@ function chatInterfaceState() {
                         return c.display ? '$$' + c.tex + '$$' : c.tex;
                     }
                 });
+            }
+
+            // Populate runnable-code boxes after DOM insertion
+            if (hasJsRun) {
+                setTimeout(function() {
+                    document.querySelectorAll('.jsrun-block[data-jsrun-pending="true"]').forEach(function(el) {
+                        el.removeAttribute('data-jsrun-pending');
+                        var code = window._rynudeJsRun[el.id];
+                        if (!code) return;
+                        var esc = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        el.innerHTML = '<div style="background:#1E1E1E;border-radius:12px;overflow:hidden;margin:12px 0;border:1px solid rgba(120,113,108,0.3);">'
+                            + '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:#2A2A28;">'
+                            + '<span style="font-size:11px;color:#a8a29e;font-family:monospace;">javascript &middot; analysis</span>'
+                            + '<button onclick="window.rynudeRunJs(\'' + el.id + '\')" style="font-size:12px;color:#fff;background:#D97757;border:none;border-radius:6px;padding:3px 12px;cursor:pointer;">&#9654; Jalankan</button>'
+                            + '</div>'
+                            + '<pre style="margin:0;padding:12px;overflow-x:auto;"><code style="background:transparent;color:#e7e5e4;font-size:13px;font-family:monospace;white-space:pre;">' + esc + '</code></pre>'
+                            + '<pre id="' + el.id + '-out" style="display:none;margin:0;padding:10px 12px;border-top:1px solid #3f3f3c;background:#171716;color:#86efac;font-size:12.5px;white-space:pre-wrap;font-family:monospace;"></pre>'
+                            + '</div>';
+                    });
+                }, 50);
             }
 
             // Render mermaid diagrams after DOM insertion
@@ -1743,4 +1776,44 @@ function chatInterfaceState() {
         },
     };
 }
+
+// Analysis tool runner: executes a ```js-run snippet inside a sandboxed
+// iframe (allow-scripts only — no cookies, no DOM, no same-origin access).
+// console.* output and errors are collected and posted back for display.
+window.rynudeRunJs = function(id) {
+    var code = (window._rynudeJsRun || {})[id];
+    var out = document.getElementById(id + '-out');
+    if (!code || !out) return;
+    out.style.display = 'block';
+    out.textContent = 'Menjalankan…';
+
+    // A literal closing script-tag inside the code would terminate the srcdoc
+    // script block, so escape it (never write that tag literally in here!)
+    var safe = code.replace(new RegExp('</scr' + 'ipt', 'gi'), '<\\/script');
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.setAttribute('sandbox', 'allow-scripts');
+
+    var done = false;
+    function handler(e) {
+        if (!e.data || e.data.rynudeJsRun !== id) return;
+        done = true;
+        window.removeEventListener('message', handler);
+        out.textContent = (e.data.logs && e.data.logs.length)
+            ? e.data.logs.join('\n')
+            : '(selesai — tidak ada output console.log)';
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }
+    window.addEventListener('message', handler);
+
+    iframe.srcdoc = '<scr' + 'ipt>var logs=[];function put(){logs.push(Array.prototype.map.call(arguments,function(a){try{return (typeof a==="object"&&a!==null)?JSON.stringify(a,null,2):String(a)}catch(e){return String(a)}}).join(" "))}console.log=put;console.info=put;console.warn=put;console.error=put;window.onerror=function(m){put("Error: "+m);return true};try{(function(){' + safe + '\n})()}catch(e){put("Error: "+e.message)}parent.postMessage({rynudeJsRun:"' + id + '",logs:logs},"*");</scr' + 'ipt>';
+    document.body.appendChild(iframe);
+
+    setTimeout(function() {
+        if (done) return;
+        window.removeEventListener('message', handler);
+        out.textContent = 'Timeout: kode berjalan lebih dari 8 detik (kemungkinan loop tak berujung).';
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }, 8000);
+};
 </script>

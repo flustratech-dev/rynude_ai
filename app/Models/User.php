@@ -59,6 +59,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'ai_memory_synced_at' => 'datetime',
             'password' => 'hashed',
             'anthropic_api_key' => 'encrypted',
             'openai_api_key' => 'encrypted',
