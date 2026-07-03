@@ -56,6 +56,9 @@ abstract class ModelAdapter
             . "- Never wrap a normal conversational answer in <antArtifact>.\n"
             . "- Artifact skeleton example:\n"
             . "<antArtifact identifier=\"contoh-dokumen\" type=\"text/markdown\" title=\"Judul Dokumen\">\n# Judul\n...isi lengkap...\n</antArtifact>\n"
+            . "- When (and only when) you compare several items across the same attributes (perbandingan, spesifikasi, jadwal, harga), present THAT part as a Markdown table with this exact syntax (blank line before it, header row + separator row required):\n"
+            . "\n| Aspek | Opsi A | Opsi B |\n|---|---|---|\n| Contoh | isi | isi |\n\n"
+            . "- Everything else (penjelasan, definisi, langkah-langkah) stays as prose or numbered lists (`1. **Label:** penjelasan`) — never force a table onto narrative content.\n"
             . "=== END STRICT OUTPUT RULES ===\n\n";
     }
 }

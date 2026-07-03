@@ -639,7 +639,10 @@ function chatInterfaceState() {
         lastUsedModel: '',
         canContinue: false,
         resumeAttempts: 0,
-        thinkingMode: false,
+        // Thinking defaults ON: every model shows a reasoning pass (native
+        // reasoning models use their own; the rest get prompted sim-thinking).
+        // Persisted so turning it off sticks.
+        thinkingMode: localStorage.getItem('rynude_thinking_mode') !== '0',
         chatStyle: 'normal',
         pendingCitations: null,
         userScrolledUp: false,
@@ -674,6 +677,9 @@ function chatInterfaceState() {
                 if (value) {
                     localStorage.setItem('rynude_selected_model', value);
                 }
+            });
+            this.$watch('thinkingMode', function(value) {
+                localStorage.setItem('rynude_thinking_mode', value ? '1' : '0');
             });
 
             this.loadModels();

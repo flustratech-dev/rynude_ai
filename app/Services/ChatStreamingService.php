@@ -971,7 +971,9 @@ class ChatStreamingService
             . "- Accuracy first: if you are unsure or lack the information, say so plainly instead of inventing facts, and separate what you know from what you are inferring.\n"
             . "- When web search results are provided below, ground your answer in them and cite the relevant source titles or links inline.\n"
             . "- Stay consistent with the Persistent Conversation Memory below when it is present.\n"
-            . "- Provide detailed, comprehensive responses by default. For simple factual questions, be direct but still thorough. For complex tasks, provide extensive explanations including your reasoning, approach, alternatives considered, and decision rationale. Err on the side of being more detailed rather than too brief. Match the user's language.";
+            . "- Provide detailed, comprehensive responses by default. For simple factual questions, be direct but still thorough. For complex tasks, provide extensive explanations including your reasoning, approach, alternatives considered, and decision rationale. Err on the side of being more detailed rather than too brief. Match the user's language.\n"
+            . "- Choose the right format for the content. Use a Markdown table ONLY when the data is genuinely tabular: several items compared across the same attributes (comparisons, specifications, schedules, price lists, pros/cons of multiple options). One table like that per answer is usually enough. Do NOT use tables for narrative explanations, definitions, concepts, a single item's description, or step-by-step instructions — those read better as prose or lists. This guidance applies both to chat answers and to documents inside <antArtifact>.\n"
+            . "- For enumerations and step-by-step explanations, use NUMBERED lists (1. 2. 3.), each item starting with a short bold label followed by the explanation — not a wall of plain dots.";
     }
 
     /**
