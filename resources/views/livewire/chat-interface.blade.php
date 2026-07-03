@@ -1057,16 +1057,19 @@ function chatInterfaceState() {
         renderContent: function(content) {
             if (!content) return '';
 
-            // Detect and transform ```mermaid blocks before markdown parsing
+            // Detect ```mermaid blocks before markdown parsing. Kode diagram
+            // DISIMPAN di memori, bukan disuntik mentah sebagai HTML — kode
+            // yang mengandung baris kosong atau karakter < akan dipotong oleh
+            // parser markdown/HTML sehingga mermaid menerima diagram setengah.
             var hasMermaid = false;
             var self = this;
-            content = content.replace(/```mermaid\n([\s\S]*?)```/g, function(match, code) {
+            if (!this._mermaidCodes) this._mermaidCodes = {};
+            content = content.replace(/```mermaid\r?\n([\s\S]*?)```/g, function(match, code) {
                 hasMermaid = true;
-                // Apply universal Mermaid syntax fixes for ALL models
-                code = self.fixMermaidSyntax(code);
                 // Generate unique ID for this diagram
                 var id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-                return '<div class="mermaid-diagram my-4 p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 overflow-x-auto" id="' + id + '">' + code.trim() + '</div>';
+                self._mermaidCodes[id] = code;
+                return '\n<div class="mermaid-diagram my-4 p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 overflow-x-auto" id="' + id + '" data-mermaid-pending="true"></div>\n';
             });
 
             // Parse markdown
@@ -1084,37 +1087,62 @@ function chatInterfaceState() {
             // Render mermaid diagrams after DOM insertion
             if (hasMermaid && typeof window.mermaid !== 'undefined') {
                 setTimeout(function() {
-                    try {
-                        window.mermaid.run({
-                            querySelector: '.mermaid-diagram:not([data-processed="true"])'
-                        }).then(function() {
-                            // Mark as processed
-                            document.querySelectorAll('.mermaid-diagram:not([data-processed="true"])').forEach(function(el) {
-                                el.setAttribute('data-processed', 'true');
-                            });
-                        }).catch(function(error) {
-                            // Handle parse errors gracefully - show raw code
-                            console.error('Mermaid parse error:', error);
-                            document.querySelectorAll('.mermaid-diagram:not([data-processed="true"])').forEach(function(el) {
-                                var rawCode = el.textContent;
-                                el.innerHTML = '<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">' +
-                                    '<div class="flex items-start gap-2 mb-2">' +
-                                    '<svg class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' +
-                                    '<div class="flex-1"><p class="text-sm font-medium text-red-800 dark:text-red-300">Mermaid Syntax Error</p>' +
-                                    '<p class="text-xs text-red-600 dark:text-red-400 mt-1">The diagram code has syntax errors. Raw code shown below:</p></div>' +
-                                    '</div>' +
-                                    '<pre class="mt-2 p-3 bg-stone-900 text-stone-200 rounded text-xs overflow-x-auto"><code>' + rawCode.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>' +
-                                    '</div>';
-                                el.setAttribute('data-processed', 'true');
-                            });
-                        });
-                    } catch(e) {
-                        console.error('Mermaid rendering error:', e);
-                    }
+                    document.querySelectorAll('.mermaid-diagram[data-mermaid-pending="true"]').forEach(function(el) {
+                        el.removeAttribute('data-mermaid-pending');
+                        var rawCode = self._mermaidCodes[el.id];
+                        if (rawCode) self.renderMermaidDiagram(el, rawCode);
+                    });
                 }, 50);
             }
 
             return html;
+        },
+
+        // Render kode ASLI dari model lebih dulu; fixMermaidSyntax hanya
+        // dipakai sebagai percobaan kedua bila kode asli ditolak parser,
+        // karena fixer dapat merusak kode yang sebenarnya valid (mis.
+        // mencabut tanda kutip pelindung label). Bila keduanya gagal,
+        // tampilkan kode mentah dalam kotak error yang rapi.
+        renderMermaidDiagram: function(el, rawCode) {
+            var self = this;
+            var attempts = [rawCode.trim(), this.fixMermaidSyntax(rawCode)];
+            var attemptIndex = 0;
+
+            function tryNext() {
+                if (attemptIndex >= attempts.length) {
+                    self.showMermaidError(el, rawCode);
+                    return;
+                }
+                var code = attempts[attemptIndex];
+                attemptIndex++;
+                if (!code) { tryNext(); return; }
+                var renderId = el.id + '-svg-' + attemptIndex;
+                try {
+                    window.mermaid.render(renderId, code).then(function(result) {
+                        el.innerHTML = result.svg;
+                        el.setAttribute('data-processed', 'true');
+                    }).catch(function(error) {
+                        console.error('Mermaid parse error (attempt ' + attemptIndex + '):', error);
+                        tryNext();
+                    });
+                } catch(e) {
+                    console.error('Mermaid rendering error (attempt ' + attemptIndex + '):', e);
+                    tryNext();
+                }
+            }
+            tryNext();
+        },
+
+        showMermaidError: function(el, rawCode) {
+            el.innerHTML = '<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">' +
+                '<div class="flex items-start gap-2 mb-2">' +
+                '<svg class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' +
+                '<div class="flex-1"><p class="text-sm font-medium text-red-800 dark:text-red-300">Mermaid Syntax Error</p>' +
+                '<p class="text-xs text-red-600 dark:text-red-400 mt-1">The diagram code has syntax errors. Raw code shown below:</p></div>' +
+                '</div>' +
+                '<pre class="mt-2 p-3 bg-stone-900 text-stone-200 rounded text-xs overflow-x-auto"><code>' + rawCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>' +
+                '</div>';
+            el.setAttribute('data-processed', 'true');
         },
 
         /**

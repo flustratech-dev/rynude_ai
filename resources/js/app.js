@@ -8,6 +8,9 @@ mermaid.initialize({
     theme: 'default',
     securityLevel: 'loose',
     fontFamily: 'inherit',
+    // Jangan suntik SVG "bomb" bawaan mermaid saat parse gagal — fallback
+    // custom di chat-interface yang menangani tampilan errornya.
+    suppressErrorRendering: true,
 });
 
 // Make mermaid globally available
