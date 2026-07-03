@@ -38,7 +38,8 @@ class ChatStreamingService
         array $messages,
         string $model,
         bool $webSearch = false,
-        bool $researchMode = false
+        bool $researchMode = false,
+        ?int $parentMessageId = null
     ): \Generator {
         // Prevent PHP from killing the streaming process during long generations
         set_time_limit(0);
@@ -103,6 +104,8 @@ class ChatStreamingService
             'conversation_id' => $conversation->id,
             'role' => 'assistant',
             'content' => $artifactData ? $artifactData['cleanResponse'] : $fullResponse,
+            'model' => $model,
+            'parent_id' => $parentMessageId,
         ]);
 
         // Create artifact and link to the actual message
@@ -145,9 +148,17 @@ class ChatStreamingService
             ],
         ];
 
+        // Housekeeping jobs make their own AI calls. They MUST NOT run inline
+        // (QUEUE_CONNECTION defaults to sync): the single-worker `artisan serve`
+        // keeps this SSE connection occupied until they finish, so the next
+        // request — silent thread reload or the user's next message — queues
+        // behind a second AI call and the chat feels frozen. Pin them to the
+        // database queue, which the launcher's `queue:work` process drains.
+
         // Refresh durable conversation memory if needed
         if ($this->memoryService->shouldRefresh($conversation, count($messages) + 1)) {
-            \App\Jobs\RefreshConversationMemory::dispatch($conversation->id, $model);
+            \App\Jobs\RefreshConversationMemory::dispatch($conversation->id, $model)
+                ->onConnection('database');
         }
 
         // Generate title for new conversations
@@ -159,7 +170,7 @@ class ChatStreamingService
                     (string) $userMsg['content'],
                     $model,
                     Auth::id(),
-                );
+                )->onConnection('database');
             }
         }
     }

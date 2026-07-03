@@ -287,8 +287,17 @@
                                                     </template>
                                                 </div>
                                             </template>
-                                            <template x-if="msg.content">
+                                            <template x-if="msg.content && editingIdx !== idx">
                                                 <div class="bg-stone-100 dark:bg-[#3A3A38] border border-transparent text-stone-900 dark:text-stone-100 px-5 md:px-6 py-3 md:py-4 rounded-2xl md:rounded-3xl text-[15px] leading-relaxed break-words whitespace-pre-wrap w-full" x-text="msg.content"></div>
+                                            </template>
+                                            <template x-if="editingIdx === idx">
+                                                <div class="bg-stone-100 dark:bg-[#3A3A38] border border-transparent rounded-2xl md:rounded-3xl px-5 py-3 w-full">
+                                                    <textarea x-model="editDraft" rows="3" class="w-full text-[15px] leading-relaxed text-stone-900 dark:text-stone-100" style="background: transparent; outline: none; border: none; resize: vertical; min-height: 60px;" @keydown.escape="editingIdx = null"></textarea>
+                                                    <div class="flex items-center justify-end gap-2 mt-2">
+                                                        <button @click="editingIdx = null" class="px-3 py-1.5 text-[13px] rounded-lg text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors">Batal</button>
+                                                        <button @click="submitEdit(idx)" class="px-3 py-1.5 text-[13px] font-medium rounded-lg text-white bg-[#D97757] hover:bg-[#c96646] transition-colors">Simpan</button>
+                                                    </div>
+                                                </div>
                                             </template>
                                             <div class="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
                                                 <button @click="navigator.clipboard.writeText(msg.content)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" title="Copy">
@@ -297,6 +306,17 @@
                                                 <button @click="editMessage(idx)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" title="Edit">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
                                                 </button>
+                                                <template x-if="msg.sibling_count > 1">
+                                                    <div class="flex items-center text-[11px] text-stone-400 select-none">
+                                                        <button @click="switchBranch(idx, -1)" class="p-1.5 rounded-lg hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" :style="msg.sibling_index === 0 ? 'opacity: 0.3; pointer-events: none;' : ''" title="Previous version">
+                                                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                                                        </button>
+                                                        <span x-text="(msg.sibling_index + 1) + '/' + msg.sibling_count"></span>
+                                                        <button @click="switchBranch(idx, 1)" class="p-1.5 rounded-lg hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" :style="msg.sibling_index >= msg.sibling_count - 1 ? 'opacity: 0.3; pointer-events: none;' : ''" title="Next version">
+                                                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                                                        </button>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </div>
                                     </div>
@@ -340,6 +360,34 @@
                                                 <button @click="rateMessage(idx, 'down')" class="p-1.5 rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800" :class="msg.rating==='down'?'text-red-500':'text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'" title="Bad response">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 15h2.25m8.024-9.75c.011.05.028.1.052.148.591 1.2.924 2.55.924 3.977a8.96 8.96 0 01-.999 4.125m.023-8.25c-.076-.365.183-.75.575-.75h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398C20.613 14.547 19.833 15 19 15h-1.053c-.472 0-.745-.556-.5-.96a8.95 8.95 0 00.303-.54m.023-8.25H16.48a4.5 4.5 0 01-1.423-.23l-3.114-1.04a4.5 4.5 0 00-1.423-.23H6.504c-.618 0-1.217.247-1.605.729A11.95 11.95 0 002.25 12c0 .434.023.863.068 1.285C2.427 14.306 3.346 15 4.372 15h3.126c.618 0 .991.724.725 1.282A7.471 7.471 0 007.5 19.5a2.25 2.25 0 002.25 2.25.75.75 0 00.75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 002.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/></svg>
                                                 </button>
+                                                <div x-data="{ openRegen: false }" class="relative">
+                                                    <button @click="openRegen = !openRegen" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" title="Regenerate">
+                                                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                                                    </button>
+                                                    <div x-show="openRegen" @click.away="openRegen = false" x-transition.opacity x-cloak class="absolute left-0 mb-2 w-[240px] bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] z-50 py-1.5" style="bottom: 100%; max-height: 280px; overflow-y: auto;">
+                                                        <button type="button" @click="openRegen = false; regenerate(idx, null)" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors">
+                                                            <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200">Coba lagi</span>
+                                                        </button>
+                                                        <div class="px-3 py-1 text-[11px] text-stone-400">Coba dengan model lain</div>
+                                                        <template x-for="m in models.concat(moreModels)" :key="'regen-' + m.code">
+                                                            <button type="button" @click="openRegen = false; regenerate(idx, m.code)" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors">
+                                                                <span class="text-[13px] text-stone-800 dark:text-stone-200" x-text="m.name"></span>
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                <template x-if="msg.sibling_count > 1">
+                                                    <div class="flex items-center text-[11px] text-stone-400">
+                                                        <button @click="switchBranch(idx, -1)" class="p-1.5 rounded-lg hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" :style="msg.sibling_index === 0 ? 'opacity: 0.3; pointer-events: none;' : ''" title="Previous version">
+                                                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                                                        </button>
+                                                        <span x-text="(msg.sibling_index + 1) + '/' + msg.sibling_count"></span>
+                                                        <button @click="switchBranch(idx, 1)" class="p-1.5 rounded-lg hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" :style="msg.sibling_index >= msg.sibling_count - 1 ? 'opacity: 0.3; pointer-events: none;' : ''" title="Next version">
+                                                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                                <span x-show="msg.model" x-cloak class="text-[11px] text-stone-400 px-1.5" x-text="msg.model"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -505,6 +553,11 @@ function chatInterfaceState() {
         webSearchSupported: true,
         userName: '',
         selectedProject: null,
+        editingIdx: null,
+        editDraft: '',
+        doneMeta: null,
+        pendingArtifact: null,
+        lastUsedModel: '',
 
         get selectedModelName() {
             var all = this.models.concat(this.moreModels);
@@ -600,6 +653,11 @@ function chatInterfaceState() {
             fetch('/api/chats/' + id, {headers:{'Accept':'application/json'}})
                 .then(function(r){return r.json()})
                 .then(function(resp){
+                    // A late silent reload must never clobber a stream the user
+                    // has started in the meantime.
+                    if (silent && (self.streaming || self.sending)) {
+                        return;
+                    }
                     if (resp.data) {
                         self.conversationId = resp.data.id;
                         var msgs = resp.data.messages || [];
@@ -623,25 +681,24 @@ function chatInterfaceState() {
                     }
                     if (!silent) {
                         self.loading = false;
+                        // Scroll to bottom after render — only when the user
+                        // opened the chat. A silent refresh after a finished
+                        // stream must not yank the view while they're reading.
+                        setTimeout(function() {
+                            var container = document.querySelector('[x-ref="messagesContainer"]');
+                            if (container) container.scrollTop = container.scrollHeight;
+                        }, 50);
                     }
-                    // Scroll to bottom after render
-                    setTimeout(function() {
-                        var container = document.querySelector('[x-ref="messagesContainer"]');
-                        if (container) container.scrollTop = container.scrollHeight;
-                    }, 50);
                 })
                 .catch(function(){
                     if (!silent) {
                         self.loading = false;
                     }
-                    // Reload failed after a finished stream: keep the streamed
-                    // reply on screen as a local message instead of losing it
-                    if (self.streaming && self.streamContent) {
-                        self.messages.push({
-                            role: 'assistant',
-                            content: self.streamContent.replace(/<antArtifact[\s\S]*?(?:<\/antArtifact>|$)/i, '').trim(),
-                            thinking: self.thinkingContent || null
-                        });
+                    // finishStream() already materialized the streamed reply as
+                    // a local message, so a failed reload loses nothing. Just
+                    // make sure not to disturb a stream that's now in flight.
+                    if (self.sending || self.streaming) {
+                        return;
                     }
                     self.streamContent = '';
                     self.thinkingContent = '';
@@ -702,23 +759,38 @@ function chatInterfaceState() {
             });
             self.prompt = '';
             self.attachments = [];
-            self.streaming = true;
-            self.streamContent = '';
-            self.thinkingContent = '';
-            self.thinkingOpen = true;
-            self.contentQueue = '';
-            self.thinkQueue = '';
-            self.streamEnded = false;
-            self.finalizing = false;
-            self.lastThinking = '';
-            self.startWaitFeed();
+            self.beginStreamingState(self.selectedModel);
 
             fetch('/api/chats/send', {
                 method: 'POST',
                 headers: headers,
                 body: body
             })
-            .then(function(response) {
+            .then(function(response) { self.handleStreamResponse(response); })
+            .catch(function(err) { self.handleStreamNetworkError(err); });
+        },
+
+        // Reset all streaming state before a send/edit/regenerate kicks off.
+        beginStreamingState: function(model) {
+            this.editingIdx = null;
+            this.streaming = true;
+            this.streamContent = '';
+            this.thinkingContent = '';
+            this.thinkingOpen = true;
+            this.contentQueue = '';
+            this.thinkQueue = '';
+            this.streamEnded = false;
+            this.finalizing = false;
+            this.lastThinking = '';
+            this.doneMeta = null;
+            this.pendingArtifact = null;
+            this.lastUsedModel = model || this.selectedModel;
+            this.startWaitFeed();
+        },
+
+        // Shared SSE reader for send/edit/regenerate responses.
+        handleStreamResponse: function(response) {
+            var self = this;
                 if (!response.ok) {
                     self.stopWaitFeed();
                     self.streaming = false;
@@ -782,6 +854,9 @@ function chatInterfaceState() {
                                         self.streaming = false;
                                         self.sending = false;
                                     } else if (data.type === 'done') {
+                                        // Carries message_id/artifact_id so the finalized
+                                        // local message is actionable before the reload
+                                        self.doneMeta = data.data || null;
                                         // Capture conversation ID from SSE done event
                                         if (data.data && data.data.conversation_id) {
                                             self.conversationId = data.data.conversation_id;
@@ -795,7 +870,7 @@ function chatInterfaceState() {
                                         self.streamEnded = true;
                                         self.pumpStream();
                                     } else if (data.type === 'artifact') {
-                                        // Artifact will be attached when loadConversation is called
+                                        self.pendingArtifact = data.data || null;
                                     }
                                 } catch(e) {}
                             }
@@ -816,14 +891,14 @@ function chatInterfaceState() {
                     });
                 }
                 read();
-            })
-            .catch(function(err) {
-                console.error("Fetch network error:", err);
-                alert("Network error sending message. Please check connection.");
-                self.stopWaitFeed();
-                self.streaming = false;
-                self.sending = false;
-            });
+        },
+
+        handleStreamNetworkError: function(err) {
+            console.error("Fetch network error:", err);
+            alert("Network error sending message. Please check connection.");
+            this.stopWaitFeed();
+            this.streaming = false;
+            this.sending = false;
         },
 
         // Typewriter pump: drains the queued thinking/content tokens a few
@@ -924,9 +999,7 @@ function chatInterfaceState() {
         finishStream: function() {
             this.streamEnded = false;
             this.sending = false;
-            // Answer is fully visible: hide the spinner and Stop button right
-            // away while the silent reload below swaps in the saved message
-            this.finalizing = true;
+            this.finalizing = false;
             this.stopWaitFeed();
             // Reveal any reasoning still queued in one go — it's secondary to
             // the finished answer and must not delay it
@@ -934,16 +1007,36 @@ function chatInterfaceState() {
                 this.thinkingContent += this.thinkQueue;
                 this.thinkQueue = '';
             }
+            // Materialize the streamed reply as a real message NOW and end the
+            // loading state — the send connection may stay open for seconds
+            // running housekeeping (title generation on a sync queue), and the
+            // silent reload below can't be served before that finishes on a
+            // single-worker `artisan serve`. Waiting on it left the spinner up
+            // and the streaming block + swapped-in message briefly doubled the
+            // scroll area.
+            var content = (this.streamContent || '').replace(/<antArtifact[\s\S]*?(?:<\/antArtifact>|$)/i, '').trim();
+            if (content || this.thinkingContent) {
+                this.messages.push({
+                    id: this.doneMeta ? (this.doneMeta.message_id || null) : null,
+                    role: 'assistant',
+                    content: content,
+                    thinking: this.thinkingContent || null,
+                    model: this.lastUsedModel || this.selectedModel,
+                    artifact: this.pendingArtifact || null,
+                    attachments: []
+                });
+            }
             // Keep the thinking text so it can be re-attached to the saved message
             this.lastThinking = this.thinkingContent;
+            this.streamContent = '';
+            this.thinkingContent = '';
+            this.streaming = false;
+            this.doneMeta = null;
+            this.pendingArtifact = null;
             if (this.conversationId) {
-                // Keep the streamed text on screen (streaming stays true) until
-                // loadConversation swaps in the saved message in the same render,
-                // so the reply never blinks out and back in.
+                // Swap in the authoritative thread (ids, artifacts, branch info)
+                // whenever the server is ready — the UI is already settled.
                 this.loadConversation(this.conversationId, true);
-            } else {
-                this.streaming = false;
-                this.finalizing = false;
             }
         },
 
@@ -1051,13 +1144,87 @@ function chatInterfaceState() {
         },
 
         rateMessage: function(idx, rating) {
-            if (this.messages[idx]) this.messages[idx].rating = rating;
+            var msg = this.messages[idx];
+            if (!msg) return;
+            // Same thumb again clears the rating (toggle), like Claude
+            var next = msg.rating === rating ? null : rating;
+            msg.rating = next;
+            if (!msg.id) return;
+            fetch('/api/chats/messages/' + msg.id + '/rating', {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ rating: next })
+            }).catch(function(){});
         },
 
         editMessage: function(idx) {
-            if (this.messages[idx] && this.messages[idx].role === 'user') {
-                this.prompt = this.messages[idx].content;
-            }
+            var msg = this.messages[idx];
+            if (!msg || msg.role !== 'user') return;
+            this.editingIdx = idx;
+            this.editDraft = msg.content;
+        },
+
+        submitEdit: function(idx) {
+            var msg = this.messages[idx];
+            var text = (this.editDraft || '').trim();
+            this.editingIdx = null;
+            if (!msg || !text || this.sending) return;
+            // Unsaved local message (no id yet): fall back to the composer
+            if (!msg.id || !this.conversationId) { this.prompt = text; return; }
+            var self = this;
+            this.sending = true;
+            // Fork the thread: hide the old message + its tail, show the new text
+            this.messages = this.messages.slice(0, idx);
+            this.messages.push({ role: 'user', content: text, attachments: [] });
+            this.beginStreamingState(this.selectedModel);
+            fetch('/api/chats/send', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Accept':'text/event-stream'},
+                body: JSON.stringify({
+                    prompt: text,
+                    model: this.selectedModel,
+                    conversation_id: this.conversationId,
+                    edit_of: msg.id,
+                    web_search: this.webSearch ? 1 : 0,
+                    research_mode: this.researchMode ? 1 : 0
+                })
+            })
+            .then(function(response) { self.handleStreamResponse(response); })
+            .catch(function(err) { self.handleStreamNetworkError(err); });
+        },
+
+        regenerate: function(idx, model) {
+            var msg = this.messages[idx];
+            if (!msg || msg.role === 'user' || !msg.id || this.sending || !this.conversationId) return;
+            var self = this;
+            var useModel = model || msg.model || this.selectedModel;
+            this.sending = true;
+            // The old reply becomes an inactive branch server-side; drop it from view
+            this.messages = this.messages.slice(0, idx);
+            this.beginStreamingState(useModel);
+            fetch('/api/chats/' + this.conversationId + '/regenerate', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Accept':'text/event-stream'},
+                body: JSON.stringify({ message_id: msg.id, model: useModel })
+            })
+            .then(function(response) { self.handleStreamResponse(response); })
+            .catch(function(err) { self.handleStreamNetworkError(err); });
+        },
+
+        switchBranch: function(idx, dir) {
+            var msg = this.messages[idx];
+            if (!msg || !msg.sibling_ids || this.sending || this.streaming) return;
+            var target = msg.sibling_ids[msg.sibling_index + dir];
+            if (!target) return;
+            var self = this;
+            fetch('/api/chats/' + this.conversationId + '/switch-branch', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ message_id: target })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() { self.loadConversation(self.conversationId, true); })
+            .catch(function(){});
         },
 
         sendSurpriseMessage: function() {

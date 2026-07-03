@@ -69,6 +69,7 @@ class ChatApiController extends ApiController
             'research_mode' => ['nullable', 'boolean'],
             'repo_url' => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'max:50000'], // 50MB per file
+            'edit_of' => ['nullable', 'integer', 'exists:messages,id'],
         ]);
 
         $text = trim($validated['prompt']);
@@ -123,11 +124,34 @@ class ChatApiController extends ApiController
             ]);
         }
 
+        // Editing an earlier user message forks the thread: the old message and
+        // its tail become an inactive branch, the new message their sibling.
+        $parentId = null;
+        $editOf = $validated['edit_of'] ?? null;
+        if ($editOf) {
+            $edited = Message::where('id', $editOf)
+                ->where('conversation_id', $conversation->id)
+                ->where('role', 'user')
+                ->first();
+            if ($edited) {
+                $parentId = $edited->ensureParentLink();
+                Message::deactivateTail($conversation->id, $edited->id);
+            }
+        }
+        if ($parentId === null) {
+            $lastActive = Message::where('conversation_id', $conversation->id)
+                ->where('is_active_branch', true)
+                ->orderByDesc('id')
+                ->first();
+            $parentId = $lastActive ? $lastActive->id : 0;
+        }
+
         // Create user message
         $userMessage = Message::create([
             'conversation_id' => $conversation->id,
             'role' => 'user',
             'content' => $text,
+            'parent_id' => $parentId,
         ]);
 
         // Handle file attachments
@@ -153,11 +177,21 @@ class ChatApiController extends ApiController
         // Clear the autosaved draft
         $conversation->update(['draft_prompt' => null]);
 
-        // Build message history for AI
-        $conversation->load(['messages.artifacts', 'messages.attachments']);
-        $messages = [];
+        // Build message history for AI (active branch only)
+        $messages = $this->buildAiMessages($conversation);
 
-        foreach ($conversation->messages as $msg) {
+        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id);
+    }
+
+    /**
+     * Message history for the AI from the active branch of the thread.
+     */
+    private function buildAiMessages(Conversation $conversation): array
+    {
+        $thread = Message::activeThread($conversation->id)->with('attachments')->get();
+
+        $messages = [];
+        foreach ($thread as $msg) {
             $msgData = [
                 'role' => $msg->role,
                 'content' => $msg->content,
@@ -175,11 +209,26 @@ class ChatApiController extends ApiController
             $messages[] = $msgData;
         }
 
-        // Stream the AI response using Server-Sent Events (SSE)
+        return $messages;
+    }
+
+    /**
+     * Stream the AI response using Server-Sent Events (SSE). Shared by send()
+     * and regenerate(); $parentMessageId links the saved assistant reply to the
+     * user message it answers (branching).
+     */
+    private function streamAiResponse(
+        Conversation $conversation,
+        array $messages,
+        string $model,
+        bool $webSearch,
+        bool $researchMode,
+        ?int $parentMessageId
+    ) {
         // Resolve the service before the closure so mocks can intercept it
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
-        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode) {
+        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId) {
             // Kill every buffering layer so each token reaches the browser
             // immediately instead of arriving as one big burst at the end.
             @ini_set('zlib.output_compression', '0');
@@ -205,7 +254,7 @@ class ChatApiController extends ApiController
                 if (ob_get_level() > 0) ob_flush();
                 flush();
 
-                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode);
+                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId);
 
                 foreach ($generator as $event) {
                     // Format as SSE: data: {...}\n\n
@@ -261,15 +310,117 @@ class ChatApiController extends ApiController
         return response()->json(['stopped' => true]);
     }
 
+    /**
+     * Re-answer an assistant message (optionally with a different model). The
+     * old reply becomes an inactive sibling; the stream saves the new one.
+     */
+    public function regenerate(Request $request, Conversation $conversation)
+    {
+        $this->authorizeOwnership($conversation);
+
+        $validated = $request->validate([
+            'message_id' => ['required', 'integer', 'exists:messages,id'],
+            'model' => ['required', 'string'],
+            'web_search' => ['nullable', 'boolean'],
+            'research_mode' => ['nullable', 'boolean'],
+        ]);
+
+        $assistant = Message::where('id', $validated['message_id'])
+            ->where('conversation_id', $conversation->id)
+            ->where('role', 'assistant')
+            ->firstOrFail();
+
+        // Parent = the user message this reply answered. Resolve it while the
+        // old reply is still on the active chain, then retire the tail.
+        $parentId = $assistant->ensureParentLink();
+        Message::deactivateTail($conversation->id, $assistant->id);
+
+        $messages = $this->buildAiMessages($conversation);
+
+        return $this->streamAiResponse(
+            $conversation,
+            $messages,
+            $validated['model'],
+            (bool) ($validated['web_search'] ?? false),
+            (bool) ($validated['research_mode'] ?? false),
+            $parentId ?: null
+        );
+    }
+
+    /**
+     * Make another sibling (an earlier edit/regeneration) the visible branch.
+     */
+    public function switchBranch(Request $request, Conversation $conversation): JsonResponse
+    {
+        $this->authorizeOwnership($conversation);
+
+        $validated = $request->validate([
+            'message_id' => ['required', 'integer', 'exists:messages,id'],
+        ]);
+
+        $target = Message::where('id', $validated['message_id'])
+            ->where('conversation_id', $conversation->id)
+            ->firstOrFail();
+
+        if ($target->parent_id === null) {
+            return response()->json(['error' => 'Message is not part of a branch'], 422);
+        }
+
+        // Retire the currently visible sibling (and its tail), then bring the
+        // target branch back.
+        $currentSibling = Message::where('conversation_id', $conversation->id)
+            ->where('parent_id', $target->parent_id)
+            ->where('role', $target->role)
+            ->where('is_active_branch', true)
+            ->first();
+
+        if ($currentSibling && $currentSibling->id !== $target->id) {
+            Message::deactivateTail($conversation->id, $currentSibling->id);
+        }
+
+        $target->activateBranch();
+
+        return response()->json(['switched' => true]);
+    }
+
+    /**
+     * Persist thumbs up/down feedback on an assistant message.
+     */
+    public function rateMessage(Request $request, Message $message): JsonResponse
+    {
+        $conversation = $message->conversation;
+        if (! $conversation || $conversation->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'rating' => ['nullable', 'string', 'in:up,down'],
+        ]);
+
+        $message->update(['rating' => $validated['rating'] ?? null]);
+
+        return response()->json(['rating' => $message->rating]);
+    }
+
     public function show(Conversation $conversation): JsonResponse
     {
         $this->authorizeOwnership($conversation);
 
-        // Mirror ChatInterface::loadConversation(): full message thread with the
-        // first artifact per message and any attachments.
-        $conversation->load(['messages.artifacts', 'messages.attachments']);
+        // Mirror ChatInterface::loadConversation(): the active branch of the
+        // thread with the first artifact per message and any attachments.
+        // Sibling groups (edits/regenerations sharing a parent) power the
+        // < 1/2 > branch navigation on the client.
+        $thread = Message::activeThread($conversation->id)
+            ->with(['artifacts', 'attachments'])
+            ->get();
 
-        $messages = $conversation->messages->map(function ($msg) {
+        $siblingGroups = Message::where('conversation_id', $conversation->id)
+            ->whereNotNull('parent_id')
+            ->orderBy('id')
+            ->get(['id', 'parent_id', 'role'])
+            ->groupBy(fn ($m) => $m->parent_id . ':' . $m->role);
+
+        $messages = $thread->map(function ($msg) use ($siblingGroups) {
             $artifactData = null;
             if ($msg->artifacts->isNotEmpty()) {
                 $art = $msg->artifacts->first();
@@ -289,11 +440,23 @@ class ChatApiController extends ApiController
                 'url' => \Illuminate\Support\Facades\Storage::url($att->file_path),
             ])->values();
 
+            $siblingIds = [];
+            if ($msg->parent_id !== null) {
+                $group = $siblingGroups->get($msg->parent_id . ':' . $msg->role);
+                if ($group && $group->count() > 1) {
+                    $siblingIds = $group->pluck('id')->all();
+                }
+            }
+
             return [
                 'id' => $msg->id,
                 'role' => $msg->role,
                 'content' => $msg->content,
                 'rating' => $msg->rating,
+                'model' => $msg->model,
+                'sibling_ids' => $siblingIds,
+                'sibling_index' => $siblingIds ? array_search($msg->id, $siblingIds) : 0,
+                'sibling_count' => count($siblingIds),
                 'artifact' => $artifactData,
                 'attachments' => $attachments,
             ];

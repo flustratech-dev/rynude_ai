@@ -37,6 +37,11 @@ Route::middleware('auth')->group(function () {
     Route::post('chats/stop', [ChatApiController::class, 'stop'])->name('chats.stop');
     Route::post('chats/connect-repo', [ChatApiController::class, 'connectRepo'])->name('chats.connect-repo');
     Route::post('chats/disconnect-repo', [ChatApiController::class, 'disconnectRepo'])->name('chats.disconnect-repo');
+    // Declared before the {conversation} wildcard so 'messages' is never
+    // captured as a conversation id.
+    Route::patch('chats/messages/{message}/rating', [ChatApiController::class, 'rateMessage'])->name('chats.messages.rating');
+    Route::post('chats/{conversation}/regenerate', [ChatApiController::class, 'regenerate'])->name('chats.regenerate');
+    Route::post('chats/{conversation}/switch-branch', [ChatApiController::class, 'switchBranch'])->name('chats.switch-branch');
     Route::get('chats/{conversation}', [ChatApiController::class, 'show'])->name('chats.show');
     Route::patch('chats/{conversation}', [ChatApiController::class, 'update'])->name('chats.update');
     Route::delete('chats/{conversation}', [ChatApiController::class, 'destroy'])->name('chats.destroy');

@@ -216,7 +216,11 @@ async function run() {
     // Menjalankan queue worker di background agar tugas asinkron
     // (mis. pembuatan judul chat otomatis) langsung diproses tanpa
     // perlu menjalankan `php artisan queue:work` secara manual.
-    const queueWorker = spawn(`php artisan queue:work --tries=1 --timeout=0`, {
+    // Koneksi `database` HARUS eksplisit: QUEUE_CONNECTION default `sync`,
+    // sehingga worker tanpa argumen tidak memproses apa pun dan job judul
+    // chat malah berjalan inline di dalam request streaming (chat terasa
+    // macet menunggu panggilan AI kedua selesai).
+    const queueWorker = spawn(`php artisan queue:work database --tries=1 --timeout=0`, {
         stdio: 'ignore',
         shell: true,
         detached: isUnix,

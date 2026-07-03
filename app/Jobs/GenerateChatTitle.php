@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\SerializesModels;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Services\AI\AiService;
@@ -12,7 +13,9 @@ use Illuminate\Support\Facades\Auth;
 
 class GenerateChatTitle implements ShouldQueue
 {
-    use Queueable;
+    // SerializesModels: on the database queue the Conversation is stored as an
+    // id and re-fetched by the worker, instead of serializing the whole model.
+    use Queueable, SerializesModels;
 
     public $conversation;
     public $prompt;
