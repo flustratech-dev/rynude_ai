@@ -5,6 +5,16 @@
      x-on:dragleave.prevent="isDropping = false"
      x-on:drop.prevent="isDropping = false; handleDrop($event)">
 
+    <style>
+        /* Artifact card: cream at rest, white on hover; the paper sheet sits
+           tilted and straightens on hover */
+        .artifact-card { transition: background-color .2s ease, box-shadow .2s ease; }
+        .artifact-card:hover { background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .dark .artifact-card:hover { background-color: #3A3A38; }
+        .artifact-paper { transform: rotate(-8deg); transition: transform .25s ease; }
+        .artifact-card:hover .artifact-paper { transform: rotate(0deg) translateY(-2px); }
+    </style>
+
     {{-- Drag & Drop Overlay --}}
     <div x-show="isDropping" x-transition x-cloak class="absolute inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-[#2C2C2A]/80 backdrop-blur-sm border-2 border-dashed border-[#D97757] rounded-xl m-2">
         <div class="flex flex-col items-center pointer-events-none">
@@ -340,14 +350,18 @@
                                             </template>
                                             <div class="text-[#0B0B0B] dark:text-stone-200 text-[16px] leading-[1.6] prose prose-stone dark:prose-invert max-w-none w-full font-claude-response prose-p:mt-0 prose-p:mb-3 [&_li>p]:my-0 [&_ul]:mt-0 [&_ol]:mt-0 [&_ul]:mb-3 [&_ol]:mb-3 prose-headings:font-sans prose-headings:font-semibold prose-headings:text-[#0B0B0B] dark:prose-headings:text-stone-100 prose-headings:mt-6 prose-headings:mb-3 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-ul:list-disc prose-ol:list-decimal prose-li:my-0 prose-li:pl-2 prose-ul:pl-5 prose-ol:pl-5 prose-pre:bg-[#1E1E1E] prose-pre:text-stone-200 prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:border prose-pre:border-stone-700/50 prose-pre:p-4 prose-pre:my-4 prose-pre:overflow-x-auto prose-code:px-1.5 prose-code:py-0.5 prose-code:bg-stone-100 dark:prose-code:bg-[#3A3A38] prose-code:text-[#0B0B0B] dark:prose-code:text-stone-200 prose-code:rounded-md prose-code:font-mono prose-code:text-[14px] prose-code:font-medium prose-code:before:content-none prose-code:after:content-none prose-a:text-[#D97757] hover:prose-a:text-[#c96646] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[#0B0B0B] dark:prose-strong:text-stone-100 prose-blockquote:border-l-4 prose-blockquote:border-stone-300 dark:prose-blockquote:border-stone-700 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600 dark:prose-blockquote:text-stone-400 prose-table:w-full prose-table:border-collapse prose-table:my-4 prose-th:border prose-th:border-stone-300 dark:prose-th:border-stone-700 prose-th:px-4 prose-th:py-2 prose-th:bg-stone-100 dark:prose-th:bg-[#3A3A38] prose-th:font-semibold prose-td:border prose-td:border-stone-300 dark:prose-td:border-stone-700 prose-td:px-4 prose-td:py-2" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif;" x-html="renderContent(msg.content)"></div>
                                             <template x-if="msg.artifact">
-                                                <div @click="openArtifact(msg.artifact.id)" class="mt-3 inline-flex items-center gap-3 border border-claude-border-light dark:border-claude-border-dark rounded-xl p-2 pr-4 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer hover:border-[#D97757] dark:hover:border-[#D97757] transition-colors max-w-full group not-prose">
-                                                    <div class="w-8 h-8 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-stone-500 group-hover:text-[#D97757] transition-colors shrink-0">
-                                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                                <div @click="openArtifact(msg.artifact.id)" class="artifact-card mt-3 w-full flex items-center gap-4 border border-claude-border-light dark:border-claude-border-dark rounded-2xl p-3 bg-claude-bg-light dark:bg-claude-bg-dark shadow-sm cursor-pointer not-prose">
+                                                    {{-- Tilted paper sheet, straightens on hover (see .artifact-paper) --}}
+                                                    <div class="relative w-12 h-12 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 overflow-hidden shrink-0">
+                                                        <div class="artifact-paper absolute bg-white dark:bg-stone-200 border border-stone-200 dark:border-stone-400 shadow-sm flex items-center justify-center" style="width: 30px; height: 38px; left: 9px; top: 10px; border-radius: 3px;">
+                                                            <svg class="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+                                                        </div>
                                                     </div>
-                                                    <div class="min-w-0">
-                                                        <div class="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="msg.artifact.title"></div>
-                                                        <div class="text-[11px] text-stone-400" x-text="msg.artifact.type"></div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="text-[14px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="msg.artifact.title"></div>
+                                                        <div class="text-[13px] text-stone-400" x-text="msg.artifact.type === 'code' ? 'Code' : 'Document'"></div>
                                                     </div>
+                                                    <button type="button" @click.stop="window.open('/api/artifacts/' + msg.artifact.id + '/download/' + (msg.artifact.type === 'code' ? 'file' : 'docx'), '_blank')" class="shrink-0 px-4 py-1.5 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[13px] font-medium text-stone-700 dark:text-stone-300 bg-white dark:bg-[#3A3A38] hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">Download</button>
                                                 </div>
                                             </template>
                                             <div class="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 not-prose">
@@ -458,10 +472,11 @@
                                 </div>
                             </template>
                         </div>
-                        <textarea x-model="prompt" @input="autoResize($event)" @keydown.enter="if(!$event.shiftKey){$event.preventDefault();sendMessage()}" rows="2"
-                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-2 pb-1 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[72px] max-h-48 overflow-y-auto"
+                        <textarea x-model="prompt" @input="autoResize($event)" @keydown.enter="if(!$event.shiftKey){$event.preventDefault();sendMessage()}" rows="1"
+                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-3 pb-1 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] max-h-48 overflow-y-auto"
+                            style="min-height: 30px;"
                             placeholder="Message Rynude..."></textarea>
-                        <div class="flex items-center justify-between w-full mt-2 pb-1 px-1">
+                        <div class="flex items-center justify-between w-full mt-1 pb-1 px-1">
                             <button type="button" @click="$refs.fileInput2.click()" class="p-2 text-stone-500 hover:text-stone-800 rounded-xl hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                             </button>
@@ -521,6 +536,7 @@
                             </div>
                         </div>
                     </div>
+                    <p class="text-center text-[11px] text-stone-400 dark:text-stone-500 mt-1.5">Rynude all model is AI and can make mistakes. Please double-check responses.</p>
                 </form>
             </div>
         </div>
@@ -786,6 +802,11 @@ function chatInterfaceState() {
             });
             self.prompt = '';
             self.attachments = [];
+            // autoResize leaves the composer at its last typed height — snap
+            // it back to a single line for the next message
+            document.querySelectorAll('textarea[x-model="prompt"]').forEach(function(el) {
+                el.style.height = '';
+            });
             self.beginStreamingState(self.selectedModel);
 
             fetch('/api/chats/send', {
