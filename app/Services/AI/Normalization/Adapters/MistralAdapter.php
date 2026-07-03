@@ -32,6 +32,15 @@ final class MistralAdapter extends ModelAdapter
         $this->provider = $provider ?? new MistralProvider();
     }
 
+    public function adaptSystemPrompt(string $prompt): string
+    {
+        // Large/medium Mistral models are fine with the shared prompt; the
+        // small ones (ministral, 7B/8B, codestral) need stricter rules.
+        $isLarge = str_contains($this->model, 'large') || str_contains($this->model, 'medium');
+
+        return $isLarge ? $prompt : $this->strictOutputRules() . $prompt;
+    }
+
     public function capabilities(): ModelCapability
     {
         $model = $this->model;

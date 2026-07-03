@@ -70,6 +70,8 @@ class ChatApiController extends ApiController
             'repo_url' => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'max:50000'], // 50MB per file
             'edit_of' => ['nullable', 'integer', 'exists:messages,id'],
+            'thinking' => ['nullable', 'boolean'],
+            'style' => ['nullable', 'string', 'in:normal,concise,explanatory,formal'],
         ]);
 
         $text = trim($validated['prompt']);
@@ -79,6 +81,8 @@ class ChatApiController extends ApiController
         $webSearch = $validated['web_search'] ?? false;
         $researchMode = $validated['research_mode'] ?? false;
         $repoUrl = $validated['repo_url'] ?? null;
+        $thinking = (bool) ($validated['thinking'] ?? false);
+        $style = $validated['style'] ?? null;
 
         // Create or load conversation
         if ($conversationId) {
@@ -174,13 +178,17 @@ class ChatApiController extends ApiController
             }
         }
 
-        // Clear the autosaved draft
-        $conversation->update(['draft_prompt' => null]);
+        // Clear the autosaved draft; persist the response style when it changed
+        $updates = ['draft_prompt' => null];
+        if ($style !== null) {
+            $updates['style'] = $style === 'normal' ? null : $style;
+        }
+        $conversation->update($updates);
 
         // Build message history for AI (active branch only)
         $messages = $this->buildAiMessages($conversation);
 
-        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id);
+        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id, $thinking);
     }
 
     /**
@@ -223,12 +231,13 @@ class ChatApiController extends ApiController
         string $model,
         bool $webSearch,
         bool $researchMode,
-        ?int $parentMessageId
+        ?int $parentMessageId,
+        bool $thinking = false
     ) {
         // Resolve the service before the closure so mocks can intercept it
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
-        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId) {
+        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking) {
             // Keep generating even if the browser disconnects (refresh/closed
             // tab): the answer still gets saved, and the client can catch up
             // via stream-resume from the StreamBuffer mirror below.
@@ -263,7 +272,7 @@ class ChatApiController extends ApiController
                 $buffer = new \App\Services\StreamBuffer($conversation->id);
                 $buffer->start();
 
-                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId);
+                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking);
 
                 foreach ($generator as $event) {
                     $buffer->apply($event);
@@ -394,6 +403,9 @@ class ChatApiController extends ApiController
                     if (!empty($state['artifact'])) {
                         $emit(['type' => 'artifact', 'data' => $state['artifact']]);
                     }
+                    if (!empty($state['citations'])) {
+                        $emit(['type' => 'citations', 'data' => $state['citations']]);
+                    }
                     $emit(['type' => 'done', 'data' => $state['done']]);
                     return;
                 }
@@ -441,6 +453,7 @@ class ChatApiController extends ApiController
             'model' => ['required', 'string'],
             'web_search' => ['nullable', 'boolean'],
             'research_mode' => ['nullable', 'boolean'],
+            'thinking' => ['nullable', 'boolean'],
         ]);
 
         $assistant = Message::where('id', $validated['message_id'])
@@ -461,7 +474,8 @@ class ChatApiController extends ApiController
             $validated['model'],
             (bool) ($validated['web_search'] ?? false),
             (bool) ($validated['research_mode'] ?? false),
-            $parentId ?: null
+            $parentId ?: null,
+            (bool) ($validated['thinking'] ?? false)
         );
     }
 
@@ -572,6 +586,7 @@ class ChatApiController extends ApiController
                 'content' => $msg->content,
                 'rating' => $msg->rating,
                 'model' => $msg->model,
+                'citations' => $msg->citations,
                 'sibling_ids' => $siblingIds,
                 'sibling_index' => $siblingIds ? array_search($msg->id, $siblingIds) : 0,
                 'sibling_count' => count($siblingIds),
@@ -585,6 +600,7 @@ class ChatApiController extends ApiController
                 'id' => $conversation->id,
                 'title' => $conversation->title ?? 'New Chat',
                 'project_id' => $conversation->project_id,
+                'style' => $conversation->style,
                 'draft_prompt' => $conversation->draft_prompt,
                 'archived' => $conversation->archived_at !== null,
                 'shared' => ! empty($conversation->share_token),

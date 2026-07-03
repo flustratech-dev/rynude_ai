@@ -1,0 +1,43 @@
+isi point penting yang sudah di kerjakan dari per paket 
+
+** paket 1 **
+- [x] Trait baru `app/Services/AI/Concerns/ResolvesAttachments.php` — satu pintu konversi attachment → content-parts (gambar base64 via ImageHelper, PDF/DOCX via DocumentParser, file teks txt/csv/md/json/log/xml/html/yaml dibaca langsung dengan batas 100KB per file).
+- [x] `OpenAIProvider` (streamResponse) — refactor pakai trait; kini mendukung file teks, bukan hanya gambar + PDF/DOCX.
+- [x] `OpenAiCompatToolStream::mapMessagesToOpenAi` (jalur agentic OpenAI + Mistral) — refactor pakai trait.
+- [x] `MistralProvider` (streamResponse) — BUGFIX: sebelumnya membaca key mati `attachment` (singular) sehingga lampiran tidak pernah sampai ke Mistral; kini pakai `attachments` + trait, gambar dikirim sebagai image_url hanya untuk model vision (pixtral/vision), model lain dapat catatan teks.
+- [x] `AnthropicProvider::mapMessagesToAnthropic` — refactor pakai trait (dipakai streamResponse + streamAgentTurn).
+- [x] `GoogleProvider` — BUGFIX: jalur streaming utama membaca key mati `attachment` (singular) → Gemini tidak pernah menerima lampiran; kini pakai trait. Jalur tools yang tadinya gambar-saja kini juga menerima dokumen/teks.
+- [x] `ChatApiController::show()` — payload attachment kini menyertakan `url` (Storage::url) untuk thumbnail.
+- [x] `chat-interface.blade.php` — riwayat pesan menampilkan thumbnail `<img>` untuk lampiran gambar (maks 200px, object-fit cover); file lain tetap chip nama file. Pesan yang baru dikirim memakai `URL.createObjectURL` supaya thumbnail langsung tampil tanpa reload.
+- [ ] Verifikasi lint + test (`php -l`, `ChatStreamingApiTest`) — tertunda, tool shell sementara tidak tersedia.
+
+** paket 2 **
+- [x] Migration `2026_07_03_000001_add_branching_to_messages_table.php` — kolom `model`, `parent_id`, `is_active_branch` di tabel messages (JALANKAN: `php artisan migrate`).
+- [x] `Message.php` — fillable baru + helper branching: `activeThread()`, `deactivateTail()`, `ensureParentLink()` (backfill parent utk data lama), `activateBranch()` (re-aktivasi cabang + ekornya).
+- [x] `ChatStreamingService::stream()` — param `parentMessageId`; pesan assistant tersimpan dengan `model` + `parent_id`.
+- [x] `ChatApiController::send()` — dukung `edit_of` (edit pesan user → fork branch), set `parent_id` pesan user; history AI kini hanya branch aktif; SSE diekstrak ke helper `streamAiResponse()` + `buildAiMessages()`.
+- [x] Endpoint baru: `POST chats/{id}/regenerate` (jawab ulang, boleh model lain), `POST chats/{id}/switch-branch`, `PATCH chats/messages/{id}/rating` (rating persist, toggle up/down).
+- [x] `show()` — kirim `model`, `sibling_ids`, `sibling_index`, `sibling_count` per pesan; hanya thread aktif yang tampil.
+- [x] Frontend: tombol Regenerate + dropdown "Coba dengan model lain" di pesan assistant; edit pesan user inline (Simpan/Batal) → fork branch; navigasi `< 1/2 >` di pesan user & assistant; badge model; rating 👍👎 tersimpan ke server; SSE reader direfactor jadi `beginStreamingState()`/`handleStreamResponse()` dipakai send/edit/regenerate.
+- [ ] Verifikasi: `php -l`, `php artisan migrate`, `php artisan optimize:clear` (route baru!), `php artisan test` — tertunda, tool shell tidak tersedia sepanjang sesi. Catatan: menjalankan `rynude` sudah otomatis migrate + clear cache.
+- [x] BUGFIX pasca-Paket 2: loading tidak berhenti setelah jawaban tampil penuh + ruang scroll ekstra satu layar. Penyebab: `finishStream()` menahan `streaming=true` sambil menunggu reload senyap yang terblokir housekeeping server (single-worker artisan serve). Fix: jawaban langsung dijadikan pesan lokal (lengkap dengan id dari event `done`, artifact dari event `artifact`, badge model) dan loading dimatikan seketika; reload senyap hanya menukar data otoritatif belakangan, tanpa menyentak scroll, dan tidak boleh menimpa stream baru yang sedang berjalan.
+- [x] BUGFIX lanjutan (root cause "Masih menyusun jawaban…" berulang): `QUEUE_CONNECTION=sync` membuat job judul chat (panggilan AI kedua!) berjalan inline di dalam koneksi SSE — permintaan berikutnya mengantri di belakangnya pada server single-worker. Fix: `GenerateChatTitle` + `RefreshConversationMemory` dipaksa `->onConnection('database')`; worker di `cli.js` diarahkan `queue:work database`; `GenerateChatTitle` diberi `SerializesModels`. Efek samping kecil: judul chat baru muncul di sidebar 1-2 detik setelah jawaban selesai.
+
+** paket 3 **
+- [x] File baru `app/Services/StreamBuffer.php` — cermin progres generasi di cache (kumulatif: content/thinking/artifact/done/error), flush di-throttle 0,4 dtk agar tidak membebani SQLite; TTL 10 menit.
+- [x] `ChatApiController::streamAiResponse()` — `ignore_user_abort(true)` (generasi lanjut walau tab ditutup/refresh) + setiap event SSE dicerminkan ke StreamBuffer; error juga tercatat.
+- [x] Endpoint baru `GET chats/{id}/stream-resume?content_len=&thinking_len=` — menyambung ulang: kirim ekor yang belum diterima (hitungan byte UTF-8 agar cocok dengan strlen PHP), lalu artifact/done/error tersimpan; `{type:"gone"}` bila buffer sudah tidak ada; ping SSE berkala agar putusnya client terdeteksi; deteksi writer macet (>90 dtk tanpa update).
+- [x] Deteksi jawaban terpotong (`finish_reason length` / `max_tokens` / `MAX_TOKENS`) di OpenAI, Mistral, Anthropic, Google provider → event `truncated` → flag `truncated` di event `done`.
+- [x] Retry + backoff (2x ulang utk 429/5xx) di OpenAIProvider & MistralProvider, meniru pola yang sudah ada di AnthropicProvider. Google belum (bentuk kodenya beda tipis, ditunda demi keamanan).
+- [x] Frontend: reconnect otomatis saat koneksi putus di tengah stream (maks 3x, lalu jawaban parsial diselamatkan jadi pesan); refresh halaman saat streaming → tersambung ulang via sessionStorage + stream-resume; tombol "Jawaban terpotong — Lanjutkan"; guard agar reload senyap/penutupan koneksi tidak memicu finalisasi ganda.
+- [ ] Verifikasi shell/preview — masih terblokir classifier sepanjang sesi; jalankan `rynude` (migrate+cache otomatis) lalu smoke test.
+- CATATAN Windows: `php artisan serve` satu worker (PHP_CLI_SERVER_WORKERS diabaikan di Windows) — resume saat generasi masih berjalan baru terlayani setelah generasi selesai; jawabannya tetap utuh, hanya tidak live. Di Mac/Linux live.
+** paket 4 **
+- [x] Migration `2026_07_03_000002_add_citations_and_style_columns.php` — `messages.citations` (json) + `conversations.style` (JALANKAN via rynude/migrate).
+- [x] 4a Adaptasi prompt per model — method baru `adaptSystemPrompt()` di `ModelAdapter` (default pass-through, additive) + override di OpenAI/Mistral/Google adapter: model kecil/proxy (9Router, HF, Ollama, ministral, gemini flash) mendapat blok "STRICT OUTPUT RULES" + contoh kerangka artifact; model frontier tidak berubah. Dipanggil di akhir pembangunan prompt di `ChatStreamingService::stream()`.
+- [x] 4b Simulated thinking — toggle 💡 di composer (param `thinking` ke send/regenerate); model non-reasoning diminta menulis penalaran dalam tag `<sim_thinking>`; parser incremental `splitSimThinking()` memisahkan tag (aman terhadap tag terpotong antar-chunk) menjadi event `thinking` yang sudah didukung UI, dan penalaran TIDAK ikut tersimpan di jawaban. Model reasoning asli (claude/o1/o3/r1/dll) dilewati.
+- [x] 4c Web search pintar + sitasi — `planSearchQueries()`: model merumuskan sendiri hingga 2-3 query (bisa memutuskan NO_SEARCH); `WebSearchService::fetchUrl()` baru: URL yang di-paste user diambil isinya (maks 2, 12k char); sumber bernomor masuk prompt dengan instruksi sitasi `[n]`; sitasi tersimpan di `messages.citations`, dikirim sebagai event SSE `citations` (juga saat resume via StreamBuffer), dirender sebagai chip domain yang bisa diklik di bawah jawaban.
+- [x] 4d Styles per-chat — dropdown "Style" (Normal/Concise/Explanatory/Formal) di samping model picker; tersimpan per-conversation (`conversations.style`), dipetakan ke instruksi gaya di system prompt; ikut dimuat ulang saat buka chat.
+- CATATAN: tool-loop agentic penuh (ReAct multi-iterasi utk search) TIDAK diimplementasikan — diganti planner 1-langkah multi-query demi stabilitas; loop penuh bisa menyusul memakai AgentRunner RynudeCode.
+- [ ] Verifikasi shell/preview — masih terblokir classifier; jalankan `rynude` (migrate otomatis) lalu smoke test.
+** paket 5 **

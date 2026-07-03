@@ -36,6 +36,19 @@ final class OpenAIAdapter extends ModelAdapter
         $this->provider = $provider ?? new OpenAIProvider();
     }
 
+    public function adaptSystemPrompt(string $prompt): string
+    {
+        // Frontier OpenAI models follow the shared prompt fine. Everything
+        // else routed here (9Router/HF/Ollama/unknown codes) tends to be a
+        // smaller open model that needs the format spelled out harder.
+        $isFrontier = str_starts_with($this->model, 'gpt')
+            || str_starts_with($this->model, 'o1')
+            || str_starts_with($this->model, 'o3')
+            || str_starts_with($this->model, 'o4');
+
+        return $isFrontier ? $prompt : $this->strictOutputRules() . $prompt;
+    }
+
     public function capabilities(): ModelCapability
     {
         $model = $this->model;

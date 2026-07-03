@@ -33,6 +33,15 @@ final class GoogleAdapter extends ModelAdapter
         $this->provider = $provider ?? new GoogleProvider();
     }
 
+    public function adaptSystemPrompt(string $prompt): string
+    {
+        // Gemini Pro follows the shared prompt; Flash/Flash-Lite drift on the
+        // artifact format without the strict preamble.
+        $isPro = str_contains($this->model, 'pro');
+
+        return $isPro ? $prompt : $this->strictOutputRules() . $prompt;
+    }
+
     public function capabilities(): ModelCapability
     {
         $model = $this->model;

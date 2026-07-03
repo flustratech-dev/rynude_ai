@@ -11,7 +11,7 @@ class Conversation extends Model
     protected $fillable = [
         'user_id', 'title', 'project_id', 'archived_at', 'share_token',
         'memory', 'memory_synced_count', 'memory_updated_at', 'metadata',
-        'draft_prompt',
+        'draft_prompt', 'style',
     ];
 
     protected $casts = [

@@ -43,6 +43,7 @@ class StreamBuffer
             'content' => '',
             'thinking' => '',
             'artifact' => null,
+            'citations' => null,
             'done' => null,
             'error' => null,
             'updated_at' => microtime(true),
@@ -72,6 +73,9 @@ class StreamBuffer
             case 'artifact':
                 $this->state['artifact'] = $data;
                 break;
+            case 'citations':
+                $this->state['citations'] = $data;
+                break;
             case 'done':
                 $this->state['done'] = $data;
                 $this->state['status'] = 'done';
@@ -84,7 +88,7 @@ class StreamBuffer
                 return;
         }
 
-        $terminal = in_array($type, ['artifact', 'done', 'error'], true);
+        $terminal = in_array($type, ['artifact', 'citations', 'done', 'error'], true);
         if ($terminal || (microtime(true) - $this->lastFlush) >= self::FLUSH_INTERVAL) {
             $this->flush();
         }

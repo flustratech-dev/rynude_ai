@@ -59,6 +59,41 @@ class WebSearchService
         return implode("\n", $lines);
     }
 
+    /**
+     * Fetch a web page and return its readable text (tags stripped, whitespace
+     * collapsed, capped). Used for URLs the user pastes into the chat and for
+     * following up on search results.
+     */
+    public function fetchUrl(string $url, int $maxChars = 15000): string
+    {
+        if (!preg_match('#^https?://#i', $url)) {
+            return '';
+        }
+
+        try {
+            $response = $this->client()->get($url, ['allow_redirects' => ['max' => 3]]);
+            if ($response->getStatusCode() !== 200) {
+                return '';
+            }
+
+            $contentType = $response->getHeaderLine('Content-Type');
+            if ($contentType !== '' && !str_contains($contentType, 'text/') && !str_contains($contentType, 'html') && !str_contains($contentType, 'json') && !str_contains($contentType, 'xml')) {
+                return '';
+            }
+
+            $html = (string) $response->getBody();
+            // Drop non-content blocks before stripping tags.
+            $html = preg_replace('#<(script|style|noscript|svg|nav|footer|header)[^>]*>.*?</\1>#si', ' ', $html) ?? $html;
+            $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5);
+            $text = trim(preg_replace('/[ \t]*\n[ \t\n]*/', "\n", preg_replace('/[ \t]+/', ' ', $text) ?? '') ?? '');
+
+            return Str::limit($text, $maxChars, "\n[... halaman dipotong ...]");
+        } catch (\Throwable $e) {
+            Log::warning('WebSearchService fetchUrl failed: ' . $e->getMessage());
+            return '';
+        }
+    }
+
     private function client(): \GuzzleHttp\Client
     {
         return new \GuzzleHttp\Client([

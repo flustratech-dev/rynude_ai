@@ -13,6 +13,8 @@
         .dark .artifact-card:hover { background-color: #3A3A38; }
         .artifact-paper { transform: rotate(-8deg); transition: transform .25s ease; }
         .artifact-card:hover .artifact-paper { transform: rotate(0deg) translateY(-2px); }
+        /* Rotating placeholder: fades out, swaps text, fades back in */
+        .placeholder-fade::placeholder { opacity: var(--ph-opacity, 1); transition: opacity .9s ease-in-out; }
     </style>
 
     {{-- Drag & Drop Overlay --}}
@@ -102,7 +104,19 @@
                             @input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
                             @keydown.enter="if(!$event.shiftKey) {$event.preventDefault(); sendMessage()}"
                             rows="2"
-                            class="w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[72px] max-h-48 overflow-y-auto"
+                            class="placeholder-fade w-full bg-transparent border-0 focus:ring-0 px-4 md:px-5 pt-4 pb-2 resize-none text-stone-800 dark:text-stone-200 placeholder-[#8E8B87] dark:placeholder-stone-500 text-[15px] min-h-[72px] max-h-48 overflow-y-auto"
+                            x-init="(() => {
+                                const phrases = ['How can I help you today?', 'Type / for skills', 'Rynude AI'];
+                                let i = 0;
+                                setInterval(() => {
+                                    $el.style.setProperty('--ph-opacity', '0');
+                                    setTimeout(() => {
+                                        i = (i + 1) % phrases.length;
+                                        $el.placeholder = phrases[i];
+                                        $el.style.setProperty('--ph-opacity', '1');
+                                    }, 950);
+                                }, 4000);
+                            })()"
                             placeholder="How can I help you today?"></textarea>
  
                         <div class="flex items-center justify-between w-full mt-4 pb-1">
@@ -364,6 +378,17 @@
                                                     <button type="button" @click.stop="window.open('/api/artifacts/' + msg.artifact.id + '/download/' + (msg.artifact.type === 'code' ? 'file' : 'docx'), '_blank')" class="shrink-0 px-4 py-1.5 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[13px] font-medium text-stone-700 dark:text-stone-300 bg-white dark:bg-[#3A3A38] hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">Download</button>
                                                 </div>
                                             </template>
+                                            {{-- Web sources cited by this reply --}}
+                                            <template x-if="msg.citations && msg.citations.length">
+                                                <div class="flex flex-wrap gap-1.5 mt-2 not-prose">
+                                                    <template x-for="c in msg.citations" :key="'cit-' + c.n">
+                                                        <a :href="c.url" target="_blank" rel="noopener" :title="c.title" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-claude-bg-light dark:bg-claude-bg-dark text-[11px] text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-[#3A3A38] transition-colors" style="max-width: 220px;">
+                                                            <span class="text-stone-400 shrink-0" x-text="'[' + c.n + ']'"></span>
+                                                            <span class="truncate" x-text="(function(){ try { return new URL(c.url).hostname.replace('www.', ''); } catch(e) { return c.title; } })()"></span>
+                                                        </a>
+                                                    </template>
+                                                </div>
+                                            </template>
                                             <div class="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 not-prose">
                                                 <button @click="navigator.clipboard.writeText(msg.content)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors" title="Copy">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -482,6 +507,21 @@
                             </button>
                             <input type="file" x-ref="fileInput2" class="hidden" multiple @change="handleFileUpload($event)">
                             <div class="flex items-center gap-1 md:gap-1.5 text-stone-500">
+                                {{-- Response style (per-conversation, like Claude's Styles) --}}
+                                <div x-data="{ openStyle: false }" class="relative hidden md:block">
+                                    <button @click="openStyle = !openStyle" type="button" title="Response style" class="flex items-center gap-1 cursor-pointer focus:outline-none hover:bg-stone-100 dark:hover:bg-[#3A3A38] px-2 py-1.5 rounded-lg transition-colors" :class="chatStyle !== 'normal' ? 'text-[#D97757]' : ''">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                                        <span class="text-[13px]" x-text="chatStyle === 'normal' ? 'Style' : chatStyle.charAt(0).toUpperCase() + chatStyle.slice(1)"></span>
+                                    </button>
+                                    <div x-show="openStyle" @click.away="openStyle = false" x-cloak class="absolute bottom-full right-0 mb-2 w-[180px] bg-white dark:bg-[#2C2C2A] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-50 py-1.5">
+                                        <template x-for="s in ['normal','concise','explanatory','formal']" :key="'style-' + s">
+                                            <button @click="chatStyle = s; openStyle = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between">
+                                                <span class="text-[13px] text-stone-800 dark:text-stone-200" x-text="s.charAt(0).toUpperCase() + s.slice(1)"></span>
+                                                <svg x-show="chatStyle === s" class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
                                 {{-- Model Selector --}}
                                 <div x-data="{ open: false, subOpen: false, closeTimer: null }" class="relative">
                                     <button @click="open = !open" type="button" class="flex items-center gap-1.5 cursor-pointer focus:outline-none bg-stone-100 dark:bg-[#3A3A38] hover:bg-stone-200 dark:hover:bg-[#45423f] px-2.5 py-1.5 rounded-lg transition-colors">
@@ -528,6 +568,10 @@
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                                     </button>
                                 </template>
+                                {{-- Extended thinking --}}
+                                <button @click="thinkingMode=!thinkingMode" type="button" title="Extended thinking" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center" :class="thinkingMode?'bg-[#D97757]/10 text-[#D97757]':'text-stone-400 hover:text-stone-600'">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.6-3.2 5.9-.5.4-.8.9-.8 1.5V17h-6v-.6c0-.6-.3-1.1-.8-1.5A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/></svg>
+                                </button>
                                 {{-- Send --}}
                                 <button type="submit" :disabled="sending||!prompt.trim()" class="rounded-lg transition-colors p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center" :class="(sending||!prompt.trim())?'bg-stone-100 dark:bg-[#3A3A38] text-stone-400':'bg-[#D97757] text-white hover:bg-[#c96646]'">
                                     <svg x-show="!sending" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -584,6 +628,9 @@ function chatInterfaceState() {
         lastUsedModel: '',
         canContinue: false,
         resumeAttempts: 0,
+        thinkingMode: false,
+        chatStyle: 'normal',
+        pendingCitations: null,
 
         get selectedModelName() {
             var all = this.models.concat(this.moreModels);
@@ -711,6 +758,7 @@ function chatInterfaceState() {
                         }
                         self.messages = msgs;
                         self.memoryDraft = resp.data.memory || '';
+                        self.chatStyle = resp.data.style || 'normal';
                         // Don't clear live-stream state while a resume/send is
                         // in flight (e.g. the initial page load racing with a
                         // reconnect to a stream that survived the refresh).
@@ -772,7 +820,9 @@ function chatInterfaceState() {
                     prompt: this.prompt.trim(),
                     model: this.selectedModel,
                     web_search: this.webSearch ? 1 : 0,
-                    research_mode: this.researchMode ? 1 : 0
+                    research_mode: this.researchMode ? 1 : 0,
+                    thinking: this.thinkingMode ? 1 : 0,
+                    style: this.chatStyle
                 };
                 if (this.conversationId) payload.conversation_id = this.conversationId;
                 if (this.selectedProject) payload.project_id = this.selectedProject;
@@ -783,6 +833,8 @@ function chatInterfaceState() {
                 fd.append('model', this.selectedModel);
                 fd.append('web_search', this.webSearch ? '1' : '0');
                 fd.append('research_mode', this.researchMode ? '1' : '0');
+                fd.append('thinking', this.thinkingMode ? '1' : '0');
+                fd.append('style', this.chatStyle);
                 if (this.conversationId) fd.append('conversation_id', this.conversationId);
                 if (this.selectedProject) fd.append('project_id', this.selectedProject);
                 for (var i = 0; i < this.attachments.length; i++) {
@@ -832,6 +884,7 @@ function chatInterfaceState() {
             this.lastThinking = '';
             this.doneMeta = null;
             this.pendingArtifact = null;
+            this.pendingCitations = null;
             this.lastUsedModel = model || this.selectedModel;
             this.canContinue = false;
             this.resumeAttempts = 0;
@@ -932,6 +985,8 @@ function chatInterfaceState() {
                                         self.pumpStream();
                                     } else if (data.type === 'artifact') {
                                         self.pendingArtifact = data.data || null;
+                                    } else if (data.type === 'citations') {
+                                        self.pendingCitations = data.data || null;
                                     }
                                 } catch(e) {}
                             }
@@ -1153,6 +1208,7 @@ function chatInterfaceState() {
                     thinking: this.thinkingContent || null,
                     model: this.lastUsedModel || this.selectedModel,
                     artifact: this.pendingArtifact || null,
+                    citations: this.pendingCitations || null,
                     attachments: []
                 });
             }
@@ -1319,7 +1375,9 @@ function chatInterfaceState() {
                     conversation_id: this.conversationId,
                     edit_of: msg.id,
                     web_search: this.webSearch ? 1 : 0,
-                    research_mode: this.researchMode ? 1 : 0
+                    research_mode: this.researchMode ? 1 : 0,
+                    thinking: this.thinkingMode ? 1 : 0,
+                    style: this.chatStyle
                 })
             })
             .then(function(response) { self.handleStreamResponse(response); })
@@ -1338,7 +1396,7 @@ function chatInterfaceState() {
             fetch('/api/chats/' + this.conversationId + '/regenerate', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','Accept':'text/event-stream'},
-                body: JSON.stringify({ message_id: msg.id, model: useModel })
+                body: JSON.stringify({ message_id: msg.id, model: useModel, thinking: this.thinkingMode ? 1 : 0 })
             })
             .then(function(response) { self.handleStreamResponse(response); })
             .catch(function(err) { self.handleStreamNetworkError(err); });

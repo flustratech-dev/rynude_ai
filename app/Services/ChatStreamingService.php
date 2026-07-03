@@ -39,7 +39,8 @@ class ChatStreamingService
         string $model,
         bool $webSearch = false,
         bool $researchMode = false,
-        ?int $parentMessageId = null
+        ?int $parentMessageId = null,
+        bool $thinking = false
     ): \Generator {
         // Prevent PHP from killing the streaming process during long generations
         set_time_limit(0);
@@ -49,8 +50,25 @@ class ChatStreamingService
             return;
         }
 
+        // Web research: the model plans the queries, pasted URLs are fetched,
+        // and the numbered sources double as citations on the saved reply.
+        $searchBlock = '';
+        $citations = [];
+        if ($webSearch || $researchMode) {
+            [$searchBlock, $citations] = $this->runWebResearch($messages, $model, $researchMode);
+        }
+
+        // Models without native reasoning can still "think" via prompted
+        // <sim_thinking> tags that we strip back out of the answer below.
+        $simulateThinking = $thinking && !$this->modelHasNativeReasoning($model);
+
         // Build the complete system prompt with all context
-        $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode);
+        $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
+
+        // Per-model adjustments (smaller/proxy models get stricter format rules)
+        $systemPrompt = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
+            ->for($model)
+            ->adaptSystemPrompt($systemPrompt);
 
         // Apply sliding window context strategy
         $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt);
@@ -65,6 +83,7 @@ class ChatStreamingService
         $fullResponse = '';
         $stopped = false;
         $truncated = false;
+        $simState = ['phase' => $simulateThinking ? 'detect' : 'off', 'buf' => ''];
 
         foreach ($stream as $chunk) {
             // Check if user requested stop
@@ -87,13 +106,27 @@ class ChatStreamingService
                 continue;
             }
 
-            $fullResponse .= $chunk;
+            // Route prompted <sim_thinking> blocks to the thinking stream and
+            // keep them out of the saved answer. With the feature off this is
+            // a plain passthrough.
+            foreach ($this->splitSimThinking($chunk, $simState) as $piece) {
+                if ($piece['type'] === 'thinking') {
+                    yield ['type' => 'thinking', 'data' => $piece['text']];
+                } else {
+                    $fullResponse .= $piece['text'];
+                    yield ['type' => 'content', 'data' => $piece['text']];
+                }
+            }
+        }
 
-            // Yield content chunk to client
-            yield [
-                'type' => 'content',
-                'data' => $chunk,
-            ];
+        // Flush anything the sim-thinking scanner was still holding back
+        foreach ($this->flushSimThinking($simState) as $piece) {
+            if ($piece['type'] === 'thinking') {
+                yield ['type' => 'thinking', 'data' => $piece['text']];
+            } else {
+                $fullResponse .= $piece['text'];
+                yield ['type' => 'content', 'data' => $piece['text']];
+            }
         }
 
         // If the user stopped an empty generation, store a small placeholder
@@ -111,6 +144,7 @@ class ChatStreamingService
             'content' => $artifactData ? $artifactData['cleanResponse'] : $fullResponse,
             'model' => $model,
             'parent_id' => $parentMessageId,
+            'citations' => !empty($citations) ? $citations : null,
         ]);
 
         // Create artifact and link to the actual message
@@ -139,6 +173,11 @@ class ChatStreamingService
                     'title' => $artifact->title,
                 ],
             ];
+        }
+
+        // Web sources used for this reply (rendered as chips under the answer)
+        if (!empty($citations)) {
+            yield ['type' => 'citations', 'data' => $citations];
         }
 
         // Signal completion before dispatching housekeeping jobs: on a sync
@@ -188,7 +227,9 @@ class ChatStreamingService
         Conversation $conversation,
         array $messages,
         bool $webSearch,
-        bool $researchMode = false
+        bool $researchMode = false,
+        string $searchBlock = '',
+        bool $simulateThinking = false
     ): string {
         $baseSystemPrompt = $this->getBaseArtifactInstructions();
         $baseSystemPrompt .= $this->getDiagramGenerationInstructions();
@@ -216,6 +257,16 @@ class ChatStreamingService
             if ($lang !== 'en' && isset($languageNames[$lang])) {
                 $baseSystemPrompt .= "\n\nIMPORTANT: Always respond to the user in {$languageNames[$lang]}, regardless of the language the user writes in, unless the user explicitly asks for another language.";
             }
+        }
+
+        // Response style (per-conversation, like Claude's Styles)
+        $styleMap = [
+            'concise' => 'RESPONSE STYLE: Be concise and direct. Prefer short sentences and tight lists; skip preamble, recaps, and filler. Only elaborate when the user explicitly asks.',
+            'explanatory' => 'RESPONSE STYLE: Be explanatory and educational. Walk through the reasoning step by step, define terms, and add short examples or analogies so a newcomer can follow.',
+            'formal' => 'RESPONSE STYLE: Use formal, professional language (bahasa baku when responding in Indonesian). No slang, no emoji, structured paragraphs suitable for academic or business contexts.',
+        ];
+        if (!empty($conversation->style) && isset($styleMap[$conversation->style])) {
+            $baseSystemPrompt .= "\n\n" . $styleMap[$conversation->style];
         }
 
         // Active Skills
@@ -249,17 +300,18 @@ class ChatStreamingService
         }
         $baseSystemPrompt .= $this->buildArtifactContext($conversation, $lastUserText);
 
-        // Web search results
-        if (($webSearch || $researchMode) && $lastUserText !== '') {
-            $searchService = new \App\Services\WebSearchService();
-            $limit = $researchMode ? 10 : 5;
-            $results = $searchService->search($lastUserText, $limit);
-            if (!empty($results)) {
-                $baseSystemPrompt .= $searchService->formatForPrompt($results);
-            }
+        // Web research context (planned queries + fetched URLs, built by
+        // runWebResearch in stream() so the sources double as citations)
+        if ($searchBlock !== '') {
+            $baseSystemPrompt .= $searchBlock;
             if ($researchMode) {
-                $baseSystemPrompt .= "\n\nRESEARCH MODE INSTRUCTIONS:\nYou are in deep research mode. Formulate your answer by critically analyzing the search results. Highlight discrepancies, summarize key facts with links/urls directly in the text, and write in a detailed, academic or highly authoritative tone.";
+                $baseSystemPrompt .= "\n\nRESEARCH MODE INSTRUCTIONS:\nYou are in deep research mode. Formulate your answer by critically analyzing the sources. Highlight discrepancies, cite sources inline as [n], and write in a detailed, academic or highly authoritative tone.";
             }
+        }
+
+        // Prompted reasoning for models without a native thinking mode
+        if ($simulateThinking) {
+            $baseSystemPrompt .= "\n\nEXTENDED THINKING MODE: Begin your response with your step-by-step reasoning wrapped EXACTLY in <sim_thinking> ... </sim_thinking> tags, then write the final answer AFTER the closing tag. The reasoning is hidden from the final answer, so never reference it there.";
         }
 
         // Connected Repository (GitHub) Context
@@ -285,6 +337,210 @@ class ChatStreamingService
         }
 
         return $baseSystemPrompt;
+    }
+
+    /**
+     * Gather web sources for the user's question: URLs they pasted are fetched
+     * directly, then the model plans the search queries (multi-query, not just
+     * the raw prompt). Returns [$promptBlock, $citations].
+     */
+    protected function runWebResearch(array $messages, string $model, bool $researchMode): array
+    {
+        $lastUserText = '';
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (($messages[$i]['role'] ?? '') === 'user') {
+                $lastUserText = (string) $messages[$i]['content'];
+                break;
+            }
+        }
+        if (trim($lastUserText) === '') {
+            return ['', []];
+        }
+
+        $searchService = new \App\Services\WebSearchService();
+        $sources = [];
+
+        // URLs pasted by the user are first-class sources (max 2, full text).
+        preg_match_all('#https?://[^\s<>"\')\]]+#i', $lastUserText, $m);
+        foreach (array_slice(array_unique($m[0] ?? []), 0, 2) as $url) {
+            $text = $searchService->fetchUrl($url, 12000);
+            if ($text !== '') {
+                $sources[] = [
+                    'title' => parse_url($url, PHP_URL_HOST) ?: $url,
+                    'url' => $url,
+                    'snippet' => $text,
+                    'full' => true,
+                ];
+            }
+        }
+
+        $maxSources = $researchMode ? 10 : 6;
+        $seen = array_column($sources, 'url');
+        foreach ($this->planSearchQueries($lastUserText, $model, $researchMode ? 3 : 2) as $query) {
+            foreach ($searchService->search($query, $researchMode ? 4 : 3) as $r) {
+                if (in_array($r['url'], $seen, true)) {
+                    continue;
+                }
+                $seen[] = $r['url'];
+                $sources[] = $r + ['full' => false];
+                if (count($sources) >= $maxSources) {
+                    break 2;
+                }
+            }
+        }
+
+        if (empty($sources)) {
+            return ['', []];
+        }
+
+        $block = "\n\n=== WEB SOURCES ===\nUse these sources for up-to-date facts and cite them inline as [n] (e.g. \"... menurut laporan terbaru [2].\"). Only cite numbers that exist below.\n";
+        $citations = [];
+        foreach ($sources as $i => $s) {
+            $n = $i + 1;
+            $body = $s['full'] ? \Illuminate\Support\Str::limit($s['snippet'], 6000) : $s['snippet'];
+            $block .= "\n[{$n}] {$s['title']}\nURL: {$s['url']}\n{$body}\n";
+            $citations[] = ['n' => $n, 'title' => $s['title'], 'url' => $s['url']];
+        }
+        $block .= "=== END WEB SOURCES ===\n";
+
+        return [$block, $citations];
+    }
+
+    /**
+     * Ask the model for effective search queries instead of searching the raw
+     * prompt verbatim. Falls back to the raw prompt on any failure; an explicit
+     * NO_SEARCH verdict skips searching entirely.
+     */
+    protected function planSearchQueries(string $userText, string $model, int $max): array
+    {
+        $fallback = [\Illuminate\Support\Str::limit($userText, 200, '')];
+
+        try {
+            $prompt = "Buat maksimal {$max} query pencarian web yang paling efektif untuk menjawab pertanyaan berikut. "
+                . "Balas HANYA daftar query, satu per baris, tanpa nomor dan tanpa penjelasan. "
+                . "Jika pencarian web tidak diperlukan untuk menjawab, balas persis: NO_SEARCH\n\n"
+                . "Pertanyaan: " . \Illuminate\Support\Str::limit($userText, 1500);
+
+            $out = '';
+            foreach ($this->aiService->streamResponse([['role' => 'user', 'content' => $prompt]], $model) as $chunk) {
+                if (is_string($chunk)) {
+                    $out .= $chunk;
+                }
+                if (strlen($out) > 600) {
+                    break;
+                }
+            }
+
+            $out = trim($out);
+            if ($out === '' || str_starts_with($out, '[Error')) {
+                return $fallback;
+            }
+            if (stripos($out, 'NO_SEARCH') !== false) {
+                return [];
+            }
+
+            $queries = array_values(array_filter(
+                array_map(fn ($l) => trim(trim($l), "-*0123456789. \t\"'"), explode("\n", $out)),
+                fn ($l) => strlen($l) > 3
+            ));
+
+            return array_slice($queries, 0, $max) ?: $fallback;
+        } catch (\Throwable $e) {
+            return $fallback;
+        }
+    }
+
+    /**
+     * Does the model reason natively (so prompted sim-thinking is redundant)?
+     */
+    protected function modelHasNativeReasoning(string $model): bool
+    {
+        return (bool) preg_match('/claude|fable|o1|o3|o4|gpt-5|r1|reason|qwq|thinking|magistral/i', $model);
+    }
+
+    /**
+     * Incremental scanner that lifts a leading <sim_thinking>...</sim_thinking>
+     * block out of the content stream. Tags may arrive split across chunks, so
+     * partial-tag tails are held back until resolvable. Phase 'off' = plain
+     * passthrough (zero overhead when the feature is disabled).
+     *
+     * @return array<int, array{type: 'content'|'thinking', text: string}>
+     */
+    protected function splitSimThinking(string $chunk, array &$state): array
+    {
+        if ($state['phase'] === 'off') {
+            return $chunk === '' ? [] : [['type' => 'content', 'text' => $chunk]];
+        }
+
+        $out = [];
+        $state['buf'] .= $chunk;
+
+        while ($state['buf'] !== '') {
+            if ($state['phase'] === 'detect') {
+                $open = '<sim_thinking>';
+                $lt = ltrim($state['buf']);
+                if ($lt === '') {
+                    break; // whitespace only — keep waiting
+                }
+                $pos = strpos($state['buf'], $open);
+                if ($pos !== false && trim(substr($state['buf'], 0, $pos)) === '') {
+                    $state['buf'] = substr($state['buf'], $pos + strlen($open));
+                    $state['phase'] = 'inside';
+                    continue;
+                }
+                if (str_starts_with($open, $lt)) {
+                    break; // could still become the opening tag — wait
+                }
+                // No sim block: answer starts normally.
+                $out[] = ['type' => 'content', 'text' => $state['buf']];
+                $state['buf'] = '';
+                $state['phase'] = 'off';
+                break;
+            }
+
+            // phase === 'inside'
+            $close = '</sim_thinking>';
+            $pos = strpos($state['buf'], $close);
+            if ($pos !== false) {
+                if ($pos > 0) {
+                    $out[] = ['type' => 'thinking', 'text' => substr($state['buf'], 0, $pos)];
+                }
+                $rest = ltrim(substr($state['buf'], $pos + strlen($close)), "\r\n");
+                $state['buf'] = '';
+                $state['phase'] = 'off';
+                if ($rest !== '') {
+                    $out[] = ['type' => 'content', 'text' => $rest];
+                }
+                break;
+            }
+            // Hold back a possible partial closing tag at the tail.
+            $safe = strlen($state['buf']) - (strlen($close) - 1);
+            if ($safe > 0) {
+                $out[] = ['type' => 'thinking', 'text' => substr($state['buf'], 0, $safe)];
+                $state['buf'] = substr($state['buf'], $safe);
+            }
+            break;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Emit whatever the sim-thinking scanner still holds when the stream ends.
+     */
+    protected function flushSimThinking(array &$state): array
+    {
+        if ($state['buf'] === '') {
+            return [];
+        }
+        $piece = [[
+            'type' => $state['phase'] === 'inside' ? 'thinking' : 'content',
+            'text' => $state['buf'],
+        ]];
+        $state['buf'] = '';
+        $state['phase'] = 'off';
+
+        return $piece;
     }
 
     /**
