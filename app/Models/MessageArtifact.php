@@ -18,6 +18,7 @@ class MessageArtifact extends Model
         'outline_json',
         'summary',
         'user_id',
+        'version',
     ];
 
     protected $casts = [

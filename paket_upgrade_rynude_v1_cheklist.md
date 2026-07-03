@@ -41,3 +41,9 @@ isi point penting yang sudah di kerjakan dari per paket
 - CATATAN: tool-loop agentic penuh (ReAct multi-iterasi utk search) TIDAK diimplementasikan — diganti planner 1-langkah multi-query demi stabilitas; loop penuh bisa menyusul memakai AgentRunner RynudeCode.
 - [ ] Verifikasi shell/preview — masih terblokir classifier; jalankan `rynude` (migrate otomatis) lalu smoke test.
 ** paket 5 **
+- [x] KaTeX — CDN di layout; `renderContent()` melindungi `$$…$$`, `\[…\]`, `\(…\)`, dan `$…$` (hanya yang berbentuk matematika, mata uang $100 aman) dari marked via placeholder, lalu dirender KaTeX.
+- [x] Auto-scroll pintar — scroll ke atas saat streaming menghentikan auto-scroll (typewriter + reader); tombol melayang "↓" muncul untuk lompat ke pesan terbaru; kirim pesan mengembalikan mode ikut-ke-bawah.
+- [x] Quote-reply — seleksi teks di area pesan memunculkan tombol "Tanyakan" dekat seleksi; klik → teks masuk composer sebagai kutipan `>` dan fokus ke input.
+- [x] Artifact versioning + update targeted — migration `message_artifacts.version`; identifier yang dipakai ulang otomatis jadi versi baru; `command="update"` + pasangan `<antOldContent>/<antNewContent>` menerapkan find/replace ke versi sebelumnya (revisi kecil tidak menulis ulang dokumen); instruksi format update diajarkan di system prompt. CATATAN: UI selector versi (V1/V2) + API `versions` TERNYATA SUDAH ADA di artifact-panel — tidak disentuh.
+- [x] Sidebar — star/pin (migration `conversations.is_starred`, PATCH `is_starred`, seksi "Starred" paling atas, tombol bintang saat hover), rename inline (tombol pensil → prompt → PATCH title), pencarian sidebar kini benar-benar berfungsi dan mencari sampai ISI pesan (server-side, judul + konten); grouping waktu sudah ada sebelumnya (server), kini urutan seksi tetap: Starred/Today/Yesterday/Previous 7 days/Older.
+- [ ] Verifikasi shell/preview — masih terblokir classifier; jalankan `rynude` (migrate `version` + `is_starred` otomatis) lalu smoke test.

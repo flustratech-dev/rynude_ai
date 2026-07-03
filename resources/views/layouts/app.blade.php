@@ -47,6 +47,10 @@
         <!-- Marked.js for Markdown rendering -->
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+        <!-- KaTeX for LaTeX math rendering -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
         <!-- Theme Initialization -->
         <script>
             // Force dark mode on /code route (Claude Code terminal page)

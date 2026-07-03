@@ -147,18 +147,36 @@ class ChatStreamingService
             'citations' => !empty($citations) ? $citations : null,
         ]);
 
-        // Create artifact and link to the actual message
+        // Create artifact and link to the actual message. Reusing an earlier
+        // identifier makes this a new VERSION; command="update" additionally
+        // applies find/replace pairs onto the previous version instead of
+        // requiring a full rewrite.
         $artifact = null;
         if ($artifactData) {
+            $previous = MessageArtifact::where('identifier', $artifactData['identifier'])
+                ->whereHas('message', fn ($q) => $q->where('conversation_id', $conversation->id))
+                ->orderByDesc('id')
+                ->first();
+
+            $content = $artifactData['content'];
+            $version = 1;
+            if ($previous) {
+                $version = (int) ($previous->version ?? 1) + 1;
+                if (($artifactData['command'] ?? 'create') === 'update') {
+                    $content = $this->applyArtifactUpdate($previous->content, $artifactData['content']);
+                }
+            }
+
             $artifact = MessageArtifact::create([
                 'message_id' => $assistantMessage->id,
                 'identifier' => $artifactData['identifier'],
                 'type' => $artifactData['type'],
                 'language' => $artifactData['language'],
-                'title' => $artifactData['title'],
-                'content' => $artifactData['content'],
+                'title' => $artifactData['title'] !== 'Document' || !$previous ? $artifactData['title'] : $previous->title,
+                'content' => $content,
                 'user_id' => Auth::id(),
-                'outline_json' => MessageArtifact::extractOutline($artifactData['content']),
+                'outline_json' => MessageArtifact::extractOutline($content),
+                'version' => $version,
             ]);
         }
 
@@ -612,6 +630,7 @@ class ChatStreamingService
         $type = preg_match('/type="([^"]+)"/i', $attrString, $m) ? $m[1] : 'application/vnd.ant.code';
         $language = preg_match('/language="([^"]*)"/i', $attrString, $m) ? $m[1] : 'markdown';
         $title = preg_match('/title="([^"]+)"/i', $attrString, $m) ? $m[1] : 'Document';
+        $command = preg_match('/command="([^"]+)"/i', $attrString, $m) ? strtolower($m[1]) : 'create';
 
         // Remove the artifact block from the visible text
         $cleanResponse = preg_replace($pattern, '', $fullResponse);
@@ -628,8 +647,39 @@ class ChatStreamingService
             'language' => $language ?: 'text',
             'title' => $title,
             'content' => $content,
+            'command' => $command,
             'cleanResponse' => $cleanResponse,
         ];
+    }
+
+    /**
+     * Apply a targeted artifact update: the model sends find/replace pairs
+     * (<antOldContent>…</antOldContent><antNewContent>…</antNewContent>)
+     * instead of rewriting the whole document. Each pair replaces the FIRST
+     * occurrence. If no pairs are found, the payload is a full rewrite.
+     */
+    protected function applyArtifactUpdate(string $baseContent, string $updatePayload): string
+    {
+        $pairPattern = '/<antOldContent>([\s\S]*?)<\/antOldContent>\s*<antNewContent>([\s\S]*?)<\/antNewContent>/i';
+
+        if (!preg_match_all($pairPattern, $updatePayload, $pairs, PREG_SET_ORDER)) {
+            return $updatePayload;
+        }
+
+        $patched = $baseContent;
+        foreach ($pairs as $pair) {
+            $old = trim($pair[1], "\r\n");
+            $new = trim($pair[2], "\r\n");
+            if ($old === '') {
+                continue;
+            }
+            $pos = strpos($patched, $old);
+            if ($pos !== false) {
+                $patched = substr_replace($patched, $new, $pos, strlen($old));
+            }
+        }
+
+        return $patched;
     }
 
     /**
@@ -716,7 +766,13 @@ class ChatStreamingService
      */
     protected function getBaseArtifactInstructions(): string
     {
-        return "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, files, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, PDF, DOCX, or any text-based file, you MUST generate a well-structured Markdown document (language=\"markdown\") inside the <antArtifact> tag. DO NOT EVER generate raw file byte streams or PostScript code. The system will automatically convert your Markdown into downloadable files for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide detailed explanation OUTSIDE the tag describing your approach, structure, and key decisions.";
+        return "You are an AI assistant. You MUST NEVER use standard markdown code blocks (```) for code. ANY time you write code, snippets, documents, files, or structured content, you MUST encapsulate it within an <antArtifact> block. Use the following format:\n<antArtifact identifier=\"unique-id\" type=\"application/vnd.ant.code\" language=\"language-name\" title=\"Title\">\nContent here\n</antArtifact>\nIf the user asks to generate a document, report, PDF, DOCX, or any text-based file, you MUST generate a well-structured Markdown document (language=\"markdown\") inside the <antArtifact> tag. DO NOT EVER generate raw file byte streams or PostScript code. The system will automatically convert your Markdown into downloadable files for the user. Focus only on writing excellent text content inside the <antArtifact> tag. Provide detailed explanation OUTSIDE the tag describing your approach, structure, and key decisions."
+            . "\n\nUPDATING AN EXISTING ARTIFACT (small revisions): when the user asks to revise/fix/change PART of a document or code you already produced, DO NOT rewrite the whole artifact. Reuse the SAME identifier and add command=\"update\", then provide one or more find/replace pairs:\n"
+            . "<antArtifact identifier=\"same-id-as-before\" type=\"text/markdown\" title=\"Same Title\" command=\"update\">\n"
+            . "<antOldContent>exact text currently in the artifact (copy it verbatim, 1-10 lines)</antOldContent>\n"
+            . "<antNewContent>the replacement text</antNewContent>\n"
+            . "</antArtifact>\n"
+            . "Rules: the <antOldContent> text MUST match the current artifact exactly (character for character); use multiple old/new pairs for multiple spots; for BIG rewrites (restructuring, adding whole chapters) output the full document again WITHOUT command=\"update\" but with the same identifier.";
     }
 
     /**

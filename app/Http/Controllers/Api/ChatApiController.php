@@ -50,9 +50,18 @@ class ChatApiController extends ApiController
             $query->whereNull('archived_at');
         }
 
+        // Full-text search: match the title OR any message body (so the
+        // sidebar search finds chats by what was said, like Claude).
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhereHas('messages', fn ($m) => $m->where('content', 'like', "%{$search}%"));
+            });
+        }
+
         $conversations = $query->orderByDesc('updated_at')->take(100)->get()
             ->map(fn (Conversation $c) => $this->transformListItem($c))
-            ->filter(fn (array $c) => $this->matchesFilter($c, $filter, $search))
+            ->filter(fn (array $c) => $this->matchesFilter($c, $filter, ''))
             ->values();
 
         return response()->json(['data' => $conversations]);
@@ -621,6 +630,7 @@ class ChatApiController extends ApiController
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'archived' => ['sometimes', 'boolean'],
             'unshare' => ['sometimes', 'boolean'],
+            'is_starred' => ['sometimes', 'boolean'],
         ]);
 
         // Rename (ChatsPanel::renameConversation caps the title at 255 chars).
@@ -636,6 +646,11 @@ class ChatApiController extends ApiController
         // Unshare (ChatsPanel::unshareConversation clears the share token).
         if (array_key_exists('unshare', $validated) && $validated['unshare']) {
             $conversation->share_token = null;
+        }
+
+        // Star / unstar — pinned to the "Starred" sidebar section.
+        if (array_key_exists('is_starred', $validated)) {
+            $conversation->is_starred = (bool) $validated['is_starred'];
         }
 
         $conversation->save();
@@ -746,7 +761,8 @@ class ChatApiController extends ApiController
             'archived' => $conversation->archived_at !== null,
             'shared' => ! empty($conversation->share_token),
             'share_url' => $conversation->share_token ? route('chat.shared', $conversation->share_token) : null,
-            'group' => $this->determineGroup($conversation->updated_at),
+            'is_starred' => (bool) $conversation->is_starred,
+            'group' => $conversation->is_starred ? 'Starred' : $this->determineGroup($conversation->updated_at),
         ];
     }
 

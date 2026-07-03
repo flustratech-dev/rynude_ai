@@ -17,6 +17,12 @@
         .placeholder-fade::placeholder { opacity: var(--ph-opacity, 1); transition: opacity .9s ease-in-out; }
     </style>
 
+    {{-- Quote-reply: select text in a reply → ask about it --}}
+    <button x-show="quoteSel" x-cloak @mousedown.prevent="applyQuote()" class="fixed z-[90] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark shadow-md text-[12px] font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors" :style="'left:' + quoteX + 'px; top:' + Math.max(8, quoteY - 42) + 'px; transform: translateX(-50%);'">
+        <svg class="w-3.5 h-3.5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+        Tanyakan
+    </button>
+
     {{-- Drag & Drop Overlay --}}
     <div x-show="isDropping" x-transition x-cloak class="absolute inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-[#2C2C2A]/80 backdrop-blur-sm border-2 border-dashed border-[#D97757] rounded-xl m-2">
         <div class="flex flex-col items-center pointer-events-none">
@@ -479,6 +485,11 @@
                 </div>
             </div>
 
+            {{-- Jump to bottom (appears when the user scrolled up) --}}
+            <button x-show="userScrolledUp" x-cloak @click="scrollToBottom()" class="absolute z-40 p-2 rounded-full bg-white dark:bg-[#3A3A38] border border-claude-border-light dark:border-claude-border-dark shadow-md text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors" style="bottom: 140px; left: 50%; transform: translateX(-50%);" title="Ke pesan terbaru">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </button>
+
             <div class="shrink-0 h-fit bg-transparent">
                 <form @submit.prevent="sendMessage()" class="w-full mx-auto pb-2 md:pb-3 px-3 md:px-4 pt-2 md:pt-3" style="max-width: 800px;">
                     <div class="relative bg-white dark:bg-[#3A3A38] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-sm flex flex-col focus-within:shadow-lg focus-within:border-[#D97757]/50 transition-all duration-200">
@@ -631,6 +642,10 @@ function chatInterfaceState() {
         thinkingMode: false,
         chatStyle: 'normal',
         pendingCitations: null,
+        userScrolledUp: false,
+        quoteSel: '',
+        quoteX: 0,
+        quoteY: 0,
 
         get selectedModelName() {
             var all = this.models.concat(this.moreModels);
@@ -708,6 +723,53 @@ function chatInterfaceState() {
             window.addEventListener('openChat', function(e) {
                 if (e.detail && e.detail.chatId) self.loadConversation(e.detail.chatId);
             });
+
+            // Smart auto-scroll: once the user scrolls up to read, streaming
+            // stops yanking the view down until they return to the bottom.
+            // Delegated (capture phase) because the scroll container lives
+            // inside an x-if template — it doesn't exist yet at init() time
+            // and is re-created whenever the layout switches, so a direct
+            // addEventListener on the element never sticks.
+            document.addEventListener('scroll', function(e) {
+                var t = e.target;
+                if (t && t.id === 'chat-scroll-container') {
+                    self.userScrolledUp = (t.scrollHeight - t.scrollTop - t.clientHeight) > 80;
+                }
+            }, true);
+
+            // Quote-reply: selecting text inside the message list offers an
+            // "ask about this" button near the selection.
+            document.addEventListener('mouseup', function() {
+                setTimeout(function() {
+                    var sel = window.getSelection();
+                    var text = sel ? sel.toString().trim() : '';
+                    var container = document.getElementById('chat-scroll-container');
+                    if (text && text.length > 2 && container && sel.rangeCount && container.contains(sel.anchorNode)) {
+                        var rect = sel.getRangeAt(0).getBoundingClientRect();
+                        self.quoteSel = text;
+                        self.quoteX = rect.left + rect.width / 2;
+                        self.quoteY = rect.top;
+                    } else {
+                        self.quoteSel = '';
+                    }
+                }, 10);
+            });
+        },
+
+        scrollToBottom: function() {
+            var c = document.getElementById('chat-scroll-container');
+            if (c) c.scrollTop = c.scrollHeight;
+            this.userScrolledUp = false;
+        },
+
+        applyQuote: function() {
+            if (!this.quoteSel) return;
+            var q = this.quoteSel.split('\n').map(function(l) { return '> ' + l; }).join('\n');
+            this.prompt = q + '\n\n' + (this.prompt || '');
+            this.quoteSel = '';
+            try { window.getSelection().removeAllRanges(); } catch(e) {}
+            var ta = document.querySelector('textarea[x-model="prompt"]');
+            if (ta) ta.focus();
         },
 
         loadModels: function() {
@@ -892,6 +954,8 @@ function chatInterfaceState() {
             if (this.conversationId) {
                 try { sessionStorage.setItem('rynude_active_stream', String(this.conversationId)); } catch(e) {}
             }
+            // Sending a message means the user wants to follow the reply
+            this.scrollToBottom();
             this.startWaitFeed();
         },
 
@@ -991,9 +1055,11 @@ function chatInterfaceState() {
                                 } catch(e) {}
                             }
                         });
-                        // Auto-scroll
-                        var container = document.querySelector('[x-ref="messagesContainer"]');
-                        if (container) container.scrollTop = container.scrollHeight;
+                        // Auto-scroll (unless the user scrolled up to read)
+                        if (!self.userScrolledUp) {
+                            var container = document.querySelector('[x-ref="messagesContainer"]');
+                            if (container) container.scrollTop = container.scrollHeight;
+                        }
                         read();
                     }).catch(function(err) {
                         // Connection dropped mid-stream: the server keeps
@@ -1132,7 +1198,7 @@ function chatInterfaceState() {
                     self.contentQueue = self.contentQueue.slice(m);
                     moved = true;
                 }
-                if (moved) {
+                if (moved && !self.userScrolledUp) {
                     var container = document.querySelector('[x-ref="messagesContainer"]');
                     if (container) container.scrollTop = container.scrollHeight;
                     var think = document.querySelector('[x-ref="thinkingBox"]');
@@ -1441,6 +1507,25 @@ function chatInterfaceState() {
                 return '\n<div class="mermaid-diagram my-4 p-4 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 overflow-x-auto" id="' + id + '" data-mermaid-pending="true"></div>\n';
             });
 
+            // Protect LaTeX math from the markdown parser (same placeholder
+            // trick as mermaid); rendered with KaTeX after parsing.
+            var mathChunks = [];
+            if (typeof katex !== 'undefined') {
+                var stashMath = function(tex, display) {
+                    mathChunks.push({ tex: tex, display: display });
+                    return '%%KATEX' + (mathChunks.length - 1) + '%%';
+                };
+                content = content.replace(/\$\$([\s\S]+?)\$\$/g, function(m, tex) { return stashMath(tex, true); });
+                content = content.replace(/\\\[([\s\S]+?)\\\]/g, function(m, tex) { return stashMath(tex, true); });
+                content = content.replace(/\\\((.+?)\\\)/g, function(m, tex) { return stashMath(tex, false); });
+                // Single-$ inline math only when the content looks like math
+                // (\ ^ _ = or braces), so currency like $100 stays untouched
+                content = content.replace(/(^|[^\\$\w])\$([^\n$]+?)\$(?![\w$])/g, function(m, pre, tex) {
+                    if (!/[\\^_={}]/.test(tex)) return m;
+                    return pre + stashMath(tex, false);
+                });
+            }
+
             // Parse markdown
             var html = '';
             if (typeof marked !== 'undefined') {
@@ -1451,6 +1536,18 @@ function chatInterfaceState() {
                 }
             } else {
                 html = content.replace(/\n/g, '<br>');
+            }
+
+            // Swap the math placeholders back in as rendered KaTeX
+            if (mathChunks.length) {
+                html = html.replace(/%%KATEX(\d+)%%/g, function(m, i) {
+                    var c = mathChunks[+i];
+                    try {
+                        return katex.renderToString(c.tex, { displayMode: c.display, throwOnError: false });
+                    } catch(e) {
+                        return c.display ? '$$' + c.tex + '$$' : c.tex;
+                    }
+                });
             }
 
             // Render mermaid diagrams after DOM insertion
