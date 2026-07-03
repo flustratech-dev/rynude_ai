@@ -2,6 +2,7 @@
 
 namespace App\Services\AI;
 
+use App\Services\AI\Concerns\ResolvesAttachments;
 use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
 use Illuminate\Support\Facades\Http;
@@ -9,6 +10,8 @@ use App\Services\AI\CostTracker;
 
 class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 {
+    use ResolvesAttachments;
+
     /**
      * Determine if the model supports extended thinking.
      */
@@ -546,22 +549,10 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             if (!empty($msg['content'])) {
                 $content[] = ['type' => 'text', 'text' => (string) $msg['content']];
             }
-            foreach ($msg['attachments'] ?? [] as $att) {
-                $filePath = storage_path('app/public/' . $att['file_path']);
-                if (!file_exists($filePath)) {
-                    continue;
-                }
-                $mime = $att['file_type'] ?? '';
-                if (str_starts_with($mime, 'image/')) {
-                    $img = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mime, 4000);
-                    $content[] = [
-                        'type' => 'image',
-                        'source' => ['type' => 'base64', 'media_type' => $img['mime_type'], 'data' => $img['data']],
-                    ];
-                } elseif ($mime === 'application/pdf' || str_ends_with($att['file_name'] ?? '', '.docx')) {
-                    $text = \App\Helpers\DocumentParser::parseText($att['file_path'], $mime, $att['file_name'] ?? '');
-                    $content[] = ['type' => 'text', 'text' => "\n\n[Attachment: {$att['file_name']}]\n" . trim($text)];
-                }
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+                $content[] = $part['kind'] === 'image'
+                    ? ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $part['mime'], 'data' => $part['base64']]]
+                    : ['type' => 'text', 'text' => $part['text']];
             }
 
             $out[] = [

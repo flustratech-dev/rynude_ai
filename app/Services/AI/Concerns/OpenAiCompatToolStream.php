@@ -10,6 +10,8 @@ namespace App\Services\AI\Concerns;
  */
 trait OpenAiCompatToolStream
 {
+    use ResolvesAttachments;
+
     protected function mapToolsToOpenAi(array $tools): array
     {
         return array_map(fn ($t) => [
@@ -72,22 +74,10 @@ trait OpenAiCompatToolStream
             if (!empty($m['content'])) {
                 $content[] = ['type' => 'text', 'text' => (string) $m['content']];
             }
-            foreach ($m['attachments'] ?? [] as $att) {
-                $filePath = storage_path('app/public/' . $att['file_path']);
-                if (!file_exists($filePath)) {
-                    continue;
-                }
-                $mime = $att['file_type'] ?? '';
-                if (str_starts_with($mime, 'image/')) {
-                    $img = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mime, 4000);
-                    $content[] = [
-                        'type' => 'image_url',
-                        'image_url' => ['url' => 'data:' . $img['mime_type'] . ';base64,' . $img['data']],
-                    ];
-                } elseif ($mime === 'application/pdf' || str_ends_with($att['file_name'] ?? '', '.docx')) {
-                    $text = \App\Helpers\DocumentParser::parseText($att['file_path'], $mime, $att['file_name'] ?? '');
-                    $content[] = ['type' => 'text', 'text' => "\n\n[Attachment: {$att['file_name']}]\n" . trim($text)];
-                }
+            foreach ($this->resolveAttachmentParts($m['attachments'] ?? []) as $part) {
+                $content[] = $part['kind'] === 'image'
+                    ? ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $part['mime'] . ';base64,' . $part['base64']]]
+                    : ['type' => 'text', 'text' => $part['text']];
             }
 
             $out[] = [

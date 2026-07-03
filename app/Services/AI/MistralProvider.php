@@ -55,28 +55,37 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
 
         $baseUrl = rtrim(config('services.mistral.base_url', 'https://api.mistral.ai/v1'), '/');
 
-        // Mistral uses the OpenAI-compatible chat format.
+        // Mistral uses the OpenAI-compatible chat format. Only vision-capable
+        // models accept image parts; the rest reject them with a 400, so images
+        // degrade to a text notice there.
+        $supportsVision = (bool) preg_match('/pixtral|vision/i', $model);
+
         $mistralMessages = [];
         foreach ($messages as $msg) {
-            $text = $msg['content'] ?? '';
+            if ($msg['role'] === 'system') {
+                $mistralMessages[] = ['role' => 'system', 'content' => (string) ($msg['content'] ?? '')];
+                continue;
+            }
 
-            // Documents are flattened into text; Mistral chat endpoint is text-first.
-            if (!empty($msg['attachment']) && isset($msg['attachment']['file_path'])) {
-                $filePath = storage_path('app/public/' . $msg['attachment']['file_path']);
-                if (file_exists($filePath) && ($msg['attachment']['file_type'] ?? '') === 'application/pdf') {
-                    try {
-                        $parser = new \Smalot\PdfParser\Parser();
-                        $pdf = $parser->parseFile($filePath);
-                        $text .= "\n\n[Isi Dokumen PDF: {$msg['attachment']['file_name']}]\n" . $pdf->getText() . "\n[Akhir Isi Dokumen]";
-                    } catch (\Exception $e) {
-                        $text .= "\n\n[Gagal membaca file PDF: " . $e->getMessage() . "]";
-                    }
+            $content = [];
+            if (!empty($msg['content'])) {
+                $content[] = ['type' => 'text', 'text' => (string) $msg['content']];
+            }
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+                if ($part['kind'] === 'image') {
+                    $content[] = $supportsVision
+                        ? ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $part['mime'] . ';base64,' . $part['base64']]]
+                        : ['type' => 'text', 'text' => "\n\n[Gambar terlampir, tetapi model ini tidak mendukung input gambar]"];
+                } else {
+                    $content[] = ['type' => 'text', 'text' => $part['text']];
                 }
             }
 
             $mistralMessages[] = [
                 'role' => $msg['role'],
-                'content' => $text,
+                'content' => (count($content) === 1 && $content[0]['type'] === 'text')
+                    ? $content[0]['text']
+                    : (count($content) > 0 ? $content : ''),
             ];
         }
 

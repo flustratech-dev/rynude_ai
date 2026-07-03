@@ -273,9 +273,16 @@
                                             <template x-if="msg.attachments && msg.attachments.length">
                                                 <div class="flex flex-wrap gap-2 justify-end w-full">
                                                     <template x-for="(att, ai) in msg.attachments" :key="ai">
-                                                        <div class="relative bg-white dark:bg-[#3A3A38] border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shrink-0 overflow-hidden shadow-sm flex items-center gap-2 p-2.5" style="max-width: 200px;">
-                                                            <svg class="w-4 h-4 text-stone-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                                            <span class="text-xs text-stone-700 dark:text-stone-300 truncate" x-text="att.file_name || att.name"></span>
+                                                        <div class="shrink-0">
+                                                            <template x-if="att.url && (att.file_type || '').indexOf('image/') === 0">
+                                                                <img :src="att.url" :alt="att.file_name || att.name" class="border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shadow-sm" style="max-width: 200px; max-height: 200px; object-fit: cover;">
+                                                            </template>
+                                                            <template x-if="!(att.url && (att.file_type || '').indexOf('image/') === 0)">
+                                                                <div class="relative bg-white dark:bg-[#3A3A38] border border-[#E5E5E5] dark:border-stone-700 rounded-2xl overflow-hidden shadow-sm flex items-center gap-2 p-2.5" style="max-width: 200px;">
+                                                                    <svg class="w-4 h-4 text-stone-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                                                    <span class="text-xs text-stone-700 dark:text-stone-300 truncate" x-text="att.file_name || att.name"></span>
+                                                                </div>
+                                                            </template>
                                                         </div>
                                                     </template>
                                                 </div>
@@ -687,7 +694,11 @@ function chatInterfaceState() {
             self.messages.push({
                 role: 'user',
                 content: self.prompt,
-                attachments: self.attachments.map(a => ({ file_name: a.name }))
+                attachments: self.attachments.map(a => ({
+                    file_name: a.name,
+                    file_type: (a.file && a.file.type) || '',
+                    url: (a.file && a.file.type && a.file.type.indexOf('image/') === 0) ? URL.createObjectURL(a.file) : null
+                }))
             });
             self.prompt = '';
             self.attachments = [];

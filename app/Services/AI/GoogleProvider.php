@@ -2,11 +2,14 @@
 
 namespace App\Services\AI;
 
+use App\Services\AI\Concerns\ResolvesAttachments;
 use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
 
 class GoogleProvider implements LLMProviderInterface, SupportsToolUse
 {
+    use ResolvesAttachments;
+
     /**
      * One agentic turn with Gemini function calling. See SupportsToolUse.
      */
@@ -165,12 +168,10 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
             if (!empty($msg['content'])) {
                 $parts[] = ['text' => (string) $msg['content']];
             }
-            foreach ($msg['attachments'] ?? [] as $att) {
-                $filePath = storage_path('app/public/' . $att['file_path']);
-                if (file_exists($filePath) && str_starts_with($att['file_type'] ?? '', 'image/')) {
-                    $img = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $att['file_type'], 4000);
-                    $parts[] = ['inline_data' => ['mime_type' => $img['mime_type'], 'data' => $img['data']]];
-                }
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+                $parts[] = $part['kind'] === 'image'
+                    ? ['inline_data' => ['mime_type' => $part['mime'], 'data' => $part['base64']]]
+                    : ['text' => $part['text']];
             }
             if (empty($parts)) {
                 continue;
@@ -212,29 +213,10 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
             }
 
             // Handle attachments (images inline, documents as extracted text).
-            if (!empty($msg['attachment']) && isset($msg['attachment']['file_path'])) {
-                $filePath = storage_path('app/public/' . $msg['attachment']['file_path']);
-                if (file_exists($filePath)) {
-                    $mimeType = $msg['attachment']['file_type'];
-
-                    if (str_starts_with($mimeType, 'image/')) {
-                        $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
-                        $parts[] = [
-                            'inline_data' => [
-                                'mime_type' => $processedImage['mime_type'],
-                                'data' => $processedImage['data'],
-                            ],
-                        ];
-                    } elseif ($mimeType === 'application/pdf') {
-                        try {
-                            $parser = new \Smalot\PdfParser\Parser();
-                            $pdf = $parser->parseFile($filePath);
-                            $parts[] = ['text' => "\n\n[Isi Dokumen PDF: {$msg['attachment']['file_name']}]\n" . $pdf->getText() . "\n[Akhir Isi Dokumen]"];
-                        } catch (\Exception $e) {
-                            $parts[] = ['text' => "\n\n[Gagal membaca file PDF: " . $e->getMessage() . "]"];
-                        }
-                    }
-                }
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+                $parts[] = $part['kind'] === 'image'
+                    ? ['inline_data' => ['mime_type' => $part['mime'], 'data' => $part['base64']]]
+                    : ['text' => $part['text']];
             }
 
             if (empty($parts)) {

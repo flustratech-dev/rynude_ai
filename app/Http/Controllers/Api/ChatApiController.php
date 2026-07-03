@@ -286,6 +286,7 @@ class ChatApiController extends ApiController
                 'file_path' => $att->file_path,
                 'file_type' => $att->file_type,
                 'file_name' => $att->file_name,
+                'url' => \Illuminate\Support\Facades\Storage::url($att->file_path),
             ])->values();
 
             return [

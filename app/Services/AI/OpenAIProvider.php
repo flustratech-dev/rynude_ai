@@ -221,29 +221,10 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             }
             
             // Handle attachments
-            if (!empty($msg['attachments'])) {
-                foreach ($msg['attachments'] as $att) {
-                    $filePath = storage_path('app/public/' . $att['file_path']);
-                    if (file_exists($filePath)) {
-                        $mimeType = $att['file_type'];
-                        
-                        if (str_starts_with($mimeType, 'image/')) {
-                            $processedImage = \App\Helpers\ImageHelper::resizeAndEncode($filePath, $mimeType, 4000);
-                            $content[] = [
-                                'type' => 'image_url',
-                                'image_url' => [
-                                    'url' => 'data:' . $processedImage['mime_type'] . ';base64,' . $processedImage['data']
-                                ]
-                            ];
-                        } elseif ($mimeType === 'application/pdf' || $mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || str_ends_with($att['file_name'], '.docx')) {
-                            $text = \App\Helpers\DocumentParser::parseText($att['file_path'], $mimeType, $att['file_name']);
-                            $content[] = [
-                                'type' => 'text',
-                                'text' => "\n\n[Isi Dokumen lampiran: {$att['file_name']}]\n" . trim($text) . "\n[Akhir Isi Dokumen]"
-                            ];
-                        }
-                    }
-                }
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+                $content[] = $part['kind'] === 'image'
+                    ? ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $part['mime'] . ';base64,' . $part['base64']]]
+                    : ['type' => 'text', 'text' => $part['text']];
             }
             
             $openAiMessages[] = [
