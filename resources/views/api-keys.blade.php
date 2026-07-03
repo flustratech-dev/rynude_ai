@@ -8,23 +8,23 @@
         </div>
 
         {{-- Flash Message --}}
-        <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+        <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-[#1E1E20] dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-[#1E1E20] dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
 
         {{-- Tab Buttons --}}
         <div class="flex gap-2 mb-6 border-b border-claude-border-light dark:border-claude-border-dark pb-3">
-            <button @click="tab='hf'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='hf'?'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-stone-800/50'">
+            <button @click="tab='hf'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='hf'?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]'">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
                 Hugging Face
             </button>
-            <button @click="tab='models'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='models'?'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-stone-800/50'">
+            <button @click="tab='models'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='models'?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]'">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
                 AI Models
             </button>
-            <button @click="tab='keys'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='keys'?'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-stone-800/50'">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
+            <button @click="tab='keys'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='keys'?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1221.75 8.25z"/></svg>
                 API Keys
             </button>
-            <button @click="tab='connect'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='connect'?'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-stone-800/50'">
+            <button @click="tab='connect'" class="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" :class="tab==='connect'?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]'">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
                 Connect Account
             </button>
@@ -32,20 +32,20 @@
 
         {{-- ==================== HUGGING FACE TAB ==================== --}}
         <div x-show="tab==='hf'" x-transition>
-            <div class="bg-white dark:bg-stone-900 rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
+            <div class="bg-white dark:bg-[#1E1E1E] rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
                 <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-1">Hugging Face</h2>
                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-6">Connect your Hugging Face account to use open-source models.</p>
 
                 <div class="space-y-5">
                     <div>
                         <label class="block text-[14px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">API Key</label>
-                        <p class="text-[12.5px] text-gray-500 dark:text-stone-400 mb-2">Get your API key from <a href="https://huggingface.co/settings/tokens" target="_blank" class="underline hover:text-gray-800 dark:hover:text-stone-200">huggingface.co/settings/tokens</a>. Keys start with <code class="bg-gray-100 dark:bg-stone-800 px-1 rounded text-[12px]">hf_</code>.</p>
-                        <input type="password" x-model="hfKey" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500">
+                        <p class="text-[12.5px] text-gray-500 dark:text-stone-400 mb-2">Get your API key from <a href="https://huggingface.co/settings/tokens" target="_blank" class="underline hover:text-gray-800 dark:hover:text-stone-200">huggingface.co/settings/tokens</a>. Keys start with <code class="bg-gray-100 dark:bg-[#1E1E20] px-1 rounded text-[12px]">hf_</code>.</p>
+                        <input type="password" x-model="hfKey" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500">
                     </div>
                     <div>
                         <label class="block text-[14px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Base URL</label>
-                        <p class="text-[12.5px] text-gray-500 dark:text-stone-400 mb-2">Default: <code class="bg-gray-100 dark:bg-stone-800 px-1 rounded text-[12px]">https://api-inference.huggingface.co/v1</code></p>
-                        <input type="text" x-model="hfUrl" placeholder="https://api-inference.huggingface.co/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500">
+                        <p class="text-[12.5px] text-gray-500 dark:text-stone-400 mb-2">Default: <code class="bg-gray-100 dark:bg-[#1E1E20] px-1 rounded text-[12px]">https://api-inference.huggingface.co/v1</code></p>
+                        <input type="text" x-model="hfUrl" placeholder="https://api-inference.huggingface.co/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500">
                     </div>
                     <div class="pt-2">
                         <button @click="saveHF()" :disabled="saving" class="px-5 py-2 bg-[#D97757] hover:bg-[#c66547] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60" x-text="saving?'Saving...':'Save'">Save</button>
@@ -55,11 +55,11 @@
                 <div class="mt-8 pt-6 border-t border-claude-border-light dark:border-claude-border-dark">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Hugging Face Models</h3>
-                        <button @click="openAddModel('huggingface')" class="px-3 py-1.5 bg-[#2D2825] dark:bg-stone-700 text-white rounded-lg text-[13px] font-medium hover:bg-black dark:hover:bg-stone-600 transition-colors">+ Add Model</button>
+                        <button @click="openAddModel('huggingface')" class="px-3 py-1.5 bg-[#2D2825] dark:bg-stone-700 text-white rounded-lg text-[13px] font-medium hover:bg-black dark:hover:bg-[#2E2E32] transition-colors">+ Add Model</button>
                     </div>
                     <div class="space-y-2">
                         <template x-for="m in hfModels" :key="m.id">
-                            <div class="flex items-center justify-between p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800/50">
+                            <div class="flex items-center justify-between p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E20]/50">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div class="w-2 h-2 rounded-full flex-shrink-0" :class="m.is_active?'bg-green-500':'bg-gray-300 dark:bg-stone-600'"></div>
                                     <div class="min-w-0">
@@ -68,7 +68,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
-                                    <button @click="toggleModel(m)" class="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-stone-300 hover:bg-gray-100 dark:hover:bg-stone-700" title="Toggle">
+                                    <button @click="toggleModel(m)" class="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-stone-300 hover:bg-gray-100 dark:hover:bg-[#2E2E32]" title="Toggle">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
                                     </button>
                                     <button @click="editModel(m)" class="p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-stone-300 hover:bg-gray-100 dark:hover:bg-stone-700" title="Edit">
@@ -88,7 +88,7 @@
 
         {{-- ==================== AI MODELS TAB ==================== --}}
         <div x-show="tab==='models'" x-transition>
-            <div class="bg-white dark:bg-stone-900 rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
+            <div class="bg-white dark:bg-[#1E1E1E] rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200">AI Models</h2>
                     <button @click="openAddModel('openai')" class="px-3 py-1.5 bg-[#2D2825] dark:bg-stone-700 text-white rounded-lg text-[13px] font-medium hover:bg-black dark:hover:bg-stone-600 transition-colors">+ Add Model</button>
@@ -96,13 +96,13 @@
 
                 <div class="flex gap-1.5 mb-4 flex-wrap">
                     <template x-for="f in ['all','anthropic','openai','google','huggingface','mistral','ollama','proxy']" :key="f">
-                        <button @click="filter=f" class="px-3 py-1 text-[12px] rounded-lg transition-colors capitalize" :class="filter===f?'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-stone-800/50'" x-text="f==='all'?'All':f==='huggingface'?'Hugging Face':f"></button>
+                        <button @click="filter=f" class="px-3 py-1 text-[12px] rounded-lg transition-colors capitalize" :class="filter===f?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200 font-medium':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]/50'" x-text="f==='all'?'All':f==='huggingface'?'Hugging Face':f"></button>
                     </template>
                 </div>
 
                 <div class="space-y-2">
                     <template x-for="m in filteredModels" :key="m.id">
-                        <div class="flex items-center justify-between p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800/50">
+                        <div class="flex items-center justify-between p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E20]/50">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="w-2 h-2 rounded-full flex-shrink-0" :class="m.is_active?'bg-green-500':'bg-gray-300 dark:bg-stone-600'"></div>
                                 <div class="min-w-0">
@@ -133,7 +133,7 @@
 
         {{-- ==================== API KEYS TAB ==================== --}}
         <div x-show="tab==='keys'" x-transition>
-            <div class="bg-white dark:bg-stone-900 rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
+            <div class="bg-white dark:bg-[#1E1E1E] rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
                 <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-1">API Keys</h2>
                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-6">Manage your API keys for various AI providers.</p>
 
@@ -150,7 +150,7 @@
                                 Get API
                             </a>
                         </div>
-                        <input type="password" x-model="kAnthropic" placeholder="sk-ant-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <input type="password" x-model="kAnthropic" placeholder="sk-ant-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                     </div>
                     {{-- OpenAI --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
@@ -164,7 +164,7 @@
                                 Get API
                             </a>
                         </div>
-                        <input type="password" x-model="kOpenai" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <input type="password" x-model="kOpenai" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                     </div>
                     {{-- Google --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
@@ -178,7 +178,7 @@
                                 Get API
                             </a>
                         </div>
-                        <input type="password" x-model="kGoogle" placeholder="AIza..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <input type="password" x-model="kGoogle" placeholder="AIza..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                     </div>
                     {{-- Mistral --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
@@ -192,7 +192,7 @@
                                 Get API
                             </a>
                         </div>
-                        <input type="password" x-model="kMistral" placeholder="mist-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <input type="password" x-model="kMistral" placeholder="mist-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                     </div>
                     {{-- 9Router --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
@@ -202,7 +202,7 @@
                                 <div><h3 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">9Router</h3><p class="text-[12px] text-gray-500 dark:text-stone-400">9Router multi-provider proxy</p></div>
                             </div>
                         </div>
-                        <input type="password" x-model="kNineRouter" placeholder="Your 9Router API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <input type="password" x-model="kNineRouter" placeholder="Your 9Router API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                     </div>
                     {{-- Custom Proxy --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
@@ -221,11 +221,11 @@
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-[12px] text-gray-500 dark:text-stone-400 mb-1">Base URL</label>
-                                <input type="text" x-model="proxyUrl" placeholder="https://your-proxy-url.com/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                                <input type="text" x-model="proxyUrl" placeholder="https://your-proxy-url.com/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                             </div>
                             <div>
                                 <label class="block text-[12px] text-gray-500 dark:text-stone-400 mb-1">API Key</label>
-                                <input type="password" x-model="kProxy" placeholder="Your proxy API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                                <input type="password" x-model="kProxy" placeholder="Your proxy API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                             </div>
                         </div>
                     </div>
@@ -366,9 +366,9 @@
                 }
             }
         }">
-            <div class="bg-white dark:bg-stone-900 rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
+            <div class="bg-white dark:bg-[#1E1E1E] rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
                 {{-- Flash Message --}}
-                <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+                <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-[#1E1E20] dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-[#1E1E20] dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
 
                 <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-1">Connected Accounts</h2>
                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-6">Connect your free tier accounts from ChatGPT, Gemini, and Claude to use Rynude without API keys.</p>
@@ -438,7 +438,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.chatgpt ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.chatgpt ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-[#1E1E20] text-gray-600 dark:text-stone-400'">
                                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>
                                     <span x-text="providers.chatgpt ? 'Connected' : 'Not Connected'"></span>
                                 </span>
@@ -488,11 +488,11 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 pt-1">
-                                        <button @click="refreshSession('chatgpt')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-gray-50 dark:hover:bg-stone-700 text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
+                                        <button @click="refreshSession('chatgpt')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#1E1E20] hover:bg-gray-50 dark:hover:bg-[#2E2E32] text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                                             Refresh Session
                                         </button>
-                                        <button @click="disconnectProvider('chatgpt')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
+                                        <button @click="disconnectProvider('chatgpt')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#1E1E20] hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                             Disconnect
                                         </button>
@@ -513,7 +513,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.gemini ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.gemini ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-[#1E1E20] text-gray-600 dark:text-stone-400'">
                                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>
                                     <span x-text="providers.gemini ? 'Connected' : 'Not Connected'"></span>
                                 </span>
@@ -563,11 +563,11 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 pt-1">
-                                        <button @click="refreshSession('gemini')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-gray-50 dark:hover:bg-stone-700 text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
+                                        <button @click="refreshSession('gemini')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#1E1E20] hover:bg-gray-50 dark:hover:bg-[#2E2E32] text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                                             Refresh Session
                                         </button>
-                                        <button @click="disconnectProvider('gemini')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
+                                        <button @click="disconnectProvider('gemini')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#1E1E20] hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                             Disconnect
                                         </button>
@@ -588,7 +588,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.claude ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium" :class="providers.claude ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-[#1E1E20] text-gray-600 dark:text-stone-400'">
                                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>
                                     <span x-text="providers.claude ? 'Connected' : 'Not Connected'"></span>
                                 </span>
@@ -638,11 +638,11 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 pt-1">
-                                        <button @click="refreshSession('claude')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-gray-50 dark:hover:bg-stone-700 text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
+                                        <button @click="refreshSession('claude')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#1E1E20] hover:bg-gray-50 dark:hover:bg-[#2E2E32] text-[#2D2825] dark:text-stone-200 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-[12px] font-medium transition-colors">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                                             Refresh Session
                                         </button>
-                                        <button @click="disconnectProvider('claude')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
+                                        <button @click="disconnectProvider('claude')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#1E1E20] hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border border-claude-border-light dark:border-claude-border-dark hover:border-red-300 dark:hover:border-red-900/50 rounded-lg text-[12px] font-medium transition-colors">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                             Disconnect
                                         </button>
@@ -656,7 +656,7 @@
                 {{-- How It Works & Security Info --}}
                 <div class="mt-6 space-y-4" x-show="extensionInstalled">
                     {{-- How it works --}}
-                    <div class="p-4 rounded-lg bg-gray-50 dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark">
+                    <div class="p-4 rounded-lg bg-gray-50 dark:bg-[#1E1E20]/50 border border-claude-border-light dark:border-claude-border-dark">
                         <div class="flex gap-3">
                             <svg class="w-5 h-5 text-gray-600 dark:text-stone-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <div class="text-[13px] text-gray-700 dark:text-stone-300">
@@ -701,21 +701,21 @@
     {{-- ==================== MODEL DIALOG ==================== --}}
     <div x-show="dlgOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" @click="dlgOpen=false"></div>
-        <div class="bg-white dark:bg-stone-900 border border-claude-border-light dark:border-claude-border-dark w-full max-w-md rounded-xl p-6 shadow-2xl relative z-10">
+        <div class="bg-white dark:bg-[#1E1E1E] border border-claude-border-light dark:border-claude-border-dark w-full max-w-md rounded-xl p-6 shadow-2xl relative z-10">
             <h3 class="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4" x-text="dlgEditId?'Edit AI Model':'Add AI Model'"></h3>
             <div x-show="dlgErr" x-cloak class="mb-4 p-3 text-sm rounded-lg border text-red-800 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border-red-200" x-text="dlgErr"></div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Code</label>
-                    <input type="text" x-model="dlgCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                    <input type="text" x-model="dlgCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Name</label>
-                    <input type="text" x-model="dlgName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                    <input type="text" x-model="dlgName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Provider</label>
-                    <select x-model="dlgProv" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                    <select x-model="dlgProv" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
                         <option value="huggingface">Hugging Face</option>
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic</option>

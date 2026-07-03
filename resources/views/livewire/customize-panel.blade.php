@@ -1,9 +1,9 @@
-<div class="flex w-full h-full bg-[#F9F8F6] dark:bg-stone-900" x-data="{
+<div class="flex w-full h-full bg-[#F9F8F6] dark:bg-[#1E1E1E]" x-data="{
     activeTab: '{{ $activeTab ?? 'dashboard' }}',
     setTab(tab) { this.activeTab = tab; },
 }">
     {{-- Customize Sidebar --}}
-    <div class="w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-stone-900 flex flex-col hidden md:flex">
+    <div class="w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-[#1E1E1E] flex flex-col hidden md:flex">
         <div class="px-4 py-5 flex items-center">
             <button @click="$dispatch('close-customize')" class="mr-2 text-stone-500 hover:text-stone-800 transition-colors">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -44,7 +44,7 @@
     </div>
 
     {{-- Main Content --}}
-    <div class="flex-1 bg-transparent dark:bg-stone-900 flex flex-col items-center justify-center p-8 overflow-y-auto">
+    <div class="flex-1 bg-transparent dark:bg-[#1E1E1E] flex flex-col items-center justify-center p-8 overflow-y-auto">
 
         <template x-if="activeTab === 'dashboard'">
             <div class="max-w-[600px] w-full flex flex-col items-center">
@@ -62,7 +62,7 @@
                 <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-10 text-center">Skills, connectors, and plugins shape how Rynude works with you.</p>
 
                 <div class="w-full space-y-4">
-                    <button class="w-full flex items-center gap-5 p-5 bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                    <button class="w-full flex items-center gap-5 p-5 bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
                         <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
                         </div>
@@ -72,7 +72,7 @@
                         </div>
                     </button>
 
-                    <button @click="setTab('create_skill')" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                    <button @click="setTab('create_skill')" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
                         <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
                         </div>
@@ -82,7 +82,7 @@
                         </div>
                     </button>
 
-                    <button @click="setTab('templates')" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-stone-900 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                    <button @click="setTab('templates')" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
                         <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                         </div>
@@ -100,7 +100,7 @@
                 <div class="flex items-center justify-between w-full mb-8">
                     <h1 class="font-serif text-[28px] font-medium text-[#2D2825] dark:text-stone-200">Skills</h1>
                     <div class="flex items-center gap-2">
-                        <button @click="setTab('templates')" class="px-4 py-2 bg-white border border-[#E5E5E5] dark:bg-stone-800 dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 rounded-xl text-sm font-medium transition-colors shadow-sm">
+                        <button @click="setTab('templates')" class="px-4 py-2 bg-white border border-[#E5E5E5] dark:bg-stone-800 dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] rounded-xl text-sm font-medium transition-colors shadow-sm">
                             Templates
                         </button>
                         <button @click="setTab('create_skill')" class="px-4 py-2 bg-[#2D2825] hover:bg-black text-white dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white rounded-xl text-sm font-medium transition-colors shadow-sm">

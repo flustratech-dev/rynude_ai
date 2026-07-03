@@ -22,7 +22,7 @@
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
-                    <input type="text" x-model="searchQuery" placeholder="Search" class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-lg text-sm focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500 text-gray-800 dark:text-stone-200">
+                    <input type="text" x-model="searchQuery" placeholder="Search" class="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-[#1E1E1E] border border-claude-border-light dark:border-claude-border-dark rounded-lg text-sm focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500 text-gray-800 dark:text-stone-200">
                 </div>
 
                 <div class="px-3 py-1 hidden md:block mb-1">
@@ -32,7 +32,7 @@
                 <div class="flex md:flex-col gap-2 md:gap-1 overflow-x-auto md:overflow-visible">
                     <template x-for="item in filteredNavItems" :key="item.id">
                         <button @click="activeTab = item.id" class="w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 md:px-3 py-2 md:py-2.5 rounded-xl text-[13px] md:text-[14px] transition-all duration-150 whitespace-nowrap"
-                                :class="activeTab === item.id ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'">
+                                :class="activeTab === item.id ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#6B6B6B] dark:text-stone-400 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
                             <svg class="w-[18px] h-[18px] flex-shrink-0" :class="activeTab === item.id ? 'text-[#2D2825] dark:text-stone-200' : 'text-[#6B6B6B] dark:text-stone-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-html="item.icon"></svg>
                             <span x-text="item.label"></span>
                         </button>
@@ -46,7 +46,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
 
-                <div x-show="flashMessage" x-cloak x-effect="if (flashMessage) { clearTimeout($data._flashTimer); $data._flashTimer = setTimeout(() => flashMessage = null, 3000); }" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType === 'success' ? 'text-green-800 bg-green-50 dark:bg-stone-800 dark:text-green-400 border-green-200 dark:border-stone-700' : 'text-red-800 bg-red-50 dark:bg-stone-800 dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+                <div x-show="flashMessage" x-cloak x-effect="if (flashMessage) { clearTimeout($data._flashTimer); $data._flashTimer = setTimeout(() => flashMessage = null, 3000); }" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType === 'success' ? 'text-green-800 bg-green-50 dark:bg-[#2C2C2C] dark:text-green-400 border-green-200 dark:border-stone-700' : 'text-red-800 bg-red-50 dark:bg-[#2C2C2C] dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
 
                 {{-- General tab --}}
                 <div x-show="activeTab === 'general'" x-transition>
@@ -58,15 +58,15 @@
                         </div>
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Full name</label>
-                            <input x-model="name" @input.debounce.500ms="save('name')" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <input x-model="name" @input.debounce.500ms="save('name')" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What should Rynude call you?</label>
-                            <input x-model="nickname" @input.debounce.500ms="save('nickname')" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <input x-model="nickname" @input.debounce.500ms="save('nickname')" type="text" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                         </div>
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">What best describes your work?</label>
-                            <select x-model="profession" @change="save('profession')" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <select x-model="profession" @change="save('profession')" class="w-full md:w-[340px] px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                                 <option value="">Select...</option><option value="developer">Software Developer</option><option value="designer">Designer</option><option value="data_scientist">Data Scientist</option><option value="product_manager">Product Manager</option><option value="student">Student</option><option value="researcher">Researcher</option><option value="writer">Writer / Content Creator</option><option value="marketer">Marketer</option><option value="business">Business / Entrepreneur</option><option value="other">Other</option>
                             </select>
                         </div>
@@ -76,14 +76,14 @@
                         <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-4">
                             Rynude will keep these in mind across chats and Cowork within <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Anthropic's guidelines</a>. <a href="#" class="underline hover:text-gray-800 dark:hover:text-stone-200">Learn more</a>
                         </p>
-                        <textarea x-model="customInstructions" @input.debounce.1000ms="save('custom_instructions')" class="w-full h-24 p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" placeholder="e.g. keep explanations brief and to the point"></textarea>
+                        <textarea x-model="customInstructions" @input.debounce.1000ms="save('custom_instructions')" class="w-full h-24 p-3 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 resize-none" placeholder="e.g. keep explanations brief and to the point"></textarea>
                     </div>
 
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mt-12 mb-6">Preferences</h2>
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Appearance</label>
-                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-[#2C2C2C]">
                                 <button @click="theme='system'; saveAppearance()" class="p-1.5 px-3 border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='system'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'" title="System Theme">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 </button>
@@ -97,13 +97,13 @@
                         </div>
                         <div class="flex items-center justify-between">
                             <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 block">Response language</label><p class="text-[13px] text-gray-500 dark:text-stone-400">The language Rynude will reply in.</p></div>
-                            <select x-model="language" @change="save('language')" class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <select x-model="language" @change="save('language')" class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                                 <option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="zh">中文</option><option value="ar">العربية</option>
                             </select>
                         </div>
                         <div class="flex items-center justify-between pb-8">
                             <label class="text-[15px] text-[#2D2825] dark:text-stone-300">Chat font</label>
-                            <select x-model="chatFont" @change="save('chat_font')" class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
+                            <select x-model="chatFont" @change="save('chat_font')" class="w-[200px] px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500">
                                 <option value="default">Default (System)</option><option value="serif">Serif</option><option value="mono">Monospace</option><option value="inter">Inter</option>
                             </select>
                         </div>
@@ -116,15 +116,15 @@
                     <div class="space-y-8">
                         <div class="flex items-center justify-between">
                             <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Theme</label><p class="text-[13px] text-gray-500 dark:text-stone-400">Choose how Rynude looks to you.</p></div>
-                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
-                                <button @click="theme='light'; saveAppearance()" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='light'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">Light</button>
-                                <button @click="theme='dark'; saveAppearance()" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='dark'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">Dark</button>
-                                <button @click="theme='system'; saveAppearance()" class="px-3 py-1.5 text-sm transition-colors" :class="theme==='system'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">System</button>
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-[#2C2C2C]">
+                                <button @click="theme='light'; saveAppearance()" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='light'?'bg-[#F3F2EE] dark:bg-[#3A3A38] text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">Light</button>
+                                <button @click="theme='dark'; saveAppearance()" class="px-3 py-1.5 text-sm border-r border-claude-border-light dark:border-claude-border-dark transition-colors" :class="theme==='dark'?'bg-[#F3F2EE] dark:bg-[#3A3A38] text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">Dark</button>
+                                <button @click="theme='system'; saveAppearance()" class="px-3 py-1.5 text-sm transition-colors" :class="theme==='system'?'bg-[#F3F2EE] dark:bg-[#3A3A38] text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">System</button>
                             </div>
                         </div>
                         <div class="flex items-center justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block">Font size</label><p class="text-[13px] text-gray-500 dark:text-stone-400">Adjust the text size in chats.</p></div>
-                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-white dark:bg-[#2C2C2C]">
                                 <button @click="fontSize='small'; saveAppearance()" class="px-3 py-1.5 transition-colors border-r border-claude-border-light dark:border-claude-border-dark" style="font-size:12px" :class="fontSize==='small'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">A</button>
                                 <button @click="fontSize='medium'; saveAppearance()" class="px-3 py-1.5 transition-colors border-r border-claude-border-light dark:border-claude-border-dark" style="font-size:15px" :class="fontSize==='medium'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">A</button>
                                 <button @click="fontSize='large'; saveAppearance()" class="px-3 py-1.5 transition-colors" style="font-size:18px" :class="fontSize==='large'?'bg-[#F3F2EE] dark:bg-stone-700 text-gray-800 dark:text-stone-200':'text-gray-600 dark:text-stone-400'">A</button>
@@ -175,7 +175,7 @@
                     <div class="space-y-8">
                         <div class="flex items-start justify-between">
                             <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export all chats</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Download a complete copy of all your conversations as a JSON file.</p></div>
-                            <button @click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800">Export JSON</button>
+                            <button @click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-[#3A3A38]">Export JSON</button>
                         </div>
                         <div class="flex items-start justify-between border-t border-claude-border-light dark:border-claude-border-dark pt-6">
                             <div><label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Train on conversations</label><p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[460px]">Allow Rynude to use your conversations to improve the models.</p></div>
@@ -208,7 +208,7 @@
                                 <span class="text-[14px] text-[#2D2825] dark:text-stone-300" x-text="sc[0]"></span>
                                 <div class="flex items-center gap-1">
                                     <template x-for="k in sc[1]">
-                                        <kbd class="px-2 py-1 bg-[#F3F2EE] dark:bg-stone-800 border border-claude-border-light dark:border-claude-border-dark rounded-md text-[12px] font-mono text-gray-600 dark:text-stone-300 shadow-sm" x-text="k"></kbd>
+                                        <kbd class="px-2 py-1 bg-[#F3F2EE] dark:bg-[#2C2C2C] border border-claude-border-light dark:border-claude-border-dark rounded-md text-[12px] font-mono text-gray-600 dark:text-stone-300 shadow-sm" x-text="k"></kbd>
                                     </template>
                                 </div>
                             </div>
@@ -237,7 +237,7 @@
                                     <label class="text-[15px] text-[#2D2825] dark:text-stone-300 font-medium block mb-1">Export data</label>
                                     <p class="text-[13.5px] text-gray-500 dark:text-stone-400 max-w-[500px]">Download a complete copy of all your conversations as a JSON file.</p>
                                 </div>
-                                <button @click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-stone-800">Export data</button>
+                                <button @click="exportAllChats('json')" class="px-4 py-2 border border-claude-border-light dark:border-claude-border-dark text-[#2D2825] dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-[#3A3A38]">Export data</button>
                             </div>
                         </div>
                     </div>
@@ -246,7 +246,7 @@
                 {{-- Billing tab --}}
                 <div x-show="activeTab === 'billing'" x-cloak x-transition>
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Quota & Usage</h2>
-                    <div class="p-5 bg-[#FBFBFA] dark:bg-stone-800/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
+                    <div class="p-5 bg-[#FBFBFA] dark:bg-[#2C2C2C]/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[15px] font-medium">Token usage</span>
                             <span class="text-[13px] text-gray-500" x-text="tokensUsed.toLocaleString()+' used · '+tokensLimit.toLocaleString()+' remaining'"></span>
@@ -299,7 +299,7 @@
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Connectors</h2>
                     <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Connect Rynude to your tools to let it read context and perform actions on your behalf.</p>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
+                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-[#2C2C2C]/50">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-lg bg-[#F3F2EE] dark:bg-stone-700 flex items-center justify-center">
                                     <svg class="w-6 h-6 text-gray-700 dark:text-stone-300" viewBox="0 0 24 24" fill="currentColor">
@@ -312,9 +312,9 @@
                                     <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-0.5">Access docs, sheets, and presentations.</p>
                                 </div>
                             </div>
-                            <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">Connect</button>
+                            <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-[#3A3A38] transition-colors">Connect</button>
                         </div>
-                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-stone-800/50">
+                        <div class="flex items-center justify-between p-4 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-white dark:bg-[#2C2C2C]/50">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-lg bg-[#F3F2EE] dark:bg-stone-700 flex items-center justify-center">
                                     <svg class="w-6 h-6 text-gray-700 dark:text-stone-300" viewBox="0 0 24 24" fill="currentColor">
@@ -326,7 +326,7 @@
                                     <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-0.5">Read messages and send replies.</p>
                                 </div>
                             </div>
-                            <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-stone-600 transition-colors">Connect</button>
+                            <button class="px-4 py-2 bg-[#F3F2EE] dark:bg-stone-700 text-[#2D2825] dark:text-stone-200 rounded-lg text-sm font-medium hover:bg-[#EAE9E5] dark:hover:bg-[#3A3A38] transition-colors">Connect</button>
                         </div>
                     </div>
                 </div>
@@ -336,9 +336,9 @@
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Rynude Code</h2>
                     <p class="text-[14px] text-gray-500 dark:text-stone-400 mb-6">Rynude Code is an AI coding assistant that lives in your terminal. It understands your codebase and helps you write code faster.</p>
                     
-                    <div class="p-6 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-gray-50 dark:bg-stone-800/30 mb-8">
+                    <div class="p-6 border border-claude-border-light dark:border-claude-border-dark rounded-xl bg-gray-50 dark:bg-[#2C2C2C]/30 mb-8">
                         <div class="flex items-center gap-3 mb-4">
-                            <div class="w-8 h-8 rounded-lg bg-[#2D2825] dark:bg-stone-900 text-white flex items-center justify-center font-mono text-sm">$&gt;</div>
+                            <div class="w-8 h-8 rounded-lg bg-[#2D2825] dark:bg-[#1E1E1E] text-white flex items-center justify-center font-mono text-sm">$&gt;</div>
                             <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">Install via npm</h3>
                         </div>
                         <div class="bg-gray-900 text-gray-300 font-mono text-[13px] p-4 rounded-lg flex items-center justify-between">
@@ -366,21 +366,21 @@
     {{-- Add/Edit Model Dialog --}}
     <div x-show="isModelModalOpen" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" @click="isModelModalOpen = false"></div>
-        <div class="bg-white dark:bg-stone-900 border border-claude-border-light dark:border-claude-border-dark w-full max-w-md rounded-xl p-6 shadow-2xl relative z-10">
+        <div class="bg-white dark:bg-[#1E1E1E] border border-claude-border-light dark:border-claude-border-dark w-full max-w-md rounded-xl p-6 shadow-2xl relative z-10">
             <h3 class="text-lg font-bold text-stone-800 dark:text-stone-100 mb-4" x-text="editModelId ? 'Edit AI Model' : 'Add AI Model'"></h3>
             <div x-show="modelError" x-cloak class="mb-4 p-3 text-sm rounded-lg border text-red-800 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-900/40" x-text="modelError"></div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Code</label>
-                    <input type="text" x-model="modelCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                    <input type="text" x-model="modelCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Name</label>
-                    <input type="text" x-model="modelName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                    <input type="text" x-model="modelName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Provider</label>
-                    <select x-model="modelProvider" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-stone-800 text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                    <select x-model="modelProvider" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E1E] text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
                         <option value="huggingface">Hugging Face</option>
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic</option>
@@ -396,7 +396,7 @@
                 </div>
             </div>
             <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-stone-100 dark:border-stone-800">
-                <button @click="isModelModalOpen = false" class="px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">Cancel</button>
+                <button @click="isModelModalOpen = false" class="px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] rounded-lg">Cancel</button>
                 <button @click="storeModel()" :disabled="modelSaving" class="px-4 py-1.5 text-sm text-white bg-[#D97757] hover:bg-[#c66547] rounded-lg disabled:opacity-60 disabled:cursor-not-allowed" x-text="modelSaving ? 'Saving...' : 'Save'">Save</button>
             </div>
         </div>

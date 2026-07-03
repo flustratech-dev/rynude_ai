@@ -43,7 +43,7 @@
                     x-model.debounce.300ms="searchQuery"
                     @keydown.escape="searchOpen = false; searchQuery = ''"
                     placeholder="Search chats..."
-                    class="w-full bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg pl-8 pr-8 py-1.5 text-[13px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-[#D97757] dark:focus:border-[#D97757] transition-colors"
+                    class="w-full bg-white dark:bg-[#2C2C2C] border border-[#E5E5E5] dark:border-stone-700 rounded-lg pl-8 pr-8 py-1.5 text-[13px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:border-[#D97757] dark:focus:border-[#D97757] transition-colors"
                 >
                 <button x-show="searchQuery !== ''" @click="searchQuery = ''" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-stone-300">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -71,7 +71,7 @@
             </button>
             @endif
 
-            <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 transition-colors group">
+            <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] transition-colors group">
                 <div class="flex items-center justify-center rounded-full size-[1.4rem] -mx-[0.2rem] border border-[#DCD7D2] dark:border-stone-600 bg-[#EAE6E1]/40 dark:bg-stone-700/30 transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
                     <svg class="w-[14px] h-[14px] text-gray-600 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M12 5v14M5 12h14"/>
@@ -83,7 +83,7 @@
             <button
                 @click="activePanel = activePanel === 'chats' ? null : 'chats'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                :class="activePanel === 'chats' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
+                :class="activePanel === 'chats' ? 'bg-claude-200 dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path class="chat-bubble-1" stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
@@ -94,7 +94,7 @@
             <button
                 @click="activePanel = activePanel === 'projects' ? null : 'projects'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                :class="activePanel === 'projects' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
+                :class="activePanel === 'projects' ? 'bg-claude-200 dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
@@ -106,7 +106,7 @@
             <button
                 @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                :class="activePanel === 'artifacts' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
+                :class="activePanel === 'artifacts' ? 'bg-claude-200 dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path class="artifact-triangle" d="M12 3l4 7H8z" />
@@ -119,7 +119,7 @@
             <button
                 @click="activePanel = activePanel === 'customize' ? null : 'customize'; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
                 class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50'"
+                :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200' : 'text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38]'"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0 customize-gear" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
@@ -129,7 +129,7 @@
 
             <a
                 href="{{ route('api-keys') }}"
-                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50"
+                class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38]"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
@@ -147,7 +147,7 @@
             <div class="space-y-0.5 mt-0.5">
                 <a
                     href="{{ route('code') }}"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50 group"
+                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38] group"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
@@ -160,7 +160,7 @@
                 <button
                     @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                    :class="activePanel === 'cowork' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
+                    :class="activePanel === 'cowork' ? 'bg-claude-200 dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path class="cowork-line" d="M9 6h11M9 12h11M9 18h11"/>
@@ -172,7 +172,7 @@
                 <button
                     @click="activePanel = activePanel === 'design' ? null : 'design'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                    :class="activePanel === 'design' ? 'bg-claude-200 dark:bg-stone-800 text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-stone-800/50'"
+                    :class="activePanel === 'design' ? 'bg-claude-200 dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]'"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path class="design-palette" d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
@@ -203,7 +203,7 @@
                         <div class="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2 pt-2.5 pb-1 uppercase tracking-wider" x-text="groupName"></div>
                         <template x-for="c in items" :key="c.id">
                             <div class="relative group flex items-center w-full rounded-lg transition-colors"
-                                 :class="conversationId === c.id ? 'bg-[#EAE9E5] dark:bg-stone-800 text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-gray-900 dark:hover:text-stone-200'">
+                                 :class="conversationId === c.id ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-gray-900 dark:hover:text-stone-200'">
                                 <button
                                     @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('selectConversation', { detail: { conversationId: c.id } })); window.history.pushState({}, '', '/chat?conversation=' + c.id);"
                                     class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
@@ -211,7 +211,7 @@
                                 ></button>
                                 <button
                                     @click="if(confirm('Are you sure you want to delete this chat?')) { deleteChat(c.id); }"
-                                    class="absolute right-1 p-1 hidden group-hover:flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors bg-[#EAE9E5] dark:bg-stone-800"
+                                    class="absolute right-1 p-1 hidden group-hover:flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors bg-[#EAE9E5] dark:bg-[#2C2C2C]"
                                     title="Delete"
                                 >
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -237,7 +237,7 @@
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1"
                         @click.away="profileMenuOpen = false"
-                        class="absolute bottom-full left-2 right-2 mb-2 w-auto max-h-[60vh] overflow-y-auto overflow-x-hidden custom-scrollbar bg-white dark:bg-stone-900 border border-gray-200 dark:border-stone-700 rounded-2xl shadow-lg z-50 py-2"
+                        class="absolute bottom-full left-2 right-2 mb-2 w-auto max-h-[60vh] overflow-y-auto overflow-x-hidden custom-scrollbar bg-white dark:bg-[#2C2C2C] border border-gray-200 dark:border-stone-700 rounded-2xl shadow-lg z-50 py-2"
                         style="display: none;"
                     >
                         <div class="text-sm text-gray-500 dark:text-stone-400 font-medium px-4 py-2 mb-1">
@@ -245,7 +245,7 @@
                         </div>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'general' }));"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
                                 <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -259,7 +259,7 @@
                         <div x-data="{ languageOpen: false, currentLang: localStorage.getItem('rynude_lang') || 'English' }" class="relative">
                             <button
                                 @click="languageOpen = !languageOpen"
-                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                             >
                                 <span class="flex items-center gap-3">
                                     <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -285,7 +285,7 @@
                                 <template x-for="lang in ['English', 'Bahasa Indonesia']" :key="lang">
                                     <button
                                         @click="currentLang = lang; localStorage.setItem('rynude_lang', lang); languageOpen = false"
-                                        class="flex items-center justify-between w-full px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-stone-800 rounded-lg transition-colors"
+                                        class="flex items-center justify-between w-full px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors"
                                     >
                                         <span x-text="lang"></span>
                                         <svg x-show="currentLang === lang" class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
@@ -295,7 +295,7 @@
                         </div>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'help' } }))"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
                                 <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -307,7 +307,7 @@
                         <div class="border-t border-gray-100 dark:border-stone-800 my-1"></div>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'billing' }));"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
                                 <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -318,7 +318,7 @@
                         </button>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } }))"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
                                 <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -329,7 +329,7 @@
                         </button>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-system-update'))"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">
                                 <svg class="w-4 h-4 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -343,7 +343,7 @@
                         <div x-data="{ learnMoreOpen: false }" class="relative">
                             <button
                                 @click="learnMoreOpen = !learnMoreOpen"
-                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-stone-800/50 cursor-pointer transition-colors"
+                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                             >
                                 <span class="flex items-center gap-3">
                                     <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -366,7 +366,7 @@
                                 x-transition:leave-end="opacity-0 -translate-y-1"
                                 class="pl-8 pr-4 pb-1 space-y-0.5"
                             >
-                                <a href="https://docs.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 hover:bg-[#F3F3F3] rounded-lg transition-colors">
+                                <a href="https://docs.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
                                     <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                                     </svg>
@@ -375,7 +375,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
                                     </svg>
                                 </a>
-                                <a href="https://anthropic.com/blog" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 hover:bg-[#F3F3F3] rounded-lg transition-colors">
+                                <a href="https://anthropic.com/blog" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
                                     <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5"/>
                                     </svg>
@@ -384,7 +384,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
                                     </svg>
                                 </a>
-                                <a href="https://status.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 hover:bg-[#F3F3F3] rounded-lg transition-colors">
+                                <a href="https://status.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
                                     <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6"/>
                                     </svg>
@@ -410,7 +410,7 @@
                         </form>
                     </div>
 
-                    <button @click="profileMenuOpen = !profileMenuOpen" class="w-full flex items-center justify-between px-2 py-2 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800 rounded-lg transition-colors">
+                    <button @click="profileMenuOpen = !profileMenuOpen" class="w-full flex items-center justify-between px-2 py-2 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
                         <div class="flex items-center gap-2.5">
                             <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="8" cy="8" r="8" fill="#5C92D1"/>
@@ -446,7 +446,7 @@
     <div x-show="!open" x-cloak class="h-full w-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-claude-bg-dark">
         <button
             @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
-            class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"
+            class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"
         >
             <svg class="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -470,7 +470,7 @@
         </button>
         @endif
 
-        <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
+        <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('newChat')); window.history.pushState({}, '', '{{ route('chat') }}');" class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] transition-colors text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center group" title="New chat">
             <div class="flex items-center justify-center rounded-full size-[1.4rem] -mx-[0.2rem] border border-[#DCD7D2] dark:border-stone-600 bg-[#EAE6E1]/40 dark:bg-stone-700/30 transition-all ease-in-out group-hover:-rotate-3 group-hover:scale-110 group-active:rotate-6 group-active:scale-[0.98]">
                 <svg class="w-[14px] h-[14px] text-gray-600 dark:text-stone-300 group-hover:text-[#2D2825] dark:group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <path d="M12 5v14M5 12h14"/>
@@ -483,7 +483,7 @@
         <button
             @click="activePanel = activePanel === 'chats' ? null : 'chats'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'chats' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
+            :class="activePanel === 'chats' ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Chats"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -494,7 +494,7 @@
         <button
             @click="activePanel = activePanel === 'projects' ? null : 'projects'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'projects' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
+            :class="activePanel === 'projects' ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Projects"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -506,7 +506,7 @@
         <button
             @click="activePanel = activePanel === 'artifacts' ? null : 'artifacts'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'artifacts' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
+            :class="activePanel === 'artifacts' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Artifacts"
         >
             <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -519,7 +519,7 @@
         <button
             @click="activePanel = activePanel === 'customize' ? null : 'customize'; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if(activePanel === 'customize') { sidebarOpen = false; open = false; }"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
+            :class="activePanel === 'customize' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200' : 'text-gray-500 hover:bg-[#EAE9E5]/60 hover:text-[#2D2825] dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-200'"
             title="Customize"
         >
             <svg class="w-[18px] h-[18px] customize-gear" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -554,7 +554,7 @@
         <button
             @click="activePanel = activePanel === 'cowork' ? null : 'cowork'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
+            :class="activePanel === 'cowork' ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Cowork"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -566,7 +566,7 @@
         <button
             @click="activePanel = activePanel === 'design' ? null : 'design'"
             class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'design' ? 'bg-[#EAE9E5] dark:bg-stone-800 text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
+            :class="activePanel === 'design' ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
             title="Design"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

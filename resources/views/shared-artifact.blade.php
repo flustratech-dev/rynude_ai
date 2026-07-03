@@ -19,14 +19,14 @@
         }
     </script>
 </head>
-<body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-[#2C2C2A]">
+<body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-[#171719]">
     @php
         $lang = strtolower($artifact->language ?? '');
         $isHtml = $lang === 'html';
         $isMarkdown = in_array($lang, ['markdown', 'md']) || $artifact->type !== 'code';
     @endphp
 
-    <header class="border-b border-[#E5E5E5] dark:border-stone-700 bg-white/80 dark:bg-[#2C2C2A]/80 backdrop-blur sticky top-0 z-10">
+    <header class="border-b border-[#E5E5E5] dark:border-stone-700 bg-white/80 dark:bg-[#171719]/80 backdrop-blur sticky top-0 z-10">
         <div class="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-7 h-7 rounded-md bg-[#D97757] flex items-center justify-center text-white font-semibold text-sm shrink-0">R</div>
