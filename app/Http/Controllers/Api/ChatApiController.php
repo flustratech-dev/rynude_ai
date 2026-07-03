@@ -550,6 +550,9 @@ class ChatApiController extends ApiController
     {
         $this->authorizeOwnership($conversation);
 
+        // Eager load the project relationship for the response
+        $conversation->load('project');
+
         // Mirror ChatInterface::loadConversation(): the active branch of the
         // thread with the first artifact per message and any attachments.
         // Sibling groups (edits/regenerations sharing a parent) power the
@@ -611,9 +614,11 @@ class ChatApiController extends ApiController
                 'id' => $conversation->id,
                 'title' => $conversation->title ?? 'New Chat',
                 'project_id' => $conversation->project_id,
+                'project_name' => $conversation->project ? $conversation->project->name : null,
                 'style' => $conversation->style,
                 'draft_prompt' => $conversation->draft_prompt,
                 'archived' => $conversation->archived_at !== null,
+                'is_starred' => (bool) $conversation->is_starred,
                 'shared' => ! empty($conversation->share_token),
                 'share_url' => $conversation->share_token ? route('chat.shared', $conversation->share_token) : null,
                 'created_at' => optional($conversation->created_at)->toIso8601String(),
@@ -633,6 +638,7 @@ class ChatApiController extends ApiController
             'archived' => ['sometimes', 'boolean'],
             'unshare' => ['sometimes', 'boolean'],
             'is_starred' => ['sometimes', 'boolean'],
+            'project_id' => ['sometimes', 'nullable', 'integer', 'exists:projects,id'],
         ]);
 
         // Rename (ChatsPanel::renameConversation caps the title at 255 chars).
@@ -653,6 +659,11 @@ class ChatApiController extends ApiController
         // Star / unstar — pinned to the "Starred" sidebar section.
         if (array_key_exists('is_starred', $validated)) {
             $conversation->is_starred = (bool) $validated['is_starred'];
+        }
+
+        // Add to project / remove from project.
+        if (array_key_exists('project_id', $validated)) {
+            $conversation->project_id = $validated['project_id'];
         }
 
         $conversation->save();

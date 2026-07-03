@@ -75,6 +75,102 @@
         </div>
     </template>
 
+    {{-- Rename Modal --}}
+    <template x-if="showRenameModal">
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showRenameModal = false"></div>
+            <div class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-xl p-5">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="w-9 h-9 rounded-xl bg-[#D97757]/10 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-[15px] font-semibold text-stone-800 dark:text-stone-100">Rename chat</h3>
+                        <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mt-0.5">Enter a new name for this conversation</p>
+                    </div>
+                    <button type="button" @click="showRenameModal = false" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <input type="text" x-model="renameDraft" @keydown.enter="submitRename()" @keydown.escape="showRenameModal = false" placeholder="Chat name" class="w-full bg-stone-50 dark:bg-[#3A3A38] border border-claude-border-light dark:border-claude-border-dark rounded-xl px-3.5 py-2.5 text-[14px] text-stone-800 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-500 focus:ring-1 focus:ring-[#D97757]/40 focus:border-[#D97757]/40" x-ref="renameInput">
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <button type="button" @click="showRenameModal = false" class="text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] rounded-lg px-3 py-1.5 transition-colors">Cancel</button>
+                    <button type="button" @click="submitRename()" class="text-[13px] font-medium text-white bg-[#D97757] hover:bg-[#c96646] rounded-lg px-3.5 py-1.5 transition-colors shadow-sm">Rename</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    {{-- Add to Project Modal --}}
+    <template x-if="showAddProjectModal">
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showAddProjectModal = false"></div>
+            <div class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-xl p-5">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="w-9 h-9 rounded-xl bg-[#D97757]/10 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-[15px] font-semibold text-stone-800 dark:text-stone-100">Add to project</h3>
+                        <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mt-0.5">Select a project for this conversation</p>
+                    </div>
+                    <button type="button" @click="showAddProjectModal = false" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="max-h-[300px] overflow-y-auto space-y-1">
+                    <template x-if="availableProjects.length === 0">
+                        <div class="text-center py-8 text-stone-500 dark:text-stone-400 text-[13px]">
+                            <p>No projects available</p>
+                            <p class="mt-1">Create a project first</p>
+                        </div>
+                    </template>
+                    <template x-for="proj in availableProjects" :key="proj.id">
+                        <button type="button" @click="selectedProjectForAdd = proj.id" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-3" :class="selectedProjectForAdd === proj.id ? 'bg-stone-100 dark:bg-[#3A3A38]' : ''">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[13.5px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="proj.name"></div>
+                                <div class="text-[12px] text-stone-500 dark:text-stone-400 truncate" x-text="proj.description || 'No description'"></div>
+                            </div>
+                            <svg x-show="selectedProjectForAdd === proj.id" class="w-4 h-4 text-[#D97757] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                        </button>
+                    </template>
+                </div>
+                <div class="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-claude-border-light dark:border-claude-border-dark">
+                    <button type="button" @click="removeFromProject()" x-show="chatProject" class="text-[13px] font-medium text-stone-500 hover:text-red-500 transition-colors px-2 py-1.5">Remove from project</button>
+                    <div class="flex items-center gap-2" :class="!chatProject ? 'ml-auto' : ''">
+                        <button type="button" @click="showAddProjectModal = false" class="text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] rounded-lg px-3 py-1.5 transition-colors">Cancel</button>
+                        <button type="button" @click="submitAddToProject()" :disabled="!selectedProjectForAdd" class="text-[13px] font-medium text-white bg-[#D97757] hover:bg-[#c96646] rounded-lg px-3.5 py-1.5 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    {{-- Delete Confirmation Modal --}}
+    <template x-if="showDeleteModal">
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+            <div class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-xl p-5">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-[15px] font-semibold text-stone-800 dark:text-stone-100">Delete chat?</h3>
+                        <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mt-0.5">This will permanently delete this conversation and all its messages. This action cannot be undone.</p>
+                    </div>
+                    <button type="button" @click="showDeleteModal = false" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <button type="button" @click="showDeleteModal = false" class="text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] rounded-lg px-3 py-1.5 transition-colors">Cancel</button>
+                    <button type="button" @click="submitDelete()" class="text-[13px] font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg px-3.5 py-1.5 transition-colors shadow-sm">Delete</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
     {{-- Empty State --}}
     <template x-if="!conversationId && messages.length === 0">
         <div class="flex-1 flex flex-col justify-center -mt-6 md:-mt-16">
@@ -289,6 +385,55 @@
                     <svg class="w-3.5 h-3.5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a9 9 0 0 0-9 9c0 3.6 2.1 6.7 5.2 8.2.3 1.1 1.4 1.8 2.6 1.8h2.4c1.2 0 2.3-.7 2.6-1.8C18.9 17.7 21 14.6 21 11a9 9 0 0 0-9-9Z"/><path d="M9 21h6"/></svg>
                     <span class="hidden sm:inline">Memory</span>
                 </button>
+            </div>
+
+            {{-- Chat Header with Title and Actions --}}
+            <div x-show="conversationId" class="shrink-0 px-4 py-2.5">
+                <div class="flex items-center gap-1.5">
+                    <h2 class="text-[13px] font-medium text-stone-600 dark:text-stone-400 truncate">
+                        <template x-if="chatProjectName">
+                            <span class="text-stone-500 dark:text-stone-500" x-text="chatProjectName + ' / '"></span>
+                        </template>
+                        <span x-text="chatTitle || 'New Chat'"></span>
+                    </h2>
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" type="button" class="p-1.5 rounded-lg text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+
+                        {{-- Dropdown menu --}}
+                        <div x-show="open" @click.away="open = false" x-transition.opacity x-cloak class="absolute right-0 mt-1 w-[200px] bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-50 py-1.5 overflow-hidden">
+                            {{-- Star / Unstar --}}
+                            <button type="button" @click="open = false; toggleStar()" class="w-full text-left px-3 py-2 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-2.5 group">
+                                <svg class="w-4 h-4" :class="isStarred ? 'text-[#D97757] fill-current' : 'text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <span class="text-[13px] text-stone-800 dark:text-stone-200" x-text="isStarred ? 'Unstar' : 'Star'"></span>
+                            </button>
+
+                            {{-- Rename --}}
+                            <button type="button" @click="open = false; openRenameModal()" class="w-full text-left px-3 py-2 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-2.5 group">
+                                <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                                <span class="text-[13px] text-stone-800 dark:text-stone-200">Rename</span>
+                                <span class="ml-auto text-[11px] text-stone-400">R</span>
+                            </button>
+
+                            {{-- Add to project --}}
+                            <button type="button" @click="open = false; openAddProjectModal()" class="w-full text-left px-3 py-2 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-2.5 group">
+                                <svg class="w-4 h-4 text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                                <span class="text-[13px] text-stone-800 dark:text-stone-200">Add to project</span>
+                                <svg class="w-3.5 h-3.5 ml-auto text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+
+                            <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-2 my-1.5"></div>
+
+                            {{-- Delete --}}
+                            <button type="button" @click="open = false; openDeleteModal()" class="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 group">
+                                <svg class="w-4 h-4 text-stone-500 group-hover:text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                <span class="text-[13px] text-stone-800 dark:text-stone-200 group-hover:text-red-500">Delete</span>
+                                <span class="ml-auto text-[11px] text-stone-400 group-hover:text-red-400">D</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="flex-1 overflow-y-auto" x-ref="messagesContainer" id="chat-scroll-container">
@@ -649,6 +794,18 @@ function chatInterfaceState() {
         quoteSel: '',
         quoteX: 0,
         quoteY: 0,
+        // Chat header states
+        chatTitle: '',
+        chatProject: null,
+        chatProjectName: '',
+        isStarred: false,
+        showChatActions: false,
+        showRenameModal: false,
+        showDeleteModal: false,
+        showAddProjectModal: false,
+        renameDraft: '',
+        availableProjects: [],
+        selectedProjectForAdd: null,
 
         get selectedModelName() {
             var all = this.models.concat(this.moreModels);
@@ -827,6 +984,13 @@ function chatInterfaceState() {
                         self.messages = msgs;
                         self.memoryDraft = resp.data.memory || '';
                         self.chatStyle = resp.data.style || 'normal';
+
+                        // Populate chat header data
+                        self.chatTitle = resp.data.title || 'New Chat';
+                        self.isStarred = resp.data.is_starred || false;
+                        self.chatProject = resp.data.project_id || null;
+                        self.chatProjectName = resp.data.project_name || '';
+
                         // Don't clear live-stream state while a resume/send is
                         // in flight (e.g. the initial page load racing with a
                         // reconnect to a stream that survived the refresh).
@@ -1489,6 +1653,129 @@ function chatInterfaceState() {
             .then(function(r) { return r.json(); })
             .then(function() { self.loadConversation(self.conversationId, true); })
             .catch(function(){});
+        },
+
+        // Chat header actions
+        toggleStar: function() {
+            if (!this.conversationId) return;
+            var self = this;
+            this.isStarred = !this.isStarred;
+            fetch('/api/chats/' + this.conversationId, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ is_starred: this.isStarred })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                window.dispatchEvent(new CustomEvent('conversationUpdated'));
+            })
+            .catch(function() { self.isStarred = !self.isStarred; });
+        },
+
+        openRenameModal: function() {
+            this.renameDraft = this.chatTitle || '';
+            this.showRenameModal = true;
+            var self = this;
+            setTimeout(function() {
+                var input = document.querySelector('[x-ref="renameInput"]');
+                if (input) input.focus();
+            }, 50);
+        },
+
+        submitRename: function() {
+            if (!this.conversationId || !this.renameDraft.trim()) return;
+            var self = this;
+            var newTitle = this.renameDraft.trim();
+            fetch('/api/chats/' + this.conversationId, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ title: newTitle })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                self.chatTitle = newTitle;
+                self.showRenameModal = false;
+                window.dispatchEvent(new CustomEvent('conversationUpdated'));
+            })
+            .catch(function() { alert('Failed to rename chat'); });
+        },
+
+        openAddProjectModal: function() {
+            this.loadProjects();
+            this.selectedProjectForAdd = this.chatProject;
+            this.showAddProjectModal = true;
+        },
+
+        loadProjects: function() {
+            var self = this;
+            fetch('/api/projects', {headers:{'Accept':'application/json'}})
+                .then(function(r){return r.json()})
+                .then(function(resp){
+                    self.availableProjects = resp.data || [];
+                })
+                .catch(function(){});
+        },
+
+        submitAddToProject: function() {
+            if (!this.conversationId || !this.selectedProjectForAdd) return;
+            var self = this;
+            fetch('/api/chats/' + this.conversationId, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ project_id: this.selectedProjectForAdd })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                self.chatProject = self.selectedProjectForAdd;
+                var proj = self.availableProjects.find(function(p) { return p.id === self.selectedProjectForAdd; });
+                self.chatProjectName = proj ? proj.name : '';
+                self.showAddProjectModal = false;
+                window.dispatchEvent(new CustomEvent('conversationUpdated'));
+            })
+            .catch(function() { alert('Failed to add chat to project'); });
+        },
+
+        removeFromProject: function() {
+            if (!this.conversationId) return;
+            var self = this;
+            fetch('/api/chats/' + this.conversationId, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ project_id: null })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                self.chatProject = null;
+                self.chatProjectName = '';
+                self.showAddProjectModal = false;
+                window.dispatchEvent(new CustomEvent('conversationUpdated'));
+            })
+            .catch(function() { alert('Failed to remove chat from project'); });
+        },
+
+        openDeleteModal: function() {
+            this.showDeleteModal = true;
+        },
+
+        submitDelete: function() {
+            if (!this.conversationId) return;
+            var self = this;
+            fetch('/api/chats/' + this.conversationId, {
+                method: 'DELETE',
+                headers: {'Accept':'application/json'}
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                self.showDeleteModal = false;
+                self.conversationId = null;
+                self.messages = [];
+                self.chatTitle = '';
+                self.chatProject = null;
+                self.chatProjectName = '';
+                window.dispatchEvent(new CustomEvent('conversationDeleted'));
+                window.history.replaceState({}, '', '/chat');
+            })
+            .catch(function() { alert('Failed to delete chat'); });
         },
 
         sendSurpriseMessage: function() {
