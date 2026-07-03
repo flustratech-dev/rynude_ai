@@ -133,6 +133,18 @@ class ChatStreamingService
             ];
         }
 
+        // Signal completion before dispatching housekeeping jobs: on a sync
+        // queue those dispatches run inline (the title job makes an AI call),
+        // and the client must not keep its loading state up while they run
+        yield [
+            'type' => 'done',
+            'data' => [
+                'message_id' => $assistantMessage->id,
+                'artifact_id' => $artifact ? $artifact->id : null,
+                'stopped' => $stopped,
+            ],
+        ];
+
         // Refresh durable conversation memory if needed
         if ($this->memoryService->shouldRefresh($conversation, count($messages) + 1)) {
             \App\Jobs\RefreshConversationMemory::dispatch($conversation->id, $model);
@@ -150,16 +162,6 @@ class ChatStreamingService
                 );
             }
         }
-
-        // Signal completion
-        yield [
-            'type' => 'done',
-            'data' => [
-                'message_id' => $assistantMessage->id,
-                'artifact_id' => $artifact ? $artifact->id : null,
-                'stopped' => $stopped,
-            ],
-        ];
     }
 
     /**

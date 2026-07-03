@@ -343,7 +343,7 @@
                         {{-- Streaming indicator --}}
                         <div x-show="streaming" x-cloak class="flex justify-start w-full gap-3 md:gap-4 mt-1">
                             <div class="flex-shrink-0 mt-1">
-                                <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757] animate-spin" viewBox="0 0 100 100" fill="currentColor"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
+                                <svg class="w-6 h-6 md:w-7 md:h-7 text-[#D97757]" :class="finalizing ? '' : 'animate-spin'" viewBox="0 0 100 100" fill="currentColor"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z"></path></svg>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div x-show="!streamContent && !thinkingContent" class="mb-1">
@@ -367,7 +367,7 @@
                         </div>
 
                         {{-- Stop button --}}
-                        <div x-show="streaming" x-cloak class="mt-4 flex justify-center w-full">
+                        <div x-show="streaming && !finalizing" x-cloak class="mt-4 flex justify-center w-full">
                             <button @click="stopGeneration()" class="flex items-center gap-2 px-3 py-1.5 bg-claude-bg-light dark:bg-claude-bg-dark border border-claude-border-light dark:border-claude-border-dark rounded-full text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors shadow-sm">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/></svg>
                                 Stop generating
@@ -484,6 +484,7 @@ function chatInterfaceState() {
         contentQueue: '',
         thinkQueue: '',
         streamEnded: false,
+        finalizing: false,
         pumpTimer: null,
         lastThinking: '',
         waitStatus: '',
@@ -611,6 +612,7 @@ function chatInterfaceState() {
                         self.streamContent = '';
                         self.thinkingContent = '';
                         self.streaming = false;
+                        self.finalizing = false;
                     }
                     if (!silent) {
                         self.loading = false;
@@ -637,6 +639,7 @@ function chatInterfaceState() {
                     self.streamContent = '';
                     self.thinkingContent = '';
                     self.streaming = false;
+                    self.finalizing = false;
                 });
         },
 
@@ -695,6 +698,7 @@ function chatInterfaceState() {
             self.contentQueue = '';
             self.thinkQueue = '';
             self.streamEnded = false;
+            self.finalizing = false;
             self.lastThinking = '';
             self.startWaitFeed();
 
@@ -726,8 +730,11 @@ function chatInterfaceState() {
                         if (result.done) {
                             // Let the typewriter pump drain the remaining queued
                             // text before finalizing (finishStream does the rest).
-                            self.streamEnded = true;
-                            self.pumpStream();
+                            // Skip if the 'done' event already kicked it off.
+                            if (!self.finalizing) {
+                                self.streamEnded = true;
+                                self.pumpStream();
+                            }
                             return;
                         }
                         buffer += decoder.decode(result.value, {stream:true});
@@ -771,6 +778,11 @@ function chatInterfaceState() {
                                             // Notify sidebar to reload its recents
                                             window.dispatchEvent(new CustomEvent('conversationCreated', { detail: { id: self.conversationId } }));
                                         }
+                                        // The answer is complete — finalize as soon as the
+                                        // typewriter drains, don't wait for the connection
+                                        // to close (server may still run housekeeping jobs)
+                                        self.streamEnded = true;
+                                        self.pumpStream();
                                     } else if (data.type === 'artifact') {
                                         // Artifact will be attached when loadConversation is called
                                     }
@@ -901,6 +913,9 @@ function chatInterfaceState() {
         finishStream: function() {
             this.streamEnded = false;
             this.sending = false;
+            // Answer is fully visible: hide the spinner and Stop button right
+            // away while the silent reload below swaps in the saved message
+            this.finalizing = true;
             this.stopWaitFeed();
             // Reveal any reasoning still queued in one go — it's secondary to
             // the finished answer and must not delay it
@@ -917,6 +932,7 @@ function chatInterfaceState() {
                 this.loadConversation(this.conversationId, true);
             } else {
                 this.streaming = false;
+                this.finalizing = false;
             }
         },
 

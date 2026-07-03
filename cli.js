@@ -201,10 +201,15 @@ async function run() {
         fs.writeFileSync(path.join(process.cwd(), '.rynude-port'), laravelPort.toString());
     } catch (err) {}
 
+    // Di Mac/Linux proses dijalankan sebagai process group tersendiri agar
+    // shell + php di dalamnya bisa dimatikan sekaligus (setara taskkill /T).
+    const isUnix = os.platform() !== 'win32';
+
     // Menjalankan server di background
     const phpServer = spawn(`php artisan serve --port=${laravelPort}`, {
         stdio: 'ignore',
         shell: true,
+        detached: isUnix,
         env: { ...process.env, PHP_CLI_SERVER_WORKERS: '10' }
     });
 
@@ -214,6 +219,7 @@ async function run() {
     const queueWorker = spawn(`php artisan queue:work --tries=1 --timeout=0`, {
         stdio: 'ignore',
         shell: true,
+        detached: isUnix,
         env: { ...process.env }
     });
 
@@ -235,7 +241,15 @@ async function run() {
                 });
             });
         } else {
-            childProcesses.forEach((proc) => proc.kill('SIGINT'));
+            childProcesses.forEach((proc) => {
+                // PID negatif = bunuh seluruh process group (shell beserta php
+                // artisan serve/queue:work di dalamnya), bukan hanya shell-nya.
+                try {
+                    process.kill(-proc.pid, 'SIGTERM');
+                } catch (e) {
+                    try { proc.kill('SIGTERM'); } catch (e2) {}
+                }
+            });
             process.exit(0);
         }
     };

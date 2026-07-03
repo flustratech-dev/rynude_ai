@@ -119,8 +119,14 @@ Lupakan cara instalasi manual yang menyiksa! Kami telah merancang *Auto-Installe
 ### 📋 Prasyarat Sistem
 Sistem kami kini dilengkapi **Smart Dependency Detection**. Pastikan Anda menginstal komponen berikut, atau biarkan *installer* cerdas kami yang memberitahu Anda apa yang kurang:
 - **PHP** (>= 8.2) & **Composer**
-- **Node.js** & **NPM**
+- **Node.js** (>= 18) & **NPM**
 - **Git**
+
+> [!TIP]
+> **Pengguna macOS:** macOS modern tidak lagi menyertakan PHP bawaan. Semua prasyarat bisa dipasang sekali jalan lewat [Homebrew](https://brew.sh):
+> ```bash
+> brew install php composer node git
+> ```
 
 ### 💻 Mulai Instalasi
 Buka terminal/CMD di mana saja, lalu ketikkan mantra ajaib ini:
