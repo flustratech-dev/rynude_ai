@@ -1,0 +1,12 @@
+[Unit]
+Description=Rynude local server
+After=network.target
+
+[Service]
+WorkingDirectory=__APP_ROOT__
+ExecStart=/bin/bash __APP_ROOT__/scripts/start-server.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

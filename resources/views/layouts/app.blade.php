@@ -4,7 +4,34 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#fdf8f6">
+        <link rel="manifest" href="/manifest.json">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <script>
+            // PWA install: capture Chrome's install prompt so the "Get apps and
+            // extensions" menu item can trigger it directly.
+            window.rynudeInstallPrompt = null;
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                window.rynudeInstallPrompt = e;
+            });
+            window.addEventListener('appinstalled', function () {
+                window.rynudeInstallPrompt = null;
+            });
+            window.installRynudeApp = async function () {
+                if (window.matchMedia('(display-mode: standalone)').matches) return 'installed';
+                var prompt = window.rynudeInstallPrompt;
+                if (!prompt) return 'unavailable';
+                window.rynudeInstallPrompt = null; // a captured event can only prompt once
+                prompt.prompt();
+                var choice = await prompt.userChoice;
+                return choice.outcome; // 'accepted' | 'dismissed'
+            };
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js');
+                });
+            }
+        </script>
         @auth
         <meta name="user-name" content="{{ Auth::user()->name ?? '' }}">
         @endauth

@@ -334,7 +334,13 @@
                             </span>
                         </button>
                         <button
-                            @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } }))"
+                            @click="profileMenuOpen = false; window.installRynudeApp().then(function (result) {
+                                if (result === 'installed') {
+                                    alert('Rynude sudah terinstall di perangkat ini.');
+                                } else if (result === 'unavailable') {
+                                    window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } }));
+                                }
+                            })"
                             class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
                             <span class="flex items-center gap-3">

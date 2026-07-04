@@ -3,8 +3,15 @@
 use App\Http\Controllers\ClaudeCodeController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PwaIconController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
+
+// PWA icons: generated from the logo on first request, no auth (Chrome
+// fetches these without cookies when evaluating manifest installability).
+Route::get('/pwa-icon/{spec}', [PwaIconController::class, 'show'])
+    ->where('spec', '192|512|maskable')
+    ->name('pwa-icon');
 
 Route::get('/', function () {
     // Guests land on the login page; signed-in users go straight to the app.
