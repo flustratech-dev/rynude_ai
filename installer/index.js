@@ -86,6 +86,36 @@ async function checkRequirements() {
     }
 }
 
+// Server/worker Rynude yang masih berjalan terus menulis log & session ke
+// INSTALL_DIR sehingga removeSync gagal ENOTEMPTY di tengah update. Matikan
+// dulu semua prosesnya (best-effort; pola 'artisan serve' perlu ikut dibunuh
+// karena parent-nya me-respawn child php -S bila hanya child yang dimatikan).
+function killRynudeProcesses() {
+    try {
+        if (IS_WINDOWS) {
+            sh('powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name=\'php.exe\'\\" | Where-Object { $_.CommandLine -match \'rynude_ai|artisan serve|queue:work\' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"');
+        } else {
+            for (const pattern of ['\\.rynude_ai', 'artisan serve', 'queue:work']) {
+                try { sh(`pkill -f '${pattern}'`); } catch (e) { /* exit 1 = tidak ada proses, aman */ }
+            }
+        }
+    } catch (e) { /* best-effort */ }
+}
+
+// Hapus folder instalasi lama dengan retry: proses yang baru dimatikan bisa
+// masih sempat menulis file terakhirnya (penyebab ENOTEMPTY).
+async function removeInstallDir() {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            fs.removeSync(INSTALL_DIR);
+            return;
+        } catch (e) {
+            if (attempt >= 5) throw e;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+}
+
 async function run() {
     console.log(chalk.cyan.bold('\n🚀 Selamat datang di Rynude AI Auto-Installer\n'));
 
@@ -115,7 +145,19 @@ async function run() {
         if (fs.existsSync(envPath)) fs.copySync(envPath, path.join(backupDir, '.env'));
         hasBackup = true;
 
-        fs.removeSync(INSTALL_DIR);
+        try {
+            killRynudeProcesses();
+            await removeInstallDir();
+        } catch (e) {
+            spinner.fail('Gagal menghapus instalasi lama.');
+            console.error(chalk.red(`\nFolder ${INSTALL_DIR} tidak bisa dihapus (${e.code || e.message}).`));
+            console.error(chalk.yellow('Kemungkinan server Rynude masih berjalan atau folder sedang dibuka di Finder/Explorer.'));
+            console.error(chalk.yellow('Tutup semua terminal Rynude (atau restart komputer), lalu jalankan lagi:'));
+            console.error(chalk.white('  npx install-rynude@latest'));
+            console.error(chalk.yellow(`Jika masih gagal, hapus manual dengan:  rm -rf ${INSTALL_DIR}  lalu jalankan installer lagi.`));
+            console.error(chalk.green('Tenang: database & konfigurasi Anda sudah dibackup dan akan dipulihkan otomatis.\n'));
+            process.exit(1);
+        }
         spinner.succeed('Data lama dibackup dan siap diupdate.');
     } else if (fs.existsSync(path.join(backupDir, '.env'))) {
         // Jika instalasi sebelumnya gagal di tengah jalan (folder utama sudah terhapus

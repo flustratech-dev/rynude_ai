@@ -154,6 +154,18 @@ function openBrowser(url) {
 
 async function run() {
     console.clear();
+
+    // Instalasi rusak (mis. update yang terputus di tengah jalan) membuat npm/
+    // artisan gagal dengan error ENOENT yang membingungkan. Deteksi lebih awal
+    // dan arahkan user ke installer.
+    if (!fs.existsSync(path.resolve('package.json')) || !fs.existsSync(path.resolve('artisan'))) {
+        console.error(chalk.red.bold('Instalasi Rynude AI tidak lengkap (kemungkinan update yang terputus).'));
+        console.error(chalk.yellow('Perbaiki dengan menjalankan:'));
+        console.error(chalk.white.bold('  npx install-rynude@latest'));
+        console.error(chalk.green('Tenang: data obrolan Anda aman di folder ~/.rynude dan dipulihkan otomatis.\n'));
+        process.exit(1);
+    }
+
     console.log(chalk.gray('Menyiapkan lingkungan Rynude AI...'));
 
     // CRITICAL: Always run npm install to ensure all dependencies (including mermaid) are installed
