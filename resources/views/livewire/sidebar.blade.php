@@ -139,12 +139,15 @@
         </div>
 
         {{-- Products --}}
-        <div class="mt-4 px-2">
+        <div class="mt-4 px-2" x-data="{ productsOpen: true }">
             <div class="px-2 py-1">
-                <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400">Products</span>
+                <button @click="productsOpen = !productsOpen" class="flex items-center gap-1.5 text-[12px] font-medium text-gray-500 dark:text-stone-400 hover:text-gray-700 dark:hover:text-stone-300 transition-colors">
+                    <span>Products</span>
+                    <svg class="w-3 h-3 transition-transform duration-200" :class="productsOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
             
-            <div class="space-y-0.5 mt-0.5">
+            <div x-show="productsOpen" x-collapse.duration.200ms class="space-y-0.5 mt-0.5">
                 <a
                     href="{{ route('code') }}"
                     class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38] group"
