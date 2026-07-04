@@ -197,7 +197,7 @@
                 </button>
             </div>
             
-            <div id="sidebar-recents" class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1">
+            <div id="sidebar-recents" class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1 custom-scrollbar">
                 <template x-for="(items, groupName) in groupedRecents" :key="groupName">
                     <div>
                         <div class="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2 pt-2.5 pb-1 uppercase tracking-wider" x-text="groupName"></div>
