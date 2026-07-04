@@ -6,7 +6,7 @@ APP_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 UNIT_DIR="$HOME/.config/systemd/user"
 
 mkdir -p "$UNIT_DIR"
-chmod +x "$APP_ROOT/scripts/start-server.sh"
+chmod +x "$APP_ROOT/scripts/run-background.sh" "$APP_ROOT/scripts/start-server.sh"
 sed "s|__APP_ROOT__|$APP_ROOT|g" "$APP_ROOT/scripts/linux/rynude.service" > "$UNIT_DIR/rynude.service"
 
 systemctl --user daemon-reload

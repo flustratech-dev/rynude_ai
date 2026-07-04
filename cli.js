@@ -270,8 +270,9 @@ async function run() {
         }
     };
 
-    // Tangkap Ctrl+C
+    // Tangkap Ctrl+C dan sinyal stop dari launchd/systemd (mode background)
     process.on('SIGINT', killServers);
+    process.on('SIGTERM', killServers);
 
     async function showMenu() {
         const workspace = process.env.RYNUDE_WORKSPACE || process.cwd();
@@ -326,13 +327,17 @@ async function run() {
         });
     } else if (isSilent) {
         console.log(chalk.gray('Berjalan di mode silent (Background). Gunakan icon Taskbar untuk menutup.'));
-        
-        // Buka browser otomatis setelah beberapa saat menunggu server PHP siap
-        setTimeout(() => {
-            console.log(chalk.blue('Membuka browser otomatis...'));
-            spawn('cmd', ['/c', 'start', `http://localhost:${laravelPort}`], { stdio: 'ignore' });
-        }, 2000);
-        
+
+        // Buka browser otomatis setelah beberapa saat menunggu server PHP siap.
+        // --no-open dipakai oleh auto-start saat login (launchd/systemd) agar
+        // browser tidak terbuka sendiri setiap komputer dinyalakan.
+        if (!process.argv.includes('--no-open')) {
+            setTimeout(() => {
+                console.log(chalk.blue('Membuka browser otomatis...'));
+                openBrowser(`http://localhost:${laravelPort}`);
+            }, 2000);
+        }
+
         // JANGAN panggil showMenu() agar proses tidak tertahan menunggu input pengguna.
     } else {
         // Tampilkan menu interaktif

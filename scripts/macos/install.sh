@@ -6,7 +6,7 @@ APP_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PLIST="$HOME/Library/LaunchAgents/com.rynude.serve.plist"
 
 mkdir -p "$HOME/Library/LaunchAgents"
-chmod +x "$APP_ROOT/scripts/start-server.sh"
+chmod +x "$APP_ROOT/scripts/run-background.sh" "$APP_ROOT/scripts/start-server.sh"
 sed "s|__APP_ROOT__|$APP_ROOT|g" "$APP_ROOT/scripts/macos/com.rynude.serve.plist" > "$PLIST"
 
 launchctl unload "$PLIST" 2>/dev/null || true

@@ -255,6 +255,36 @@ async function run() {
         console.error(chalk.yellow(`Silakan jalankan setup-global secara manual di folder: ${INSTALL_DIR}`));
     }
 
+    // 6. Auto-start background: setelah login, server langsung jalan tanpa
+    // terminal — user tinggal membuka aplikasi/browser.
+    const bgSpinner = ora('Mengatur mode background (auto-start saat login)...').start();
+    try {
+        if (IS_WINDOWS) {
+            // Shortcut di folder Startup (auto-jalan) + Start Menu, menunjuk ke
+            // tray launcher produk. [char]34 = tanda kutip, menghindari escaping.
+            const ps = [
+                `$vbs = '${INSTALL_DIR}\\Rynude-Launcher.vbs'`,
+                `$icon = '${INSTALL_DIR}\\public\\favicon.ico'`,
+                '$q = [char]34',
+                '$ws = New-Object -ComObject WScript.Shell',
+                "$dirs = @([Environment]::GetFolderPath('Startup'), (Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs'))",
+                "foreach ($d in $dirs) { $l = $ws.CreateShortcut((Join-Path $d 'Rynude.lnk')); $l.TargetPath = 'wscript.exe'; $l.Arguments = ($q + $vbs + $q); $l.IconLocation = $icon; $l.Save() }"
+            ].join('; ');
+            sh(`powershell -NoProfile -Command "${ps}"`);
+            bgSpinner.succeed('Auto-start terpasang: Rynude muncul di system tray setiap login.');
+        } else if (IS_MAC) {
+            sh('bash scripts/macos/install.sh', { cwd: INSTALL_DIR });
+            bgSpinner.succeed('Auto-start terpasang: server jalan di background setiap login (tanpa terminal).');
+        } else {
+            sh('systemctl --user --version'); // tanpa systemd (mis. WSL lama) langkah ini dilewati
+            sh('bash scripts/linux/install.sh', { cwd: INSTALL_DIR });
+            bgSpinner.succeed('Auto-start terpasang: service systemd "rynude" aktif setiap login.');
+        }
+    } catch (e) {
+        bgSpinner.warn('Auto-start background gagal dipasang (opsional — perintah "rynude" tetap bisa dipakai).');
+        console.error(chalk.gray(execDetail(e)));
+    }
+
     console.log(chalk.green.bold('\n🎉 Instalasi Rynude AI Berhasil Selesai!\n'));
 
     if (!IS_WINDOWS) {
@@ -265,7 +295,9 @@ async function run() {
         console.log(`Sekarang Anda tidak perlu lagi masuk ke folder project untuk menjalankan aplikasi.`);
     }
 
-    console.log(`Buka terminal baru dari folder mana saja (misal di Desktop), lalu ketik:`);
+    console.log(`Mulai sekarang server Rynude otomatis jalan di background setiap kali komputer login —`);
+    console.log(`cukup buka aplikasi/browser ke ${chalk.green('http://localhost:8080')}.`);
+    console.log(`Untuk mode interaktif (Terminal UI), buka terminal dari folder mana saja lalu ketik:`);
     console.log(chalk.magenta.bold('  rynude\n'));
 }
 

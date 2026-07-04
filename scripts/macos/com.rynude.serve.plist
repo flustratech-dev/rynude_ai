@@ -7,7 +7,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>__APP_ROOT__/scripts/start-server.sh</string>
+        <string>__APP_ROOT__/scripts/run-background.sh</string>
     </array>
     <key>WorkingDirectory</key>
     <string>__APP_ROOT__</string>

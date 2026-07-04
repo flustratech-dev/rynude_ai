@@ -4,7 +4,8 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$projectDir = "d:\claude-ui-clone"
+# Folder project = folder tempat script ini berada (di mesin user: ~\.rynude_ai)
+$projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $portFile = Join-Path $projectDir ".rynude-port"
 
 # Pastikan kita berada di direktori project

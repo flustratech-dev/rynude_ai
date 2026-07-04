@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=__APP_ROOT__
-ExecStart=/bin/bash __APP_ROOT__/scripts/start-server.sh
+ExecStart=/bin/bash __APP_ROOT__/scripts/run-background.sh
 Restart=on-failure
 RestartSec=3
 
