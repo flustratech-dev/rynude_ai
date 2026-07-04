@@ -189,7 +189,10 @@
         {{-- Recents --}}
         <div class="mt-4 px-2 flex-1 overflow-hidden flex flex-col" x-data="sidebarRecentsState()" x-init="init()">
             <div class="flex items-center justify-between px-2 py-1">
-                <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400">Recents</span>
+                <button @click="recentsOpen = !recentsOpen" class="flex items-center gap-1.5 text-[12px] font-medium text-gray-500 dark:text-stone-400 hover:text-gray-700 dark:hover:text-stone-300 transition-colors">
+                    <span>Recents</span>
+                    <svg class="w-3 h-3 transition-transform duration-200" :class="recentsOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
                 <button @click="activePanel = activePanel === 'chats' ? null : 'chats'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))" class="text-gray-400 dark:text-stone-500 hover:text-gray-600 dark:hover:text-stone-300 transition-colors" title="Manage chats">
                     <svg class="w-[14px] h-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
@@ -197,7 +200,7 @@
                 </button>
             </div>
             
-            <div id="sidebar-recents" class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1 custom-scrollbar">
+            <div id="sidebar-recents" x-show="recentsOpen" x-collapse.duration.200ms class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1 custom-scrollbar">
                 <template x-for="(items, groupName) in groupedRecents" :key="groupName">
                     <div>
                         <div class="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2 pt-2.5 pb-1 uppercase tracking-wider" x-text="groupName"></div>
@@ -632,6 +635,7 @@
 function sidebarRecentsState() {
     return {
         recents: [],
+        recentsOpen: true,
         conversationId: null,
         init() {
             var self = this;
