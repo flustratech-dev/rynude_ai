@@ -356,9 +356,9 @@
                 </div>
             </template>
             <template x-if="!loading && projects.length > 0">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 animate-fade-in">
                     <template x-for="project in projects" :key="project.id">
-                        <div @click="selectProject(project.id)" x-data="{ menuOpen: false }" class="group relative p-5 rounded-2xl bg-white dark:bg-[#2C2A29] border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-500 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md transition-all cursor-pointer">
+                            <div @click="selectProject(project.id)" x-data="{ menuOpen: false }" class="group relative p-2 rounded-xl bg-[#FCFBFA] dark:bg-[#323232] border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-500 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md transition-all cursor-pointer">
 
                             <button @click.stop="starProject(project.id)" class="absolute top-3 right-10 p-1.5 rounded-lg transition-all" :class="project.is_starred ? 'text-[#F5A623]' : 'text-stone-300 dark:text-stone-600 opacity-0 group-hover:opacity-100 hover:text-[#F5A623]'" title="Star">
                                 <svg class="w-4 h-4" :fill="project.is_starred ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
@@ -377,17 +377,17 @@
                                 </button>
                             </div>
 
-                            <div class="mb-4 flex items-start gap-3 pr-14">
-                                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-[20px] shrink-0" :style="'background-color: ' + project.color + '1A'">
+                            <div class="mb-1.5 flex items-start gap-1.5 pr-12">
+                                <div class="w-6 h-6 rounded-lg flex items-center justify-center text-[12px] shrink-0" :style="'background-color: ' + project.color + '1A'">
                                     <span x-text="project.icon"></span>
                                 </div>
                                 <div class="min-w-0">
-                                    <h3 class="text-[15px] font-semibold tracking-tight text-[#1a1a1a] dark:text-stone-200 truncate" x-text="project.name"></h3>
-                                    <p class="text-[12px] text-stone-500 mt-0.5" x-text="'Updated ' + project.created_at"></p>
+                                    <h3 class="text-[12px] font-semibold tracking-tight text-[#1a1a1a] dark:text-stone-200 truncate" x-text="project.name"></h3>
+                                    <p class="text-[11px] text-stone-500 mt-0.5" x-text="'Updated ' + project.created_at"></p>
                                 </div>
                             </div>
-                            <p class="text-[13px] text-stone-600 dark:text-stone-400 line-clamp-2 mb-5 leading-relaxed h-[38px]" x-text="project.description || 'No description provided.'"></p>
-                            <div class="flex items-center gap-1.5 text-[12px] text-stone-500 font-medium">
+                            <p class="text-[12px] text-stone-600 dark:text-stone-400 line-clamp-2 mb-1.5 leading-snug" x-text="project.description || 'No description provided.'"></p>
+                            <div class="flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.566 2.707-3.227V6.741c0-1.602-1.123-2.935-2.707-3.168A48.334 48.334 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.806 2.25 5.14 2.25 6.741v6.018z"/></svg>
                                 <span x-text="project.chat_count + ' ' + (project.chat_count === 1 ? 'chat' : 'chats')"></span>
                             </div>
