@@ -227,33 +227,58 @@
                                             @keydown.enter="submitRename(c.id)"
                                             @keydown.escape="cancelRename()"
                                             @click.stop
-                                            class="w-full px-1.5 py-0.5 text-[13px] bg-white dark:bg-[#323232] border border-[#D97757] rounded focus:outline-none text-[#2D2825] dark:text-stone-200"
+                                             class="w-full px-1.5 py-0.5 text-[13px] bg-white dark:bg-[#323232] border border-stone-300 dark:border-stone-600 rounded text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-0"
                                         >
                                     </div>
                                 </template>
-                                <div class="absolute right-1 hidden group-hover:flex items-center rounded-lg bg-[#EAE9E5] dark:bg-[#2C2C2C]">
+                                <div class="absolute right-1 hidden group-hover:block">
                                     <button
-                                        @click="toggleStar(c)"
-                                        class="p-1 transition-colors"
-                                        :class="c.is_starred ? 'text-[#D97757]' : 'text-gray-400 hover:text-[#D97757]'"
-                                        :title="c.is_starred ? 'Unstar' : 'Star'"
+                                        @click.stop="menuChatId = menuChatId === c.id ? null : c.id"
+                                        class="p-1 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-[#3A3A38] transition-colors"
                                     >
-                                        <svg class="w-3.5 h-3.5" :fill="c.is_starred ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                                     </button>
-                                    <button
-                                        @click="startRename(c)"
-                                        class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-stone-200 transition-colors"
-                                        title="Rename"
-                                    >
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
-                                    </button>
-                                    <button
-                                        @click="confirmDeleteChat(c.id)"
-                                        class="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                        title="Delete"
-                                    >
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
+                                    <div x-show="menuChatId === c.id"
+                                         @click.away="menuChatId = null"
+                                         @keydown.escape="menuChatId = null"
+                                         x-transition:enter="transition ease-out duration-100"
+                                         x-transition:enter-start="opacity-0 scale-95"
+                                         x-transition:enter-end="opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-75"
+                                         x-transition:leave-start="opacity-100 scale-100"
+                                         x-transition:leave-end="opacity-0 scale-95"
+                                         class="absolute right-0 top-full mt-1 z-50 w-44 bg-white dark:bg-[#2C2C2C] border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg py-1 overflow-hidden">
+                                        <button
+                                            @click="toggleStar(c); menuChatId = null"
+                                            class="w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors hover:bg-stone-100 dark:hover:bg-[#3A3A38]"
+                                            :class="c.is_starred ? 'text-[#D97757]' : 'text-stone-600 dark:text-stone-300'"
+                                        >
+                                            <svg class="w-4 h-4" :fill="c.is_starred ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+                                            <span x-text="c.is_starred ? 'Unstar' : 'Star'"></span>
+                                        </button>
+                                        <button
+                                            @click="startRename(c); menuChatId = null"
+                                            class="w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                                            <span>Rename</span>
+                                        </button>
+                                        <button
+                                            @click="openProjectModal(c); menuChatId = null"
+                                            class="w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                            <span x-text="c.project_id ? 'Change project' : 'Add to project'"></span>
+                                        </button>
+                                        <div class="h-px bg-stone-200 dark:bg-stone-700 my-1"></div>
+                                        <button
+                                            @click="confirmDeleteChat(c.id); menuChatId = null"
+                                            class="w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -262,6 +287,51 @@
                 <div x-show="recents.length === 0" class="px-2 py-2 text-[13px] text-gray-400 dark:text-stone-500">No recent chats</div>
             </div>
         </div>
+
+        {{-- Add to Project Modal --}}
+        <template x-if="showProjectModal">
+            <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showProjectModal = false"></div>
+                <div class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl p-5">
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="w-9 h-9 rounded-xl bg-[#D97757]/10 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-[15px] font-semibold text-stone-800 dark:text-stone-100">Add to project</h3>
+                            <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mt-0.5">Select a project for this conversation</p>
+                        </div>
+                        <button type="button" @click="showProjectModal = false" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="max-h-[300px] overflow-y-auto space-y-1">
+                        <template x-if="availableProjects.length === 0">
+                            <div class="text-center py-8 text-stone-500 dark:text-stone-400 text-[13px]">
+                                <p>No projects available</p>
+                                <p class="mt-1">Create a project first</p>
+                            </div>
+                        </template>
+                        <template x-for="proj in availableProjects" :key="proj.id">
+                            <button type="button" @click="selectedProjectId = proj.id" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-3" :class="selectedProjectId === proj.id ? 'bg-stone-100 dark:bg-[#3A3A38]' : ''">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-[13.5px] font-medium text-stone-800 dark:text-stone-200 truncate" x-text="proj.name"></div>
+                                    <div class="text-[12px] text-stone-500 dark:text-stone-400 truncate" x-text="proj.description || 'No description'"></div>
+                                </div>
+                                <svg x-show="selectedProjectId === proj.id" class="w-4 h-4 text-[#D97757] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                            </button>
+                        </template>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-stone-200 dark:border-stone-700">
+                        <button type="button" @click="removeFromProject()" x-show="projectChatProject" class="text-[13px] font-medium text-stone-500 hover:text-red-500 transition-colors px-2 py-1.5">Remove from project</button>
+                        <div class="flex items-center gap-2" :class="!projectChatProject ? 'ml-auto' : ''">
+                            <button type="button" @click="showProjectModal = false" class="text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] rounded-lg px-3 py-1.5 transition-colors">Cancel</button>
+                            <button type="button" @click="submitAddToProject()" :disabled="!selectedProjectId" class="text-[13px] font-medium text-white bg-[#D97757] hover:bg-[#c96646] rounded-lg px-3.5 py-1.5 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
 
         {{-- Bottom Profile --}}
         <div class="border-t border-claude-border-light dark:border-claude-border-dark px-2 py-2 relative bg-[#F9F8F6] dark:bg-claude-bg-dark">
@@ -657,6 +727,12 @@ function sidebarRecentsState() {
         conversationId: null,
         editingChatId: null,
         editingTitle: '',
+        menuChatId: null,
+        showProjectModal: false,
+        availableProjects: [],
+        selectedProjectId: null,
+        projectChatId: null,
+        projectChatProject: null,
         init() {
             var self = this;
             this.loadRecents();
@@ -758,6 +834,54 @@ function sidebarRecentsState() {
                     window.history.pushState({}, '', '/chat');
                 }
             });
+        },
+        openProjectModal(c) {
+            this.projectChatId = c.id;
+            this.projectChatProject = c.project_id || null;
+            this.selectedProjectId = c.project_id || null;
+            this.showProjectModal = true;
+            this.loadProjects();
+        },
+        loadProjects() {
+            var self = this;
+            fetch('/api/projects', {headers:{'Accept':'application/json'}})
+                .then(function(r){return r.json()})
+                .then(function(resp){
+                    self.availableProjects = resp.data || [];
+                })
+                .catch(function(){});
+        },
+        submitAddToProject() {
+            if (!this.projectChatId || !this.selectedProjectId) return;
+            var self = this;
+            fetch('/api/chats/' + this.projectChatId, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ project_id: this.selectedProjectId })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                self.showProjectModal = false;
+                self.loadRecents();
+                window.dispatchEvent(new CustomEvent('conversationUpdated'));
+            })
+            .catch(function() { showAlert('Failed to add chat to project', 'error'); });
+        },
+        removeFromProject() {
+            if (!this.projectChatId) return;
+            var self = this;
+            fetch('/api/chats/' + this.projectChatId, {
+                method: 'PATCH',
+                headers: {'Content-Type':'application/json','Accept':'application/json'},
+                body: JSON.stringify({ project_id: null })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function() {
+                self.showProjectModal = false;
+                self.loadRecents();
+                window.dispatchEvent(new CustomEvent('conversationUpdated'));
+            })
+            .catch(function() { showAlert('Failed to remove chat from project', 'error'); });
         },
         get groupedRecents() {
             var groups = {};
