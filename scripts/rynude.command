@@ -8,7 +8,8 @@ if [ -f ~/.zshrc ]; then
 fi
 export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin:~/.nvm/versions/node/*/bin
 
-cd "$(dirname "$0")"
+# Script ini ada di <project>/scripts, jadi naik satu tingkat ke root project
+cd "$(dirname "$0")/.."
 echo "========================================================"
 echo "Memulai Rynude AI (Laravel + Vite)..."
 echo "========================================================"

@@ -3,8 +3,9 @@ echo ========================================================
 echo Memasang perintah global 'rynude' untuk Windows...
 echo ========================================================
 
-:: Mendapatkan path lokasi folder project ini secara otomatis
-set "TARGET_DIR=%~dp0"
+:: Script ini ada di <project>\scripts, jadi folder project = satu tingkat di atasnya.
+:: Resolusi ke path absolut lewat FOR agar tidak mengandung "..".
+for %%I in ("%~dp0..") do set "TARGET_DIR=%%~fI"
 
 :: Menggunakan folder npm bawaan karena pasti sudah masuk ke system PATH pengguna yang menginstal NodeJS
 set "NPM_BIN=%APPDATA%\npm"

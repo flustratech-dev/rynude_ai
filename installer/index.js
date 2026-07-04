@@ -242,11 +242,11 @@ async function run() {
     const globalSpinner = ora('Mengatur global command (rynude)...').start();
     try {
         if (IS_WINDOWS) {
-            sh('cmd.exe /c setup-global.bat', { cwd: INSTALL_DIR });
+            sh('cmd.exe /c scripts\\setup-global.bat', { cwd: INSTALL_DIR });
         } else {
             // setup-global.sh memasang wrapper di ~/.local/bin, membuat file rc
             // bila belum ada (macOS baru tidak punya ~/.zshrc), dan mengatur PATH.
-            sh('bash setup-global.sh', { cwd: INSTALL_DIR });
+            sh('bash scripts/setup-global.sh', { cwd: INSTALL_DIR });
         }
         globalSpinner.succeed('Global command berhasil diatur.');
     } catch (e) {
@@ -263,7 +263,7 @@ async function run() {
             // Shortcut di folder Startup (auto-jalan) + Start Menu, menunjuk ke
             // tray launcher produk. [char]34 = tanda kutip, menghindari escaping.
             const ps = [
-                `$vbs = '${INSTALL_DIR}\\Rynude-Launcher.vbs'`,
+                `$vbs = '${INSTALL_DIR}\\scripts\\Rynude-Launcher.vbs'`,
                 `$icon = '${INSTALL_DIR}\\public\\favicon.ico'`,
                 '$q = [char]34',
                 '$ws = New-Object -ComObject WScript.Shell',

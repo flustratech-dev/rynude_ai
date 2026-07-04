@@ -4,8 +4,10 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# Folder project = folder tempat script ini berada (di mesin user: ~\.rynude_ai)
-$projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Script ini ada di <project>\scripts, jadi folder project = satu tingkat di atasnya
+# (di mesin user: ~\.rynude_ai). cli.js, package.json, dan .rynude-port ada di sana.
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectDir = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $portFile = Join-Path $projectDir ".rynude-port"
 
 # Pastikan kita berada di direktori project

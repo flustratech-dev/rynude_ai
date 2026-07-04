@@ -3,7 +3,8 @@ echo "========================================================"
 echo "Memasang perintah global 'rynude' untuk Mac/Linux..."
 echo "========================================================"
 
-TARGET_DIR="$(pwd)"
+# Script ini ada di <project>/scripts, jadi folder project = satu tingkat di atasnya.
+TARGET_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
 
@@ -44,7 +45,7 @@ done
 
 # Izin executable hilang saat repo di-commit dari Windows — pulihkan di sini
 # agar rynude.command bisa dibuka lewat double-click di Finder.
-chmod +x "$TARGET_DIR/rynude.command" "$TARGET_DIR/setup-global.sh" 2>/dev/null
+chmod +x "$TARGET_DIR/scripts/rynude.command" "$TARGET_DIR/scripts/setup-global.sh" 2>/dev/null
 
 echo ""
 echo "Berhasil! Perintah 'rynude' dan 'rynudecode' terpasang di $BIN_DIR."
