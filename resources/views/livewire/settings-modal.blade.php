@@ -41,7 +41,7 @@
             </div>
 
             {{-- Main content --}}
-            <div class="flex-1 bg-claude-bg-light dark:bg-claude-bg-dark p-6 md:p-10 overflow-y-auto relative">
+            <div class="flex-1 bg-claude-bg-light dark:bg-claude-bg-dark p-6 md:p-10 overflow-y-auto custom-scrollbar relative">
                 <button @click="open = false" class="absolute top-6 right-6 z-10 p-1.5 rounded-lg text-gray-500 dark:text-stone-400 hover:text-gray-800 dark:hover:text-stone-200 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>

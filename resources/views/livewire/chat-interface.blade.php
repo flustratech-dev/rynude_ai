@@ -375,7 +375,7 @@
 
     {{-- Active Chat --}}
     <template x-if="conversationId || messages.length > 0">
-        <div class="flex flex-col flex-1 overflow-hidden relative">
+        <div class="flex flex-col flex-1 min-h-0 relative">
             {{-- Floating conversation-memory button (Claude-style, top-right) --}}
             <div class="absolute top-3 right-3 z-40">
                 <button @click="openMemory()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/80 dark:bg-[#3A3A38]/80 backdrop-blur-sm border border-claude-border-light dark:border-claude-border-dark rounded-full text-[12.5px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[#3A3A38] shadow-sm transition-colors" title="Conversation memory">
@@ -433,7 +433,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto" x-ref="messagesContainer" id="chat-scroll-container">
+            <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar" x-ref="messagesContainer" id="chat-scroll-container">
                 <div class="mx-auto w-full py-4 md:py-6 px-3 md:px-4" style="max-width: 880px;">
                     <div class="space-y-1">
                         <template x-for="(msg, idx) in messages" :key="'msg-' + idx">

@@ -178,7 +178,7 @@
                 </svg>
             </button>
         </div>
-        <div class="flex-1 flex overflow-hidden relative">
+        <div class="flex-1 flex relative">
             <div class="flex-1 flex flex-col min-w-0 relative">
                 <!-- SPA Pre-mounted panels managed by AlpineJS -->
                 <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
