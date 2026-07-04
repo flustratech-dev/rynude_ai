@@ -48,46 +48,51 @@
              x-transition:leave="ease-in duration-150"
              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
              x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-             class="bg-white dark:bg-[#1C1C1C] rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            
-            <!-- Icon -->
-            <div class="pt-7 pb-1 px-6 text-center">
+             class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl p-5">
+
+            <!-- Icon + Title + Message row -->
+            <div class="flex items-start gap-3 mb-4">
                 <template x-if="type === 'error'">
-                    <div class="mx-auto w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-3">
-                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </div>
                 </template>
                 <template x-if="type === 'success'">
-                    <div class="mx-auto w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-3">
-                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
                 </template>
                 <template x-if="type === 'warning'">
-                    <div class="mx-auto w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
-                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L2.12 19.86A1 1 0 003 21h18a1 1 0 00.88-1.14L13.71 3.86a1 1 0 00-1.72 0z"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L2.12 19.86A1 1 0 003 21h18a1 1 0 00.88-1.14L13.71 3.86a1 1 0 00-1.72 0z"/></svg>
                     </div>
                 </template>
                 <template x-if="!type || type === 'info'">
-                    <div class="mx-auto w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
-                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 110 20 10 10 0 010-20z"/></svg>
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 110 20 10 10 0 010-20z"/></svg>
                     </div>
                 </template>
 
-                <h3 class="text-[15px] font-semibold text-[#2D2825] dark:text-stone-200" x-text="title"></h3>
-                <p class="mt-1.5 text-[13px] text-gray-600 dark:text-stone-400 leading-relaxed" x-text="message"></p>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-[15px] font-semibold text-stone-800 dark:text-stone-100" x-text="title"></h3>
+                    <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mt-0.5" x-text="message"></p>
+                </div>
+
+                <button type="button" @click="close(false)" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-colors shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
 
             <!-- Buttons -->
-            <div class="px-6 pb-6 pt-4 flex gap-2 justify-center">
+            <div class="flex items-center justify-end gap-2 mt-4">
                 <template x-if="confirming">
-                    <button @click="close(false)" type="button"
-                            class="px-4 py-2 text-[13px] font-medium text-gray-700 dark:text-stone-300 bg-white dark:bg-transparent border border-gray-300 dark:border-stone-600 rounded-xl hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors">
+                    <button @click="close(false)" type="button" class="text-[13px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#3A3A38] rounded-lg px-3 py-1.5 transition-colors">
                         Cancel
                     </button>
                 </template>
                 <button @click="close(true)" type="button"
-                        class="px-5 py-2 text-[13px] font-medium text-white rounded-xl transition-colors"
-                        :class="type === 'error' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#D97757] hover:bg-[#c56647]'"
+                        class="text-[13px] font-medium text-white rounded-lg px-3.5 py-1.5 transition-colors shadow-sm"
+                        :class="type === 'error' ? 'bg-red-500 hover:bg-red-600' : 'bg-[#D97757] hover:bg-[#c56647]'"
                         x-text="confirming ? 'Confirm' : 'OK'">
                 </button>
             </div>
