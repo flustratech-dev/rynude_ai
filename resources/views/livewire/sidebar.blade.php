@@ -174,10 +174,9 @@
                     <span>Cowork</span>
                 </button>
 
-                <button
-                    @click="activePanel = activePanel === 'design' ? null : 'design'; window.dispatchEvent(new CustomEvent('close-artifact-panel'))"
-                    class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 group"
-                    :class="activePanel === 'design' ? 'bg-claude-200 dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200 font-medium' : 'text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]'"
+                <a
+                    href="{{ route('design') }}"
+                    class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path class="design-palette" d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>
@@ -187,7 +186,8 @@
                         <circle class="design-dot-4" cx="17.5" cy="10.5" r="1.5"/>
                     </svg>
                     <span>Design</span>
-                </button>
+                    <svg class="external-link-icon w-3.5 h-3.5 ml-auto -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                </a>
             </div>
         </div>
 
@@ -262,39 +262,39 @@
                         x-transition:leave-start="opacity-100 translate-y-0"
                         x-transition:leave-end="opacity-0 translate-y-1"
                         @click.away="profileMenuOpen = false"
-                        class="absolute bottom-full left-2 right-2 mb-2 w-auto max-h-[60vh] overflow-y-auto overflow-x-hidden custom-scrollbar bg-white dark:bg-[#2C2C2C] border border-gray-200 dark:border-stone-700 rounded-2xl shadow-lg z-50 py-2"
+                        class="absolute bottom-full left-2 right-2 mb-2 w-auto max-h-[60vh] overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#FCFBFA] dark:bg-[#2C2C2C] border border-gray-200 dark:border-stone-700 rounded-xl shadow-lg z-50 py-0.5"
                         style="display: none;"
                     >
-                        <div class="text-sm text-gray-500 dark:text-stone-400 font-medium px-4 py-2 mb-1">
+                        <div class="text-[11px] text-gray-500 dark:text-stone-400 font-medium px-2.5 py-1 mb-0">
                             {{ auth()->user()->email }}
                         </div>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'general' }));"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
-                            <span class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
                                 <span>Settings</span>
                             </span>
-                            <span class="text-xs text-gray-400 font-light">Ctrl ⇧ ,</span>
+                            <span class="text-[10px] text-gray-400 font-light">Ctrl ⇧ ,</span>
                         </button>
                         <div x-data="{ languageOpen: false, currentLang: localStorage.getItem('rynude_lang') || 'English' }" class="relative">
                             <button
                                 @click="languageOpen = !languageOpen"
-                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                                class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                             >
-                                <span class="flex items-center gap-3">
-                                    <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"/>
                                     </svg>
                                     <span>Language</span>
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="text-xs text-gray-400 dark:text-stone-500" x-text="currentLang"></span>
-                                    <svg class="w-4 h-4 text-gray-400 dark:text-stone-500 transition-transform duration-200" :class="languageOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <span class="text-[10px] text-gray-400 dark:text-stone-500" x-text="currentLang"></span>
+                                    <svg class="w-3 h-3 text-gray-400 dark:text-stone-500 transition-transform duration-200" :class="languageOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                                     </svg>
                                 </span>
@@ -305,37 +305,37 @@
                                 x-transition:enter="transition ease-out duration-150"
                                 x-transition:enter-start="opacity-0 -translate-y-1"
                                 x-transition:enter-end="opacity-100 translate-y-0"
-                                class="pl-8 pr-4 pb-1 space-y-0.5"
+                                class="pl-7 pr-3 pb-0.5 space-y-[1px]"
                             >
                                 <template x-for="lang in ['English', 'Bahasa Indonesia']" :key="lang">
                                     <button
                                         @click="currentLang = lang; localStorage.setItem('rynude_lang', lang); languageOpen = false"
-                                        class="flex items-center justify-between w-full px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors"
+                                        class="flex items-center justify-between w-full px-2 py-1.5 text-[12px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-md transition-colors"
                                     >
                                         <span x-text="lang"></span>
-                                        <svg x-show="currentLang === lang" class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                        <svg x-show="currentLang === lang" class="w-3 h-3 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                                     </button>
                                 </template>
                             </div>
                         </div>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'help' } }))"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
-                            <span class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
                                 </svg>
                                 <span>Get help</span>
                             </span>
                         </button>
-                        <div class="border-t border-gray-100 dark:border-stone-800 my-1"></div>
+                        <div class="border-t border-gray-100 dark:border-stone-800 my-0.5"></div>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-settings-ui', { detail: 'billing' }));"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
-                            <span class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
                                 </svg>
                                 <span>Upgrade plan</span>
@@ -349,10 +349,10 @@
                                     window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } }));
                                 }
                             })"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
-                            <span class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
                                 </svg>
                                 <span>Get apps and extensions</span>
@@ -360,10 +360,10 @@
                         </button>
                         <button
                             @click="profileMenuOpen = false; window.dispatchEvent(new CustomEvent('open-system-update'))"
-                            class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                            class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                         >
-                            <span class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                                 </svg>
                                 <span>Check for updates</span>
@@ -374,15 +374,15 @@
                         <div x-data="{ learnMoreOpen: false }" class="relative">
                             <button
                                 @click="learnMoreOpen = !learnMoreOpen"
-                                class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
+                                class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 dark:text-stone-300 hover:bg-[#F9F8F6] dark:hover:bg-[#3A3A38] cursor-pointer transition-colors"
                             >
-                                <span class="flex items-center gap-3">
-                                    <svg class="w-4 h-4 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-gray-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
                                     </svg>
                                     <span>Learn more</span>
                                 </span>
-                                <svg class="w-4 h-4 text-gray-400 dark:text-stone-500 transition-transform duration-200" :class="learnMoreOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <svg class="w-3 h-3 text-gray-400 dark:text-stone-500 transition-transform duration-200" :class="learnMoreOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
                                 </svg>
                             </button>
@@ -395,10 +395,10 @@
                                 x-transition:leave="transition ease-in duration-100"
                                 x-transition:leave-start="opacity-100 translate-y-0"
                                 x-transition:leave-end="opacity-0 -translate-y-1"
-                                class="pl-8 pr-4 pb-1 space-y-0.5"
+                                class="pl-7 pr-3 pb-0.5 space-y-[1px]"
                             >
-                                <a href="https://docs.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <a href="https://docs.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-1.5 px-2 py-1 text-[11px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-md transition-colors">
+                                    <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                                     </svg>
                                     <span>Documentation</span>
@@ -406,8 +406,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
                                     </svg>
                                 </a>
-                                <a href="https://anthropic.com/blog" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <a href="https://anthropic.com/blog" target="_blank" rel="noopener" class="flex items-center gap-1.5 px-2 py-1 text-[11px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-md transition-colors">
+                                    <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5"/>
                                     </svg>
                                     <span>Blog</span>
@@ -415,8 +415,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
                                     </svg>
                                 </a>
-                                <a href="https://status.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-lg transition-colors">
-                                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <a href="https://status.anthropic.com" target="_blank" rel="noopener" class="flex items-center gap-1.5 px-2 py-1 text-[11px] text-gray-600 dark:text-stone-300 hover:bg-[#F3F3F3] dark:hover:bg-[#3A3A38] rounded-md transition-colors">
+                                    <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6"/>
                                     </svg>
                                     <span>System Status</span>
@@ -427,12 +427,12 @@
                             </div>
                         </div>
 
-                        <div class="border-t border-gray-100 dark:border-stone-800 my-1"></div>
+                        <div class="border-t border-gray-100 dark:border-stone-800 my-0.5"></div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-[#F9F8F6] cursor-pointer transition-colors">
-                                <span class="flex items-center gap-3">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <button type="submit" class="flex items-center justify-between w-full px-2.5 py-1.5 text-[12px] text-gray-700 hover:bg-[#F9F8F6] cursor-pointer transition-colors">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
                                     </svg>
                                     <span>Log out</span>
@@ -594,10 +594,9 @@
             </svg>
         </button>
 
-        <button
-            @click="activePanel = activePanel === 'design' ? null : 'design'"
-            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center group"
-            :class="activePanel === 'design' ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-[#2D2825] dark:text-stone-200' : 'text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200'"
+        <a
+            href="{{ route('design') }}"
+            class="p-2 rounded-lg transition-colors w-full flex items-center justify-center text-gray-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-stone-800/50 hover:text-[#2D2825] dark:hover:text-stone-200 group"
             title="Design"
         >
             <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -607,7 +606,7 @@
                 <circle class="design-dot-3" cx="14.5" cy="6.5" r="1.5"/>
                 <circle class="design-dot-4" cx="17.5" cy="10.5" r="1.5"/>
             </svg>
-        </button>
+        </a>
 
         <div class="flex-1"></div>
 

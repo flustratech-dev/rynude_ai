@@ -49,8 +49,8 @@
                 <div class="flex items-center gap-1.5">
                     <template x-if="currentArtifact.language !== 'new'">
                         <div class="flex items-center gap-1.5">
-                            <div x-show="downloading" class="flex items-center gap-1.5 px-2 text-[12px] text-[#D97757]">
-                                <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                            <div x-show="downloading" class="flex items-center gap-1.5 px-2 text-[12px] text-[#FCFBFA]">
+                                <img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="w-3.5 h-3.5 animate-spin object-contain">
                                 <span>Generating…</span>
                             </div>
                             <button @click="copyCode()" class="p-1.5 hover:bg-[#F3F2F1] dark:hover:bg-stone-700 rounded-md transition-colors text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-300" title="Copy code">
@@ -143,7 +143,7 @@
                                             <div x-ref="container" class="relative w-full max-w-[210mm] flex flex-col items-center gap-6">
                                                 {{-- Loading Spinner --}}
                                                 <div x-show="loading" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-stone-900/80 z-10">
-                                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D97757]"></div>
+                                                    <img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-8 h-8 object-contain">
                                                 </div>
                                                 {{-- Error Message --}}
                                                 <div x-show="error" class="p-6 bg-red-50 text-red-600 rounded-lg shadow-sm border border-red-200 mt-8">
@@ -201,7 +201,7 @@
                 </div>
 
                 <template x-if="loading">
-                    <div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></path></svg></div>
+                    <div class="flex items-center justify-center py-12"><img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-8 h-8 object-contain"></div>
                 </template>
                 <template x-if="!loading && artifacts.length > 0">
                     <div class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pb-12">

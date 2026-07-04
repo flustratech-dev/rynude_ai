@@ -209,7 +209,7 @@
 
                             <div x-show="uploading" class="w-full text-center py-4">
                                 <div class="flex flex-col items-center justify-center">
-                                    <svg class="animate-spin w-6 h-6 text-[#D97757] mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    <img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-6 h-6 object-contain mb-2">
                                     <span class="text-[13px] font-medium text-stone-600 dark:text-stone-300">Uploading...</span>
                                     <span class="text-[11px] text-stone-400 mt-0.5">Large files may take a moment</span>
                                 </div>
@@ -341,7 +341,7 @@
             </template>
 
             <template x-if="loading">
-                <div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></path></svg></div>
+                <div class="flex items-center justify-center py-12"><img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-8 h-8 object-contain"></div>
             </template>
             <template x-if="!loading && !showCreateForm && projects.length === 0">
                 <div class="flex flex-col items-center justify-center flex-1 text-center py-12 animate-fade-in">

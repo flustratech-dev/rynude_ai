@@ -69,7 +69,7 @@
                 </div>
 
                 <template x-if="loading">
-                    <div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></path></svg></div>
+                    <div class="flex items-center justify-center py-12"><img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-8 h-8 object-contain"></div>
                 </template>
                 <template x-if="!loading && tasks.length === 0">
                     <div class="bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl py-14 flex flex-col items-center justify-center text-center shadow-sm">

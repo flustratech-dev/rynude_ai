@@ -66,7 +66,12 @@ class DesignApiController extends Controller
         $validated = $request->validate([
             'type' => ['required', 'string', Rule::in(array_keys(self::TYPES))],
             'prompt' => ['required', 'string', 'max:2000'],
+            'model' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
+
+        // The composer sends the model chosen in the picker; fall back to the
+        // fast default when absent so older callers keep working.
+        $model = $validated['model'] ?? 'claude-haiku-4-5';
 
         $design = Design::create([
             'user_id' => Auth::id(),
@@ -84,7 +89,7 @@ class DesignApiController extends Controller
             foreach ($ai->streamResponse([
                 ['role' => 'system', 'content' => $system],
                 ['role' => 'user', 'content' => $design->prompt],
-            ], 'claude-haiku-4-5') as $chunk) {
+            ], $model) as $chunk) {
                 if (!is_string($chunk)) continue; // skip structured thinking deltas
                 $output .= $chunk;
             }

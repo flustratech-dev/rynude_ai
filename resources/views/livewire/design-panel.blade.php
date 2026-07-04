@@ -67,13 +67,15 @@
         </template>
 
         {{-- Hero heading --}}
-        <h1 class="font-serif text-[42px] leading-tight font-semibold text-center text-[#2D2825] dark:text-stone-100 mt-4">What will you design today?</h1>
+        <h1 class="font-claude-response text-center text-[#2D2825] dark:text-[#E8E8E6] mt-4" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif; font-size: 42px; font-weight: 300; line-height: 1.2; letter-spacing: -0.01em;">What will you design today?</h1>
 
         {{-- Prompt composer --}}
-        <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl shadow-sm px-5 pt-4 pb-3">
-            <textarea x-model="heroPrompt" rows="2" @keydown.enter.prevent="generateFromHero()"
+        <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl shadow-sm px-5 pt-4 pb-3 transition-all duration-200 focus-within:shadow-lg focus-within:border-stone-300 dark:focus-within:border-stone-600">
+            <textarea x-ref="heroInput" x-model="heroPrompt" rows="2"
+                @input="autoResize($event)"
+                @keydown.enter="if(!$event.shiftKey){$event.preventDefault(); generateFromHero()}"
                 placeholder="Sketch a landing page layout"
-                class="w-full bg-transparent border-0 focus:outline-none resize-none text-[15px] text-stone-800 dark:text-stone-200 placeholder-stone-400 leading-relaxed"></textarea>
+                class="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-[15px] text-stone-800 dark:text-stone-200 placeholder-stone-400 leading-relaxed max-h-48 overflow-y-auto"></textarea>
 
             <div class="flex items-center gap-2 mt-2">
                 <button @click="openDialog('blank')" class="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E5E5E5] dark:border-stone-700 text-stone-500 hover:border-[#D97757] hover:text-[#D97757] transition-colors" title="New">
@@ -87,11 +89,22 @@
                     <span class="text-[12.5px] font-medium text-[#2D2825] dark:text-stone-200">None</span>
                 </div>
 
-                <div class="px-3 py-1.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 flex flex-col leading-tight cursor-default">
-                    <span class="text-[10px] text-stone-400 flex items-center gap-1">Template
-                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    </span>
-                    <span class="text-[12.5px] font-medium text-[#2D2825] dark:text-stone-200">None</span>
+                {{-- Template (design type) selector --}}
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" type="button" class="px-3 py-1.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 flex flex-col leading-tight text-left hover:border-[#D97757] transition-colors">
+                        <span class="text-[10px] text-stone-400 flex items-center gap-1">Template
+                            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                        <span class="text-[12.5px] font-medium text-[#2D2825] dark:text-stone-200" x-text="designTypes[selectedType]?.label || 'None'"></span>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-cloak class="absolute top-full left-0 mt-2 w-[200px] bg-white dark:bg-[#2C2C2A] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-50 py-1.5">
+                        <template x-for="(meta, type) in designTypes" :key="'tpl-'+type">
+                            <button @click="selectedType = type; open = false" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between">
+                                <span class="text-[13px] text-stone-800 dark:text-stone-200" x-text="meta.label"></span>
+                                <svg x-show="selectedType === type" class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
                 <button class="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E5E5E5] dark:border-stone-700 text-stone-500 hover:border-[#D97757] hover:text-[#D97757] transition-colors" title="Code">
@@ -100,14 +113,49 @@
 
                 <div class="flex-1"></div>
 
-                <div class="px-3 py-1.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 flex flex-col leading-tight cursor-default">
-                    <span class="text-[10px] text-stone-400 flex items-center gap-1">Model
-                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    </span>
-                    <span class="text-[12.5px] font-medium text-[#2D2825] dark:text-stone-200">Rynude Sonnet 4.6</span>
+                {{-- Model selector — real models, same source as the chat composer --}}
+                <div x-data="{ open: false, subOpen: false, closeTimer: null }" class="relative">
+                    <button @click="open = !open" type="button" class="px-3 py-1.5 rounded-lg border border-[#E5E5E5] dark:border-stone-700 flex flex-col leading-tight text-left hover:border-[#D97757] transition-colors">
+                        <span class="text-[10px] text-stone-400 flex items-center gap-1">Model
+                            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </span>
+                        <span class="text-[12.5px] font-medium text-[#2D2825] dark:text-stone-200 max-w-[140px] truncate" x-text="selectedModelName"></span>
+                    </button>
+                    <div x-show="open" @click.away="open = false; subOpen = false" x-cloak class="absolute top-full right-0 mt-2 w-[240px] bg-white dark:bg-[#2C2C2A] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-50 py-1.5">
+                        <template x-for="m in models" :key="m.code">
+                            <button @click="if(m.is_available){selectedModel=m.code; open=false}" type="button"
+                                class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group"
+                                :class="!m.is_available?'opacity-50 cursor-not-allowed':''" :disabled="!m.is_available">
+                                <div>
+                                    <div class="text-[13px] text-stone-800 dark:text-stone-200" x-text="m.name"></div>
+                                    <div class="text-[12px] text-stone-400 dark:text-stone-500" x-text="m.description"></div>
+                                </div>
+                                <svg x-show="selectedModel===m.code" class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            </button>
+                        </template>
+                        <template x-if="moreModels.length > 0">
+                            <div>
+                                <div class="h-px bg-[#E5E5E5] dark:bg-stone-700 mx-3 my-1.5"></div>
+                                <div class="relative" @mouseenter="clearTimeout(closeTimer); subOpen = true" @mouseleave="closeTimer = setTimeout(() => { subOpen = false }, 250)">
+                                    <button type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group">
+                                        <span class="text-[13px] text-stone-800 dark:text-stone-200">More models</span>
+                                        <svg class="w-4 h-4 text-stone-400 group-hover:text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                    <div x-show="subOpen" x-cloak class="absolute right-full -mr-1 bottom-[-8px] w-[200px] bg-white dark:bg-[#2C2C2A] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] py-1.5 z-50 max-h-[300px] overflow-y-auto">
+                                        <template x-for="m in moreModels" :key="'more-'+m.code">
+                                            <button @click="if(m.is_available){selectedModel=m.code; open=false; subOpen=false}" type="button" class="w-full text-left px-3 py-1.5 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center justify-between group" :class="!m.is_available?'opacity-50 cursor-not-allowed':''" :disabled="!m.is_available">
+                                                <span class="text-[13px] text-stone-800 dark:text-stone-200" x-text="m.name"></span>
+                                                <svg x-show="selectedModel === m.code" class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
-                <button @click="generateFromHero()" :disabled="generating" class="w-9 h-9 flex items-center justify-center rounded-lg bg-[#E9BBA7] hover:bg-[#D97757] text-white transition-colors disabled:opacity-60" title="Generate">
+                <button @click="generateFromHero()" :disabled="generating || !heroPrompt.trim()" class="w-9 h-9 flex items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed" :class="(generating || !heroPrompt.trim()) ? 'bg-[#E9BBA7]/60 text-white/80' : 'bg-[#D97757] text-white hover:bg-[#c56647]'" title="Generate">
                     <svg x-show="!generating" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
                     <svg x-show="generating" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                 </button>
@@ -170,7 +218,7 @@
             </div>
 
             <template x-if="loading">
-                <div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></div>
+                <div class="flex items-center justify-center py-12"><img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-8 h-8 object-contain"></div>
             </template>
 
             <template x-if="!loading && designs.length === 0">
@@ -342,8 +390,49 @@ function designPanelState() {
         generating: false,
         viewing: null,
 
+        // Composer state — mirrors the chat interface's model picker so the two
+        // stay in sync (shared localStorage keys) and use the same /api/settings.
+        selectedType: 'prototype',
+        selectedModel: localStorage.getItem('rynude_selected_model') || 'claude-haiku-4-5',
+        models: JSON.parse(localStorage.getItem('rynude_models_cache') || '[]'),
+        moreModels: JSON.parse(localStorage.getItem('rynude_more_models_cache') || '[]'),
+
+        get selectedModelName() {
+            var all = this.models.concat(this.moreModels);
+            var m = all.find(function(m) { return m.code === this.selectedModel; }.bind(this));
+            return m ? m.name : 'Select model';
+        },
+
         init: function() {
             this.loadDesigns();
+            this.loadModels();
+            // Keep the picked model in sync with the chat composer.
+            this.$watch('selectedModel', function(value) {
+                if (value) localStorage.setItem('rynude_selected_model', value);
+            });
+        },
+
+        loadModels: function() {
+            var self = this;
+            fetch('/api/settings', { headers: { 'Accept': 'application/json' } })
+                .then(function(r) { return r.json(); })
+                .then(function(resp) {
+                    if (resp.models) {
+                        self.models = resp.models;
+                        localStorage.setItem('rynude_models_cache', JSON.stringify(resp.models));
+                    }
+                    if (resp.more_models) {
+                        self.moreModels = resp.more_models;
+                        localStorage.setItem('rynude_more_models_cache', JSON.stringify(resp.more_models));
+                    }
+                })
+                .catch(function() { /* keep cached models */ });
+        },
+
+        autoResize: function(e) {
+            var el = e.target;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 192) + 'px';
         },
 
         loadDesigns: function() {
@@ -373,10 +462,11 @@ function designPanelState() {
             this.dialogError = '';
         },
 
-        // Generate straight from the hero prompt composer
+        // Generate straight from the hero prompt composer, using the type and
+        // model chosen in the composer dropdowns.
         generateFromHero: function() {
-            if (!this.heroPrompt.trim()) { this.openDialog('prototype'); return; }
-            this.dialogType = 'prototype';
+            if (this.generating || !this.heroPrompt.trim()) return;
+            this.dialogType = this.selectedType;
             this.dialogPrompt = this.heroPrompt;
             this.generate();
         },
@@ -390,7 +480,7 @@ function designPanelState() {
             fetch('/api/designs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ type: this.dialogType, prompt: prompt })
+                body: JSON.stringify({ type: this.dialogType, prompt: prompt, model: this.selectedModel })
             })
             .then(function(r) { return r.json(); })
             .then(function(resp) {
@@ -398,6 +488,7 @@ function designPanelState() {
                 this.showDialog = false;
                 this.dialogPrompt = '';
                 this.heroPrompt = '';
+                if (this.$refs.heroInput) this.$refs.heroInput.style.height = 'auto';
                 this.currentTab = 'yours';
                 this.loadDesigns();
                 if (resp.data) {

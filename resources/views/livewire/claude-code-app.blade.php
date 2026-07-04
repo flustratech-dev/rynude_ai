@@ -253,8 +253,8 @@
                                         </div>
                                         <div class="flex-1 leading-relaxed custom-prose">
                                             <div x-html="renderContent(streamContent)"></div>
-                                            <div class="text-[#D97757] text-[12px] flex items-center gap-2 mt-2 font-mono">
-                                                <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            <div class="text-stone-500 dark:text-stone-400 text-[12px] flex items-center gap-2 mt-2 font-mono">
+                                                <img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin h-3.5 w-3.5 object-contain">
                                                 <span>Rynude Code is thinking...</span>
                                             </div>
                                         </div>
@@ -371,9 +371,9 @@
                             oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                         ></textarea>
                         
-                        <button @click="sendMessage()" :disabled="sending||!message.trim()" class="ml-2 p-1.5 rounded-lg text-stone-500 hover:text-stone-300 hover:bg-[#2A2A2A] transition-colors" :class="message.trim()?'text-[#D97757] bg-[#D97757]/10':''">
+                        <button @click="sendMessage()" :disabled="sending||!message.trim()" class="ml-2 p-1.5 rounded-lg text-stone-500 hover:text-stone-300 hover:bg-[#2A2A2A] transition-colors" :class="message.trim()?'text-stone-400 bg-[#D97757]/10':''">
                             <svg x-show="!isStreaming" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 10l3-3 3 3M12 7v10"></path></svg>
-                            <svg x-show="isStreaming" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <img x-show="isStreaming" src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin w-4 h-4 object-contain">
                         </button>
                     </div>
 
