@@ -214,7 +214,7 @@
             });
         </script>
     </head>
-    <body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-[#171719]" x-data="themeManager()">
+    <body class="font-sans antialiased text-stone-900 dark:text-stone-200 bg-[#F9F8F6] dark:bg-claude-bg-dark" x-data="themeManager()">
         <div class="min-h-screen">
             @isset($header)
                 <header class="bg-white shadow">
