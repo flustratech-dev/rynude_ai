@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#F9F8F6">
+        <meta name="theme-color" content="#F9F8F6" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#1C1C1C" media="(prefers-color-scheme: dark)">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
@@ -15,18 +16,21 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-[#2D2825] antialiased bg-[#F9F8F6]">
+    <body class="font-sans text-[#2D2825] antialiased bg-[#F9F8F6] dark:bg-[#121212] dark:text-stone-200"
+          x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches) }"
+          x-init="$watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val); })"
+          :class="{ 'dark': darkMode }">
         @if(request()->routeIs('login') || request()->routeIs('register'))
             {{ $slot }}
         @else
-            <div class="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]">
+            <div class="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6] dark:bg-[#121212]">
                 <div class="mb-8">
-                    <a href="/" class="flex items-center gap-2 text-[#2D2825]">
+                    <a href="/" class="flex items-center gap-2 text-[#2D2825] dark:text-stone-200">
                     </a>
                 </div>
 
                 <div class="w-full max-w-md px-6">
-                    <div class="bg-white rounded-2xl shadow-sm border border-[#E5E5E5] p-8">
+                    <div class="bg-white dark:bg-[#1C1C1C] rounded-2xl shadow-sm dark:shadow-none border border-[#E5E5E5] dark:border-stone-700 p-8">
                         {{ $slot }}
                     </div>
                 </div>
