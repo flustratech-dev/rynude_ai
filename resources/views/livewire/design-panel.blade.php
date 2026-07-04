@@ -1,4 +1,4 @@
-<div class="min-h-screen h-full bg-[#F9F8F6] dark:bg-stone-900 flex flex-col font-sans"
+<div class="min-h-screen h-full bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col font-sans"
      x-data="designPanelState()"
      x-init="init()">
     <style>
@@ -49,13 +49,13 @@
     </style>
 
     {{-- Header --}}
-    <div class="w-full bg-[#F9F8F6] dark:bg-stone-900 border-b border-[#E5E5E5] dark:border-stone-800/80 px-8 py-3 flex items-center justify-between flex-shrink-0">
+    <div class="w-full bg-[#F9F8F6] dark:bg-claude-bg-dark border-b border-[#E5E5E5] dark:border-stone-800/80 px-8 py-3 flex items-center justify-between flex-shrink-0">
         <a href="{{ route('home') }}" class="flex flex-col leading-none hover:opacity-80 transition-opacity">
             <span class="font-serif text-[19px] font-semibold text-[#2D2825] dark:text-stone-100 whitespace-nowrap">Rynude Design</span>
             <span class="text-[11px] text-stone-400 mt-0.5">Beta</span>
         </a>
 
-        <div class="w-8 h-8 rounded-full bg-[#EAE9E5] dark:bg-stone-800 flex items-center justify-center text-[12px] font-semibold text-stone-600 dark:text-stone-300">
+        <div class="w-8 h-8 rounded-full bg-[#EAE9E5] dark:bg-claude-bg-dark flex items-center justify-center text-[12px] font-semibold text-stone-600 dark:text-stone-300">
             {{ strtoupper(substr(auth()->user()->name ?? 'JR', 0, 2)) }}
         </div>
     </div>
@@ -70,7 +70,7 @@
         <h1 class="font-claude-response text-center text-[#2D2825] dark:text-[#E8E8E6] mt-4" style="font-family: 'Anthropic Serif', 'Lora', Georgia, serif; font-size: 42px; font-weight: 300; line-height: 1.2; letter-spacing: -0.01em;">What will you design today?</h1>
 
         {{-- Prompt composer --}}
-        <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl shadow-sm px-5 pt-4 pb-3 transition-all duration-200 focus-within:shadow-lg focus-within:border-stone-300 dark:focus-within:border-stone-600">
+        <div class="w-full bg-white dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl shadow-sm px-5 pt-4 pb-3 transition-all duration-200 focus-within:shadow-lg focus-within:border-stone-300 dark:focus-within:border-stone-600">
             <textarea x-ref="heroInput" x-model="heroPrompt" rows="2"
                 @input="autoResize($event)"
                 @keydown.enter="if(!$event.shiftKey){$event.preventDefault(); generateFromHero()}"
@@ -195,10 +195,10 @@
         {{-- Projects list --}}
         <div class="mt-4">
             <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-1 bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-xl p-0.5">
+                <div class="flex items-center gap-1 bg-white dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-xl p-0.5">
                     <template x-for="(label, key) in {recent: 'Projects', yours: 'Design systems', examples: 'Templates'}" :key="key">
                         <button @click="currentTab = key; loadDesigns()" class="px-3 py-1.5 rounded-lg text-[13px] transition-all"
-                            :class="currentTab === key ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'"
+                            :class="currentTab === key ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-claude-bg-dark dark:text-stone-200 font-semibold' : 'text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200'"
                             x-text="label"></button>
                     </template>
                 </div>
@@ -206,12 +206,12 @@
                 <div class="flex items-center gap-2">
                     <div class="relative flex items-center">
                         <svg class="w-3.5 h-3.5 text-stone-400 absolute left-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" x-model="search" @input.debounce.300ms="loadDesigns()" placeholder="Search" class="pl-8 pr-3 py-1.5 bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-lg text-[13px] placeholder-stone-400 text-stone-800 dark:text-stone-200 focus:outline-none w-44">
+                        <input type="text" x-model="search" @input.debounce.300ms="loadDesigns()" placeholder="Search" class="pl-8 pr-3 py-1.5 bg-white dark:bg-[#323232] border border-stone-200 dark:border-stone-700 rounded-lg text-[13px] placeholder-stone-400 text-stone-800 dark:text-stone-200 focus:outline-none w-44">
                     </div>
-                    <button @click="viewMode = 'list'" class="p-1.5 rounded-lg transition-colors" :class="viewMode === 'list' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-stone-400 hover:text-stone-600'" title="List view">
+                    <button @click="viewMode = 'list'" class="p-1.5 rounded-lg transition-colors" :class="viewMode === 'list' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-claude-bg-dark dark:text-stone-200' : 'text-stone-400 hover:text-stone-600'" title="List view">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                     </button>
-                    <button @click="viewMode = 'grid'" class="p-1.5 rounded-lg transition-colors" :class="viewMode === 'grid' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-stone-800 dark:text-stone-200' : 'text-stone-400 hover:text-stone-600'" title="Grid view">
+                    <button @click="viewMode = 'grid'" class="p-1.5 rounded-lg transition-colors" :class="viewMode === 'grid' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-claude-bg-dark dark:text-stone-200' : 'text-stone-400 hover:text-stone-600'" title="Grid view">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                     </button>
                 </div>
@@ -222,8 +222,8 @@
             </template>
 
             <template x-if="!loading && designs.length === 0">
-                <div class="w-full bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-2xl py-12 flex flex-col items-center justify-center text-center shadow-sm">
-                    <div class="w-12 h-12 rounded-xl bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-400 mb-3 border border-stone-200 dark:border-stone-700">
+                <div class="w-full bg-white dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl py-12 flex flex-col items-center justify-center text-center shadow-sm">
+                    <div class="w-12 h-12 rounded-xl bg-stone-50 dark:bg-claude-bg-dark flex items-center justify-center text-stone-400 mb-3 border border-stone-200 dark:border-stone-700">
                         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                     </div>
                     <p class="text-stone-500 dark:text-stone-400 text-[13.5px] font-medium">No projects yet</p>
@@ -238,9 +238,9 @@
                         <span>Name</span><span>Last viewed</span><span>All owners</span><span>Access</span>
                     </div>
                     <template x-for="design in designs" :key="design.id">
-                        <div class="group grid grid-cols-[1fr_140px_160px_90px] gap-4 items-center px-3 py-2.5 rounded-lg hover:bg-white dark:hover:bg-stone-850 transition-colors cursor-pointer" @click="viewDesign(design)">
+                        <div class="group grid grid-cols-[1fr_140px_160px_90px] gap-4 items-center px-3 py-2.5 rounded-lg hover:bg-white dark:hover:bg-[#3A3A38] transition-colors cursor-pointer" @click="viewDesign(design)">
                             <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-14 h-10 rounded-md bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                <div class="w-14 h-10 rounded-md bg-stone-100 dark:bg-claude-bg-dark border border-stone-200 dark:border-stone-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
                                     <template x-if="design.status === 'ready' && design.content">
                                         <iframe :srcdoc="design.content" class="w-[400%] h-[160px] origin-top-left scale-[0.25] pointer-events-none border-0" sandbox="allow-scripts"></iframe>
                                     </template>
@@ -272,8 +272,8 @@
             <template x-if="!loading && designs.length > 0 && viewMode === 'grid'">
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <template x-for="design in designs" :key="design.id">
-                        <div class="group bg-white dark:bg-stone-850 border border-[#E5E5E5] dark:border-stone-800 rounded-xl overflow-hidden shadow-sm hover:border-stone-300 dark:hover:border-stone-700 hover:shadow transition-all">
-                            <div @click="viewDesign(design)" class="h-[140px] bg-stone-50 dark:bg-stone-800 relative cursor-pointer overflow-hidden border-b border-stone-100 dark:border-stone-800">
+                        <div class="group bg-white dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-xl overflow-hidden shadow-sm hover:border-stone-300 dark:hover:border-stone-700 hover:shadow transition-all">
+                            <div @click="viewDesign(design)" class="h-[140px] bg-stone-50 dark:bg-[#323232] relative cursor-pointer overflow-hidden border-b border-stone-100 dark:border-stone-800">
                                 <template x-if="design.status === 'ready' && design.content">
                                     <iframe :srcdoc="design.content" class="w-[200%] h-[280px] origin-top-left scale-50 pointer-events-none border-0" sandbox="allow-scripts"></iframe>
                                 </template>
@@ -306,12 +306,12 @@
     {{-- Generation Dialog --}}
     <template x-if="showDialog">
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" @click.self="closeDialog()">
-            <div class="bg-white dark:bg-stone-850 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div class="bg-white dark:bg-[#323232] border border-stone-200 dark:border-stone-700 rounded-2xl shadow-2xl w-full max-w-lg p-6">
                 <h3 class="font-serif text-[18px] font-medium text-[#2D2825] dark:text-stone-100 mb-1" x-text="'Generate ' + (designTypes[dialogType]?.label || 'design')"></h3>
                 <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mb-4" x-text="designTypes[dialogType]?.sub || ''"></p>
 
                 <textarea x-model="dialogPrompt" rows="4" placeholder="Describe the design you want… e.g. A pricing page for a SaaS product with three tiers"
-                    class="w-full px-3 py-2.5 bg-[#F9F8F6] dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg text-[13.5px] text-stone-800 dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:border-[#D97757] resize-none"></textarea>
+                    class="w-full px-3 py-2.5 bg-[#F9F8F6] dark:bg-[#323232] border border-stone-200 dark:border-stone-700 rounded-lg text-[13.5px] text-stone-800 dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:border-[#D97757] resize-none"></textarea>
                 <template x-if="dialogError">
                     <span class="text-red-500 text-[11.5px] mt-1 block" x-text="dialogError"></span>
                 </template>
@@ -330,7 +330,7 @@
     {{-- Viewer --}}
     <template x-if="viewing">
         <div class="fixed inset-0 z-50 flex flex-col bg-stone-900/60 backdrop-blur-sm" @click.self="closeViewer()">
-            <div class="flex items-center justify-between px-6 py-3 bg-white dark:bg-stone-850 border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
+            <div class="flex items-center justify-between px-6 py-3 bg-white dark:bg-[#323232] border-b border-stone-200 dark:border-stone-700 flex-shrink-0">
                 <div class="min-w-0">
                     <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-100 truncate" x-text="viewing.title"></div>
                     <div class="text-[11px] text-stone-400" x-text="designTypes[viewing.type]?.label || viewing.type"></div>
