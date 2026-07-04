@@ -12,10 +12,10 @@
             <div class="flex items-center justify-between mb-8">
                 <h2 class="font-serif text-[32px] text-[#1a1a1a] dark:text-stone-200" x-text="selectedProject.name"></h2>
                 <div class="flex items-center gap-1.5">
-                    <button class="p-1.5 text-[#1a1a1a] dark:text-stone-300 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors" title="Options">
+                    <button class="p-1.5 text-[#1a1a1a] dark:text-stone-300 hover:bg-black/5 dark:hover:bg-[#3A3A38] rounded-lg transition-colors" title="Options">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
                     </button>
-                    <button @click="starProject(selectedProject.id)" class="p-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5" :class="selectedProject.is_starred ? 'text-[#1a1a1a]' : 'text-[#1a1a1a] dark:text-stone-300'" title="Star project">
+                    <button @click="starProject(selectedProject.id)" class="p-1.5 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-[#3A3A38]" :class="selectedProject.is_starred ? 'text-[#1a1a1a]' : 'text-[#1a1a1a] dark:text-stone-300'" title="Star project">
                         <svg class="w-5 h-5" :fill="selectedProject.is_starred ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
                     </button>
                 </div>
@@ -84,7 +84,7 @@
                             </div>
                             <div class="flex items-center gap-1 md:gap-1.5 text-stone-500">
                                 <div x-data="{ open: false, ext: true, subOpen: false, closeTimer: null }" class="relative">
-                                    <button @click="open = !open" type="button" class="flex items-center gap-1.5 cursor-pointer focus:outline-none bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-2.5 py-1.5 rounded-lg transition-colors">
+                                    <button @click="open = !open" type="button" class="flex items-center gap-1.5 cursor-pointer focus:outline-none bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-[#3A3A38] px-2.5 py-1.5 rounded-lg transition-colors">
                                         <span class="text-[13px] font-medium text-stone-800 dark:text-stone-200 max-w-[120px] truncate" x-text="selectedModelName()"></span>
                                         <span class="text-[13px] text-stone-500 hidden sm:inline" x-show="ext">Extended</span>
                                         <svg class="w-3.5 h-3.5 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -132,7 +132,7 @@
                                     </div>
                                 </div>
                                 <div x-data="voiceInput" x-show="supported" class="relative group flex items-center justify-center">
-                                    <button type="button" @click="toggle()" :class="listening ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700'" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
+                                    <button type="button" @click="toggle()" :class="listening ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-[#3A3A38]'" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="listening ? 'animate-pulse' : ''"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                                     </button>
                                 </div>
@@ -220,14 +220,14 @@
                                     <template x-if="selectedProject.files && selectedProject.files.length > 0">
                                         <div class="space-y-1 mt-2">
                                             <template x-for="f in selectedProject.files" :key="f.id">
-                                                <div class="flex items-center justify-between p-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 rounded-lg group transition-colors -mx-2 cursor-pointer">
+                                                <div class="flex items-center justify-between p-2 hover:bg-stone-50 dark:hover:bg-[#3A3A38]/50 rounded-lg group transition-colors -mx-2 cursor-pointer">
                                                     <div class="flex items-center gap-2.5 truncate">
                                                         <div class="w-6 h-6 rounded bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center shrink-0">
                                                             <svg class="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                                                         </div>
                                                         <span class="text-[13px] text-stone-600 dark:text-stone-300 truncate" x-text="f.file_name"></span>
                                                     </div>
-                                                    <button @click="deleteFile(f.id)" class="p-1.5 text-stone-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-stone-200 dark:hover:bg-stone-700" title="Remove file">
+                                                    <button @click="deleteFile(f.id)" class="p-1.5 text-stone-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-stone-200 dark:hover:bg-[#3A3A38]" title="Remove file">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                     </button>
                                                 </div>
@@ -269,20 +269,20 @@
                 <h2 class="font-serif text-[28px] sm:text-[32px] text-[#2D2825] dark:text-stone-200">Projects</h2>
                 <div class="flex items-center gap-3">
                     <div x-data="{ showSort: false }" class="relative">
-                        <button @click="showSort = !showSort" @click.away="showSort = false" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 text-[13px] font-medium text-stone-600 dark:text-stone-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors bg-white dark:bg-transparent shadow-sm">
+                        <button @click="showSort = !showSort" @click.away="showSort = false" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 text-[13px] font-medium text-stone-600 dark:text-stone-400 hover:bg-black/5 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark shadow-sm">
                             <span>Sort by <strong class="text-[#1a1a1a] dark:text-stone-200 font-semibold" x-text="sortLabel()"></strong></span>
                             <svg class="w-3.5 h-3.5 text-stone-400 transition-transform duration-200" :class="showSort ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                         </button>
-                        <div x-show="showSort" x-transition.opacity.duration.200ms x-cloak class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#2C2A29] border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg overflow-hidden z-20">
-                            <button @click="setSortBy('updated_at'); showSort = false" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-between transition-colors">
+                        <div x-show="showSort" x-transition.opacity.duration.200ms x-cloak class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-claude-bg-dark border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg overflow-hidden z-20">
+                            <button @click="setSortBy('updated_at'); showSort = false" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] flex items-center justify-between transition-colors">
                                 Last updated
                                 <svg x-show="sortBy === 'updated_at'" class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                             </button>
-                            <button @click="setSortBy('created_at'); showSort = false" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-between transition-colors">
+                            <button @click="setSortBy('created_at'); showSort = false" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] flex items-center justify-between transition-colors">
                                 Date created
                                 <svg x-show="sortBy === 'created_at'" class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                             </button>
-                            <button @click="setSortBy('name'); showSort = false" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-between transition-colors">
+                            <button @click="setSortBy('name'); showSort = false" class="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] flex items-center justify-between transition-colors">
                                 Name
                                 <svg x-show="sortBy === 'name'" class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                             </button>
@@ -319,7 +319,7 @@
                                 <label class="block text-[13px] font-semibold text-[#1a1a1a] dark:text-stone-300 mb-1.5">Icon</label>
                                 <div class="flex flex-wrap gap-1.5">
                                     <template x-for="icon in projectIcons" :key="icon">
-                                        <button type="button" @click="newProjectIcon = icon" class="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] border transition-all" :class="newProjectIcon === icon ? 'border-[#D97757] ring-2 ring-[#D97757]/30 bg-[#D97757]/5' : 'border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800'" x-text="icon"></button>
+                                        <button type="button" @click="newProjectIcon = icon" class="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] border transition-all" :class="newProjectIcon === icon ? 'border-[#D97757] ring-2 ring-[#D97757]/30 bg-[#D97757]/5' : 'border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-[#3A3A38]'" x-text="icon"></button>
                                     </template>
                                 </div>
                             </div>
@@ -334,7 +334,7 @@
                         </div>
                         <div class="flex items-center gap-2 pt-2">
                             <button @click="createProject()" class="px-4 py-2 rounded-xl bg-[#2D2825] hover:bg-black dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white text-white text-[13px] sm:text-[14px] font-medium transition-colors active:scale-95 shadow-sm">Create project</button>
-                            <button @click="showCreateForm = false" class="px-4 py-2 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 text-[13px] font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">Cancel</button>
+                            <button @click="showCreateForm = false" class="px-4 py-2 rounded-lg border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 text-[13px] font-medium hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -364,11 +364,11 @@
                                 <svg class="w-4 h-4" :fill="project.is_starred ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
                             </button>
 
-                            <button @click.stop="menuOpen = !menuOpen" @click.away="menuOpen = false" class="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-stone-100 dark:hover:bg-stone-700 transition-all text-stone-400 hover:text-stone-600 dark:hover:text-stone-300" title="Options">
+                            <button @click.stop="menuOpen = !menuOpen" @click.away="menuOpen = false" class="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-stone-100 dark:hover:bg-[#3A3A38] transition-all text-stone-400 hover:text-stone-600 dark:hover:text-stone-300" title="Options">
                                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                             </button>
-                            <div x-show="menuOpen" x-cloak class="absolute top-10 right-3 w-40 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-30">
-                                <button @click.stop="menuOpen = false; duplicateProject(project.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-2">
+                            <div x-show="menuOpen" x-cloak class="absolute top-10 right-3 w-40 bg-white dark:bg-claude-bg-dark border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-30">
+                                <button @click.stop="menuOpen = false; duplicateProject(project.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#1a1a1a] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                     <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Duplicate
                                 </button>
                                 <div class="h-px w-full bg-stone-200 dark:bg-stone-700 my-1"></div>

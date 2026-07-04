@@ -9,37 +9,37 @@
                 <template x-if="isSelectMode">
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <template x-if="selectedChats.length > 0">
-                            <button @click="archiveSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors bg-white dark:bg-stone-900 active:scale-95">
+                            <button @click="archiveSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
                                 <span x-text="(showArchived ? 'Unarchive' : 'Archive') + ' (' + selectedChats.length + ')'"></span>
                             </button>
                         </template>
                         <template x-if="selectedChats.length > 0">
-                            <button @click="deleteSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-red-200 text-[13px] sm:text-[14px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors bg-white dark:bg-stone-900 active:scale-95">
+                            <button @click="deleteSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-red-200 text-[13px] sm:text-[14px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
                                 <span x-text="'Delete (' + selectedChats.length + ')'"></span>
                             </button>
                         </template>
-                        <button @click="toggleSelectMode()" class="px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors bg-white dark:bg-stone-900 active:scale-95">Cancel</button>
+                        <button @click="toggleSelectMode()" class="px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">Cancel</button>
                     </div>
                 </template>
                 <template x-if="!isSelectMode">
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <button @click="toggleShowArchived()" class="px-3 sm:px-4 py-2 rounded-xl border text-[13px] sm:text-[14px] font-medium transition-colors active:scale-95" :class="showArchived ? 'border-[#D97757] text-[#D97757] bg-[#D97757]/5' : 'border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-stone-800 bg-white dark:bg-stone-900'">
+                        <button @click="toggleShowArchived()" class="px-3 sm:px-4 py-2 rounded-xl border text-[13px] sm:text-[14px] font-medium transition-colors active:scale-95" :class="showArchived ? 'border-[#D97757] text-[#D97757] bg-[#D97757]/5' : 'border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] bg-white dark:bg-claude-bg-dark'">
                             <span class="hidden sm:inline" x-text="showArchived ? 'Active chats' : 'Archived'"></span>
                             <span class="sm:hidden" x-text="showArchived ? 'Active' : 'Archive'"></span>
                         </button>
                         <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open" @click.away="open = false" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] text-gray-500 dark:text-stone-400 hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors bg-white dark:bg-stone-900 active:scale-95">
+                            <button @click="open = !open" @click.away="open = false" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] text-gray-500 dark:text-stone-400 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
                                 <span class="hidden sm:inline">Filter by <strong class="font-medium text-[#2D2825] dark:text-stone-200" x-text="filterType === 'all' ? 'All' : (filterType === 'today' ? 'Today' : 'Past 7 days')"></strong></span>
                                 <span class="sm:hidden font-medium text-[#2D2825] dark:text-stone-200" x-text="filterType === 'all' ? 'Filter' : (filterType === 'today' ? 'Today' : '7 Days')"></span>
                                 <svg class="w-3.5 h-3.5 text-gray-400 dark:text-stone-500 transition-transform duration-200" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                             </button>
-                            <div x-show="open" x-cloak x-transition.opacity class="absolute left-0 sm:right-0 sm:left-auto mt-2 w-48 rounded-xl bg-white dark:bg-stone-800 border border-gray-200 dark:border-stone-700 shadow-lg py-1 z-50">
-                                <button @click="setFilter('all'); open = false" class="block w-full text-left px-4 py-2 text-sm" :class="filterType === 'all' ? 'bg-gray-50 dark:bg-stone-700 text-black dark:text-white' : 'text-gray-700 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-stone-700'">All</button>
-                                <button @click="setFilter('today'); open = false" class="block w-full text-left px-4 py-2 text-sm" :class="filterType === 'today' ? 'bg-gray-50 dark:bg-stone-700 text-black dark:text-white' : 'text-gray-700 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-stone-700'">Today</button>
-                                <button @click="setFilter('week'); open = false" class="block w-full text-left px-4 py-2 text-sm" :class="filterType === 'week' ? 'bg-gray-50 dark:bg-stone-700 text-black dark:text-white' : 'text-gray-700 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-stone-700'">Past 7 days</button>
+                            <div x-show="open" x-cloak x-transition.opacity class="absolute left-0 sm:right-0 sm:left-auto mt-2 w-48 rounded-xl bg-white dark:bg-claude-bg-dark border border-gray-200 dark:border-stone-700 shadow-lg py-1 z-50">
+                                <button @click="setFilter('all'); open = false" class="block w-full text-left px-4 py-2 text-sm" :class="filterType === 'all' ? 'bg-gray-50 dark:bg-stone-700 text-black dark:text-white' : 'text-gray-700 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-[#3A3A38]'">All</button>
+                                <button @click="setFilter('today'); open = false" class="block w-full text-left px-4 py-2 text-sm" :class="filterType === 'today' ? 'bg-gray-50 dark:bg-stone-700 text-black dark:text-white' : 'text-gray-700 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-[#3A3A38]'">Today</button>
+                                <button @click="setFilter('week'); open = false" class="block w-full text-left px-4 py-2 text-sm" :class="filterType === 'week' ? 'bg-gray-50 dark:bg-stone-700 text-black dark:text-white' : 'text-gray-700 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-[#3A3A38]'">Past 7 days</button>
                             </div>
                         </div>
-                        <button @click="toggleSelectMode()" class="px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-stone-800 transition-colors bg-white dark:bg-stone-900 active:scale-95">
+                        <button @click="toggleSelectMode()" class="px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
                             <span class="hidden sm:inline">Select chats</span>
                             <span class="sm:hidden">Select</span>
                         </button>
@@ -59,7 +59,7 @@
                 @input.debounce.300ms="loadConversations()"
                 type="text"
                 placeholder="Search chats..."
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#FCFBFA] dark:bg-[#323232] text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all"
             >
         </div>
 
@@ -79,7 +79,7 @@
                         <div>
                             <div class="text-[12px] font-semibold text-gray-400 dark:text-stone-500 uppercase tracking-wider pt-5 pb-2" x-text="period"></div>
                             <template x-for="conversation in items" :key="conversation.id">
-                                <div class="group flex items-center justify-between py-4 border-b border-[#E5E5E5] dark:border-stone-800 hover:bg-gray-50/50 dark:hover:bg-stone-800/50 transition-colors">
+                                <div class="group flex items-center justify-between py-4 border-b border-[#E5E5E5] dark:border-stone-800 hover:bg-gray-50/50 dark:hover:bg-[#3A3A38]/50 transition-colors">
                                     <template x-if="renamingId === conversation.id">
                                         <div class="flex items-center flex-1 gap-2 pr-4" @click.stop>
                                             <input
@@ -116,25 +116,25 @@
                                                     <button @click.stop="menuOpen = !menuOpen" @click.away="menuOpen = false" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 opacity-0 group-hover:opacity-100 transition-all" title="Options">
                                                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                                                     </button>
-                                                    <div x-show="menuOpen" x-cloak x-transition.opacity class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-50">
-                                                        <button @click.stop="menuOpen = false; startRename(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-claude-bg-dark flex items-center gap-2">
+                                                    <div x-show="menuOpen" x-cloak x-transition.opacity class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-claude-bg-dark border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-lg py-1.5 z-50">
+                                                        <button @click.stop="menuOpen = false; startRename(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                                             <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Rename
                                                         </button>
-                                                        <button @click.stop="menuOpen = false; archiveConversation(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-claude-bg-dark flex items-center gap-2">
+                                                        <button @click.stop="menuOpen = false; archiveConversation(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                                             <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
                                                             <span x-text="conversation.archived ? 'Unarchive' : 'Archive'"></span>
                                                         </button>
-                                                        <button @click.stop="menuOpen = false; shareConversation(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-claude-bg-dark flex items-center gap-2">
+                                                        <button @click.stop="menuOpen = false; shareConversation(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                                             <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                                                             <span x-text="conversation.shared ? 'Copy share link' : 'Share'"></span>
                                                         </button>
-                                                        <button x-show="conversation.shared" @click.stop="menuOpen = false; unshareConversation(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-claude-bg-dark flex items-center gap-2">
+                                                        <button x-show="conversation.shared" @click.stop="menuOpen = false; unshareConversation(conversation.id)" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                                             <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg> Stop sharing
                                                         </button>
-                                                        <button @click.stop="menuOpen = false; exportChat(conversation.id, 'md')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-claude-bg-dark flex items-center gap-2">
+                                                        <button @click.stop="menuOpen = false; exportChat(conversation.id, 'md')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                                             <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export Markdown
                                                         </button>
-                                                        <button @click.stop="menuOpen = false; exportChat(conversation.id, 'json')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-claude-bg-dark flex items-center gap-2">
+                                                        <button @click.stop="menuOpen = false; exportChat(conversation.id, 'json')" class="w-full text-left px-3 py-1.5 text-[13px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-claude-bg-light dark:hover:bg-[#3A3A38] flex items-center gap-2">
                                                             <svg class="w-4 h-4 text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export JSON
                                                         </button>
                                                         <div class="h-px w-full bg-[#E5E5E5] dark:bg-stone-700 my-1"></div>
