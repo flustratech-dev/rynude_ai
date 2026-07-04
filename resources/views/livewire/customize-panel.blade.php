@@ -36,7 +36,7 @@
 
             <div class="text-center mt-6">
                 <p class="text-[13px] text-stone-500 mb-4 px-2 leading-relaxed">Give Rynude role-level expertise with plugins</p>
-                <button @click="setTab('dashboard')" class="w-full py-1.5 px-3 border border-[#E5E5E5] bg-white text-[#2D2825] rounded-lg text-[13px] font-medium hover:bg-stone-50 transition-colors shadow-sm">
+                <button @click="setTab('dashboard')" class="w-full py-1.5 px-3 border border-[#E5E5E5] bg-[#FCFBFA] dark:bg-[#323232] text-[#2D2825] dark:text-stone-200 rounded-lg text-[13px] font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">
                     Browse plugins
                 </button>
             </div>
@@ -62,8 +62,8 @@
                 <p class="text-[15px] text-stone-500 dark:text-stone-400 mb-10 text-center">Skills, connectors, and plugins shape how Rynude works with you.</p>
 
                 <div class="w-full space-y-4">
-                    <button class="w-full flex items-center gap-5 p-5 bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
-                        <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
+                    <button class="w-full flex items-center gap-5 p-5 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                        <div class="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-stone-600 dark:text-stone-300 group-hover:bg-stone-200 dark:group-hover:bg-stone-600 transition-colors shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
                         </div>
                         <div>
@@ -72,8 +72,8 @@
                         </div>
                     </button>
 
-                    <button @click="setTab('create_skill')" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
-                        <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
+                    <button @click="setTab('create_skill')" class="w-full flex items-center gap-5 p-5 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                        <div class="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-stone-600 dark:text-stone-300 group-hover:bg-stone-200 dark:group-hover:bg-stone-600 transition-colors shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><path d="M14 3v5h5M16 13H8M16 17H8M10 9H8"></path></svg>
                         </div>
                         <div>
@@ -82,8 +82,8 @@
                         </div>
                     </button>
 
-                    <button @click="setTab('templates')" class="w-full flex items-center gap-5 p-5 bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
-                        <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 group-hover:bg-stone-200 transition-colors shrink-0">
+                    <button @click="setTab('templates')" class="w-full flex items-center gap-5 p-5 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-800 rounded-2xl hover:shadow-md hover:border-stone-300 transition-all text-left group">
+                        <div class="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-stone-600 dark:text-stone-300 group-hover:bg-stone-200 dark:group-hover:bg-stone-600 transition-colors shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                         </div>
                         <div>
@@ -100,7 +100,7 @@
                 <div class="flex items-center justify-between w-full mb-8">
                     <h1 class="font-serif text-[28px] font-medium text-[#2D2825] dark:text-stone-200">Skills</h1>
                     <div class="flex items-center gap-2">
-                        <button @click="setTab('templates')" class="px-4 py-2 bg-white border border-[#E5E5E5] dark:bg-stone-800 dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] rounded-xl text-sm font-medium transition-colors shadow-sm">
+                        <button @click="setTab('templates')" class="px-4 py-2 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] rounded-xl text-sm font-medium transition-colors shadow-sm">
                             Templates
                         </button>
                         <button @click="setTab('create_skill')" class="px-4 py-2 bg-[#2D2825] hover:bg-black text-white dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white rounded-xl text-sm font-medium transition-colors shadow-sm">
@@ -112,7 +112,7 @@
                 @if(count($skills ?? []) > 0)
                     <div class="w-full space-y-3">
                         @foreach($skills as $skill)
-                            <div class="w-full p-4 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-sm flex items-center justify-between">
+                            <div class="w-full p-4 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 rounded-xl shadow-sm flex items-center justify-between">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div class="w-10 h-10 rounded-xl bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-[20px] shrink-0">
                                         {{ $skill['icon'] ?? '🛠️' }}
@@ -141,7 +141,7 @@
                         </div>
                         <h3 class="text-[15px] font-medium text-[#2D2825] dark:text-stone-200">No skills yet</h3>
                         <p class="text-[13.5px] text-stone-500 mt-2 mb-6">Create your first skill to teach the AI custom instructions.</p>
-                        <button @click="setTab('create_skill')" class="px-4 py-2 bg-white border border-[#E5E5E5] text-[#2D2825] hover:bg-stone-50 rounded-xl text-sm font-medium transition-colors shadow-sm">
+                        <button @click="setTab('create_skill')" class="px-4 py-2 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 text-[#2D2825] dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#3A3A38] rounded-xl text-sm font-medium transition-colors shadow-sm">
                             Create new skill
                         </button>
                     </div>
@@ -161,7 +161,7 @@
 
                 <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @foreach($skillTemplates ?? [] as $index => $template)
-                        <div class="p-5 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shadow-sm flex flex-col">
+                        <div class="p-5 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shadow-sm flex flex-col">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="w-10 h-10 rounded-xl bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-[20px] shrink-0">
                                     {{ $template['icon'] }}
@@ -213,17 +213,17 @@
 
                     <div>
                         <label class="block text-[13px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Skill name *</label>
-                        <input type="text" x-model="skillName" placeholder="e.g. Code Reviewer" class="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-[#D97757]/20 focus:border-[#D97757]" required>
+                        <input type="text" x-model="skillName" placeholder="e.g. Code Reviewer" class="w-full px-3 py-2 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500" required>
                     </div>
 
                     <div>
                         <label class="block text-[13px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Description (optional)</label>
-                        <input type="text" x-model="skillDescription" placeholder="What does this skill do?" class="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-[#D97757]/20 focus:border-[#D97757]">
+                        <input type="text" x-model="skillDescription" placeholder="What does this skill do?" class="w-full px-3 py-2 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500">
                     </div>
 
                     <div>
                         <label class="block text-[13px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Instructions *</label>
-                        <textarea x-model="skillInstructions" rows="6" placeholder="You are an expert code reviewer. When I provide code, you should..." class="w-full px-3 py-2 bg-white dark:bg-stone-800 border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-[#D97757]/20 focus:border-[#D97757]" required></textarea>
+                        <textarea x-model="skillInstructions" rows="6" placeholder="You are an expert code reviewer. When I provide code, you should..." class="w-full px-3 py-2 bg-[#FCFBFA] dark:bg-[#323232] border border-[#E5E5E5] dark:border-stone-700 rounded-lg text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500" required></textarea>
                     </div>
 
                     <div class="pt-4 flex justify-end">
