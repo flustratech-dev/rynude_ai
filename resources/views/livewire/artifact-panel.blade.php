@@ -196,7 +196,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                             <svg class="w-[18px] h-[18px] text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
-                        <input x-model="searchQuery" @input.debounce.300ms="filterArtifacts()" type="text" placeholder="Search artifacts..." class="block w-full pl-10 pr-3 py-3 border border-[#E5E5E5] dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-stone-600 transition-all shadow-sm">
+                        <input x-model="searchQuery" @input.debounce.300ms="filterArtifacts()" type="text" placeholder="Search artifacts..." class="block w-full pl-10 pr-3 py-3 border border-stone-200 dark:border-stone-700 rounded-xl bg-[#FCFBFA] dark:bg-[#323232] text-sm placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all shadow-sm">
                     </div>
                 </div>
 
@@ -204,20 +204,20 @@
                     <div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-[#D97757]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></path></svg></div>
                 </template>
                 <template x-if="!loading && artifacts.length > 0">
-                    <div class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
+                    <div class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pb-12">
                         <template x-for="artifact in filteredArtifacts" :key="artifact.id">
-                            <div class="relative group h-[140px]" x-data="{ menuOpen: false }">
-                                <button @click="openArtifact(artifact.id)" class="w-full text-left p-4 bg-white dark:bg-stone-800 hover:shadow-md border border-[#E5E5E5] dark:border-stone-700 rounded-2xl shadow-sm transition-all duration-200 group/card flex flex-col h-full relative overflow-hidden focus:outline-none">
-                                    <div class="flex items-center justify-between w-full mb-auto">
-                                        <div class="w-8 h-8 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-400 group-hover/card:text-[#D97757] transition-colors shrink-0">
-                                            <svg x-show="artifact.language==='php'||artifact.type==='code'" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                                            <svg x-show="artifact.language!=='php'&&artifact.type!=='code'" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <div class="relative group" x-data="{ menuOpen: false }">
+                                <button @click="openArtifact(artifact.id)" class="w-full text-left p-2 bg-[#FCFBFA] dark:bg-[#323232] hover:shadow-md border border-stone-200 dark:border-stone-700 rounded-xl shadow-sm transition-all duration-200 group/card flex flex-col h-full relative overflow-hidden focus:outline-none">
+                                    <div class="flex items-center justify-between w-full mb-auto pr-8">
+                                        <div class="w-6 h-6 rounded-lg bg-[#F3F2F1] dark:bg-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-400 group-hover/card:text-[#D97757] transition-colors shrink-0">
+                                            <svg x-show="artifact.language==='php'||artifact.type==='code'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                            <svg x-show="artifact.language!=='php'&&artifact.type!=='code'" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                         </div>
-                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-[#F3F2F1] dark:bg-stone-700 text-[10px] font-medium text-stone-600 dark:text-stone-400 uppercase tracking-wider mr-6" x-text="artifact.language"></span>
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-[#F3F2F1] dark:bg-stone-700 text-[9px] font-medium text-stone-600 dark:text-stone-400 uppercase tracking-wider" x-text="artifact.language"></span>
                                     </div>
-                                    <div class="mt-4 w-full">
-                                        <h4 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate mb-1" x-text="artifact.title"></h4>
-                                        <p class="text-[12px] text-stone-500 dark:text-stone-400" x-text="'Created ' + timeAgo(artifact.created_at)"></p>
+                                    <div class="mt-1.5 w-full">
+                                        <h4 class="text-[12px] font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="artifact.title"></h4>
+                                        <p class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5" x-text="'Created ' + timeAgo(artifact.created_at)"></p>
                                     </div>
                                 </button>
                                 <button @click.stop="menuOpen = !menuOpen" @click.away="menuOpen = false" class="absolute top-3 right-3 p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 z-10" title="Options">

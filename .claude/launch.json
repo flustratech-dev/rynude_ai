@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "laravel",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "php artisan migrate --force && php artisan serve --host=127.0.0.1 --port=8091"],
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["artisan", "serve", "--host=127.0.0.1", "--port=8091"],
       "port": 8091
     },
     {

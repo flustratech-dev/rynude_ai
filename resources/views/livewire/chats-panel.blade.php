@@ -59,7 +59,7 @@
                 @input.debounce.300ms="loadConversations()"
                 type="text"
                 placeholder="Search chats..."
-                class="w-full pl-11 pr-4 py-3 rounded-xl border border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-stone-800 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-400 dark:placeholder-stone-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#FCFBFA] dark:bg-[#323232] text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all"
             >
         </div>
 

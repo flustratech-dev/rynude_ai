@@ -297,7 +297,7 @@
             <div class="relative mb-8">
                 <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
                 <input x-model="searchQuery" @input.debounce.300ms="loadProjects()" type="text" placeholder="Search projects..."
-                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-[#2C2A29] text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#D97757]/30 focus:border-[#D97757] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#FCFBFA] dark:bg-[#323232] text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
             </div>
 
             <template x-if="showCreateForm">
