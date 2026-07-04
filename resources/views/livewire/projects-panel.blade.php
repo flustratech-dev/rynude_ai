@@ -301,18 +301,18 @@
             </div>
 
             <template x-if="showCreateForm">
-                <div class="p-6 border border-stone-200 dark:border-stone-700 rounded-2xl bg-white dark:bg-[#2C2A29] mb-8 shadow-sm animate-fade-in">
+                <div class="p-6 border border-stone-200 dark:border-stone-700 rounded-2xl bg-[#FCFBFA] dark:bg-[#323232] mb-8 shadow-sm animate-fade-in">
                     <div class="space-y-5">
                         <div>
                             <label class="block text-[13px] font-semibold text-[#1a1a1a] dark:text-stone-300 mb-1.5">Project Name</label>
                             <input x-model="newProjectName" type="text" placeholder="e.g. Website Redesign"
-                                class="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-transparent text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#D97757]/30 focus:border-[#D97757] transition-all">
+                                class="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-transparent text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all">
                             <template x-if="formErrors.name"><p class="mt-1 text-xs text-red-500" x-text="formErrors.name"></p></template>
                         </div>
                         <div>
                             <label class="block text-[13px] font-semibold text-[#1a1a1a] dark:text-stone-300 mb-1.5">Description <span class="text-stone-400 font-normal">(optional)</span></label>
                             <textarea x-model="newProjectDescription" rows="2" placeholder="What is this project about?"
-                                class="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-transparent text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#D97757]/30 focus:border-[#D97757] transition-all resize-none"></textarea>
+                                class="w-full px-3.5 py-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-transparent text-[14px] text-[#1a1a1a] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all resize-none"></textarea>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-6">
                             <div>
