@@ -202,6 +202,15 @@
     }
 }
 
+/* External link icons in sidebar */
+.sidebar-menu-item .external-link-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.sidebar-menu-item:hover .external-link-icon {
+    opacity: 0.4;
+}
+
 /* Sidebar & Micro Animations */
 .sidebar-line-shift { transition: transform 0.3s ease; }
 .group:hover .sidebar-line-shift {
