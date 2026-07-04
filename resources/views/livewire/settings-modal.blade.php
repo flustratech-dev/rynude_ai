@@ -555,8 +555,8 @@ function settingsState() {
             }).then(function(r){return r.json()});
         },
 
-        deleteAllChats: function() {
-            if (!confirm('Are you sure? This will permanently delete ALL your chats.')) return;
+        deleteAllChats: async function() {
+            if (!(await showConfirm('Are you sure? This will permanently delete ALL your chats.'))) return;
             var self = this;
             this._patch({_action: 'delete_chats'}).then(function() {
                 self.flashMessage = 'All chats have been deleted.';
@@ -566,8 +566,8 @@ function settingsState() {
             });
         },
 
-        deleteAccount: function() {
-            if (!confirm('Are you absolutely sure? This will permanently delete your account, all conversations, projects, and data. This cannot be undone.')) return;
+        deleteAccount: async function() {
+            if (!(await showConfirm('Are you absolutely sure? This will permanently delete your account, all conversations, projects, and data. This cannot be undone.'))) return;
             this._patch({_action: 'delete_account'}).then(function(resp) {
                 if (resp && resp.redirect) {
                     window.location.href = resp.redirect;
@@ -670,8 +670,8 @@ function settingsState() {
             });
         },
 
-        deleteModel: function(model) {
-            if (!confirm('Delete this AI model?')) return;
+        deleteModel: async function(model) {
+            if (!(await showConfirm('Delete this AI model?'))) return;
             var self = this;
             this._patch({
                 _action: 'delete_model',
@@ -688,7 +688,7 @@ function settingsState() {
                 headers: {'Content-Type':'application/json','Accept':'application/json'},
                 body: JSON.stringify({provider: provider, key: key})
             }).then(function(r) { return r.json(); }).then(function(resp) {
-                alert(resp.message);
+                showAlert(resp.message, resp.valid ? 'success' : 'error');
             });
         }
     };

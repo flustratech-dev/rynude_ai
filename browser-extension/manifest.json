@@ -11,7 +11,9 @@
   "permissions": [
     "cookies",
     "storage",
-    "webRequest"
+    "webRequest",
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "https://chatgpt.com/*",
@@ -28,6 +30,12 @@
       "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
       "js": ["content-script.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["injected.js"],
+      "run_at": "document_end",
+      "world": "MAIN"
     }
   ],
   "action": {

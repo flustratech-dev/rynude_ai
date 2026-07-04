@@ -323,8 +323,8 @@ function chatsPanelState() {
             window.location.href = '/api/chats/' + id + '/export?format=' + format;
         },
 
-        deleteChat: function(id) {
-            if (!confirm('Delete this chat?')) return;
+        deleteChat: async function(id) {
+            if (!(await showConfirm('Delete this chat?'))) return;
             fetch('/api/chats/' + id, {
                 method: 'DELETE',
                 headers: { 'Accept': 'application/json' }
@@ -351,8 +351,8 @@ function chatsPanelState() {
             }.bind(this));
         },
 
-        deleteSelectedChats: function() {
-            if (this.selectedChats.length === 0 || !confirm('Delete ' + this.selectedChats.length + ' chats?')) return;
+        deleteSelectedChats: async function() {
+            if (this.selectedChats.length === 0 || !(await showConfirm('Delete ' + this.selectedChats.length + ' chats?'))) return;
             var promises = this.selectedChats.map(function(id) {
                 return fetch('/api/chats/' + id, { method: 'DELETE', headers: { 'Accept': 'application/json' } });
             });

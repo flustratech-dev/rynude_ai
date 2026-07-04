@@ -608,8 +608,8 @@ function claudeCodeState() {
                 });
         },
 
-        deleteSession: function(id) {
-            if (!confirm('Delete this session?')) return;
+        deleteSession: async function(id) {
+            if (!(await showConfirm('Delete this session?'))) return;
             var self = this;
             var csrfToken = document.querySelector('meta[name=csrf-token]')?.content;
             fetch('/api/chats/' + id, {
@@ -758,7 +758,7 @@ function claudeCodeState() {
                 self.repoModalOpen = false;
             })
             .catch(function(err) {
-                alert('Failed to connect repository. Make sure GitHub PAT is set in settings.');
+                showAlert('Failed to connect repository. Make sure GitHub PAT is set in settings.', 'error');
             });
         },
 

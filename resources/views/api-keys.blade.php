@@ -250,6 +250,9 @@
             flashMessage: null,
             flashType: 'success',
             ft: null,
+            manualProvider: 'claude',
+            manualToken: '',
+            manualBusy: false,
 
             init() {
                 // Check if extension is installed
@@ -317,7 +320,7 @@
 
             async connectChatGPT() {
                 if (!window.rynudeExtension) {
-                    alert('Extension not installed. Please install Rynude Extension first.');
+                    showAlert('Extension not installed. Please install Rynude Extension first.', 'warning');
                     return;
                 }
 
@@ -332,7 +335,7 @@
 
             async connectGemini() {
                 if (!window.rynudeExtension) {
-                    alert('Extension not installed. Please install Rynude Extension first.');
+                    showAlert('Extension not installed. Please install Rynude Extension first.', 'warning');
                     return;
                 }
 
@@ -347,7 +350,7 @@
 
             async connectClaude() {
                 if (!window.rynudeExtension) {
-                    alert('Extension not installed. Please install Rynude Extension first.');
+                    showAlert('Extension not installed. Please install Rynude Extension first.', 'warning');
                     return;
                 }
 
@@ -360,15 +363,54 @@
                 }
             },
 
-            async disconnectProvider(provider) {
-                if (!window.rynudeExtension) return;
-
-                const success = await window.rynudeExtension.disconnectProvider(provider);
-                if (success) {
-                    this.providers[provider] = false;
-                    this.flashMessage = `${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`;
+            async connectManual() {
+                const provider = this.manualProvider;
+                // The session key is no longer used (the extension authenticates
+                // via your logged-in claude.ai tab), so it's optional — a click
+                // just marks the provider active.
+                const token = (this.manualToken || '').trim();
+                this.manualBusy = true;
+                try {
+                    const r = await fetch('/api/provider-tokens', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ provider, token: token || null })
+                    });
+                    const data = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(data.message || ('HTTP ' + r.status));
+                    this.providers[provider] = true;
+                    this.manualToken = '';
+                    await this.loadProviderStatus();
+                    this.flashMessage = `${provider.charAt(0).toUpperCase() + provider.slice(1)} connected manually!`;
                     this.flashType = 'success';
+                } catch (e) {
+                    this.flashMessage = 'Failed to connect: ' + e.message;
+                    this.flashType = 'error';
+                } finally {
+                    this.manualBusy = false;
                 }
+            },
+
+            async disconnectProvider(provider) {
+                // Works with or without the browser extension — the token lives
+                // server-side, so hitting the API is what actually disconnects.
+                try {
+                    await fetch('/api/provider-tokens/' + provider, {
+                        method: 'DELETE',
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'include'
+                    });
+                } catch (e) { /* ignore network error, fall through */ }
+
+                if (window.rynudeExtension) {
+                    try { await window.rynudeExtension.disconnectProvider(provider); } catch (e) {}
+                }
+
+                this.providers[provider] = false;
+                this.providerStatus[provider] = {};
+                this.flashMessage = `${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`;
+                this.flashType = 'success';
             }
         }">
             <div class="bg-[#F9F8F6] dark:bg-claude-bg-dark rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
@@ -377,6 +419,39 @@
 
                 <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-1">Connected Accounts</h2>
                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-6">Connect your free tier accounts from ChatGPT, Gemini, and Claude to use Rynude without API keys.</p>
+
+                {{-- Manual connect (no browser extension required) --}}
+                <div class="mb-6 p-5 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/10 border-2 border-blue-200 dark:border-blue-900/30">
+                    <h3 class="text-[15px] font-bold text-[#2D2825] dark:text-stone-200 mb-1">Aktifkan akun web (Claude)</h3>
+                    <p class="text-[12.5px] text-gray-600 dark:text-stone-400 mb-3">
+                        Klik untuk mengaktifkan. Saat chat, jawaban diambil oleh <strong>Rynude Extension</strong> lewat tab provider
+                        (<a href="https://claude.ai" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">claude.ai</a> /
+                        <a href="https://chatgpt.com" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">chatgpt.com</a> /
+                        <a href="https://gemini.google.com" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">gemini</a>)
+                        yang sudah login. Tidak perlu menempel apa pun.
+                    </p>
+                    <p class="text-[11.5px] text-amber-700 dark:text-amber-500 mb-3">
+                        ⚠️ Claude paling andal. <strong>Gemini</strong> rapuh (format sering berubah). <strong>ChatGPT</strong> kemungkinan besar gagal karena proof-of-work/verifikasi OpenAI.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <button @click="manualProvider='claude'; connectManual()" :disabled="manualBusy" class="px-4 py-2.5 bg-[#2D2825] hover:bg-black dark:bg-stone-700 dark:hover:bg-stone-600 text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm disabled:opacity-60">Connect Claude</button>
+                        <button @click="manualProvider='gemini'; connectManual()" :disabled="manualBusy" class="px-4 py-2.5 bg-[#2D2825] hover:bg-black dark:bg-stone-700 dark:hover:bg-stone-600 text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm disabled:opacity-60">Connect Gemini</button>
+                        <button @click="manualProvider='chatgpt'; connectManual()" :disabled="manualBusy" class="px-4 py-2.5 bg-[#2D2825] hover:bg-black dark:bg-stone-700 dark:hover:bg-stone-600 text-white rounded-lg text-[13px] font-medium transition-colors shadow-sm disabled:opacity-60">Connect ChatGPT</button>
+                    </div>
+
+                    {{-- Currently connected accounts --}}
+                    <div class="mt-4 space-y-2">
+                        <template x-for="p in ['claude','chatgpt','gemini']" :key="p">
+                            <div x-show="providerStatus[p] && providerStatus[p].connected" class="flex items-center justify-between p-2.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30">
+                                <span class="text-[12.5px] font-medium text-green-800 dark:text-green-300 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span x-text="p.charAt(0).toUpperCase()+p.slice(1) + ' — connected'"></span>
+                                </span>
+                                <button @click="disconnectProvider(p)" class="text-[12px] text-red-600 dark:text-red-400 hover:underline font-medium">Disconnect</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
 
                 {{-- Extension Setup Section --}}
                 <div class="mb-6 p-5 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/30 dark:from-blue-900/20 dark:to-indigo-900/10 border-2 border-blue-200 dark:border-blue-900/30">
@@ -822,7 +897,7 @@ function apiKeysPage(){
             }).catch(()=>{this.dlgSaving=false;this.dlgErr='Network error.'});
         },
         toggleModel(m){this._patch({_action:'toggle_model',model_id:m.id}).then(()=>this.load())},
-        delModel(m){if(!confirm('Delete this model?'))return;this._patch({_action:'delete_model',model_id:m.id}).then(()=>this.load())}
+        async delModel(m){if(!(await showConfirm('Delete this model?')))return;this._patch({_action:'delete_model',model_id:m.id}).then(()=>this.load())}
     };
 }
 </script>

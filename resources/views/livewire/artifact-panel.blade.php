@@ -449,8 +449,8 @@ function artifactPanelState() {
             }.bind(this));
         },
 
-        deleteArtifact: function(artifact) {
-            if (!confirm('Are you sure you want to delete this artifact?')) return;
+        deleteArtifact: async function(artifact) {
+            if (!(await showConfirm('Are you sure you want to delete this artifact?'))) return;
             fetch('/api/artifacts/' + artifact.id, {
                 method: 'DELETE',
                 headers: {'Accept':'application/json'}

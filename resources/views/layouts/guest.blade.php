@@ -37,5 +37,34 @@
             </div>
         @endif
 
+        <x-alert-dialog />
+
+        <script>
+            window.showAlert = function(message, type, title) {
+                if (!type) type = 'info';
+                if (!title) {
+                    switch(type) {
+                        case 'error': title = 'Error'; break;
+                        case 'success': title = 'Success'; break;
+                        case 'warning': title = 'Warning'; break;
+                        default: title = 'Info';
+                    }
+                }
+                return new Promise(function(resolve) {
+                    window._alertResolve = resolve;
+                    window.dispatchEvent(new CustomEvent('show-alert', {
+                        detail: { message: message, type: type, title: title }
+                    }));
+                });
+            };
+            window.showConfirm = function(message) {
+                return new Promise(function(resolve) {
+                    window._alertResolve = resolve;
+                    window.dispatchEvent(new CustomEvent('show-confirm', {
+                        detail: { message: message, title: 'Confirm', type: 'warning' }
+                    }));
+                });
+            };
+        </script>
     </body>
 </html>

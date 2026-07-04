@@ -212,11 +212,25 @@
                         <template x-for="c in items" :key="c.id">
                             <div class="relative group flex items-center w-full rounded-lg transition-colors"
                                  :class="conversationId === c.id ? 'bg-[#EAE9E5] dark:bg-[#2C2C2C] text-gray-900 dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-gray-900 dark:hover:text-stone-200'">
-                                <button
-                                    @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('selectConversation', { detail: { conversationId: c.id } })); window.history.pushState({}, '', '/chat?conversation=' + c.id);"
-                                    class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
-                                    x-text="c.title"
-                                ></button>
+                                <template x-if="editingChatId !== c.id">
+                                    <button
+                                        @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); if (window.innerWidth < 768) { sidebarOpen = false; open = false; }; window.dispatchEvent(new CustomEvent('selectConversation', { detail: { conversationId: c.id } })); window.history.pushState({}, '', '/chat?conversation=' + c.id);"
+                                        class="flex-1 text-left px-2 py-1.5 text-[13px] truncate"
+                                        x-text="c.title"
+                                    ></button>
+                                </template>
+                                <template x-if="editingChatId === c.id">
+                                    <div class="flex-1 px-1.5 py-1">
+                                        <input
+                                            type="text"
+                                            x-model="editingTitle"
+                                            @keydown.enter="submitRename(c.id)"
+                                            @keydown.escape="cancelRename()"
+                                            @click.stop
+                                            class="w-full px-1.5 py-0.5 text-[13px] bg-white dark:bg-[#323232] border border-[#D97757] rounded focus:outline-none text-[#2D2825] dark:text-stone-200"
+                                        >
+                                    </div>
+                                </template>
                                 <div class="absolute right-1 hidden group-hover:flex items-center rounded-lg bg-[#EAE9E5] dark:bg-[#2C2C2C]">
                                     <button
                                         @click="toggleStar(c)"
@@ -227,14 +241,14 @@
                                         <svg class="w-3.5 h-3.5" :fill="c.is_starred ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
                                     </button>
                                     <button
-                                        @click="renameChat(c)"
+                                        @click="startRename(c)"
                                         class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-stone-200 transition-colors"
                                         title="Rename"
                                     >
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
                                     </button>
                                     <button
-                                        @click="if(confirm('Are you sure you want to delete this chat?')) { deleteChat(c.id); }"
+                                        @click="confirmDeleteChat(c.id)"
                                         class="p-1 text-gray-400 hover:text-red-500 transition-colors"
                                         title="Delete"
                                     >
@@ -344,7 +358,7 @@
                         <button
                             @click="profileMenuOpen = false; window.installRynudeApp().then(function (result) {
                                 if (result === 'installed') {
-                                    alert('Rynude sudah terinstall di perangkat ini.');
+                                    showAlert('Rynude sudah terinstall di perangkat ini.', 'info');
                                 } else if (result === 'unavailable') {
                                     window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } }));
                                 }
@@ -641,6 +655,8 @@ function sidebarRecentsState() {
         recents: [],
         recentsOpen: true,
         conversationId: null,
+        editingChatId: null,
+        editingTitle: '',
         init() {
             var self = this;
             this.loadRecents();
@@ -692,19 +708,39 @@ function sidebarRecentsState() {
                 body: JSON.stringify({ is_starred: !c.is_starred })
             }).then(function() { self.loadRecents(); });
         },
-        renameChat(c) {
-            var name = prompt('Rename chat', c.title);
-            if (!name || !name.trim()) return;
+        startRename(c) {
+            this.editingChatId = c.id;
+            this.editingTitle = c.title;
+            this.$nextTick(() => {
+                const input = document.querySelector('#sidebar-recents input');
+                if (input) { input.focus(); input.select(); }
+            });
+        },
+        submitRename(id) {
+            var name = this.editingTitle.trim();
+            if (!name) { this.cancelRename(); return; }
             var self = this;
-            fetch('/api/chats/' + c.id, {
+            fetch('/api/chats/' + id, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
                 },
-                body: JSON.stringify({ title: name.trim() })
-            }).then(function() { self.loadRecents(); });
+                body: JSON.stringify({ title: name })
+            }).then(function() {
+                self.editingChatId = null;
+                self.loadRecents();
+            });
+        },
+        cancelRename() {
+            this.editingChatId = null;
+            this.editingTitle = '';
+        },
+        async confirmDeleteChat(id) {
+            if (await showConfirm('Are you sure you want to delete this chat?')) {
+                this.deleteChat(id);
+            }
         },
         deleteChat(id) {
             var self = this;

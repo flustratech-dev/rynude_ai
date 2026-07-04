@@ -306,8 +306,8 @@ function coworkPanelState() {
             }.bind(this));
         },
 
-        deleteTask: function(id) {
-            if (!confirm('Delete this task?')) return;
+        deleteTask: async function(id) {
+            if (!(await showConfirm('Delete this task?'))) return;
             fetch('/api/tasks/' + id, {
                 method: 'DELETE',
                 headers: {'Accept':'application/json'}

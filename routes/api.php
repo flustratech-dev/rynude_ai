@@ -33,6 +33,10 @@ Route::middleware('auth')->group(function () {
     // collection-level actions (send/stop) are declared before the {conversation}
     // wildcard routes for clarity (no method clash either way).
     Route::get('chats', [ChatApiController::class, 'index'])->name('chats.index');
+    // Declared before the {conversation} wildcard so 'provider-mode' is never
+    // captured as a conversation id. Tells the client whether a model must be
+    // run through the browser extension (claude.ai tab) instead of the server.
+    Route::get('chats/provider-mode', [ChatApiController::class, 'providerMode'])->name('chats.provider-mode');
     Route::post('chats/send', [ChatApiController::class, 'send'])->name('chats.send');
     Route::post('chats/stop', [ChatApiController::class, 'stop'])->name('chats.stop');
     Route::post('chats/connect-repo', [ChatApiController::class, 'connectRepo'])->name('chats.connect-repo');
@@ -41,6 +45,8 @@ Route::middleware('auth')->group(function () {
     // captured as a conversation id.
     Route::patch('chats/messages/{message}/rating', [ChatApiController::class, 'rateMessage'])->name('chats.messages.rating');
     Route::post('chats/{conversation}/regenerate', [ChatApiController::class, 'regenerate'])->name('chats.regenerate');
+    // Save + stream a reply that the browser extension generated (claude.ai tab).
+    Route::post('chats/{conversation}/complete-extension', [ChatApiController::class, 'completeExtension'])->name('chats.complete-extension');
     Route::post('chats/{conversation}/switch-branch', [ChatApiController::class, 'switchBranch'])->name('chats.switch-branch');
     Route::get('chats/{conversation}/stream-resume', [ChatApiController::class, 'streamResume'])->name('chats.stream-resume');
     Route::get('chats/{conversation}', [ChatApiController::class, 'show'])->name('chats.show');

@@ -1090,13 +1090,93 @@ function chatInterfaceState() {
             });
             self.beginStreamingState(self.selectedModel);
 
-            fetch('/api/chats/send', {
-                method: 'POST',
-                headers: headers,
-                body: body
-            })
-            .then(function(response) { self.handleStreamResponse(response); })
-            .catch(function(err) { self.handleStreamNetworkError(err); });
+            // The server decides how to run this turn. For web-account (Claude
+            // via claude.ai) models it saves the user message and replies with a
+            // `need_extension` event (handled in the stream reader) instead of
+            // generating server-side.
+            fetch('/api/chats/send', { method: 'POST', headers: headers, body: body })
+                .then(function(response) { self.handleStreamResponse(response); })
+                .catch(function(err) { self.handleStreamNetworkError(err); });
+        },
+
+        // Server asked us to produce this turn via the browser extension. The
+        // user message is already saved; get the answer from a real claude.ai
+        // tab, then POST it to complete-extension (which streams + saves it).
+        handleNeedExtension: function(info) {
+            var self = this;
+            self.awaitingExtension = true;
+
+            if (!window.rynudeExtension || !window.rynudeExtension.webComplete) {
+                self.showStreamError('Butuh Rynude Extension aktif (versi terbaru). Reload extension di chrome://extensions lalu refresh halaman.');
+                return;
+            }
+
+            var provider = info.provider || 'claude';
+            var prompt = self.flattenForClaude(info.messages || []);
+
+            // Never hang silently (tab closed, claude.ai not loading, SW asleep).
+            var settled = false;
+            var timer = setTimeout(function () {
+                if (settled) return;
+                settled = true;
+                self.showStreamError('Timeout menunggu extension. Buka tab claude.ai (login) lalu kirim lagi.');
+            }, 90000);
+
+            window.rynudeExtension.webComplete(provider, prompt).then(function(res) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+
+                if (!res || !res.success) {
+                    self.showStreamError((res && res.error) || 'Extension gagal menghubungi provider.');
+                    return;
+                }
+
+                self.awaitingExtension = false;
+                fetch('/api/chats/' + info.conversation_id + '/complete-extension', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+                    body: JSON.stringify({
+                        model: info.model,
+                        content: res.content || '',
+                        parent_message_id: info.parent_message_id
+                    })
+                })
+                .then(function(response) { self.handleStreamResponse(response); })
+                .catch(function(err) { self.handleStreamNetworkError(err); });
+            }).catch(function(err) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                self.showStreamError(String(err && err.message || err));
+            });
+        },
+
+        // Flatten the active thread into one prompt so context survives
+        // (claude.ai opens a fresh conversation per call).
+        flattenForClaude: function(messages) {
+            var parts = [];
+            messages.forEach(function(m) {
+                var c = (typeof m.content === 'string') ? m.content.trim() : '';
+                if (!c) return;
+                var label = m.role === 'assistant' ? 'Assistant' : (m.role === 'system' ? 'System' : 'Human');
+                parts.push(label + ': ' + c);
+            });
+            return parts.length <= 1
+                ? (parts[0] || '').replace(/^(Human|System|Assistant):\s*/, '')
+                : parts.join('\n\n');
+        },
+
+        // Surface an error in the streaming bubble and reset the send state.
+        showStreamError: function(msg) {
+            this.stopWaitFeed();
+            this.contentQueue = '';
+            this.thinkQueue = '';
+            this.streamContent = '<div class="text-red-500 font-medium">Error: ' + msg + '</div>';
+            this.streaming = false;
+            this.sending = false;
+            this.streamEnded = true;
+            try { sessionStorage.removeItem('rynude_active_stream'); } catch (e) {}
         },
 
         // Reset all streaming state before a send/edit/regenerate kicks off.
@@ -1110,6 +1190,7 @@ function chatInterfaceState() {
             this.thinkQueue = '';
             this.streamEnded = false;
             this.finalizing = false;
+            this.awaitingExtension = false;
             this.lastThinking = '';
             this.doneMeta = null;
             this.pendingArtifacts = [];
@@ -1134,10 +1215,10 @@ function chatInterfaceState() {
                     self.streaming = false;
                     self.sending = false;
                     response.json().then(function(errData) {
-                        alert("Error: " + (errData.message || JSON.stringify(errData)));
+                        showAlert("Error: " + (errData.message || JSON.stringify(errData)), 'error');
                     }).catch(function() {
                         response.text().then(function(t) {
-                            alert("Server error: " + t);
+                            showAlert("Server error: " + t, 'error');
                         });
                     });
                     return;
@@ -1153,7 +1234,10 @@ function chatInterfaceState() {
                             // text before finalizing (finishStream does the rest).
                             // Skip when already finalized or when an error/gone
                             // event ended the stream (streaming is false then).
-                            if (!self.finalizing && self.streaming) {
+                            // Also skip when we're waiting on the browser extension:
+                            // the send stream ends right after `need_extension`, but
+                            // the real answer arrives on the follow-up request.
+                            if (!self.finalizing && self.streaming && !self.awaitingExtension) {
                                 self.streamEnded = true;
                                 self.pumpStream();
                             }
@@ -1218,6 +1302,11 @@ function chatInterfaceState() {
                                         if (data.data) self.pendingArtifacts.push(data.data);
                                     } else if (data.type === 'citations') {
                                         self.pendingCitations = data.data || null;
+                                    } else if (data.type === 'need_extension') {
+                                        // Web-account turn: hand off to the browser
+                                        // extension (claude.ai tab), then it saves
+                                        // the reply via complete-extension.
+                                        self.handleNeedExtension(data.data || {});
                                     }
                                 } catch(e) {}
                             }
@@ -1241,7 +1330,7 @@ function chatInterfaceState() {
 
         handleStreamNetworkError: function(err) {
             console.error("Fetch network error:", err);
-            alert("Network error sending message. Please check connection.");
+            showAlert("Network error sending message. Please check connection.", 'error');
             this.stopWaitFeed();
             this.streaming = false;
             this.sending = false;
@@ -1506,7 +1595,7 @@ function chatInterfaceState() {
         takeScreenshot: function() {
             var self = this;
             if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                alert('Screen capture is not supported in this browser or context.');
+                showAlert('Screen capture is not supported in this browser or context.', 'error');
                 return;
             }
             navigator.mediaDevices.getDisplayMedia({ video: true })
@@ -1693,7 +1782,7 @@ function chatInterfaceState() {
                 self.showRenameModal = false;
                 window.dispatchEvent(new CustomEvent('conversationUpdated'));
             })
-            .catch(function() { alert('Failed to rename chat'); });
+            .catch(function() { showAlert('Failed to rename chat', 'error'); });
         },
 
         openAddProjectModal: function() {
@@ -1728,7 +1817,7 @@ function chatInterfaceState() {
                 self.showAddProjectModal = false;
                 window.dispatchEvent(new CustomEvent('conversationUpdated'));
             })
-            .catch(function() { alert('Failed to add chat to project'); });
+            .catch(function() { showAlert('Failed to add chat to project', 'error'); });
         },
 
         removeFromProject: function() {
@@ -1746,7 +1835,7 @@ function chatInterfaceState() {
                 self.showAddProjectModal = false;
                 window.dispatchEvent(new CustomEvent('conversationUpdated'));
             })
-            .catch(function() { alert('Failed to remove chat from project'); });
+            .catch(function() { showAlert('Failed to remove chat from project', 'error'); });
         },
 
         openDeleteModal: function() {
@@ -1771,7 +1860,7 @@ function chatInterfaceState() {
                 window.dispatchEvent(new CustomEvent('conversationDeleted'));
                 window.history.replaceState({}, '', '/chat');
             })
-            .catch(function() { alert('Failed to delete chat'); });
+            .catch(function() { showAlert('Failed to delete chat', 'error'); });
         },
 
         sendSurpriseMessage: function() {

@@ -557,8 +557,8 @@ function projectsPanelState() {
             .then(function(r){if(r.ok) this.loadProjects();}.bind(this));
         },
 
-        deleteProject: function(id) {
-            if (!confirm('Delete this project?')) return;
+        deleteProject: async function(id) {
+            if (!(await showConfirm('Delete this project?'))) return;
             fetch('/api/projects/' + id, {
                 method: 'DELETE',
                 headers: {'Accept':'application/json'}

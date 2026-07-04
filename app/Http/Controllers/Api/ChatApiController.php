@@ -67,6 +67,35 @@ class ChatApiController extends ApiController
         return response()->json(['data' => $conversations]);
     }
 
+    /**
+     * Tell the client how a model must be run for the current user:
+     *   - "extension": no server credentials, but a web-account (claude.ai) is
+     *     connected → the browser extension must produce the answer.
+     *   - "server": the normal server-side provider handles it.
+     */
+    public function providerMode(Request $request): JsonResponse
+    {
+        $model = trim((string) $request->query('model', ''));
+        if ($model === '') {
+            return response()->json(['mode' => 'server', 'provider' => null]);
+        }
+
+        $provider = app(\App\Services\AI\AiService::class)->resolveProvider($model);
+        $isExtension = $provider instanceof \App\Services\AI\WebAiProvider;
+
+        $webProvider = null;
+        if ($isExtension) {
+            $webProvider = str_starts_with($model, 'claude') ? 'claude'
+                : (str_starts_with($model, 'gpt') ? 'chatgpt'
+                : (str_starts_with($model, 'gemini') ? 'gemini' : null));
+        }
+
+        return response()->json([
+            'mode' => $isExtension ? 'extension' : 'server',
+            'provider' => $webProvider,
+        ]);
+    }
+
     public function send(Request $request)
     {
         $validated = $request->validate([
@@ -81,6 +110,10 @@ class ChatApiController extends ApiController
             'edit_of' => ['nullable', 'integer', 'exists:messages,id'],
             'thinking' => ['nullable', 'boolean'],
             'style' => ['nullable', 'string', 'in:normal,concise,explanatory,formal'],
+            // Answer already generated client-side by the browser extension
+            // (claude.ai tab). When present the server skips the AI call and
+            // just persists + streams this text back.
+            'precomputed_response' => ['nullable', 'string', 'max:200000'],
         ]);
 
         $text = trim($validated['prompt']);
@@ -92,6 +125,7 @@ class ChatApiController extends ApiController
         $repoUrl = $validated['repo_url'] ?? null;
         $thinking = (bool) ($validated['thinking'] ?? false);
         $style = $validated['style'] ?? null;
+        $precomputed = $validated['precomputed_response'] ?? null;
 
         // Create or load conversation
         if ($conversationId) {
@@ -197,7 +231,80 @@ class ChatApiController extends ApiController
         // Build message history for AI (active branch only)
         $messages = $this->buildAiMessages($conversation);
 
-        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id, $thinking);
+        // Web-account (extension) mode: the model resolves to WebAiProvider and
+        // no answer was produced yet. The server can't call claude.ai (Cloudflare),
+        // so — with the user message already saved above — it asks the browser
+        // extension to generate the reply, which then calls complete-extension.
+        // Persisting first means the chat survives even if the extension fails.
+        $isExtensionMode = $precomputed === null
+            && app(\App\Services\AI\AiService::class)->resolveProvider($model) instanceof \App\Services\AI\WebAiProvider;
+        if ($isExtensionMode) {
+            $webProvider = str_starts_with($model, 'claude') ? 'claude'
+                : (str_starts_with($model, 'gpt') ? 'chatgpt'
+                : (str_starts_with($model, 'gemini') ? 'gemini' : 'claude'));
+            return $this->streamNeedExtension($conversation, $messages, $model, $userMessage->id, $webProvider);
+        }
+
+        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id, $thinking, $precomputed);
+    }
+
+    /**
+     * Emit an SSE stream asking the client to run this turn through the browser
+     * extension (claude.ai tab). Carries the built context + ids so the client
+     * can call complete-extension with the answer afterwards.
+     */
+    private function streamNeedExtension(Conversation $conversation, array $messages, string $model, int $parentMessageId, string $webProvider = 'claude')
+    {
+        return response()->stream(function () use ($conversation, $messages, $model, $parentMessageId, $webProvider) {
+            @ini_set('output_buffering', 'off');
+            while (ob_get_level() > 0) {
+                @ob_end_flush();
+            }
+            echo ':' . str_repeat(' ', 2048) . "\n\n";
+            echo 'data: ' . json_encode(['type' => 'init', 'data' => ['conversation_id' => $conversation->id]]) . "\n\n";
+            echo 'data: ' . json_encode(['type' => 'need_extension', 'data' => [
+                'conversation_id' => $conversation->id,
+                'parent_message_id' => $parentMessageId,
+                'model' => $model,
+                'provider' => $webProvider,
+                'messages' => $messages,
+            ]]) . "\n\n";
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
+     * Persist + stream an assistant reply that the browser extension generated
+     * from a real claude.ai tab. Reuses the precomputed streaming path so the
+     * save/artifact/title/done logic is identical to a normal generation.
+     */
+    public function completeExtension(Request $request, Conversation $conversation)
+    {
+        $this->authorizeOwnership($conversation);
+
+        $validated = $request->validate([
+            'model' => ['required', 'string'],
+            'content' => ['required', 'string', 'max:200000'],
+            'parent_message_id' => ['nullable', 'integer'],
+        ]);
+
+        // The precomputed path ignores $messages beyond the "last is user" guard.
+        $messages = [['role' => 'user', 'content' => '.']];
+
+        return $this->streamAiResponse(
+            $conversation,
+            $messages,
+            $validated['model'],
+            false,
+            false,
+            $validated['parent_message_id'] ?? null,
+            false,
+            $validated['content']
+        );
     }
 
     /**
@@ -241,12 +348,13 @@ class ChatApiController extends ApiController
         bool $webSearch,
         bool $researchMode,
         ?int $parentMessageId,
-        bool $thinking = false
+        bool $thinking = false,
+        ?string $precomputed = null
     ) {
         // Resolve the service before the closure so mocks can intercept it
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
-        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking) {
+        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking, $precomputed) {
             // Keep generating even if the browser disconnects (refresh/closed
             // tab): the answer still gets saved, and the client can catch up
             // via stream-resume from the StreamBuffer mirror below.
@@ -281,7 +389,7 @@ class ChatApiController extends ApiController
                 $buffer = new \App\Services\StreamBuffer($conversation->id);
                 $buffer->start();
 
-                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking);
+                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking, $precomputed);
 
                 foreach ($generator as $event) {
                     $buffer->apply($event);

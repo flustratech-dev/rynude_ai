@@ -523,8 +523,8 @@ function designPanelState() {
             }.bind(this));
         },
 
-        deleteDesign: function(design) {
-            if (!confirm('Delete this design?')) return;
+        deleteDesign: async function(design) {
+            if (!(await showConfirm('Delete this design?'))) return;
             fetch('/api/designs/' + design.id, {
                 method: 'DELETE',
                 headers: { 'Accept': 'application/json' }

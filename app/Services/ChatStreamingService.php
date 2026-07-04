@@ -40,7 +40,8 @@ class ChatStreamingService
         bool $webSearch = false,
         bool $researchMode = false,
         ?int $parentMessageId = null,
-        bool $thinking = false
+        bool $thinking = false,
+        ?string $precomputed = null
     ): \Generator {
         // Prevent PHP from killing the streaming process during long generations
         set_time_limit(0);
@@ -50,41 +51,59 @@ class ChatStreamingService
             return;
         }
 
-        // Web research: the model plans the queries, pasted URLs are fetched,
-        // and the numbered sources double as citations on the saved reply.
         $searchBlock = '';
         $citations = [];
-        if ($webSearch || $researchMode) {
-            [$searchBlock, $citations] = $this->runWebResearch($messages, $model, $researchMode);
-        }
-
-        // Every model gets a thinking stream when the toggle is on: models
-        // with native reasoning (direct Anthropic, Ollama reasoners such as
-        // gemma4/deepseek-r1) stream their own deltas, everything else —
-        // including small local models and kr/* proxy models whose upstream
-        // reasoning never crosses 9Router — falls back to prompted
-        // <sim_thinking> tags that we strip back out of the answer below.
-        // Trade-off on CPU-only local models: the extra reasoning pass makes
-        // the final answer arrive later.
-        $simulateThinking = $thinking && !$this->modelHasNativeReasoning($model);
-
-        // Build the complete system prompt with all context
-        $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
-
-        // Per-model adjustments (smaller/proxy models get stricter format rules)
-        $systemPrompt = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
-            ->for($model)
-            ->adaptSystemPrompt($systemPrompt);
-
-        // Apply sliding window context strategy (token budget per model)
-        $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt, $model);
 
         // Clear any stale stop flag before we begin streaming
         $stopKey = 'chat_stop_' . $conversation->id;
         Cache::forget($stopKey);
 
-        // Stream from AI service
-        $stream = $this->aiService->streamResponse($messagesForAi, $model);
+        if ($precomputed !== null) {
+            // Precomputed path: the answer was already produced by the browser
+            // extension (a real claude.ai tab, bypassing Cloudflare). Skip web
+            // research, system-prompt building and the AI provider entirely —
+            // just stream the text out and let the shared save/artifact/title/
+            // done logic below run exactly as for a normal generation.
+            $thinking = false;
+            $simulateThinking = false;
+            $stream = (function () use ($precomputed) {
+                // Chunk so a very long answer still yields cooperatively and the
+                // client's typewriter has bites to reveal.
+                foreach (str_split($precomputed, 400) as $piece) {
+                    yield $piece;
+                }
+            })();
+        } else {
+            // Web research: the model plans the queries, pasted URLs are fetched,
+            // and the numbered sources double as citations on the saved reply.
+            if ($webSearch || $researchMode) {
+                [$searchBlock, $citations] = $this->runWebResearch($messages, $model, $researchMode);
+            }
+
+            // Every model gets a thinking stream when the toggle is on: models
+            // with native reasoning (direct Anthropic, Ollama reasoners such as
+            // gemma4/deepseek-r1) stream their own deltas, everything else —
+            // including small local models and kr/* proxy models whose upstream
+            // reasoning never crosses 9Router — falls back to prompted
+            // <sim_thinking> tags that we strip back out of the answer below.
+            // Trade-off on CPU-only local models: the extra reasoning pass makes
+            // the final answer arrive later.
+            $simulateThinking = $thinking && !$this->modelHasNativeReasoning($model);
+
+            // Build the complete system prompt with all context
+            $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
+
+            // Per-model adjustments (smaller/proxy models get stricter format rules)
+            $systemPrompt = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
+                ->for($model)
+                ->adaptSystemPrompt($systemPrompt);
+
+            // Apply sliding window context strategy (token budget per model)
+            $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt, $model);
+
+            // Stream from AI service
+            $stream = $this->aiService->streamResponse($messagesForAi, $model);
+        }
 
         $fullResponse = '';
         $thinkingText = '';
