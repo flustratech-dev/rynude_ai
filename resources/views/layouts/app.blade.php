@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#fdf8f6">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @auth
         <meta name="user-name" content="{{ Auth::user()->name ?? '' }}">
@@ -64,11 +65,10 @@
             }
 
             function applyTheme(theme) {
-                if (_isCodePage || theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                var isDark = _isCodePage || theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', isDark);
+                var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+                if (themeColorMeta) themeColorMeta.content = isDark ? '#2C2C2A' : '#fdf8f6';
             }
             
             applyTheme(getTheme());

@@ -58,13 +58,15 @@ class ChatStreamingService
             [$searchBlock, $citations] = $this->runWebResearch($messages, $model, $researchMode);
         }
 
-        // Models without native reasoning can still "think" via prompted
+        // Every model gets a thinking stream when the toggle is on: models
+        // with native reasoning (direct Anthropic, Ollama reasoners such as
+        // gemma4/deepseek-r1) stream their own deltas, everything else —
+        // including small local models and kr/* proxy models whose upstream
+        // reasoning never crosses 9Router — falls back to prompted
         // <sim_thinking> tags that we strip back out of the answer below.
-        // Local Ollama models are exempt: on CPU the extra reasoning pass
-        // doubles an already long time-to-answer.
-        $isLocalModel = str_starts_with($model, 'rynude-ollama')
-            || \App\Models\AiModel::where('code', $model)->value('provider') === 'ollama';
-        $simulateThinking = $thinking && !$isLocalModel && !$this->modelHasNativeReasoning($model);
+        // Trade-off on CPU-only local models: the extra reasoning pass makes
+        // the final answer arrive later.
+        $simulateThinking = $thinking && !$this->modelHasNativeReasoning($model);
 
         // Build the complete system prompt with all context
         $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
@@ -88,7 +90,11 @@ class ChatStreamingService
         $thinkingText = '';
         $stopped = false;
         $truncated = false;
-        $simState = ['phase' => $simulateThinking ? 'detect' : 'off', 'buf' => ''];
+        // The tag scanner runs whenever thinking mode is on — not just when we
+        // prompted for it — so models that natively emit inline <think>/<thinking>
+        // blocks in their content (DeepSeek-style via HF/proxies) also get their
+        // reasoning routed to the thinking panel instead of leaking raw tags.
+        $simState = ['phase' => $thinking ? 'detect' : 'off', 'buf' => '', 'close' => null];
 
         foreach ($stream as $chunk) {
             // Check if user requested stop
@@ -495,17 +501,41 @@ class ChatStreamingService
 
     /**
      * Does the model reason natively (so prompted sim-thinking is redundant)?
+     * "Natively" here means reasoning deltas actually reach us as structured
+     * thinking chunks — not just that the underlying model can reason. Only
+     * two paths deliver those: AnthropicProvider (`thinking_delta`, non-haiku
+     * direct models) and OpenAI-compatible endpoints that stream
+     * `delta.reasoning(_content)` (Ollama reasoners, DeepSeek-style APIs).
+     * OpenAI (o1/o3/gpt-5), Google and Mistral never surface reasoning in
+     * their streams, so those get the prompted fallback despite being
+     * "reasoning models" upstream.
      */
     protected function modelHasNativeReasoning(string $model): bool
     {
-        return (bool) preg_match('/claude|fable|o1|o3|o4|gpt-5|r1|reason|qwq|thinking|magistral/i', $model);
+        // 9Router (kr/*) never forwards reasoning deltas, even for models
+        // that reason natively upstream — treat them all as non-native so
+        // the prompted fallback kicks in (same approach as the ReAct
+        // fallback for native tools).
+        if (str_starts_with($model, 'kr/')) {
+            return false;
+        }
+
+        // Direct Anthropic haiku models have no extended thinking mode
+        // (mirrors AnthropicProvider::modelSupportsThinking).
+        if (str_contains($model, 'haiku')) {
+            return false;
+        }
+
+        return (bool) preg_match('/claude|fable|deepseek|r1|qwen3|qwq|gemma-?4|gpt-oss/i', $model);
     }
 
     /**
-     * Incremental scanner that lifts a leading <sim_thinking>...</sim_thinking>
-     * block out of the content stream. Tags may arrive split across chunks, so
-     * partial-tag tails are held back until resolvable. Phase 'off' = plain
-     * passthrough (zero overhead when the feature is disabled).
+     * Incremental scanner that lifts a leading reasoning block out of the
+     * content stream. Recognizes our prompted <sim_thinking> tag as well as
+     * the <think>/<thinking> tags that DeepSeek-style models emit natively
+     * inline. Tags may arrive split across chunks, so partial-tag tails are
+     * held back until resolvable. Phase 'off' = plain passthrough (zero
+     * overhead when the feature is disabled).
      *
      * @return array<int, array{type: 'content'|'thinking', text: string}>
      */
@@ -515,26 +545,46 @@ class ChatStreamingService
             return $chunk === '' ? [] : [['type' => 'content', 'text' => $chunk]];
         }
 
+        // Longer tags first so <thinking> wins over its prefix <think>.
+        $tags = [
+            '<sim_thinking>' => '</sim_thinking>',
+            '<thinking>' => '</thinking>',
+            '<think>' => '</think>',
+        ];
+
         $out = [];
         $state['buf'] .= $chunk;
 
         while ($state['buf'] !== '') {
             if ($state['phase'] === 'detect') {
-                $open = '<sim_thinking>';
                 $lt = ltrim($state['buf']);
                 if ($lt === '') {
                     break; // whitespace only — keep waiting
                 }
-                $pos = strpos($state['buf'], $open);
-                if ($pos !== false && trim(substr($state['buf'], 0, $pos)) === '') {
-                    $state['buf'] = substr($state['buf'], $pos + strlen($open));
-                    $state['phase'] = 'inside';
+                $opened = false;
+                foreach ($tags as $open => $close) {
+                    if (str_starts_with($lt, $open)) {
+                        $state['buf'] = substr($lt, strlen($open));
+                        $state['close'] = $close;
+                        $state['phase'] = 'inside';
+                        $opened = true;
+                        break;
+                    }
+                }
+                if ($opened) {
                     continue;
                 }
-                if (str_starts_with($open, $lt)) {
-                    break; // could still become the opening tag — wait
+                $couldForm = false;
+                foreach ($tags as $open => $close) {
+                    if (str_starts_with($open, $lt)) {
+                        $couldForm = true;
+                        break;
+                    }
                 }
-                // No sim block: answer starts normally.
+                if ($couldForm) {
+                    break; // could still become an opening tag — wait
+                }
+                // No reasoning block: answer starts normally.
                 $out[] = ['type' => 'content', 'text' => $state['buf']];
                 $state['buf'] = '';
                 $state['phase'] = 'off';
@@ -542,7 +592,7 @@ class ChatStreamingService
             }
 
             // phase === 'inside'
-            $close = '</sim_thinking>';
+            $close = $state['close'] ?? '</sim_thinking>';
             $pos = strpos($state['buf'], $close);
             if ($pos !== false) {
                 if ($pos > 0) {

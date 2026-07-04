@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#fdf8f6">
     <title>{{ $artifact->title ?? 'Artifact' }} · {{ config('app.name', 'rynude') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

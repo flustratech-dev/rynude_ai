@@ -1397,15 +1397,14 @@ function chatInterfaceState() {
             ];
             var idx = 0;
             this.waitStatus = steps[idx++];
+            // Single line swapped in place — stacking the past steps made the
+            // wait look longer than it is.
             this.waitTimer = setInterval(function() {
                 if (self.streamContent || self.thinkingContent || !self.streaming) {
                     self.stopWaitFeed();
                     return;
                 }
-                self.waitStatus += '\n' + steps[Math.min(idx++, steps.length - 1)];
-                // Keep the feed compact: show only the last few lines
-                var lines = self.waitStatus.split('\n');
-                if (lines.length > 4) self.waitStatus = lines.slice(-4).join('\n');
+                self.waitStatus = steps[Math.min(idx++, steps.length - 1)];
             }, 1800);
         },
 
