@@ -61,6 +61,22 @@ graph TD
     style D fill:#fdd,stroke:#333,stroke-width:2px
 ```
 
+### 🗜️ Alur Kerja RTK (Response Token Kuration)
+
+```mermaid
+sequenceDiagram
+    participant Agent as 🤖 AI Agent / Tool
+    participant RTK as 🗜️ OutputCompressor & RtkTracker
+    participant Provider as 🌐 LLM Provider (Anthropic/OpenAI/dll)
+    participant DB as 💾 Database & Billing Dashboard
+
+    Agent->>RTK: Eksekusi Tool (Bash/Git) menghasilkan output panjang
+    RTK->>RTK: Kompresi boilerplate & hitung rasio penghematan
+    RTK->>Provider: Kirim output ringkas ke model AI
+    Provider->>DB: Catat penggunaan token + RTK Savings (rtk_saved_chars)
+    DB->>DB: Tampilkan analitik penghematan di Billing Dashboard
+```
+
 ### 🏆 Komparasi Dukungan Provider AI
 
 | Provider Terdukung | Status Dukungan | Keunggulan Utama | Model Terbaik Saat Ini |
@@ -102,6 +118,12 @@ Bukan sekadar <i>chat</i> biasa. Rynude dilengkapi panel khusus untuk menampilka
 <summary><b>⚙️ Dynamic API Configuration</b></summary>
 <br/>
 Kemerdekaan di tangan Anda. Ganti API Key, ubah <i>Base URL</i>, dan tambahkan <i>Custom Provider</i> secara instan langsung dari menu Settings tanpa menyentuh <i>source code</i>.
+</details>
+
+<details>
+<summary><b>🔥 RTK (Response Token Kuration/Compression)</b></summary>
+<br/>
+Teknologi kompresi output canggih yang secara otomatis memotong boilerplate, log berlebih, dan redudansi pada respons tool/command sebelum dikirim ke LLM. Menghemat penggunaan token hingga 30-50% dan mempercepat waktu respons AI tanpa mengurangi keakuratan konteks! Dilengkapi dengan Dashboard Analytics per sesi/hari di menu Settings -> Billing.
 </details>
 
 ---
@@ -314,6 +336,7 @@ Mengapa Anda harus beralih ke Rynude AI? Tabel di bawah ini menunjukkan perbandi
 | 🛡️ **Privasi & Keamanan** | Disimpan di Cloud Perusahaan | **Data 100% di Komputer Anda** |
 | 🎨 **Personalisasi Tema** | Sangat Terbatas | **Bebas Kustomisasi** (Tailwind CSS) |
 | 📦 **Fitur Artifacts (Code Render)**| Hanya di Anthropic Claude | **Tersedia Penuh** di Rynude |
+| 🗜️ **Kompresi Token (RTK)** | Tidak ada (bayar penuh output boros) | **Aktif Otomatis** (Hemat Token hingga 50%) |
 
 ---
 
