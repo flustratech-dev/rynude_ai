@@ -1,11 +1,11 @@
-<div class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-hidden shadow-2xl md:shadow-none"
+<div class="flex-1 min-h-0 h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-hidden shadow-2xl md:shadow-none"
      x-data="artifactPanelState()"
      x-init="init()"
      :class="fullscreen ? 'fixed inset-0 z-[60] !shadow-2xl' : ''">
 
     {{-- OPEN ARTIFACT VIEW --}}
     <template x-if="currentArtifact">
-        <div class="h-full w-full flex flex-col">
+        <div class="flex-1 min-h-0 h-full w-full flex flex-col overflow-hidden">
             <div class="px-4 py-3 flex items-center justify-between bg-transparent shrink-0 z-10 relative">
                 <div x-data="{ openMenu: false }" class="flex items-center gap-2 max-w-[50%] relative">
                     <template x-if="currentArtifact.language === 'new'">
@@ -106,9 +106,9 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-hidden bg-transparent flex flex-col p-4 md:p-6">
+            <div class="flex-1 min-h-0 overflow-hidden bg-transparent flex flex-col p-4 md:p-6">
                 <template x-if="currentArtifact.language === 'new'">
-                    <div class="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
+                    <div class="flex-1 min-h-0 flex flex-col items-center justify-center p-8 overflow-y-auto custom-scrollbar">
                         <h2 class="font-serif text-[22px] font-medium text-[#2D2825] dark:text-stone-200 mb-8">Let's get cooking! Pick an artifact category or start building your idea from scratch.</h2>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-[800px] w-full">
                             <template x-for="card in [{label:'Apps and websites',icon:'web'},{label:'Documents and templates',icon:'doc'},{label:'Games',icon:'game'},{label:'Productivity tools',icon:'tool'},{label:'Creative projects',icon:'creative'},{label:'Quiz or survey',icon:'quiz'},{label:'Start from scratch',icon:'plus'}]" :key="card.label">
@@ -123,22 +123,22 @@
                     </div>
                 </template>
                 <template x-if="currentArtifact.language !== 'new'">
-                    <div class="flex-1 overflow-hidden flex flex-col relative">
+                    <div class="flex-1 min-h-0 overflow-hidden flex flex-col relative">
                         <template x-if="activeTab === 'code'">
-                            <div class="h-full flex flex-col">
+                            <div class="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
                                 <div class="absolute top-0 right-0 px-3 py-1 bg-[#F3F2F1] dark:bg-stone-700 border-b border-l border-[#E5E5E5] dark:border-stone-700 rounded-bl-lg text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider z-10" x-text="currentArtifact.language"></div>
-                                <div class="flex-1 overflow-auto bg-[#FBFBFA] dark:bg-claude-bg-dark p-4 pt-8 text-[13px] leading-relaxed text-[#2D2825] dark:text-stone-200 font-mono">
+                                <div class="flex-1 min-h-0 overflow-auto bg-[#FBFBFA] dark:bg-claude-bg-dark p-4 pt-8 text-[13px] leading-relaxed text-[#2D2825] dark:text-stone-200 font-mono custom-scrollbar">
                                     <pre><code class="language-html" x-text="artifactContent"></code></pre>
                                 </div>
                             </div>
                         </template>
                         <template x-if="activeTab === 'preview'">
-                            <div class="flex-1 overflow-auto bg-white dark:bg-claude-bg-dark">
+                            <div class="flex-1 min-h-0 overflow-auto bg-white dark:bg-claude-bg-dark flex flex-col custom-scrollbar">
                                 <template x-if="['html','svg','react','jsx','tsx'].includes(currentArtifact.language)">
-                                    <iframe :srcdoc="previewContent" class="w-full h-full border-0 bg-white" sandbox="allow-scripts"></iframe>
+                                    <iframe :srcdoc="previewContent" class="w-full h-full flex-1 min-h-0 border-0 bg-white" sandbox="allow-scripts"></iframe>
                                 </template>
                                 <template x-if="currentPdfArtifactId && ['markdown','md','pdf','document'].includes(currentArtifact.language)">
-                                    <div class="h-full w-full overflow-y-auto custom-scrollbar bg-stone-100 dark:bg-claude-bg-dark" x-data="pdfViewer('/artifact/' + currentPdfArtifactId + '/preview.pdf')">
+                                    <div class="flex-1 min-h-0 h-full w-full overflow-y-auto custom-scrollbar bg-stone-100 dark:bg-claude-bg-dark" x-data="pdfViewer('/artifact/' + currentPdfArtifactId + '/preview.pdf')">
                                         <div class="w-full min-h-full py-8 flex flex-col items-center">
                                             <div x-ref="container" class="relative w-full max-w-[210mm] flex flex-col items-center gap-6">
                                                 {{-- Loading Spinner --}}
@@ -185,7 +185,7 @@
 
     {{-- ARTIFACTS LIST VIEW --}}
     <template x-if="!currentArtifact">
-        <div class="flex-1 overflow-y-auto bg-[#F9F8F6] dark:bg-claude-bg-dark p-8 flex flex-col items-center min-h-0 w-full">
+        <div class="flex-1 min-h-0 overflow-y-auto bg-[#F9F8F6] dark:bg-claude-bg-dark p-8 flex flex-col items-center w-full custom-scrollbar">ll">
             <div class="max-w-4xl w-full flex-1 flex flex-col">
                 <div class="flex items-center justify-between mb-8 w-full mt-4">
                     <h1 class="font-serif text-3xl font-medium text-[#2D2825] dark:text-stone-200">Artifacts</h1>

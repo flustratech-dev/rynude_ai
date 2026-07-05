@@ -161,7 +161,7 @@
     </div>
 
     {{-- ========== MAIN CONTENT ========== --}}
-    <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
         {{-- Mobile Sidebar Toggle --}}
         <div
             x-show="isMobile && !sidebarOpen"
@@ -178,30 +178,30 @@
                 </svg>
             </button>
         </div>
-        <div class="flex-1 flex relative">
-            <div class="flex-1 flex flex-col min-w-0 relative">
+        <div class="flex-1 flex relative min-h-0 min-w-0 h-full overflow-hidden">
+            <div class="flex-1 flex flex-col min-w-0 min-h-0 h-full relative overflow-hidden">
                 <!-- SPA Pre-mounted panels managed by AlpineJS -->
-                <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
+                <div x-show="activePanel === 'chats'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.chats-panel')
                 </div>
-                <div x-show="activePanel === 'projects'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
+                <div x-show="activePanel === 'projects'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.projects-panel')
                 </div>
-                <div x-show="activePanel === 'code'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
+                <div x-show="activePanel === 'code'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.code-panel')
                 </div>
-                <div x-show="activePanel === 'cowork'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
+                <div x-show="activePanel === 'cowork'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.cowork-panel')
                 </div>
-                <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
+                <div x-show="activePanel === 'design'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.design-panel')
                 </div>
 
-                <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden">
+                <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.customize-panel')
                 </div>
 
-                <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full">
+                <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full min-h-0 min-w-0 overflow-hidden">
                     @include('livewire.chat-interface')
                 </div>
             </div>
@@ -214,7 +214,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-x-0"
                 x-transition:leave-end="opacity-0 translate-x-8"
-                :class="((artifactPanelOpen && !activePanel) || activePanel === 'artifacts') ? (activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex bg-white dark:bg-[#3A3A38] w-full' : 'flex border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-[#3A3A38] flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative') : 'hidden'"
+                :class="((artifactPanelOpen && !activePanel) || activePanel === 'artifacts') ? (activePanel === 'artifacts' ? 'absolute inset-0 z-20 flex flex-col min-h-0 min-w-0 bg-white dark:bg-[#3A3A38] w-full h-full overflow-hidden' : 'flex flex-col min-h-0 min-w-0 h-full border-l border-[#E5E5E5] dark:border-stone-700 bg-white dark:bg-[#3A3A38] flex-shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-20 relative overflow-hidden') : 'hidden'"
                 :style="activePanel !== 'artifacts' ? `width: ${artifactWidth}vw; min-width: 400px; max-width: 80vw;` : ''"
             >
                 <!-- Drag Handle -->
@@ -239,7 +239,7 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-y-0"
                 x-transition:leave-end="opacity-0 translate-y-8"
-                :class="(isMobile && ((artifactPanelOpen && !activePanel) || activePanel === 'artifacts')) ? 'fixed inset-0 z-30 flex flex-col bg-white dark:bg-[#3A3A38] md:hidden' : 'hidden'"
+                :class="(isMobile && ((artifactPanelOpen && !activePanel) || activePanel === 'artifacts')) ? 'fixed inset-0 z-30 flex flex-col min-h-0 h-full bg-white dark:bg-[#3A3A38] md:hidden overflow-hidden' : 'hidden'"
             >
                 @include('livewire.artifact-panel')
             </div>

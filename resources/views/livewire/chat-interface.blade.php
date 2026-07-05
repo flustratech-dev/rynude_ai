@@ -1,4 +1,4 @@
-<div id="chat-interface-root" class="flex flex-col h-full bg-transparent dark:bg-claude-bg-dark relative"
+<div id="chat-interface-root" class="flex flex-col h-full min-h-0 w-full bg-transparent dark:bg-claude-bg-dark relative overflow-hidden"
      x-data="chatInterfaceState()"
      x-init="init()"
      x-on:dragover.prevent="isDropping = true"
@@ -372,7 +372,7 @@
 
     {{-- Active Chat --}}
     <template x-if="conversationId || messages.length > 0">
-        <div class="flex flex-col flex-1 min-h-0 relative">
+        <div class="flex flex-col flex-1 min-h-0 w-full relative overflow-hidden">
             {{-- Floating conversation-memory button (Claude-style, top-right) --}}
             <div class="absolute top-3 right-3 z-40">
                 <button @click="openMemory()" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/80 dark:bg-[#3A3A38]/80 backdrop-blur-sm border border-claude-border-light dark:border-claude-border-dark rounded-full text-[12.5px] font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[#3A3A38] shadow-sm transition-colors" title="Conversation memory">
