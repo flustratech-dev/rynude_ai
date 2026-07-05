@@ -43,13 +43,13 @@ class PageRoutesTest extends TestCase
             ->assertOk();
     }
 
-    public function test_design_page_redirects_to_chat(): void
+    public function test_design_page_renders_for_authenticated_user(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get('/design')
-            ->assertRedirect(route('chat'));
+            ->assertOk();
     }
 
     // ── The named routes resolve to the controllers ─────────────────────
