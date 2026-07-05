@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
     Route::get('settings', [SettingsApiController::class, 'show'])->name('settings.show');
     Route::patch('settings', [SettingsApiController::class, 'update'])->name('settings.update');
     Route::post('settings/validate-api-key', [SettingsApiController::class, 'validateApiKey'])->name('settings.validate-api-key');
+    Route::get('token-usage', [SettingsApiController::class, 'tokenUsage'])->name('token-usage.index');
 
     // ── Projects ────────────────────────────────────────────────────────
     Route::get('projects', [ProjectApiController::class, 'index'])->name('projects.index');

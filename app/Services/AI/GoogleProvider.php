@@ -5,6 +5,7 @@ namespace App\Services\AI;
 use App\Services\AI\Concerns\ResolvesAttachments;
 use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
+use App\Services\AI\RtkTracker;
 
 class GoogleProvider implements LLMProviderInterface, SupportsToolUse
 {
@@ -108,7 +109,8 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
             }
 
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
-                \App\Models\TokenUsage::record($user->id, $model, 'google', $inputTokens, $outputTokens);
+                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                \App\Models\TokenUsage::record($user->id, $model, 'google', $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
             }
         } catch (\Exception $e) {
@@ -302,7 +304,8 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
             }
 
             if ($user) {
-                \App\Models\TokenUsage::record($user->id, $model, 'google', $inputTokens, $outputTokens);
+                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                \App\Models\TokenUsage::record($user->id, $model, 'google', $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
                 if ($inputTokens > 0 || $outputTokens > 0) {
                     $user->decrement('token_balance', $inputTokens + $outputTokens);
                 }

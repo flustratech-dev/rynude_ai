@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Message;
 use App\Models\TokenUsage;
+use App\Services\AI\CostTracker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 /**
  * Settings REST surface.
@@ -432,6 +434,215 @@ class SettingsApiController extends Controller
         })->sum(DB::raw('LENGTH(content)'));
 
         return (int) ceil($charCount / 4);
+    }
+
+    /**
+     * Token Usage Analytics endpoint.
+     * GET /api/token-usage?range=7d
+     * Returns: summary, by_model, daily_trend
+     */
+    public function tokenUsage(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $range = $request->get('range', '7d');
+
+        $query = TokenUsage::where('user_id', $user->id);
+
+        switch ($range) {
+            case 'today':
+                $query->whereDate('usage_date', Carbon::today());
+                $days = 1;
+                break;
+            case '30d':
+                $query->where('usage_date', '>=', Carbon::now()->subDays(29)->toDateString());
+                $days = 30;
+                break;
+            case 'all':
+                $days = null;
+                break;
+            case '7d':
+            default:
+                $query->where('usage_date', '>=', Carbon::now()->subDays(6)->toDateString());
+                $days = 7;
+                break;
+        }
+
+        // ── Per-model breakdown ──────────────────────────────────────────
+        $rows = (clone $query)
+            ->selectRaw('model, provider, SUM(input_tokens) as input_total, SUM(output_tokens) as output_total, SUM(COALESCE(rtk_saved_chars, 0)) as rtk_saved, SUM(COALESCE(rtk_original_chars, 0)) as rtk_original, COUNT(DISTINCT usage_date) as days_active')
+            ->groupBy('model', 'provider')
+            ->orderByRaw('SUM(input_tokens + output_tokens) DESC')
+            ->get();
+
+        $totalInput = 0;
+        $totalOutput = 0;
+        $totalRtkSaved = 0;
+        $totalRtkOriginal = 0;
+        $totalCost = 0.0;
+        $maxModelTokens = 1;
+        $byModel = [];
+
+        foreach ($rows as $row) {
+            $inp = (int) $row->input_total;
+            $out = (int) $row->output_total;
+            $modelTotal = $inp + $out;
+            if ($modelTotal > $maxModelTokens) $maxModelTokens = $modelTotal;
+            $totalInput += $inp;
+            $totalOutput += $out;
+            $totalRtkSaved += (int) $row->rtk_saved;
+            $totalRtkOriginal += (int) $row->rtk_original;
+
+            // Calculate cost using CostTracker pricing
+            $costUsd = $this->estimateCost($row->model, $inp, $out);
+            $totalCost += $costUsd;
+
+            $rtkSaved = (int) $row->rtk_saved;
+            $rtkOrig = (int) $row->rtk_original;
+            $rtkPct = $rtkOrig > 0 ? round(($rtkSaved / $rtkOrig) * 100) : 0;
+            $rtkTokens = intdiv($rtkSaved, 4);
+
+            $byModel[] = [
+                'model'       => $row->model,
+                'provider'    => $row->provider ?? 'unknown',
+                'input_tokens'  => $inp,
+                'output_tokens' => $out,
+                'total_tokens'  => $modelTotal,
+                'cost_usd'    => round($costUsd, 4),
+                'days_active' => (int) $row->days_active,
+                'rtk_saved_chars' => $rtkSaved,
+                'rtk_saved_tokens' => $rtkTokens,
+                'rtk_saved_pct'   => $rtkPct,
+                'bar_pct'     => 0, // filled below
+            ];
+        }
+
+        // Compute bar percentages after we know the max
+        foreach ($byModel as &$m) {
+            $m['bar_pct'] = $maxModelTokens > 0 ? round($m['total_tokens'] / $maxModelTokens * 100) : 0;
+        }
+        unset($m);
+
+        // ── RTK savings summary ──────────────────────────────────────────
+        $rtkSavedPct = 0;
+        $rtkSavedTokensEst = 0;
+        $rtkSavedCostEst = 0.0;
+        if ($totalRtkOriginal > 0) {
+            $rtkSavedPct = round($totalRtkSaved / $totalRtkOriginal * 100, 1);
+            // Rough token estimate: chars/4
+            $rtkSavedTokensEst = (int) round($totalRtkSaved / 4);
+            // Cost for saved tokens, using average blended rate
+            $avgInputRate = 3.0; // default $3/M tokens
+            $rtkSavedCostEst = round($rtkSavedTokensEst * $avgInputRate / 1_000_000, 4);
+        }
+
+        // ── Daily trend ──────────────────────────────────────────────────
+        $dailyRows = (clone $query)
+            ->selectRaw('usage_date, SUM(input_tokens) as input_total, SUM(output_tokens) as output_total')
+            ->groupBy('usage_date')
+            ->orderBy('usage_date', 'asc')
+            ->get()
+            ->keyBy('usage_date');
+
+        $dailyTrend = [];
+        if ($days !== null) {
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $date = Carbon::now()->subDays($i)->toDateString();
+                $row = $dailyRows->get($date);
+                $inp = $row ? (int) $row->input_total : 0;
+                $out = $row ? (int) $row->output_total : 0;
+                $dailyTrend[] = [
+                    'date'         => $date,
+                    'total_tokens' => $inp + $out,
+                    'input_tokens' => $inp,
+                    'output_tokens'=> $out,
+                    'cost_usd'     => round($this->estimateCostBlended($inp + $out), 4),
+                ];
+            }
+        } else {
+            // All time — group by month for readability
+            foreach ($dailyRows as $date => $row) {
+                $inp = (int) $row->input_total;
+                $out = (int) $row->output_total;
+                $dailyTrend[] = [
+                    'date'         => $date,
+                    'total_tokens' => $inp + $out,
+                    'input_tokens' => $inp,
+                    'output_tokens'=> $out,
+                    'cost_usd'     => round($this->estimateCostBlended($inp + $out), 4),
+                ];
+            }
+        }
+
+        // Bar heights for chart
+        $maxDailyTokens = max(1, collect($dailyTrend)->max('total_tokens'));
+        foreach ($dailyTrend as &$day) {
+            $day['bar_pct'] = $maxDailyTokens > 0 ? round($day['total_tokens'] / $maxDailyTokens * 100) : 0;
+        }
+        unset($day);
+
+        // ── Quota / plan ─────────────────────────────────────────────────
+        $totalTokens = $totalInput + $totalOutput;
+        $tokensLimit = (int) ($user->token_balance ?? 0);
+
+        return response()->json([
+            'range'    => $range,
+            'summary'  => [
+                'total_input'       => $totalInput,
+                'total_output'      => $totalOutput,
+                'total_tokens'      => $totalTokens,
+                'estimated_cost_usd'=> round($totalCost, 4),
+                'rtk_saved_chars'   => $totalRtkSaved,
+                'rtk_original_chars'=> $totalRtkOriginal,
+                'rtk_saved_pct'     => $rtkSavedPct,
+                'rtk_saved_tokens_est' => $rtkSavedTokensEst,
+                'rtk_saved_cost_est'   => $rtkSavedCostEst,
+            ],
+            'by_model'    => $byModel,
+            'daily_trend' => $dailyTrend,
+            'quota'       => [
+                'tokens_used'  => $totalTokens,
+                'tokens_limit' => $tokensLimit,
+                'pct_used'     => $tokensLimit > 0 ? round($totalTokens / $tokensLimit * 100, 1) : 0,
+            ],
+        ]);
+    }
+
+    /**
+     * Estimate cost using CostTracker pricing data.
+     */
+    private function estimateCost(string $model, int $inputTokens, int $outputTokens): float
+    {
+        // Re-use CostTracker logic
+        $pricing = [
+            'claude-3-5-sonnet-20241022' => ['input' => 3.0, 'output' => 15.0],
+            'claude-3-5-haiku-20241022'  => ['input' => 0.8, 'output' => 4.0],
+            'claude-3-opus-20240229'     => ['input' => 15.0, 'output' => 75.0],
+            'claude-sonnet-4-6'          => ['input' => 3.0, 'output' => 15.0],
+            'claude-haiku-4-6'           => ['input' => 0.8, 'output' => 4.0],
+            'claude-sonnet-5'            => ['input' => 3.0, 'output' => 15.0],
+            'claude-opus-4-8'            => ['input' => 15.0, 'output' => 75.0],
+            'fable-5'                    => ['input' => 15.0, 'output' => 75.0],
+            'fugu-ultra'                 => ['input' => 25.0, 'output' => 100.0],
+            'gpt-4o'                     => ['input' => 2.5, 'output' => 10.0],
+            'gpt-4o-mini'                => ['input' => 0.15, 'output' => 0.6],
+            'gpt-4-turbo'                => ['input' => 10.0, 'output' => 30.0],
+            'gemini-2.0-flash'           => ['input' => 0.1, 'output' => 0.4],
+            'gemini-1.5-pro'             => ['input' => 1.25, 'output' => 5.0],
+            'mistral-large-latest'       => ['input' => 3.0, 'output' => 9.0],
+            'default'                    => ['input' => 3.0, 'output' => 15.0],
+        ];
+
+        $rates = $pricing[$model] ?? $pricing['default'];
+        return (($inputTokens * $rates['input']) + ($outputTokens * $rates['output'])) / 1_000_000;
+    }
+
+    /**
+     * Blended cost estimate for daily trend (input-only average rate).
+     */
+    private function estimateCostBlended(int $totalTokens): float
+    {
+        // Use average blended rate of ~$4/M total
+        return $totalTokens * 4.0 / 1_000_000;
     }
 
     /**

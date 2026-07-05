@@ -244,24 +244,171 @@
                 </div>
 
                 {{-- Billing tab --}}
-                <div x-show="activeTab === 'billing'" x-cloak x-transition>
-                    <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Quota & Usage</h2>
-                    <div class="p-5 bg-[#FBFBFA] dark:bg-[#2C2C2C]/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[15px] font-medium">Token usage</span>
-                            <span class="text-[13px] text-gray-500" x-text="tokensUsed.toLocaleString()+' used · '+tokensLimit.toLocaleString()+' remaining'"></span>
-                        </div>
-                        <div class="w-full h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#D97757] rounded-full" :style="'width:'+Math.min(100,Math.round(tokensUsed/Math.max(1,tokensUsed+tokensLimit)*100))+'%'"></div>
+                <div x-show="activeTab === 'billing'" x-cloak x-transition
+                     x-data="billingState()"
+                     x-init="$watch($root.activeTab !== undefined ? '$root.activeTab' : 'null', v => {}); loadBilling();">
+
+                    {{-- Header + Range Selector --}}
+                    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+                        <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            Token Usage &amp; Cost Analytics
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center border border-claude-border-light dark:border-claude-border-dark rounded-lg overflow-hidden bg-[#FCFBFA] dark:bg-[#323232] text-[13px]">
+                                <template x-for="opt in [{v:'today',l:'Today'},{v:'7d',l:'7 Days'},{v:'30d',l:'30 Days'},{v:'all',l:'All Time'}]" :key="opt.v">
+                                    <button @click="billingRange = opt.v; loadBilling()"
+                                            class="px-3 py-1.5 border-r last:border-r-0 border-claude-border-light dark:border-claude-border-dark transition-colors"
+                                            :class="billingRange === opt.v ? 'bg-[#D97757] text-white font-medium' : 'text-gray-600 dark:text-stone-400 hover:bg-gray-50 dark:hover:bg-[#3A3A38]'"
+                                            x-text="opt.l"></button>
+                                </template>
+                            </div>
+                            <button @click="loadBilling()" :disabled="billingLoading"
+                                    class="p-1.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark text-gray-500 dark:text-stone-400 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors disabled:opacity-40" title="Refresh">
+                                <svg class="w-4 h-4" :class="billingLoading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            </button>
                         </div>
                     </div>
-                    <div class="space-y-2">
-                        <template x-for="row in tokenBreakdown" :key="row.model">
-                            <div class="flex items-center justify-between text-[13px] py-1.5 border-b border-stone-100 dark:border-stone-800">
-                                <span class="font-medium text-stone-800 dark:text-stone-200" x-text="row.model"></span>
-                                <span class="text-stone-500" x-text="row.total.toLocaleString()"></span>
+
+                    {{-- Loading state --}}
+                    <div x-show="billingLoading" class="flex items-center justify-center py-12 text-gray-400 dark:text-stone-500">
+                        <svg class="w-6 h-6 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Loading analytics...
+                    </div>
+
+                    <div x-show="!billingLoading">
+                        {{-- 3 Stat Cards --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                            {{-- Total Tokens --}}
+                            <div class="p-4 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#262626] border border-claude-border-light dark:border-claude-border-dark rounded-xl">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                                    </div>
+                                    <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400 uppercase tracking-wide">Total Tokens</span>
+                                </div>
+                                <div class="text-[22px] font-bold text-[#2D2825] dark:text-stone-100" x-text="formatNum(billingSummary.total_tokens)"></div>
+                                <div class="text-[12px] text-gray-400 dark:text-stone-500 mt-1">
+                                    <span x-text="formatNum(billingSummary.total_input)"></span> in · <span x-text="formatNum(billingSummary.total_output)"></span> out
+                                </div>
                             </div>
-                        </template>
+
+                            {{-- Estimated Cost --}}
+                            <div class="p-4 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#262626] border border-claude-border-light dark:border-claude-border-dark rounded-xl">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <span class="text-[12px] font-medium text-gray-500 dark:text-stone-400 uppercase tracking-wide">Est. Cost (USD)</span>
+                                </div>
+                                <div class="text-[22px] font-bold text-[#2D2825] dark:text-stone-100" x-text="'$' + (billingSummary.estimated_cost_usd || 0).toFixed(4)"></div>
+                                <div class="text-[12px] text-gray-400 dark:text-stone-500 mt-1">based on public pricing</div>
+                            </div>
+
+                            {{-- RTK Savings --}}
+                            <div class="p-4 bg-gradient-to-br from-[#FFF8F5] to-[#FEF0E8] dark:from-[#2C2218] dark:to-[#241A0F] border border-orange-200 dark:border-orange-900/40 rounded-xl">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-7 h-7 rounded-lg bg-[#D97757]/15 dark:bg-[#D97757]/20 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    </div>
+                                    <span class="text-[12px] font-medium text-[#D97757]/80 uppercase tracking-wide">RTK Savings</span>
+                                </div>
+                                <template x-if="billingSummary.rtk_saved_pct > 0">
+                                    <div>
+                                        <div class="text-[22px] font-bold text-[#D97757]" x-text="billingSummary.rtk_saved_pct + '% saved'"></div>
+                                        <div class="text-[12px] text-[#D97757]/70 mt-1">
+                                            ~<span x-text="formatNum(billingSummary.rtk_saved_tokens_est)"></span> tokens · ~$<span x-text="(billingSummary.rtk_saved_cost_est || 0).toFixed(4)"></span> saved
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="!(billingSummary.rtk_saved_pct > 0)">
+                                    <div>
+                                        <div class="text-[22px] font-bold text-[#D97757]">Active ✓</div>
+                                        <div class="text-[12px] text-[#D97757]/70 mt-1">RTK compressor running</div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Daily Trend Chart (Pure CSS Bars) --}}
+                        <div class="mb-6 p-4 bg-[#FBFBFA] dark:bg-[#2C2C2C]/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl" x-show="billingTrend.length > 0">
+                            <h3 class="text-[13px] font-medium text-gray-500 dark:text-stone-400 uppercase tracking-wide mb-4">Daily Usage Trend</h3>
+                            <div class="flex items-end gap-1 h-28">
+                                <template x-for="(day, i) in billingTrend" :key="i">
+                                    <div class="flex-1 flex flex-col items-center gap-1 group">
+                                        <div class="w-full relative flex items-end justify-center" style="height: 80px">
+                                            <div class="w-full rounded-t-sm transition-all duration-500 ease-out cursor-pointer"
+                                                 :style="'height:' + Math.max(2, day.bar_pct * 0.8) + 'px; background: ' + (day.total_tokens > 0 ? '#D97757' : '#E5E3DF')"
+                                                 :class="day.total_tokens > 0 ? 'dark:bg-[#D97757] opacity-80 group-hover:opacity-100' : 'dark:bg-[#3A3A38]'"
+                                                 :title="day.date + ': ' + formatNum(day.total_tokens) + ' tokens · $' + (day.cost_usd || 0).toFixed(4)">
+                                            </div>
+                                        </div>
+                                        <span class="text-[9px] text-gray-400 dark:text-stone-600 text-center leading-tight" x-text="formatDate(day.date)"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Per Model Breakdown --}}
+                        <div class="mb-6" x-show="billingByModel.length > 0">
+                            <h3 class="text-[13px] font-medium text-gray-500 dark:text-stone-400 uppercase tracking-wide mb-3">Per Model Breakdown</h3>
+                            <div class="border border-claude-border-light dark:border-claude-border-dark rounded-xl overflow-hidden">
+                                <div class="grid text-[12px] font-medium text-gray-500 dark:text-stone-400 bg-[#F3F2EE] dark:bg-[#262626] px-4 py-2" style="grid-template-columns: 1fr 80px 80px 80px 70px">
+                                    <span>Model / Provider</span>
+                                    <span class="text-right">Input</span>
+                                    <span class="text-right">Output</span>
+                                    <span class="text-right">Total</span>
+                                    <span class="text-right">Cost</span>
+                                </div>
+                                <template x-for="(row, i) in billingByModel" :key="row.model">
+                                    <div class="border-t border-claude-border-light dark:border-claude-border-dark">
+                                        <div class="grid px-4 py-3 text-[13px] items-center" style="grid-template-columns: 1fr 80px 80px 80px 70px">
+                                            <div>
+                                                <div class="font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="row.model"></div>
+                                                <div class="text-[11px] text-gray-400 dark:text-stone-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                    <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-stone-800" x-text="row.provider || 'unknown'"></span>
+                                                    <span x-show="row.days_active > 0" x-text="row.days_active + 'd active'"></span>
+                                                    <span x-show="row.rtk_saved_tokens > 0" class="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-medium" x-text="'🔥 RTK -' + formatNum(row.rtk_saved_tokens) + ' tok (' + row.rtk_saved_pct + '%)'"></span>
+                                                </div>
+                                                {{-- Mini progress bar --}}
+                                                <div class="mt-1.5 h-1 bg-gray-100 dark:bg-stone-800 rounded-full overflow-hidden w-full max-w-[180px]">
+                                                    <div class="h-full bg-[#D97757] rounded-full transition-all duration-700"
+                                                         :style="'width:' + (row.bar_pct || 0) + '%'"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-right text-gray-600 dark:text-stone-300 text-[12px]" x-text="formatNum(row.input_tokens)"></span>
+                                            <span class="text-right text-gray-600 dark:text-stone-300 text-[12px]" x-text="formatNum(row.output_tokens)"></span>
+                                            <span class="text-right font-medium text-[#2D2825] dark:text-stone-200 text-[12px]" x-text="formatNum(row.total_tokens)"></span>
+                                            <span class="text-right text-green-700 dark:text-green-400 text-[12px] font-medium" x-text="'$' + (row.cost_usd || 0).toFixed(4)"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Empty state --}}
+                        <div x-show="!billingLoading && billingByModel.length === 0" class="py-8 text-center text-gray-400 dark:text-stone-500 text-[14px]">
+                            <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            No usage data for this period.<br>
+                            <span class="text-[12px]">Start a conversation to see analytics here.</span>
+                        </div>
+
+                        {{-- Quota Progress Bar --}}
+                        <div x-show="$root.tokensUsed > 0 || $root.tokensLimit > 0">
+                            <div class="p-4 bg-[#FBFBFA] dark:bg-[#2C2C2C]/50 border border-claude-border-light dark:border-claude-border-dark rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">Token Quota</span>
+                                    <span class="text-[12px] text-gray-500 dark:text-stone-400"
+                                          x-text="formatNum($root.tokensUsed) + ' used · ' + formatNum($root.tokensLimit) + ' remaining'"></span>
+                                </div>
+                                <div class="w-full h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-[#D97757] rounded-full transition-all duration-500"
+                                         :style="'width:' + Math.min(100, Math.round($root.tokensUsed / Math.max(1, $root.tokensUsed + $root.tokensLimit) * 100)) + '%'"></div>
+                                </div>
+                                <div class="text-[11px] text-gray-400 dark:text-stone-500 mt-1 text-right"
+                                     x-text="Math.min(100, Math.round($root.tokensUsed / Math.max(1, $root.tokensUsed + $root.tokensLimit) * 100)) + '% used'"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -690,6 +837,47 @@ function settingsState() {
             }).then(function(r) { return r.json(); }).then(function(resp) {
                 showAlert(resp.message, resp.valid ? 'success' : 'error');
             });
+        }
+    };
+}
+
+function billingState() {
+    return {
+        billingLoading: true,
+        billingRange: '7d',
+        billingSummary: {},
+        billingTrend: [],
+        billingByModel: [],
+
+        loadBilling: function() {
+            this.billingLoading = true;
+            fetch('/api/token-usage?range=' + this.billingRange, { headers: { 'Accept': 'application/json' } })
+                .then(function(r) { return r.json(); })
+                .then(function(resp) {
+                    this.billingSummary = resp.summary || {};
+                    this.billingTrend = resp.trend || [];
+                    this.billingByModel = resp.by_model || [];
+                    this.billingLoading = false;
+                }.bind(this))
+                .catch(function(e) {
+                    console.error('Failed to load billing:', e);
+                    this.billingLoading = false;
+                }.bind(this));
+        },
+
+        formatNum: function(num) {
+            if (num === undefined || num === null) return '0';
+            return Number(num).toLocaleString();
+        },
+
+        formatDate: function(dateStr) {
+            if (!dateStr) return '';
+            var parts = dateStr.split('-');
+            if (parts.length === 3) {
+                var d = new Date(parts[0], parts[1] - 1, parts[2]);
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            return dateStr;
         }
     };
 }

@@ -5,6 +5,7 @@ namespace App\Services\AI;
 use App\Services\AI\Concerns\OpenAiCompatToolStream;
 use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
+use App\Services\AI\RtkTracker;
 
 class MistralProvider implements LLMProviderInterface, SupportsToolUse
 {
@@ -170,7 +171,8 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
             }
 
             if ($user) {
-                \App\Models\TokenUsage::record($user->id, $model, 'mistral', $inputTokens, $outputTokens);
+                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                \App\Models\TokenUsage::record($user->id, $model, 'mistral', $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
                 if ($inputTokens > 0 || $outputTokens > 0) {
                     $user->decrement('token_balance', $inputTokens + $outputTokens);
                 }

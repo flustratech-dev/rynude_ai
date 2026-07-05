@@ -6,6 +6,7 @@ use App\Services\AI\Concerns\OpenAiCompatToolStream;
 use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
 use Illuminate\Support\Facades\Http;
+use App\Services\AI\RtkTracker;
 
 class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 {
@@ -410,7 +411,8 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             // Record any usage the endpoint reported.
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
                 $providerLabel = $isHuggingFace ? 'huggingface' : ($isProxy ? 'proxy' : 'openai');
-                \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens);
+                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
             }
 
             // Fallback: If no streaming chunks were received, maybe the API returned a flat JSON object

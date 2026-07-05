@@ -6,6 +6,8 @@ use App\Services\GitHubService;
 use App\Services\WebSearchService;
 use App\Services\LocalWorkspaceService;
 use App\Services\AI\PermissionGuard;
+use App\Services\AI\OutputCompressor;
+use App\Services\AI\RtkTracker;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
@@ -397,7 +399,14 @@ class AgentTools
             'write_file', 'edit_file', 'multi_edit_file' => 'success',
             'list_files', 'search_code' => $lines . ' entries',
             'web_search'  => 'web results',
-            'bash'        => 'exit code ' . (preg_match('/Exit Code: (\d+)/', $result, $m) ? $m[1] : '0'),
+            'bash', 'git_operation' => (function() use ($name, $result) {
+                $exitCode = preg_match('/(?:Git )?Exit Code: (\d+)/', $result, $m) ? $m[1] : '0';
+                // Extract compression stats if present
+                if (preg_match('/\[compressed: (\d+)%\]/', $result, $cm)) {
+                    return "exit: {$exitCode} · saved {$cm[1]}% tokens";
+                }
+                return "exit: {$exitCode}";
+            })(),
             'grep_search', 'glob' => $lines . ' matches',
             default       => $lines . ' lines',
         };
@@ -637,17 +646,26 @@ class AgentTools
             
             $process->run();
             
-            $output = $process->getOutput() . $process->getErrorOutput();
-            $exitCode = $process->getExitCode();
-            
-            $maxBytes = 51200; // 50KB limit
-            $truncatedNote = '';
-            if (strlen($output) > $maxBytes) {
-                $output = substr($output, 0, $maxBytes);
-                $truncatedNote = "\n\n... [output truncated at 50KB]";
+            $rawOutput = $process->getOutput() . $process->getErrorOutput();
+            $exitCode  = $process->getExitCode();
+
+            // ── Native token compression (RTK-style) ──────────────────────────
+            // Compresses verbose command output (npm, git, phpunit, etc.) before
+            // sending to the LLM, reducing token usage by 60–90% on noisy output.
+            // No external binary required — pure PHP implementation.
+            [$output, $compressionStats] = OutputCompressor::compress($rawOutput, $command);
+
+            // Accumulate RTK savings for later recording in TokenUsage
+            RtkTracker::add($compressionStats['original_chars'], $compressionStats['compressed_chars']);
+
+            // Attach compression metadata so summarize() can display savings
+            $compressionNote = '';
+            if ($compressionStats['saved_pct'] >= 10) {
+                $compressionNote = " [compressed: {$compressionStats['saved_pct']}%]";
             }
+            // ──────────────────────────────────────────────────────────────────
             
-            return "Exit Code: {$exitCode}\nOutput:\n" . $output . $truncatedNote;
+            return "Exit Code: {$exitCode}{$compressionNote}\nOutput:\n" . $output;
         } catch (\Throwable $e) {
             return "Error executing command: " . $e->getMessage();
         }
@@ -880,10 +898,22 @@ class AgentTools
             $process->setWorkingDirectory($this->localWorkspacePath);
             $process->run();
             
-            $output = $process->getOutput() . $process->getErrorOutput();
-            $exitCode = $process->getExitCode();
-            
-            return "Git Exit Code: {$exitCode}\nOutput:\n" . trim($output);
+            $rawOutput = $process->getOutput() . $process->getErrorOutput();
+            $exitCode  = $process->getExitCode();
+
+            // ── Native token compression (RTK-style) ──────────────────────────
+            [$output, $compressionStats] = OutputCompressor::compress($rawOutput, 'git ' . $subcommand);
+
+            // Accumulate RTK savings for later recording in TokenUsage
+            RtkTracker::add($compressionStats['original_chars'], $compressionStats['compressed_chars']);
+
+            $compressionNote = '';
+            if ($compressionStats['saved_pct'] >= 10) {
+                $compressionNote = " [compressed: {$compressionStats['saved_pct']}%]";
+            }
+            // ──────────────────────────────────────────────────────────────────
+
+            return "Git Exit Code: {$exitCode}{$compressionNote}\nOutput:\n" . trim($output);
         } catch (\Throwable $e) {
             return "Error executing git command: " . $e->getMessage();
         }

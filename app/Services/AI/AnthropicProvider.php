@@ -7,6 +7,7 @@ use App\Services\AI\Contracts\LLMProviderInterface;
 use App\Services\AI\Contracts\SupportsToolUse;
 use Illuminate\Support\Facades\Http;
 use App\Services\AI\CostTracker;
+use App\Services\AI\RtkTracker;
 
 class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 {
@@ -221,7 +222,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
 
             // Deduct tokens and record usage
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
-                \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
+                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
                 
                 CostTracker::track($model, $inputTokens, $outputTokens, $cacheReadTokens, $cacheWriteTokens);
@@ -468,7 +470,8 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             }
 
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
-                \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens);
+                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                \App\Models\TokenUsage::record($user->id, $model, 'anthropic', $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
                 $user->decrement('token_balance', $inputTokens + $outputTokens);
                 
                 CostTracker::track($model, $inputTokens, $outputTokens, $cacheReadTokens, $cacheWriteTokens);

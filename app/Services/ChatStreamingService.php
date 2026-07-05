@@ -181,6 +181,35 @@ class ChatStreamingService
             'thinking' => trim($thinkingText) !== '' ? $thinkingText : null,
         ]);
 
+        // When using "connect akun" (web browser extension mode, where precomputed !== null),
+        // the response is generated client-side by the extension (claude.ai tab) and bypasses
+        // the server-side AI provider where TokenUsage::record() is normally called.
+        // We record estimated tokens here so the Billing dashboard reflects web account usage.
+        if ($precomputed !== null && Auth::check()) {
+            $outTokens = max(1, intdiv(strlen($fullResponse), 4));
+            $threadMessages = Message::where('conversation_id', $conversation->id)
+                ->where('id', '<', $assistantMessage->id)
+                ->get(['content']);
+            $inChars = 0;
+            foreach ($threadMessages as $m) {
+                $inChars += strlen((string) $m->content);
+            }
+            $inTokens = max(1, intdiv($inChars, 4));
+
+            $providerLabel = str_starts_with($model, 'claude') ? 'anthropic' : (str_starts_with($model, 'gpt') ? 'openai' : (str_starts_with($model, 'gemini') ? 'google' : 'web'));
+            [$rtkSaved, $rtkOriginal] = \App\Services\AI\RtkTracker::flushAndGet();
+
+            \App\Models\TokenUsage::record(
+                Auth::id(),
+                $model,
+                $providerLabel,
+                $inTokens,
+                $outTokens,
+                $rtkSaved,
+                $rtkOriginal
+            );
+        }
+
         // Create artifacts and link to the actual message. Reusing an earlier
         // identifier makes it a new VERSION; command="update" additionally
         // applies find/replace pairs onto the previous version instead of
