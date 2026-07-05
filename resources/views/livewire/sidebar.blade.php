@@ -132,16 +132,34 @@
                 <span>Customize</span>
             </button>
 
-            <a
-                href="{{ route('api-keys') }}"
-                class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] group"
-            >
-                <svg class="w-[18px] h-[18px] flex-shrink-0 dark:text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                    <path class="api-key-ring" stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                </svg>
-                <span>Add API</span>
-                <svg class="external-link-icon w-3.5 h-3.5 ml-auto -rotate-45 dark:text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
-            </a>
+            <div x-data="{ addApiOpen: true }" class="w-full">
+                <div class="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] transition-all duration-200 group">
+                    <a href="{{ route('api-keys') }}" class="flex items-center gap-2.5 text-[13px] text-[#2D2825] dark:text-stone-300 font-medium flex-1">
+                        <svg class="w-[18px] h-[18px] flex-shrink-0 dark:text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path class="api-key-ring" stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                        </svg>
+                        <span>Add API</span>
+                    </a>
+                    <button @click.prevent="addApiOpen = !addApiOpen" class="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-stone-200 rounded">
+                        <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="addApiOpen ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+                
+                <div x-show="addApiOpen" x-collapse.duration.200ms class="pl-6 pr-1 space-y-0.5 mt-0.5">
+                    <a
+                        href="{{ route('model-hub') }}"
+                        class="sidebar-menu-item w-full flex items-center justify-between py-1 px-2 rounded-lg text-[12px] transition-all duration-200 text-gray-600 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] group"
+                    >
+                        <div class="flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                            </svg>
+                            <span>Model Hub (GGUF)</span>
+                        </div>
+                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#D97757]/10 text-[#D97757] dark:bg-[#D97757]/20">Local AI</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
         {{-- Products --}}
