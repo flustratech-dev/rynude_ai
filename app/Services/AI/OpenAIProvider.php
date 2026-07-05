@@ -23,7 +23,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $isProxy = $user && $user->use_proxy;
 
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
-        $isOllama = $aiModel && $aiModel->provider === 'ollama';
+        $isOllama = $aiModel && in_array($aiModel->provider, ['ollama', 'local', 'gguf']);
         $isLocalEngine = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo') || ($aiModel && in_array($aiModel->provider, ['nine_router', 'local', 'gguf', 'ollama']));
 
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
@@ -35,6 +35,44 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             if ($isOllama) {
                 $apiKey = 'sk-dummy-key-for-ollama';
                 $baseUrl = 'http://127.0.0.1:11434/v1';
+
+                // Pastikan server lokal berjalan
+                $connection = @fsockopen('127.0.0.1', 11434, $errno, $errstr, 1);
+                if (is_resource($connection)) {
+                    fclose($connection);
+                } else {
+                    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                        @pclose(@popen('start /B ollama serve > NUL 2>&1', 'r'));
+                        sleep(2);
+                    } else {
+                        @exec('nohup ollama serve > /dev/null 2>&1 &');
+                        sleep(2);
+                    }
+                }
+
+                // Jika model berasal dari Model Hub (GGUF), otomatis import ke engine lokal
+                if ($aiModel && in_array($aiModel->provider, ['local', 'gguf'])) {
+                    $storagePath = storage_path('app/models');
+                    $modelfilePath = $storagePath . DIRECTORY_SEPARATOR . 'Modelfile.' . $model;
+                    $catalogMap = [
+                        'qwen-2.5-0.5b' => 'qwen2.5-0.5b-instruct-q8_0.gguf',
+                        'qwen-2.5-1.5b' => 'qwen2.5-1.5b-instruct-q5_k_m.gguf',
+                        'llama-3.2-3b' => 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
+                        'mistral-7b-v0.3' => 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
+                        'llama-3.1-8b' => 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf',
+                        'qwen-2.5-14b' => 'qwen2.5-14b-instruct-q4_k_m.gguf',
+                    ];
+                    $targetGguf = isset($catalogMap[$model]) ? ($storagePath . DIRECTORY_SEPARATOR . $catalogMap[$model]) : null;
+                    if ($targetGguf && file_exists($targetGguf)) {
+                        try {
+                            @file_put_contents($modelfilePath, "FROM {$targetGguf}");
+                            @exec("ollama create \"{$model}\" -f \"{$modelfilePath}\"");
+                            @unlink($modelfilePath);
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning("Gagal auto-import GGUF: " . $e->getMessage());
+                        }
+                    }
+                }
             } else {
                 $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-local-engine';
                 $baseUrl = ($user && !empty($user->nine_router_base_url)) ? rtrim($user->nine_router_base_url, '/') : 'http://127.0.0.1:20128/v1';

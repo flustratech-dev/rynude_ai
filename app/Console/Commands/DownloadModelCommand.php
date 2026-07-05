@@ -42,6 +42,15 @@ class DownloadModelCommand extends Command
 
         // Check if already downloaded
         if (file_exists($finalPath) && filesize($finalPath) > 0) {
+            try {
+                $modelfilePath = $modelsDir . DIRECTORY_SEPARATOR . 'Modelfile.' . $modelId;
+                @file_put_contents($modelfilePath, "FROM {$finalPath}");
+                @exec("ollama create \"{$modelId}\" -f \"{$modelfilePath}\" > NUL 2>&1");
+                @unlink($modelfilePath);
+            } catch (\Throwable $e) {
+                // Ignore if ollama not running/installed
+            }
+
             Cache::put('model_download_' . $modelId, [
                 'status' => 'completed',
                 'progress' => 100,
@@ -96,6 +105,16 @@ class DownloadModelCommand extends Command
 
             if (file_exists($partPath) && filesize($partPath) > 0) {
                 rename($partPath, $finalPath);
+
+                try {
+                    $modelfilePath = $modelsDir . DIRECTORY_SEPARATOR . 'Modelfile.' . $modelId;
+                    @file_put_contents($modelfilePath, "FROM {$finalPath}");
+                    @exec("ollama create \"{$modelId}\" -f \"{$modelfilePath}\" > NUL 2>&1");
+                    @unlink($modelfilePath);
+                } catch (\Throwable $e) {
+                    // Ignore if ollama not running/installed
+                }
+
                 Cache::put('model_download_' . $modelId, [
                     'status' => 'completed',
                     'progress' => 100,
