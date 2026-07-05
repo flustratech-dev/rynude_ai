@@ -54,11 +54,15 @@ graph TD
     D -->|HuggingFace API| F[🦙 Llama 3 / Qwen / DeepSeek]
     D -->|OpenAI API| G[🤖 GPT-4o / GPT-4]
     D -->|9router Proxy| H[🔓 Free Premium Models]
-    
+    D -->|OpenAI-Compatible| I[🆕 GLM / Kimi / Qwen]
+    D -->|Extension Proxy| J[🔌 Connect Account<br>Claude & Gemini gratis]
+
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#bbf,stroke:#333,stroke-width:2px
     style C fill:#ddf,stroke:#333,stroke-width:2px
     style D fill:#fdd,stroke:#333,stroke-width:2px
+    style I fill:#dfd,stroke:#333,stroke-width:2px
+    style J fill:#ffd,stroke:#333,stroke-width:2px
 ```
 
 ### 🗜️ Alur Kerja RTK (Response Token Kuration)
@@ -85,6 +89,10 @@ sequenceDiagram
 | **Anthropic** | ✅ Native | Resmi, Paling Cerdas (Coding & Logika) | `Claude 3.5 Sonnet` |
 | **OpenAI** | ✅ Native | Resmi, Ekosistem Terbesar | `GPT-4o` |
 | **9router Proxy** | ✅ Native | Akses model premium gratis (Bypass) | `Rynude Sonnet / Haiku` |
+| **GLM (Z.ai)** 🆕 | ✅ API Key | OpenAI-compatible, **ada model gratis** | `glm-4.5-flash`, `glm-4.7-flash` |
+| **Kimi (Moonshot)** 🆕 | ✅ API Key | Konteks super panjang | `kimi-latest`, `moonshot-v1` |
+| **Qwen (Alibaba)** 🆕 | ✅ API Key | Multibahasa & jago coding | `qwen-plus`, `qwen-max` |
+| **Connect Account** 🆕 | ✅ Extension | Chat via **akun web gratis** (tanpa API key) | `Claude`, `Gemini` |
 
 ---
 
@@ -124,6 +132,24 @@ Kemerdekaan di tangan Anda. Ganti API Key, ubah <i>Base URL</i>, dan tambahkan <
 <summary><b>🔥 RTK (Response Token Kuration/Compression)</b></summary>
 <br/>
 Teknologi kompresi output canggih yang secara otomatis memotong boilerplate, log berlebih, dan redudansi pada respons tool/command sebelum dikirim ke LLM. Menghemat penggunaan token hingga 30-50% dan mempercepat waktu respons AI tanpa mengurangi keakuratan konteks! Dilengkapi dengan Dashboard Analytics per sesi/hari di menu Settings -> Billing.
+</details>
+
+<details>
+<summary><b>🔌 Connect Account — Chat Gratis via Akun Web (Tanpa API Key)</b></summary>
+<br/>
+Punya akun <b>claude.ai</b> atau <b>Gemini</b> gratis? Sambungkan langsung ke Rynude lewat <b>Rynude Connector</b> (browser extension). Extension menjalankan panggilan dari dalam tab provider yang sudah login Anda, sehingga <b>menembus proteksi Cloudflare</b> yang biasanya memblokir server. Balasan lalu dialirkan mulus ke chat Rynude — tak perlu API key sama sekali. Lihat bagian <a href="#-connect-account--chat-gratis-pakai-akun-web-claude--gemini">Connect Account</a> di bawah.
+</details>
+
+<details>
+<summary><b>🏷️ Judul Chat Otomatis dari Isi</b></summary>
+<br/>
+Setiap percakapan baru langsung diberi judul ringkas berdasarkan pesan pertama Anda — instan, tanpa menunggu <i>queue worker</i>, dan tak akan lagi menampilkan "New Chat" yang membingungkan.
+</details>
+
+<details>
+<summary><b>🔢 Urutan Model yang Rapi & Bisa Diatur</b></summary>
+<br/>
+Daftar model di <i>picker</i> kini mengikuti urutan yang Anda tentukan di <code>AiModelSeeder</code> (kolom <code>sort_order</code>) — tidak acak. Model custom otomatis turun ke paling bawah agar rapi.
 </details>
 
 ---
@@ -184,6 +210,10 @@ rynude
 | 🌐 **Web search** | Tombol **+** pada kotak input → **Web search**. AI akan mengutip hasil pencarian terkini (keyless DuckDuckGo, atau set `SEARCH_API_KEY`). |
 | 🎤 **Dikte suara & baca lantang** | Ikon mikrofon untuk dikte; ikon speaker pada balasan untuk membacakannya (Web Speech API). |
 | 🎨 **Artifact: versi & publish** | Berpindah antar-versi artifact, lalu **Publish** untuk membuat tautan publik. |
+| 🔌 **Connect Account** 🆕 | Tab **Connect Account** di *Add API* → aktifkan **Claude/Gemini** lewat *Rynude Connector* extension, chat gratis tanpa API key. |
+| 🆓 **Provider baru: GLM / Kimi / Qwen** 🆕 | Tab **API Keys** di *Add API* → isi API key **GLM (Z.ai, ada model gratis)**, **Kimi**, atau **Qwen**. Endpoint sudah otomatis. |
+| 🏷️ **Judul chat otomatis** 🆕 | Chat baru langsung berjudul sesuai isi pesan pertama — bukan lagi "New Chat". |
+| 🔢 **Urutan model rapi** 🆕 | Daftar model mengikuti urutan `sort_order` di seeder — tidak acak lagi. |
 
 ---
 
@@ -257,6 +287,66 @@ Bosan dengan model standar? Mari manfaatkan server gratis **Hugging Face** yang 
 > ✨ **Voila!** Puluhan model tangguh berakhiran **"HG"** (seperti `HG Qwen3.6`, `HG DeepSeek-V4-Pro`) yang sebelumnya berwarna abu-abu terkunci, kini otomatis **menyala dan siap dieksekusi**!
 
 *(Seluruh routing URL ke server Hugging Face sudah diatur sangat canggih di balik layar agar Anda tinggal pakai tanpa repot coding!)*
+
+---
+
+## 🔌 Connect Account — Chat Gratis pakai Akun Web (Claude & Gemini)
+
+Punya akun **claude.ai** atau **Gemini** gratis? Anda bisa memakainya langsung di Rynude **tanpa API key sama sekali** — lewat browser extension **Rynude Connector**.
+
+### 🧠 Kenapa harus lewat extension?
+
+Situs seperti claude.ai dilindungi **Cloudflare** yang memblokir semua permintaan dari server. Trik Rynude: extension menjalankan panggilan **dari dalam tab provider yang sudah login Anda** (same-origin), sehingga membawa cookie & sidik jari browser asli dan **lolos Cloudflare** — sesuatu yang mustahil dilakukan server.
+
+```mermaid
+sequenceDiagram
+    participant U as 👨‍💻 Anda
+    participant R as 🖥️ Rynude (chat)
+    participant E as 🧩 Rynude Connector
+    participant T as 🌐 Tab claude.ai / gemini (login)
+
+    U->>R: Kirim pesan (model Claude/Gemini)
+    R->>R: Simpan pesan + minta bantuan extension
+    R->>E: webComplete(provider, prompt)
+    E->>T: Panggil API provider (same-origin, lolos Cloudflare)
+    T-->>E: Jawaban AI
+    E-->>R: Kirim balik → disimpan & di-stream ke chat ✨
+```
+
+### 🚀 Cara Pakai
+
+1. **Pasang extension:** buka **Add API → Connect Account → Download Extension**, ekstrak, lalu *Load unpacked* di `chrome://extensions` (aktifkan Developer mode).
+2. **Login** di [claude.ai](https://claude.ai) dan/atau [gemini.google.com](https://gemini.google.com) (biarkan satu tab terbuka, boleh di-*pin*).
+3. Di Rynude → **Add API → Connect Account** → klik **Connect Claude** / **Connect Gemini**.
+4. Di tab **API Keys**, **kosongkan** Anthropic/Google API key & pastikan proxy **OFF** (agar jalur akun-web yang dipakai).
+5. Buka chat, pilih model **Claude** atau **Gemini** → kirim. Jawaban muncul lewat akun gratis Anda! 🎉
+
+> [!NOTE]
+> **Keandalan per provider:** **Claude** ✅ andal · **Gemini** ✅ jalan (format webnya bisa berubah sewaktu-waktu) · **ChatGPT** 🔴 tidak didukung — OpenAI mewajibkan *proof-of-work + Turnstile* yang tak bisa ditembus. Untuk GPT, gunakan API key resmi.
+
+> [!WARNING]
+> Fitur ini memakai API web yang direverse-engineer dan **berpotensi melanggar ToS provider** (risiko akun dibatasi). Gunakan dengan bijak untuk keperluan pribadi.
+
+---
+
+## 🆓 Provider Baru: GLM, Kimi & Qwen (OpenAI-Compatible)
+
+Tiga provider populer kini bisa dicolokkan langsung via **API Key** — endpoint-nya sudah otomatis, Anda tinggal isi *key*.
+
+| Provider | Endpoint (otomatis) | Model contoh | Catatan |
+| :--- | :--- | :--- | :---: |
+| **GLM (Z.ai)** | `https://api.z.ai/api/paas/v4` | `glm-4.5-flash`, `glm-4.7-flash`, `glm-4.6` | 🆓 **Ada model gratis** |
+| **Kimi (Moonshot)** | `https://api.moonshot.ai/v1` | `kimi-latest`, `moonshot-v1-8k` | 💳 Berbayar |
+| **Qwen (Alibaba)** | `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | `qwen-plus`, `qwen-flash`, `qwen-max` | 💳 Berbayar |
+
+### 🚀 Cara Pakai
+
+1. Ambil API key: [Z.ai](https://z.ai/manage-apikey/apikey-list) · [Moonshot](https://platform.moonshot.ai/console/api-keys) · [Alibaba Bailian](https://bailian.console.alibabacloud.com/?tab=model#/api-key).
+2. Buka **Add API → API Keys**, temukan kartu **GLM (Z.ai)** / **Kimi (Moonshot)** / **Qwen (Alibaba)**, tempel *key*, lalu **Save All API Keys**.
+3. Di chat, pilih model-nya (mis. `GLM 4.5 Flash (Free)`) — langsung jalan!
+
+> [!TIP]
+> 💚 **Rekomendasi hemat:** pakai **GLM** — model `glm-4.5-flash` & `glm-4.7-flash` **gratis** dan cukup pintar. Kalau kode model ditolak ("model not found"), sesuaikan lewat **Add Model** (provider sudah tersedia opsi GLM/Kimi/Qwen).
 
 ---
 
