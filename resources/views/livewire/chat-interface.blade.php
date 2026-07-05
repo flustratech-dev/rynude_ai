@@ -147,11 +147,8 @@
     <template x-if="showDeleteModal">
         <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteModal = false"></div>
-            <div class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-xl p-5">
+            <div class="relative w-full max-w-md bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-lg shadow-xl p-5">
                 <div class="flex items-start gap-3 mb-4">
-                    <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                    </div>
                     <div class="flex-1 min-w-0">
                         <h3 class="text-[15px] font-semibold text-stone-800 dark:text-stone-200">Delete chat?</h3>
                         <p class="text-[12.5px] text-stone-500 dark:text-stone-400 mt-0.5">This will permanently delete this conversation and all its messages. This action cannot be undone.</p>
