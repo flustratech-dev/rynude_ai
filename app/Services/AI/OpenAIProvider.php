@@ -21,9 +21,10 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $user = \Illuminate\Support\Facades\Auth::user();
 
         $isProxy = $user && $user->use_proxy;
-        $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo');
 
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo') || ($aiModel && $aiModel->provider === 'nine_router');
+
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
         $isOllama = $aiModel && $aiModel->provider === 'ollama';
         // GLM (Zhipu / z.ai) and Kimi (Moonshot) are OpenAI-compatible providers.
@@ -55,7 +56,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             }
         } elseif ($is9RouterAuto) {
             $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
-            $baseUrl = 'http://127.0.0.1:20128/v1';
+            $baseUrl = ($user && !empty($user->nine_router_base_url)) ? rtrim($user->nine_router_base_url, '/') : 'http://127.0.0.1:20128/v1';
         } elseif ($isOllama) {
             $apiKey = 'sk-dummy-key-for-ollama';
             $baseUrl = 'http://127.0.0.1:11434/v1';
@@ -187,7 +188,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             }
         } elseif ($is9RouterAuto) {
             $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
-            $baseUrl = 'http://127.0.0.1:20128/v1';
+            $baseUrl = ($user && !empty($user->nine_router_base_url)) ? rtrim($user->nine_router_base_url, '/') : 'http://127.0.0.1:20128/v1';
         } elseif ($isOllama) {
             $apiKey = 'sk-dummy-key-for-ollama';
             $baseUrl = 'http://127.0.0.1:11434/v1';

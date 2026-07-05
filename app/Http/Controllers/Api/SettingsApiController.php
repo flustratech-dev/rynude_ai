@@ -100,6 +100,7 @@ class SettingsApiController extends Controller
             'anthropic_api_key' => ['sometimes', 'nullable', 'string'],
             'openai_api_key' => ['sometimes', 'nullable', 'string'],
             'nine_router_api_key' => ['sometimes', 'nullable', 'string'],
+            'nine_router_base_url' => ['sometimes', 'nullable', 'url'],
             'google_api_key' => ['sometimes', 'nullable', 'string'],
             'mistral_api_key' => ['sometimes', 'nullable', 'string'],
             'glm_api_key' => ['sometimes', 'nullable', 'string'],
@@ -193,7 +194,7 @@ class SettingsApiController extends Controller
         // ── Direct columns on the user model ────────────────────────────
         $directColumns = [
             'name', 'email', 'custom_instructions',
-            'anthropic_api_key', 'openai_api_key', 'nine_router_api_key',
+            'anthropic_api_key', 'openai_api_key', 'nine_router_api_key', 'nine_router_base_url',
             'google_api_key', 'mistral_api_key', 'glm_api_key', 'kimi_api_key', 'qwen_api_key',
             'huggingface_api_key',
             'huggingface_base_url', 'use_proxy', 'proxy_base_url', 'proxy_api_key',
@@ -266,6 +267,7 @@ class SettingsApiController extends Controller
         $apiKeys['use_proxy'] = (bool) ($user->use_proxy ?? false);
         $apiKeys['proxy_base_url'] = $user->proxy_base_url ?? '';
         $apiKeys['proxy_api_key_set'] = !empty($user->proxy_api_key);
+        $apiKeys['nine_router_base_url'] = $user->nine_router_base_url ?? 'http://localhost:20128/v1';
         $apiKeys['huggingface_api_key_set'] = !empty($user->huggingface_api_key);
         $apiKeys['huggingface_base_url'] = $user->huggingface_base_url ?? 'https://api-inference.huggingface.co/v1';
 
@@ -669,5 +671,31 @@ class SettingsApiController extends Controller
             'nine_router' => strlen($key) >= 8,
             default => false,
         };
+    }
+
+    /**
+     * Menyalakan 9router di background
+     */
+    public function activate9router(): JsonResponse
+    {
+        try {
+            // Start 9router in the background without blocking the request and completely hidden/detached
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                // Jalankan di background secara tersembunyi (tanpa jendela terminal) dan terlepas dari PHP
+                pclose(popen('powershell -Command "Start-Process npx.cmd -ArgumentList \'9router\' -WindowStyle Hidden"', "r"));
+            } else {
+                // Detach dari parent process di linux/mac menggunakan nohup
+                exec("nohup npx 9router > /dev/null 2>&1 &");
+            }
+            return response()->json([
+                'status' => 'success', 
+                'message' => '9Router sedang diaktifkan di background. Silakan buka dashboard setelah beberapa detik.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Gagal menjalankan 9Router: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
