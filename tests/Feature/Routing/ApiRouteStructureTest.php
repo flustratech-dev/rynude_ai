@@ -122,6 +122,6 @@ class ApiRouteStructureTest extends TestCase
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/'));
 
         // At least 39 endpoints make up the migrated API surface.
-        $this->assertGreaterThanOrEqual(39, $apiRoutes);
+        $this->assertGreaterThanOrEqual(39, $apiRoutes->count());
     }
 }
