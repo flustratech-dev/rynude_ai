@@ -105,7 +105,7 @@ class DownloadModelCommand extends Command
                 ], 3600);
                 $this->info("Model {$filename} downloaded successfully.");
             } else {
-                throw new \Exception('Downloaded file is empty or missing.');
+                throw new \Exception('Koneksi terputus dari server Hugging Face (file 0 bytes). Silakan klik tombol Unduh kembali.');
             }
         } catch (\Throwable $e) {
             Log::error("Model download error for {$modelId}: " . $e->getMessage());
