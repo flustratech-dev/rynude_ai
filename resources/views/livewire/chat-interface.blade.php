@@ -396,7 +396,7 @@
                         </button>
 
                         {{-- Dropdown menu --}}
-                        <div x-show="open" @click.away="open = false" x-transition.opacity x-cloak class="absolute right-0 mt-1 w-[200px] bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-50 py-1.5 overflow-hidden">
+                        <div x-show="open" @click.away="open = false" x-transition.opacity x-cloak class="absolute left-0 mt-1 w-[200px] bg-white dark:bg-[#2C2C2A] border border-claude-border-light dark:border-claude-border-dark rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.12)] z-50 py-1.5 overflow-hidden">
                             {{-- Star / Unstar --}}
                             <button type="button" @click="open = false; toggleStar()" class="w-full text-left px-3 py-2 hover:bg-stone-50 dark:hover:bg-[#3A3A38] transition-colors flex items-center gap-2.5 group">
                                 <svg class="w-4 h-4" :class="isStarred ? 'text-[#D97757] fill-current' : 'text-stone-500 group-hover:text-stone-700 dark:group-hover:text-stone-300'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>

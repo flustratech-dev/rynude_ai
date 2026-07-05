@@ -1,10 +1,10 @@
 <div
     x-data="{ open: true }"
     @sidebar-toggle.window="open = $event.detail.open"
-    class="h-full w-full flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark font-claude-response"
+    class="h-full w-full flex-1 min-h-0 flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark font-claude-response"
 >
     {{-- ========== EXPANDED MODE ========== --}}
-    <div x-show="open" x-cloak class="h-full flex flex-col" x-data="{ searchOpen: false, searchQuery: '' }">
+    <div x-show="open" x-cloak class="h-full w-full flex-1 min-h-0 flex flex-col" x-data="{ searchOpen: false, searchQuery: '' }">
         {{-- Top Header --}}
         <div class="flex items-center justify-between px-3 py-2.5 mt-0.5">
             <button @click="activePanel = null; window.dispatchEvent(new CustomEvent('close-artifact-panel')); window.location.href = '{{ route('chat') }}'" class="font-serif text-[20px] font-semibold text-[#2D2825] dark:text-stone-200 hover:opacity-80 transition-opacity text-left focus:outline-none">Rynude</button>
@@ -210,7 +210,7 @@
                 </button>
             </div>
             
-            <div id="sidebar-recents" x-show="recentsOpen" x-collapse.duration.200ms class="flex-1 overflow-y-auto mt-0.5 space-y-0.5 pr-1 custom-scrollbar">
+            <div id="sidebar-recents" x-show="recentsOpen" x-collapse.duration.200ms class="mt-0.5 space-y-0.5 pr-1">
                 <template x-for="(items, groupName) in groupedRecents" :key="groupName">
                     <div>
                         <div class="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2 pt-2.5 pb-1 uppercase tracking-wider" x-text="groupName"></div>
@@ -236,10 +236,11 @@
                                         >
                                     </div>
                                 </template>
-                                <div class="absolute right-1 hidden group-hover:block">
+                                <div class="absolute right-1" :class="menuChatId === c.id ? 'block' : 'hidden group-hover:block'">
                                     <button
                                         @click.stop="menuChatId = menuChatId === c.id ? null : c.id"
                                         class="p-1 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-[#3A3A38] transition-colors"
+                                        :class="menuChatId === c.id ? 'bg-stone-200 dark:bg-[#3A3A38] text-stone-600 dark:text-stone-300' : ''"
                                     >
                                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
                                     </button>
@@ -564,7 +565,7 @@
     </div>
 
     {{-- ========== COLLAPSED MODE (icons only) ========== --}}
-    <div x-show="!open" x-cloak class="h-full w-full flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-claude-bg-dark">
+    <div x-show="!open" x-cloak class="h-full w-full flex-1 min-h-0 flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-y-auto custom-scrollbar">
         <button
             @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
             class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] transition-colors text-gray-500 dark:text-stone-200 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"
