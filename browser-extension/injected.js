@@ -30,7 +30,7 @@
   }
 
   window.rynudeExtension = {
-    version: '1.0.0',
+    version: '1.1.0',
     installed: true,
 
     async getStatus() {
@@ -142,6 +142,6 @@
     }
   })();
 
-  window.dispatchEvent(new CustomEvent('rynude-extension-ready', { detail: { version: '1.0.0' } }));
+  window.dispatchEvent(new CustomEvent('rynude-extension-ready', { detail: { version: '1.1.0' } }));
   console.log('Rynude Connector: API exposed at window.rynudeExtension (MAIN world)');
 })();

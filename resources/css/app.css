@@ -298,6 +298,20 @@
 .group:hover .design-dot-4 { animation: pop 1s ease infinite 0.6s; transform-origin: center; }
 @keyframes pop { 50% { transform: scale(1.5); } }
 
+.group:hover .api-key-ring {
+    animation: unlock-shake 0.7s ease infinite;
+    transform-origin: 12px 12px;
+}
+@keyframes unlock-shake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    15% { transform: translateX(-2px) rotate(-8deg); }
+    30% { transform: translateX(2px) rotate(8deg); }
+    45% { transform: translateX(-1.5px) rotate(-5deg); }
+    60% { transform: translateX(1.5px) rotate(5deg); }
+    75% { transform: translateX(-0.5px) rotate(-2deg); }
+    90% { transform: translateX(0.5px) rotate(2deg); }
+}
+
 /* Blinking Cursor & Code Block */
 .cursor-blink, [wire\:stream="message-stream"]::after {
     animation: blink 1s step-end infinite;

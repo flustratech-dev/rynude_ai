@@ -134,10 +134,10 @@
 
             <a
                 href="{{ route('api-keys') }}"
-                class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38]"
+                class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] group"
             >
                 <svg class="w-[18px] h-[18px] flex-shrink-0 dark:text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                    <path class="api-key-ring" stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                 </svg>
                 <span>Add API</span>
                 <svg class="external-link-icon w-3.5 h-3.5 ml-auto -rotate-45 dark:text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
@@ -156,7 +156,7 @@
             <div x-show="productsOpen" x-collapse.duration.200ms class="space-y-0.5 mt-0.5">
                 <a
                     href="{{ route('code') }}"
-                    class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]"
+                    class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38] group"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0 dark:text-stone-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path class="code-bracket-right" stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25"/>
@@ -181,7 +181,7 @@
 
                 <a
                     href="{{ route('design') }}"
-                    class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38]"
+                    class="sidebar-menu-item w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-all duration-200 text-[#2D2825] dark:text-stone-300 hover:bg-claude-200/60 dark:hover:bg-[#3A3A38] group"
                 >
                     <svg class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path class="design-palette" d="M12 2a10 10 0 0 0-10 10c0 5.52 4.48 10 10 10a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-1a3 3 0 0 1-3-3 3 3 0 0 1 3-3h3a5 5 0 0 0 5-5c0-4.42-3.58-8-8-8z"/>

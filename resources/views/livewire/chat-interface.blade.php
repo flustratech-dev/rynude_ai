@@ -1106,12 +1106,31 @@ function chatInterfaceState() {
             var self = this;
             self.awaitingExtension = true;
 
-            if (!window.rynudeExtension || !window.rynudeExtension.webComplete) {
-                self.showStreamError('Butuh Rynude Extension aktif (versi terbaru). Reload extension di chrome://extensions lalu refresh halaman.');
+            var provider = info.provider || 'claude';
+            var ext = window.rynudeExtension;
+
+            // Prefer the generic webComplete (all providers). Fall back to the
+            // older claudeComplete-only build so Claude keeps working even if the
+            // extension hasn't been reloaded yet.
+            var call = null;
+            if (ext && ext.webComplete) {
+                call = function(p) { return ext.webComplete(provider, p); };
+            } else if (ext && ext.claudeComplete && provider === 'claude') {
+                call = function(p) { return ext.claudeComplete(p); };
+            }
+
+            console.log('[Rynude] need_extension provider=', provider,
+                'hasWebComplete=', !!(ext && ext.webComplete),
+                'canRun=', !!call,
+                'extVersion=', ext && ext.version);
+
+            if (!call) {
+                self.showStreamError(provider === 'claude'
+                    ? 'Butuh Rynude Extension aktif. Reload extension di chrome://extensions lalu refresh halaman.'
+                    : 'Untuk ' + provider.toUpperCase() + ' butuh Rynude Extension versi terbaru: buka chrome://extensions → klik Reload pada "Rynude Connector" → refresh halaman ini.');
                 return;
             }
 
-            var provider = info.provider || 'claude';
             var prompt = self.flattenForClaude(info.messages || []);
 
             // Never hang silently (tab closed, claude.ai not loading, SW asleep).
@@ -1122,7 +1141,7 @@ function chatInterfaceState() {
                 self.showStreamError('Timeout menunggu extension. Buka tab claude.ai (login) lalu kirim lagi.');
             }, 90000);
 
-            window.rynudeExtension.webComplete(provider, prompt).then(function(res) {
+            call(prompt).then(function(res) {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timer);
