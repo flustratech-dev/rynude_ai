@@ -127,7 +127,8 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         }
 
         if (empty($apiKey)) {
-            yield ['type' => 'text', 'text' => 'OpenAI API key is not configured. Please add it in your Settings.'];
+            $providerName = strtoupper($label === 'openai' ? 'OpenAI' : $label);
+            yield ['type' => 'text', 'text' => $providerName . ' API key is not configured. Please add it in your Settings.'];
             return ['stop_reason' => 'error', 'error' => 'missing_key'];
         }
 
@@ -147,7 +148,8 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $user = \Illuminate\Support\Facades\Auth::user();
 
         if (empty($apiKey)) {
-            yield "OpenAI API key is not configured. Please add it in your Settings.";
+            $providerName = strtoupper($label === 'openai' ? 'OpenAI' : $label);
+            yield $providerName . " API key is not configured. Please add it in your Settings.";
             return;
         }
 
