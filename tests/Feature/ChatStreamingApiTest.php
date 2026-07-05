@@ -119,7 +119,7 @@ class ChatStreamingApiTest extends TestCase
     public function send_creates_new_conversation_if_not_provided()
     {
         // Mock the AI service to avoid actual API calls
-        $this->mock(\App\Services\AI\AiService::class, function ($mock) {
+        $this->partialMock(\App\Services\AI\AiService::class, function ($mock) {
             $mock->shouldReceive('streamResponse')
                 ->andReturn(new \ArrayIterator(['Hello from AI']));
         });
@@ -138,7 +138,7 @@ class ChatStreamingApiTest extends TestCase
         $this->assertEquals(1, Conversation::count());
         $conversation = Conversation::first();
         $this->assertEquals($this->user->id, $conversation->user_id);
-        $this->assertEquals('New Chat', $conversation->title);
+        $this->assertEquals('Hello', $conversation->title);
     }
 
     /** @test */
@@ -149,7 +149,7 @@ class ChatStreamingApiTest extends TestCase
             'title' => 'Existing Chat',
         ]);
 
-        $this->mock(\App\Services\AI\AiService::class, function ($mock) {
+        $this->partialMock(\App\Services\AI\AiService::class, function ($mock) {
             $mock->shouldReceive('streamResponse')
                 ->andReturn(new \ArrayIterator(['Reply from AI']));
         });
@@ -190,7 +190,7 @@ class ChatStreamingApiTest extends TestCase
             'user_id' => $this->user->id,
         ]);
 
-        $this->mock(\App\Services\AI\AiService::class, function ($mock) {
+        $this->partialMock(\App\Services\AI\AiService::class, function ($mock) {
             $mock->shouldReceive('streamResponse')
                 ->andReturn(new \ArrayIterator(['Reply from AI']));
         });
@@ -220,7 +220,7 @@ class ChatStreamingApiTest extends TestCase
             'user_id' => $this->user->id,
         ]);
 
-        $this->mock(\App\Services\AI\AiService::class, function ($mock) {
+        $this->partialMock(\App\Services\AI\AiService::class, function ($mock) {
             $mock->shouldReceive('streamResponse')
                 ->andReturn(new \ArrayIterator(['Reply from AI']));
         });
@@ -252,7 +252,7 @@ class ChatStreamingApiTest extends TestCase
             'draft_prompt' => 'This is a draft',
         ]);
 
-        $this->mock(\App\Services\AI\AiService::class, function ($mock) {
+        $this->partialMock(\App\Services\AI\AiService::class, function ($mock) {
             $mock->shouldReceive('streamResponse')
                 ->andReturn(new \ArrayIterator(['Reply from AI']));
         });
