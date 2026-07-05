@@ -1102,26 +1102,29 @@ function chatInterfaceState() {
         handleNeedExtension: function(info) {
             var self = this;
             self.awaitingExtension = true;
+            self._fromExtensionLive = true;
+            self._receivedLiveChunks = 0;
+            self._inThinkingTag = false;
+            self._tagBuffer = '';
 
             var provider = info.provider || 'claude';
             var ext = window.rynudeExtension;
 
-            // Prefer the generic webComplete (all providers). Fall back to the
-            // older claudeComplete-only build so Claude keeps working even if the
-            // extension hasn't been reloaded yet.
-            var call = null;
-            if (ext && ext.webComplete) {
-                call = function(p) { return ext.webComplete(provider, p); };
+            var callStream = null;
+            if (ext && ext.webCompleteStream) {
+                callStream = function(p, onChunk) { return ext.webCompleteStream(provider, p, onChunk); };
+            } else if (ext && ext.webComplete) {
+                callStream = function(p, onChunk) { return ext.webComplete(provider, p); };
             } else if (ext && ext.claudeComplete && provider === 'claude') {
-                call = function(p) { return ext.claudeComplete(p); };
+                callStream = function(p, onChunk) { return ext.claudeComplete(p); };
             }
 
             console.log('[Rynude] need_extension provider=', provider,
-                'hasWebComplete=', !!(ext && ext.webComplete),
-                'canRun=', !!call,
+                'hasStream=', !!(ext && ext.webCompleteStream),
+                'canRun=', !!callStream,
                 'extVersion=', ext && ext.version);
 
-            if (!call) {
+            if (!callStream) {
                 self.showStreamError(provider === 'claude'
                     ? 'Butuh Rynude Extension aktif. Reload extension di chrome://extensions lalu refresh halaman.'
                     : 'Untuk ' + provider.toUpperCase() + ' butuh Rynude Extension versi terbaru: buka chrome://extensions → klik Reload pada "Rynude Connector" → refresh halaman ini.');
@@ -1130,7 +1133,6 @@ function chatInterfaceState() {
 
             var prompt = self.flattenForClaude(info.messages || []);
 
-            // Never hang silently (tab closed, claude.ai not loading, SW asleep).
             var settled = false;
             var timer = setTimeout(function () {
                 if (settled) return;
@@ -1138,7 +1140,71 @@ function chatInterfaceState() {
                 self.showStreamError('Timeout menunggu extension. Buka tab claude.ai (login) lalu kirim lagi.');
             }, 90000);
 
-            call(prompt).then(function(res) {
+            var onChunk = function(chunk) {
+                if (settled) return;
+                if (self.awaitingExtension) {
+                    self.awaitingExtension = false;
+                }
+                self._receivedLiveChunks = (self._receivedLiveChunks || 0) + 1;
+
+                var text = self._tagBuffer + chunk;
+                self._tagBuffer = '';
+
+                while (text.length > 0) {
+                    if (!self._inThinkingTag) {
+                        var openIdx = text.indexOf('<thinking>');
+                        if (openIdx !== -1) {
+                            if (openIdx > 0) {
+                                self.contentQueue += text.slice(0, openIdx);
+                            }
+                            self._inThinkingTag = true;
+                            text = text.slice(openIdx + 10);
+                        } else {
+                            var partialMatch = false;
+                            for (var len = Math.min(text.length, 9); len >= 1; len--) {
+                                if ('<thinking>'.slice(0, len) === text.slice(text.length - len)) {
+                                    self.contentQueue += text.slice(0, text.length - len);
+                                    self._tagBuffer = text.slice(text.length - len);
+                                    text = '';
+                                    partialMatch = true;
+                                    break;
+                                }
+                            }
+                            if (!partialMatch) {
+                                self.contentQueue += text;
+                                text = '';
+                            }
+                        }
+                    } else {
+                        var closeIdx = text.indexOf('</thinking>');
+                        if (closeIdx !== -1) {
+                            if (closeIdx > 0) {
+                                self.thinkQueue += text.slice(0, closeIdx);
+                            }
+                            self._inThinkingTag = false;
+                            text = text.slice(closeIdx + 11);
+                        } else {
+                            var partialMatchClose = false;
+                            for (var len = Math.min(text.length, 10); len >= 1; len--) {
+                                if ('</thinking>'.slice(0, len) === text.slice(text.length - len)) {
+                                    self.thinkQueue += text.slice(0, text.length - len);
+                                    self._tagBuffer = text.slice(text.length - len);
+                                    text = '';
+                                    partialMatchClose = true;
+                                    break;
+                                }
+                            }
+                            if (!partialMatchClose) {
+                                self.thinkQueue += text;
+                                text = '';
+                            }
+                        }
+                    }
+                }
+                self.pumpStream();
+            };
+
+            callStream(prompt, onChunk).then(function(res) {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timer);
@@ -1148,7 +1214,13 @@ function chatInterfaceState() {
                     return;
                 }
 
+                if (self._tagBuffer) {
+                    if (self._inThinkingTag) self.thinkQueue += self._tagBuffer;
+                    else self.contentQueue += self._tagBuffer;
+                    self._tagBuffer = '';
+                }
                 self.awaitingExtension = false;
+
                 fetch('/api/chats/' + info.conversation_id + '/complete-extension', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
@@ -1178,13 +1250,16 @@ function chatInterfaceState() {
                 var label = m.role === 'assistant' ? 'Assistant' : (m.role === 'system' ? 'System' : 'Human');
                 parts.push(label + ': ' + c);
             });
-            return parts.length <= 1
+            var promptText = parts.length <= 1
                 ? (parts[0] || '').replace(/^(Human|System|Assistant):\s*/, '')
                 : parts.join('\n\n');
+            var thinkingInstruction = "Instruksi: Sebelum menjawab pertanyaan, kamu WAJIB memikirkan langkah-langkah dan analisis jawabanmu terlebih dahulu secara terperinci di dalam tag <thinking>...</thinking>. Setelah tag penutup </thinking>, baru tuliskan jawaban akhirmu secara jelas dan rapi.";
+            return thinkingInstruction + "\n\n" + promptText;
         },
 
         // Surface an error in the streaming bubble and reset the send state.
         showStreamError: function(msg) {
+            this._fromExtensionLive = false;
             this.stopWaitFeed();
             this.contentQueue = '';
             this.thinkQueue = '';
@@ -1197,6 +1272,10 @@ function chatInterfaceState() {
 
         // Reset all streaming state before a send/edit/regenerate kicks off.
         beginStreamingState: function(model) {
+            this._fromExtensionLive = false;
+            this._receivedLiveChunks = 0;
+            this._inThinkingTag = false;
+            this._tagBuffer = '';
             this.editingIdx = null;
             this.streaming = true;
             this.streamContent = '';
@@ -1279,14 +1358,17 @@ function chatInterfaceState() {
                                             }
                                         }
                                     } else if (data.type === 'content') {
+                                        if (self._fromExtensionLive && self._receivedLiveChunks > 0) return;
                                         // Queue tokens and reveal them gradually so the
                                         // answer types out even if chunks arrive in bursts
                                         self.contentQueue += data.data;
                                         self.pumpStream();
                                     } else if (data.type === 'thinking') {
+                                        if (self._fromExtensionLive && self._receivedLiveChunks > 0) return;
                                         self.thinkQueue += data.data;
                                         self.pumpStream();
                                     } else if (data.type === 'error') {
+                                        self._fromExtensionLive = false;
                                         self.stopWaitFeed();
                                         self.contentQueue = '';
                                         self.thinkQueue = '';
@@ -1312,6 +1394,7 @@ function chatInterfaceState() {
                                         // The answer is complete — finalize as soon as the
                                         // typewriter drains, don't wait for the connection
                                         // to close (server may still run housekeeping jobs)
+                                        self._fromExtensionLive = false;
                                         self.streamEnded = true;
                                         self.pumpStream();
                                     } else if (data.type === 'artifact') {

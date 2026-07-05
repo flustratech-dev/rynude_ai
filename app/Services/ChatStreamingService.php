@@ -64,9 +64,19 @@ class ChatStreamingService
             // research, system-prompt building and the AI provider entirely —
             // just stream the text out and let the shared save/artifact/title/
             // done logic below run exactly as for a normal generation.
+            $extractedThinking = '';
+            if (preg_match('/<(?:thinking|sim_thinking|think)>(.*?)<\/(?:thinking|sim_thinking|think)>/is', $precomputed, $matches)) {
+                $extractedThinking = trim($matches[1]);
+                $precomputed = trim(preg_replace('/<(?:thinking|sim_thinking|think)>.*?<\/(?:thinking|sim_thinking|think)>/is', '', $precomputed));
+            }
             $thinking = false;
             $simulateThinking = false;
-            $stream = (function () use ($precomputed) {
+            $stream = (function () use ($precomputed, $extractedThinking) {
+                if ($extractedThinking !== '') {
+                    foreach (str_split($extractedThinking, 400) as $piece) {
+                        yield ['type' => 'thinking', 'text' => $piece];
+                    }
+                }
                 // Chunk so a very long answer still yields cooperatively and the
                 // client's typewriter has bites to reveal.
                 foreach (str_split($precomputed, 400) as $piece) {

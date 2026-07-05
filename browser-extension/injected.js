@@ -118,6 +118,22 @@
       return await _rq('WEB_COMPLETE', { provider: provider || 'claude', prompt: prompt });
     },
 
+    // Stream completion through a provider tab, firing onChunk(chunk) as tokens arrive.
+    async webCompleteStream(provider, prompt, onChunk) {
+      var handler = function(e) {
+        if (e.detail && e.detail.chunk && (!provider || e.detail.provider === provider)) {
+          if (onChunk) onChunk(e.detail.chunk);
+        }
+      };
+      window.addEventListener('rynude-web-stream-chunk', handler);
+      try {
+        var res = await this.webComplete(provider, prompt);
+        return res;
+      } finally {
+        window.removeEventListener('rynude-web-stream-chunk', handler);
+      }
+    },
+
     // Backwards-compatible alias.
     async claudeComplete(prompt) {
       return await this.webComplete('claude', prompt);

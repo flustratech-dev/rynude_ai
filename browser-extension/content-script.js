@@ -44,11 +44,15 @@
     }
   });
 
-  // Forward TOKEN_UPDATE pushes from the background to the page.
+  // Forward TOKEN_UPDATE and WEB_STREAM_CHUNK pushes from the background to the page.
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'TOKEN_UPDATE') {
       window.dispatchEvent(new CustomEvent('rynude-token-update', {
         detail: { provider: message.provider, connected: message.connected }
+      }));
+    } else if (message.type === 'WEB_STREAM_CHUNK') {
+      window.dispatchEvent(new CustomEvent('rynude-web-stream-chunk', {
+        detail: { provider: message.provider, chunk: message.chunk }
       }));
     }
   });

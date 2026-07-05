@@ -162,7 +162,7 @@ async function checkAllProviderTokens() {
  * Notify content script of token changes
  */
 function notifyContentScript(provider, connected) {
-  chrome.tabs.query({ url: 'http://localhost:8080/*' }, (tabs) => {
+  chrome.tabs.query({ url: ['http://localhost:*/*', 'http://127.0.0.1:*/*'] }, (tabs) => {
     tabs.forEach(tab => {
       chrome.tabs.sendMessage(tab.id, {
         type: 'TOKEN_UPDATE',
@@ -231,6 +231,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // async
   }
 
+  if (request.type === 'WEB_STREAM_CHUNK') {
+    chrome.tabs.query({ url: ['http://localhost:*/*', 'http://127.0.0.1:*/*'] }, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'WEB_STREAM_CHUNK',
+          provider: request.provider,
+          chunk: request.chunk
+        }).catch(() => {});
+      });
+    });
+    return true;
+  }
+
 });
 
 /**
@@ -260,6 +273,23 @@ async function webComplete(provider, prompt) {
     try {
       const tab = await getOrCreateTab(cfg.match, cfg.open);
       console.log('[Rynude]', provider, 'attempt', attempt + 1, 'via tab', tab.id, tab.url);
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        world: 'ISOLATED',
+        func: () => {
+          if (window._rynudeStreamListenerInstalled) return;
+          window._rynudeStreamListenerInstalled = true;
+          window.addEventListener('message', (event) => {
+            if (event.data && event.data.rynudeStreamChunk) {
+              chrome.runtime.sendMessage({
+                type: 'WEB_STREAM_CHUNK',
+                provider: event.data.provider,
+                chunk: event.data.chunk
+              }).catch(() => {});
+            }
+          });
+        }
+      }).catch(() => {});
       const injection = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         world: 'MAIN',
@@ -347,19 +377,33 @@ async function claudeApiFlow(prompt) {
     if (res.status === 403) throw new Error('Cloudflare memblokir completion — buka claude.ai manual lalu ulangi.');
     if (!res.ok) throw new Error('completion ' + res.status);
 
-    const body = await res.text();
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
     let text = '';
-    body.split(/\r\n|\r|\n/).forEach((line) => {
-      line = line.trim();
-      if (!line.startsWith('data:')) return;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === '[DONE]') return;
-      try {
-        const d = JSON.parse(payload);
-        if (typeof d.completion === 'string') text += d.completion;
-        else if (d.delta && typeof d.delta.text === 'string') text += d.delta.text;
-      } catch (e) { /* ignore non-JSON keepalives */ }
-    });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r\n|\r|\n/);
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const d = JSON.parse(payload);
+          let chunk = '';
+          if (typeof d.completion === 'string') chunk = d.completion;
+          else if (d.delta && typeof d.delta.text === 'string') chunk = d.delta.text;
+          if (chunk) {
+            text += chunk;
+            window.postMessage({ rynudeStreamChunk: true, provider: 'claude', chunk: chunk }, '*');
+          }
+        } catch (e) { /* ignore non-JSON keepalives */ }
+      }
+    }
 
     if (!text) throw new Error('Jawaban kosong (format claude.ai mungkin berubah).');
     return { ok: true, text };
@@ -450,19 +494,35 @@ async function chatgptApiFlow(prompt) {
     if (conv.status === 403) return { ok: false, error: 'chatgpt.com menolak (403) — kemungkinan verifikasi bot.' };
     if (!conv.ok) return { ok: false, error: 'ChatGPT conversation ' + conv.status };
 
-    const body = await conv.text();
+    const reader = conv.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
     let text = '';
-    body.split(/\r\n|\r|\n/).forEach((line) => {
-      line = line.trim();
-      if (!line.startsWith('data:')) return;
-      const p = line.slice(5).trim();
-      if (!p || p === '[DONE]') return;
-      try {
-        const d = JSON.parse(p);
-        const parts = d && d.message && d.message.content && d.message.content.parts;
-        if (Array.isArray(parts) && typeof parts[0] === 'string') text = parts.join('');
-      } catch (e) { /* keepalive */ }
-    });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r\n|\r|\n/);
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const p = trimmed.slice(5).trim();
+        if (!p || p === '[DONE]') continue;
+        try {
+          const d = JSON.parse(p);
+          const parts = d && d.message && d.message.content && d.message.content.parts;
+          if (Array.isArray(parts) && typeof parts[0] === 'string') {
+            const fullSoFar = parts.join('');
+            if (fullSoFar.length > text.length) {
+              const chunk = fullSoFar.slice(text.length);
+              text = fullSoFar;
+              window.postMessage({ rynudeStreamChunk: true, provider: 'chatgpt', chunk: chunk }, '*');
+            }
+          }
+        } catch (e) { /* keepalive */ }
+      }
+    }
     if (!text) return { ok: false, error: 'Jawaban ChatGPT kosong.' };
     return { ok: true, text };
   } catch (e) {
@@ -502,22 +562,35 @@ async function geminiApiFlow(prompt) {
     if (res.status === 401 || res.status === 403) return { ok: false, error: 'Gemini menolak (' + res.status + ') — login ulang di gemini.google.com.' };
     if (!res.ok) return { ok: false, error: 'Gemini ' + res.status };
 
-    const raw = await res.text();
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
     let text = '';
-    raw.split('\n').forEach((line) => {
-      const t = line.trim();
-      if (!t.startsWith('[[')) return;
-      try {
-        const outer = JSON.parse(t);
-        outer.forEach((item) => {
-          if (item && item[0] === 'wrb.fr' && typeof item[2] === 'string') {
-            const payload = JSON.parse(item[2]);
-            const cand = payload && payload[4] && payload[4][0] && payload[4][0][1] && payload[4][0][1][0];
-            if (typeof cand === 'string' && cand.length > text.length) text = cand;
-          }
-        });
-      } catch (e) { /* not the payload line */ }
-    });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith('[[')) continue;
+        try {
+          const outer = JSON.parse(t);
+          outer.forEach((item) => {
+            if (item && item[0] === 'wrb.fr' && typeof item[2] === 'string') {
+              const payload = JSON.parse(item[2]);
+              const cand = payload && payload[4] && payload[4][0] && payload[4][0][1] && payload[4][0][1][0];
+              if (typeof cand === 'string' && cand.length > text.length) {
+                const chunk = cand.slice(text.length);
+                text = cand;
+                window.postMessage({ rynudeStreamChunk: true, provider: 'gemini', chunk: chunk }, '*');
+              }
+            }
+          });
+        } catch (e) { /* not the payload line */ }
+      }
+    }
     if (!text) return { ok: false, error: 'Jawaban Gemini kosong (format batchexecute mungkin berubah).' };
     return { ok: true, text };
   } catch (e) {
