@@ -144,6 +144,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
     public function streamResponse(array $messages, string $model): \Generator
     {
         [$apiKey, $baseUrl, $label, $nativeTools] = $this->resolveConfig($model);
+        $user = \Illuminate\Support\Facades\Auth::user();
 
         if (empty($apiKey)) {
             yield "OpenAI API key is not configured. Please add it in your Settings.";
@@ -200,7 +201,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         ]);
 
         // Auto-detect Ollama model if using the generic 'rynude-ollama'
-        if ($isOllama && $model === 'rynude-ollama') {
+        if ($model === 'rynude-ollama') {
             try {
                 $tagsResponse = $client->get('http://127.0.0.1:11434/api/tags', ['timeout' => 2]);
                 if ($tagsResponse->getStatusCode() === 200) {
@@ -332,7 +333,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 
             // Record any usage the endpoint reported.
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
-                $providerLabel = $isHuggingFace ? 'huggingface' : ($isProxy ? 'proxy' : 'openai');
+                $providerLabel = $label;
                 [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
                 \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
             }
