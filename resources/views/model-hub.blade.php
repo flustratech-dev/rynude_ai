@@ -116,8 +116,11 @@
                         <template x-if="model.status === 'downloading'">
                             <div>
                                 <div class="flex items-center justify-between text-xs font-semibold text-[#D97757] mb-1.5">
-                                    <span>Mengunduh...</span>
-                                    <span x-text="model.progress + '%'"></span>
+                                    <span>Mengunduh... (<span x-text="model.progress + '%'"></span>)</span>
+                                    <button @click="deleteModel(model.id)" class="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1" title="Batalkan dan Hapus Unduhan">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        Batalkan & Hapus
+                                    </button>
                                 </div>
                                 <div class="w-full bg-gray-200 dark:bg-stone-700 rounded-full h-2.5 overflow-hidden">
                                     <div class="bg-[#D97757] h-2.5 rounded-full transition-all duration-300" :style="'width: ' + model.progress + '%'"></div>
@@ -267,7 +270,7 @@ function modelHubPage() {
         },
 
         async deleteModel(modelId) {
-            if (!confirm('Apakah Anda yakin ingin menghapus file model ini dari hardisk?')) return;
+            if (!confirm('Apakah Anda yakin ingin menghapus atau membatalkan unduhan model ini dari sistem?')) return;
             try {
                 const res = await fetch('/api/models/' + modelId, {
                     method: 'DELETE',

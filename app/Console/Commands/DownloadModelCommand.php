@@ -74,6 +74,12 @@ class DownloadModelCommand extends Command
                 'timeout' => 14400, // 4 hours max for large models
                 'connect_timeout' => 30,
                 'progress' => function ($totalDownload, $downloadedBytes) use ($modelId, &$lastUpdate) {
+                    // Cek apakah unduhan dibatalkan/dihapus oleh pengguna
+                    $currentState = Cache::get('model_download_' . $modelId);
+                    if (!$currentState || (isset($currentState['status']) && $currentState['status'] === 'cancelled')) {
+                        throw new \Exception('Download dibatalkan dan dihapus oleh pengguna.');
+                    }
+
                     if ($totalDownload > 0 && (time() - $lastUpdate >= 1 || $downloadedBytes === $totalDownload)) {
                         $lastUpdate = time();
                         $progress = round(($downloadedBytes / $totalDownload) * 100, 1);
@@ -106,12 +112,17 @@ class DownloadModelCommand extends Command
             if (file_exists($partPath)) {
                 @unlink($partPath);
             }
-            Cache::put('model_download_' . $modelId, [
-                'status' => 'error',
-                'progress' => 0,
-                'message' => 'Gagal mengunduh: ' . $e->getMessage(),
-                'updated_at' => now()->toIso8601String(),
-            ], 3600);
+            $currentState = Cache::get('model_download_' . $modelId);
+            if (!($currentState && isset($currentState['status']) && $currentState['status'] === 'cancelled')) {
+                Cache::put('model_download_' . $modelId, [
+                    'status' => 'error',
+                    'progress' => 0,
+                    'message' => 'Gagal mengunduh: ' . $e->getMessage(),
+                    'updated_at' => now()->toIso8601String(),
+                ], 3600);
+            } else {
+                Cache::forget('model_download_' . $modelId);
+            }
             return 1;
         }
 

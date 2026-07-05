@@ -195,6 +195,19 @@ class ModelHubController extends Controller
         $filePath = storage_path('app/models/' . $model['filename']);
         $partPath = $filePath . '.part';
 
+        // Set status ke cancelled agar background worker Guzzle langsung berhenti
+        $cacheState = Cache::get('model_download_' . $modelId);
+        $wasDownloading = $cacheState && ($cacheState['status'] ?? '') === 'downloading';
+        
+        if ($wasDownloading) {
+            Cache::put('model_download_' . $modelId, [
+                'status' => 'cancelled',
+                'message' => 'Unduhan dibatalkan oleh pengguna.',
+            ], 60);
+        } else {
+            Cache::forget('model_download_' . $modelId);
+        }
+
         $deleted = false;
         if (file_exists($filePath)) {
             $deleted = @unlink($filePath);
@@ -203,11 +216,9 @@ class ModelHubController extends Controller
             @unlink($partPath);
         }
 
-        Cache::forget('model_download_' . $modelId);
-
         return response()->json([
             'success' => true,
-            'message' => "Model {$model['name']} berhasil dihapus.",
+            'message' => $wasDownloading ? "Unduhan model {$model['name']} berhasil dibatalkan dan file sementara dihapus." : "Model {$model['name']} berhasil dihapus.",
             'deleted' => $deleted || !file_exists($filePath),
         ]);
     }
