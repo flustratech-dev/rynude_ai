@@ -7,8 +7,53 @@
             <p class="text-sm text-gray-500 dark:text-stone-400 mt-1">Configure your API keys, AI models, and Hugging Face integration.</p>
         </div>
 
-        {{-- Flash Message --}}
-        <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-[#1E1E20] dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-[#1E1E20] dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+        {{-- Centered Modal Box Popup Alert --}}
+        <div x-show="flashMessage" x-cloak
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            <div class="relative w-full max-w-sm p-6 bg-white dark:bg-[#1E1E20] border border-gray-200 dark:border-stone-700 rounded-2xl shadow-2xl transform transition-all text-center"
+                 @click.away="flashMessage = null"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="opacity-0 scale-90 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-90 translate-y-4"
+                 x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3500)}">
+                
+                {{-- Icon --}}
+                <div class="mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center shadow-inner"
+                     :class="flashType==='success'?'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400':'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'">
+                    <template x-if="flashType==='success'">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    </template>
+                    <template x-if="flashType!=='success'">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                    </template>
+                </div>
+
+                {{-- Title --}}
+                <h3 class="text-lg font-bold text-[#2D2825] dark:text-stone-100 mb-1.5"
+                    x-text="flashType==='success'?'Berhasil!':'Pemberitahuan'"></h3>
+
+                {{-- Message --}}
+                <p class="text-sm text-gray-600 dark:text-stone-300 mb-6 leading-relaxed font-medium"
+                   x-text="flashMessage"></p>
+
+                {{-- Action Button --}}
+                <button @click="flashMessage = null"
+                        type="button"
+                        class="w-full py-2.5 px-4 rounded-xl font-semibold text-sm text-white shadow-lg transition-all transform active:scale-95"
+                        :class="flashType==='success'?'bg-green-600 hover:bg-green-700 shadow-green-500/20':'bg-red-600 hover:bg-red-700 shadow-red-500/20'">
+                    OK, Mengerti
+                </button>
+            </div>
+        </div>
 
         {{-- Sidebar Layout --}}
         <div class="flex gap-6 items-start">
@@ -100,8 +145,8 @@
                 </div>
 
                 <div class="flex gap-1.5 mb-4 flex-wrap">
-                    <template x-for="f in ['all','anthropic','openai','google','huggingface','mistral','ollama','proxy']" :key="f">
-                        <button @click="filter=f" class="px-3 py-1 text-[12px] rounded-lg transition-colors capitalize" :class="filter===f?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200 font-medium':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]/50'" x-text="f==='all'?'All':f==='huggingface'?'Hugging Face':f"></button>
+                    <template x-for="f in ['all','anthropic','openai','google','huggingface','mistral','ollama','nine_router','proxy']" :key="f">
+                        <button @click="filter=f" class="px-3 py-1 text-[12px] rounded-lg transition-colors capitalize" :class="filter===f?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200 font-medium':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]/50'" x-text="f==='all'?'All':f==='huggingface'?'Hugging Face':f==='nine_router'?'9Router':f"></button>
                     </template>
                 </div>
 
@@ -251,8 +296,15 @@
                                 <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 font-bold text-sm">9</div>
                                 <div><h3 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">9Router</h3><p class="text-[12px] text-gray-500 dark:text-stone-400">9Router multi-provider proxy</p></div>
                             </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="activate9router()" class="px-3 py-1.5 text-xs text-white bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors">Aktifkan 9Router</button>
+                                <a href="http://localhost:20128" target="_blank" class="px-3 py-1.5 text-xs text-stone-600 dark:text-stone-300 border border-claude-border-light dark:border-claude-border-dark rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 font-medium transition-colors">Buka Dashboard</a>
+                            </div>
                         </div>
-                        <input type="password" x-model="kNineRouter" placeholder="Your 9Router API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <div class="space-y-3">
+                            <input type="password" x-model="kNineRouter" placeholder="Your 9Router API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                            <input type="text" x-model="nineRouterUrl" placeholder="Base URL (default: http://localhost:20128/v1)" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        </div>
                     </div>
                     {{-- Custom Proxy --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
@@ -459,8 +511,53 @@
             }
         }">
             <div class="bg-[#F9F8F6] dark:bg-claude-bg-dark rounded-xl border border-claude-border-light dark:border-claude-border-dark p-6">
-                {{-- Flash Message --}}
-                <div x-show="flashMessage" x-cloak x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3000)}" class="mb-4 p-3 text-sm rounded-lg border" :class="flashType==='success'?'text-green-800 bg-green-50 dark:bg-[#1E1E20] dark:text-green-400 border-green-200 dark:border-stone-700':'text-red-800 bg-red-50 dark:bg-[#1E1E20] dark:text-red-400 border-red-200 dark:border-stone-700'" x-text="flashMessage"></div>
+                {{-- Centered Modal Box Popup Alert (Connected Accounts) --}}
+                <div x-show="flashMessage" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0">
+                    <div class="relative w-full max-w-sm p-6 bg-white dark:bg-[#1E1E20] border border-gray-200 dark:border-stone-700 rounded-2xl shadow-2xl transform transition-all text-center"
+                         @click.away="flashMessage = null"
+                         x-transition:enter="transition ease-out duration-300 transform"
+                         x-transition:enter-start="opacity-0 scale-90 translate-y-4"
+                         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-200 transform"
+                         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 scale-90 translate-y-4"
+                         x-effect="if(flashMessage){clearTimeout(ft);ft=setTimeout(()=>flashMessage=null,3500)}">
+                        
+                        {{-- Icon --}}
+                        <div class="mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center shadow-inner"
+                             :class="flashType==='success'?'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400':'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'">
+                            <template x-if="flashType==='success'">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                            </template>
+                            <template x-if="flashType!=='success'">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                            </template>
+                        </div>
+
+                        {{-- Title --}}
+                        <h3 class="text-lg font-bold text-[#2D2825] dark:text-stone-100 mb-1.5"
+                            x-text="flashType==='success'?'Berhasil!':'Pemberitahuan'"></h3>
+
+                        {{-- Message --}}
+                        <p class="text-sm text-gray-600 dark:text-stone-300 mb-6 leading-relaxed font-medium"
+                           x-text="flashMessage"></p>
+
+                        {{-- Action Button --}}
+                        <button @click="flashMessage = null"
+                                type="button"
+                                class="w-full py-2.5 px-4 rounded-xl font-semibold text-sm text-white shadow-lg transition-all transform active:scale-95"
+                                :class="flashType==='success'?'bg-green-600 hover:bg-green-700 shadow-green-500/20':'bg-red-600 hover:bg-red-700 shadow-red-500/20'">
+                            OK, Mengerti
+                        </button>
+                    </div>
+                </div>
 
                 <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-1">Connected Accounts</h2>
                 <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mb-6">Connect your free tier accounts from ChatGPT, Gemini, and Claude to use Rynude without API keys.</p>
@@ -852,7 +949,8 @@
                         <option value="kimi">Kimi (Moonshot)</option>
                         <option value="qwen">Qwen (Alibaba)</option>
                         <option value="ollama">Ollama (Local)</option>
-                        <option value="proxy">9Router / Proxy</option>
+                        <option value="nine_router">9Router</option>
+                        <option value="proxy">Custom Proxy</option>
                     </select>
                 </div>
                 <div class="flex items-center">
@@ -874,6 +972,7 @@ function apiKeysPage(){
         tab:'hf',flashMessage:null,flashType:'success',ft:null,saving:false,
         hfKey:'',hfUrl:'https://api-inference.huggingface.co/v1',
         kAnthropic:'',kOpenai:'',kGoogle:'',kMistral:'',kGlm:'',kKimi:'',kQwen:'',kNineRouter:'',kProxy:'',
+        nineRouterUrl:'http://localhost:20128/v1',
         useProxy:false,proxyUrl:'',
         models:[],filter:'all',
         dlgOpen:false,dlgEditId:null,dlgCode:'',dlgName:'',dlgActive:true,dlgProv:'huggingface',dlgErr:null,dlgSaving:false,
@@ -893,9 +992,10 @@ function apiKeysPage(){
                 this.kGoogle=k.google?'••••••••••••••••':'';
                 this.kMistral=k.mistral?'••••••••••••••••':'';
                 this.kGlm=k.glm?'••••••••••••••••':'';
-                this.kKimi=k.kimi?'••••••••••••••••':'';
-                this.kQwen=k.qwen?'••••••••••••••••':'';
-                this.kNineRouter=k.nine_router?'•••••••••9•••••••':'';
+                this.kKimi=k.kimi_api_key?'••••••••••••••••':'';
+                this.kQwen=k.qwen_api_key?'••••••••••••••••':'';
+                this.kNineRouter=k.nine_router_api_key?'•••••••••9•••••••':'';
+                this.nineRouterUrl=k.nine_router_base_url||'http://localhost:20128/v1';
                 this.useProxy=k.use_proxy||false;
                 this.proxyUrl=k.proxy_base_url||'';
                 this.kProxy=k.proxy_api_key_set?'••••••••••••••••':'';
@@ -927,8 +1027,28 @@ function apiKeysPage(){
             if(this.kKimi&&this.kKimi!=='••••••••••••••••')p.kimi_api_key=this.kKimi;
             if(this.kQwen&&this.kQwen!=='••••••••••••••••')p.qwen_api_key=this.kQwen;
             if(this.kNineRouter&&this.kNineRouter!=='•••••••••9•••••••')p.nine_router_api_key=this.kNineRouter;
+            p.nine_router_base_url=this.nineRouterUrl;
             if(this.kProxy&&this.kProxy!=='••••••••••••••••')p.proxy_api_key=this.kProxy;
             this._patch(p).then(()=>{this.saving=false;this.flashMessage='API Keys saved!';this.flashType='success';this.load()});
+        },
+
+        async activate9router() {
+            try {
+                const r = await fetch('/api/settings/activate-9router', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    }
+                });
+                const res = await r.json();
+                this.flashMessage = res.message || '9Router activated.';
+                this.flashType = res.status === 'success' ? 'success' : 'error';
+            } catch(e) {
+                this.flashMessage = 'Failed to activate 9Router';
+                this.flashType = 'error';
+            }
         },
 
         openAddModel(prov){

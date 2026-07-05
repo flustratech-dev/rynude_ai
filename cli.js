@@ -172,6 +172,10 @@ async function run() {
     console.log(chalk.green('Memastikan semua dependencies terinstall...'));
     spawnSync('npm', ['install'], { stdio: 'ignore', shell: true });
 
+    // Instalasi 9router secara global (tidak akan error jika sudah ada)
+    console.log(chalk.green('Memastikan 9Router (Local AI Gateway) terinstall...'));
+    spawnSync('npm', ['install', '-g', '9router'], { stdio: 'ignore', shell: true });
+
     // CRITICAL: Always rebuild assets to ensure latest code is in public/build/
     console.log(chalk.green('Membangun ulang aset frontend...'));
     spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
@@ -239,6 +243,13 @@ async function run() {
         env: { ...process.env }
     });
 
+    // Menjalankan 9Router secara otomatis di background (tersembunyi & independen)
+    const nineRouter = spawn(os.platform() === 'win32' ? 'powershell' : 'npx',
+        os.platform() === 'win32' ? ['-Command', "Start-Process npx.cmd -ArgumentList '9router' -WindowStyle Hidden"] : ['9router'],
+        { stdio: 'ignore', shell: true, detached: true }
+    );
+    nineRouter.unref(); // Lepaskan proses agar tetap hidup di background tanpa jendela terminal
+
     // Daftar semua proses anak agar bisa dimatikan sekaligus
     const childProcesses = [phpServer, queueWorker];
 
@@ -270,9 +281,11 @@ async function run() {
         }
     };
 
-    // Tangkap Ctrl+C dan sinyal stop dari launchd/systemd (mode background)
+    // Tangkap Ctrl+C dan sinyal stop dari launchd/systemd/windows (mode background/close window)
     process.on('SIGINT', killServers);
     process.on('SIGTERM', killServers);
+    process.on('SIGBREAK', killServers);
+    process.on('SIGHUP', killServers);
 
     async function showMenu() {
         const workspace = process.env.RYNUDE_WORKSPACE || process.cwd();

@@ -246,29 +246,24 @@ Jadi walau folder project ditimpa update, data Anda tetap utuh. Untuk memulihkan
 
 ---
 
-## 🤖 Menikmati Model AI Premium (Gratis via 9router)
+## 🤖 All-in-One Local AI Engine (9Router Integration)
 
-Rynude AI mendukung API resmi secara *native* (OpenAI, Anthropic, dll). Namun, jika Anda ingin merasakan kecerdasan model premium secara **gratis** (via proxy lokal `9router`), ikuti trik kilat ini:
+Rynude AI mendukung API resmi secara *native* (OpenAI, Anthropic, dll). Namun, jika Anda ingin merasakan kecerdasan model premium secara **gratis dan tanpa limit** (via proxy lokal `9router`), Rynude kini telah mengintegrasikan **9Router secara langsung ke dalam aplikasi**!
 
-### 1. Nyalakan Mesin Proxy
-Buka **terminal baru** (biarkan aplikasi Rynude tetap hidup di terminal sebelumnya), lalu jalankan:
-```bash
-npx 9router
-```
-*(⚠️ Biarkan terminal 9router ini selalu terbuka selama Anda melakukan chatting).*
+### ✨ Keunggulan Integrasi 9Router Terbaru:
+- **Zero-Terminal Setup**: Anda **tidak perlu lagi membuka terminal baru** atau mengetik perintah `npx 9router` secara manual. Setiap kali Anda menjalankan perintah `rynude`, mesin 9Router otomatis dinyalakan di *background* secara tersembunyi (tanpa jendela hitam yang mengganggu)!
+- **Auto-Configured Routing**: Anda tidak perlu repot mengisi API Key atau Base URL secara manual! Rynude otomatis mengonfigurasi jalur proxy lokal (`http://127.0.0.1:20128/v1`) untuk Anda.
 
-### 2. Hubungkan Proxy ke Rynude
-1. Buka Rynude di browser dan **Login/Register** (bebas buat akun lokal apapun).
-2. Buka menu **Settings** (klik ikon profil di pojok kiri bawah).
-3. Pilih tab **API Keys**.
-4. Gulir ke bagian **Proxy API Key**, dan isikan data sakti berikut:
-   - **Base URL:** `http://localhost:20128/v1`
-   - **API Key:** `sk-dummy-key`
-5. Klik **Simpan** dan tutup *Settings*.
-6. Pada *dropdown* pilihan model di atas chat, pilih **Rynude Sonnet** atau **Rynude Haiku**.
+### 🚀 Cara Menggunakan 9Router di Rynude:
+1. Buka Rynude di browser dan masuk ke menu **Settings** (klik ikon profil di pojok kiri bawah).
+2. Pilih tab **API Keys**. Anda akan melihat panel khusus **9Router (Local AI Gateway)**.
+3. Klik tombol **"Aktifkan 9Router"** jika Anda ingin memastikan server proxy lokal aktif. Sebuah **Card Popup Alert** akan muncul menandakan mesin berhasil dinyalakan di background.
+4. Klik tombol **"Buka Dashboard"** untuk membuka antarmuka manajemen 9Router di port `20128` (untuk mengatur akun provider gratisan, cookie, atau model lokal Anda).
+5. Di tab **AI Models**, Anda bisa langsung mengklik filter **9Router** atau mendaftarkan model baru dengan memilih provider **9Router**.
+6. Pada *dropdown* pilihan model di atas chat, pilih model seperti **Rynude Sonnet**, **Rynude Haiku**, atau model ber-prefix `kr/` dan `mmf/`.
 
 > [!TIP]
-> 🎉 **BOOM!** Semua obrolan Anda sekarang ditenagai oleh kecerdasan kelas atas secara gratis. Selamat berkreasi!
+> 🎉 **BOOM!** Semua obrolan Anda sekarang ditenagai oleh kecerdasan kelas atas secara gratis tanpa repot urus terminal atau API Key! Selamat berkreasi!
 
 ---
 
