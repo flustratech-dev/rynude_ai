@@ -163,9 +163,14 @@ class ChatApiController extends ApiController
                 }
             }
 
+            // Give the chat a content-based title immediately so it never shows
+            // as "New Chat" — this doesn't depend on a queue worker (the async
+            // AI-title job below only runs when a worker + server credentials are
+            // available, and would otherwise never fire under QUEUE_CONNECTION=sync
+            // with the title job pinned to the database queue).
             $conversation = Conversation::create([
                 'user_id' => Auth::id(),
-                'title' => 'New Chat',
+                'title' => $this->deriveTitle($text),
                 'project_id' => $projectId,
                 'metadata' => $metadata,
             ]);
@@ -305,6 +310,20 @@ class ChatApiController extends ApiController
             false,
             $validated['content']
         );
+    }
+
+    /**
+     * Build a readable chat title from the first few words of the prompt.
+     */
+    private function deriveTitle(string $prompt): string
+    {
+        $clean = trim(preg_replace('/\s+/', ' ', strip_tags($prompt)));
+        if ($clean === '' || $clean === '.') {
+            return 'New Chat';
+        }
+        $words = array_slice(explode(' ', $clean), 0, 6);
+        $title = mb_substr(implode(' ', $words), 0, 60);
+        return mb_strtoupper(mb_substr($title, 0, 1)) . mb_substr($title, 1);
     }
 
     /**
