@@ -13,6 +13,15 @@ class AiModelSeeder extends Seeder
         $models = [
             ['code' => 'kr/claude-sonnet-4.5', 'name' => 'Rynude Sonnet'],
             ['code' => 'kr/claude-haiku-4.5', 'name' => 'Rynude Haiku'],
+            
+            // Local AI Engine (Model Hub GGUF & 9Router)
+            ['code' => 'qwen-2.5-0.5b', 'name' => 'Qwen 2.5 (0.5B Local)', 'provider' => 'local'],
+            ['code' => 'qwen-2.5-1.5b', 'name' => 'Qwen 2.5 (1.5B Local)', 'provider' => 'local'],
+            ['code' => 'llama-3.2-3b', 'name' => 'Llama 3.2 (3B Local)', 'provider' => 'local'],
+            ['code' => 'mistral-7b-v0.3', 'name' => 'Mistral 7B (v0.3 Local)', 'provider' => 'local'],
+            ['code' => 'llama-3.1-8b', 'name' => 'Llama 3.1 (8B Local)', 'provider' => 'local'],
+            ['code' => 'qwen-2.5-14b', 'name' => 'Qwen 2.5 (14B Local)', 'provider' => 'local'],
+
             ['code' => 'gpt-chat-latest', 'name' => 'GPT Chat Latest'],
             ['code' => 'gpt-5.5', 'name' => 'GPT 5.5'],
             ['code' => 'gpt-5.4-pro', 'name' => 'GPT 5.4 Pro'],

@@ -15,9 +15,9 @@ class AiService
     {
         $user = Auth::user();
 
-        // Ollama is always local — resolve it first regardless of proxy setting
+        // Local AI models are always local — resolve first regardless of proxy setting
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
-        if ($aiModel && $aiModel->provider === 'ollama') {
+        if ($aiModel && in_array($aiModel->provider, ['ollama', 'local', 'gguf', '9router'])) {
             return new OpenAIProvider();
         }
 

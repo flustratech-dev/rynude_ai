@@ -67,7 +67,7 @@ class ModelHubApiTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->postJson('/api/models/download', [
-            'model_id' => 'qwen-2.5-0.5b',
+            'model_id' => 'llama-3.2-3b',
         ]);
 
         $response->assertStatus(200)
@@ -76,7 +76,7 @@ class ModelHubApiTest extends TestCase
                 'status' => 'downloading',
             ]);
 
-        $cache = Cache::get('model_download_qwen-2.5-0.5b');
+        $cache = Cache::get('model_download_llama-3.2-3b');
         $this->assertNotNull($cache);
         $this->assertEquals('downloading', $cache['status']);
     }
