@@ -54,6 +54,9 @@ class SettingsApiController extends Controller
         'nine_router' => 'nine_router_api_key',
         'google' => 'google_api_key',
         'mistral' => 'mistral_api_key',
+        'glm' => 'glm_api_key',
+        'kimi' => 'kimi_api_key',
+        'qwen' => 'qwen_api_key',
         'huggingface' => 'huggingface_api_key',
         'github' => 'github_token',
     ];
@@ -97,6 +100,9 @@ class SettingsApiController extends Controller
             'nine_router_api_key' => ['sometimes', 'nullable', 'string'],
             'google_api_key' => ['sometimes', 'nullable', 'string'],
             'mistral_api_key' => ['sometimes', 'nullable', 'string'],
+            'glm_api_key' => ['sometimes', 'nullable', 'string'],
+            'kimi_api_key' => ['sometimes', 'nullable', 'string'],
+            'qwen_api_key' => ['sometimes', 'nullable', 'string'],
             'huggingface_api_key' => ['sometimes', 'nullable', 'string'],
             'huggingface_base_url' => ['sometimes', 'nullable', 'url'],
             'github_token' => ['sometimes', 'nullable', 'string'],
@@ -134,12 +140,17 @@ class SettingsApiController extends Controller
                 return response()->json(['errors' => ['model_code' => ['Model code must be unique.']]], 422);
             }
 
-            \App\Models\AiModel::updateOrCreate(['id' => $modelId], [
+            $modelData = [
                 'code' => $code,
                 'name' => $name,
                 'provider' => $provider,
                 'is_active' => $isActive,
-            ]);
+            ];
+            if (!$modelId) {
+                // New custom models sort to the bottom of the picker.
+                $modelData['sort_order'] = 9999;
+            }
+            \App\Models\AiModel::updateOrCreate(['id' => $modelId], $modelData);
         } elseif ($action === 'toggle_model') {
             $modelId = $request->input('model_id');
             $model = \App\Models\AiModel::find($modelId);
@@ -181,7 +192,8 @@ class SettingsApiController extends Controller
         $directColumns = [
             'name', 'email', 'custom_instructions',
             'anthropic_api_key', 'openai_api_key', 'nine_router_api_key',
-            'google_api_key', 'mistral_api_key', 'huggingface_api_key',
+            'google_api_key', 'mistral_api_key', 'glm_api_key', 'kimi_api_key', 'qwen_api_key',
+            'huggingface_api_key',
             'huggingface_base_url', 'use_proxy', 'proxy_base_url', 'proxy_api_key',
             'github_token',
         ];
@@ -263,8 +275,11 @@ class SettingsApiController extends Controller
         $hasHuggingFace = !empty($u->huggingface_api_key);
         $hasGoogle = !empty($u->google_api_key);
         $hasMistral = !empty($u->mistral_api_key);
+        $hasGlm = !empty($u->glm_api_key);
+        $hasKimi = !empty($u->kimi_api_key);
+        $hasQwen = !empty($u->qwen_api_key);
 
-        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace || $hasGoogle || $hasMistral;
+        $available = $hasAnthropic || $useProxy || $hasNineRouter || $hasHuggingFace || $hasGoogle || $hasMistral || $hasGlm || $hasKimi || $hasQwen;
 
         $models = [
             [
@@ -288,7 +303,9 @@ class SettingsApiController extends Controller
         ];
 
         $moreModels = [];
-        $allModels = \App\Models\AiModel::where('is_active', true)->get();
+        // Order follows the seeder-defined sequence so the picker isn't scrambled.
+        $allModels = \App\Models\AiModel::where('is_active', true)
+            ->orderBy('sort_order')->orderBy('id')->get();
         foreach ($allModels as $model) {
             $isAnthropic = str_starts_with($model->code, 'claude');
             $isOpenAI = str_starts_with($model->code, 'gpt');
@@ -307,6 +324,12 @@ class SettingsApiController extends Controller
                 $is_available = true;
             } elseif ($model->provider === 'mistral' && $hasMistral) {
                 $is_available = true;
+            } elseif ($model->provider === 'glm' && $hasGlm) {
+                $is_available = true;
+            } elseif ($model->provider === 'kimi' && $hasKimi) {
+                $is_available = true;
+            } elseif ($model->provider === 'qwen' && $hasQwen) {
+                $is_available = true;
             } elseif ($isAnthropic && $hasAnthropic) {
                 $is_available = true;
             } elseif ($hasOpenAI && !$isAnthropic) {
@@ -323,23 +346,8 @@ class SettingsApiController extends Controller
             }
         }
 
-        // Sort: Claude first, then rest, HG (HuggingFace) at the very bottom
-        $claudeModels = [];
-        $gptModels = [];
-        $hgModels = [];
-        $otherModels = [];
-        foreach ($moreModels as $m) {
-            if (str_starts_with($m['name'], 'HG')) {
-                $hgModels[] = $m;
-            } elseif (str_starts_with($m['code'], 'claude') || str_starts_with($m['code'], 'kr/claude')) {
-                $claudeModels[] = $m;
-            } elseif (str_starts_with($m['code'], 'gpt')) {
-                $gptModels[] = $m;
-            } else {
-                $otherModels[] = $m;
-            }
-        }
-        $moreModels = array_merge($claudeModels, $gptModels, $otherModels, $hgModels);
+        // No category regrouping: $moreModels already follows the seeder's
+        // sort_order (set above), so the picker shows models exactly as arranged.
 
         // Fallback: ensure fugu-ultra appears (after haiku entries) even without DB seed
         $fuguInDb = $allModels->firstWhere('code', 'fugu-ultra');
@@ -444,6 +452,9 @@ class SettingsApiController extends Controller
             'huggingface' => str_starts_with($key, 'hf_') && strlen($key) >= 8,
             'google' => strlen($key) >= 20,
             'mistral' => strlen($key) >= 20,
+            'glm' => strlen($key) >= 8,
+            'kimi' => strlen($key) >= 8,
+            'qwen' => strlen($key) >= 8,
             'nine_router' => strlen($key) >= 8,
             default => false,
         };

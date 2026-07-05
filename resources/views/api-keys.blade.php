@@ -199,6 +199,51 @@
                         </div>
                         <input type="password" x-model="kMistral" placeholder="mist-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
                     </div>
+                    {{-- GLM (Zhipu / z.ai) --}}
+                    <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-900/30 flex items-center justify-center text-sky-500 font-bold text-sm">Z</div>
+                                <div><h3 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">GLM (Z.ai)</h3><p class="text-[12px] text-gray-500 dark:text-stone-400">GLM-4.5-Flash, GLM-4.7-Flash (free)</p></div>
+                            </div>
+                            <a href="https://z.ai/manage-apikey/apikey-list" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#D97757] hover:bg-[#D97757]/10 rounded-lg transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                Get API
+                            </a>
+                        </div>
+                        <input type="password" x-model="kGlm" placeholder="z.ai API key" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <p class="text-[11px] text-gray-400 dark:text-stone-500 mt-1.5">Endpoint: https://api.z.ai/api/paas/v4</p>
+                    </div>
+                    {{-- Kimi (Moonshot) --}}
+                    <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500 font-bold text-sm">K</div>
+                                <div><h3 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">Kimi (Moonshot)</h3><p class="text-[12px] text-gray-500 dark:text-stone-400">kimi-latest, moonshot-v1-8k</p></div>
+                            </div>
+                            <a href="https://platform.moonshot.ai/console/api-keys" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#D97757] hover:bg-[#D97757]/10 rounded-lg transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                Get API
+                            </a>
+                        </div>
+                        <input type="password" x-model="kKimi" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <p class="text-[11px] text-gray-400 dark:text-stone-500 mt-1.5">Endpoint: https://api.moonshot.ai/v1</p>
+                    </div>
+                    {{-- Qwen (Alibaba) --}}
+                    <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-violet-500 font-bold text-sm">Q</div>
+                                <div><h3 class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200">Qwen (Alibaba)</h3><p class="text-[12px] text-gray-500 dark:text-stone-400">qwen-plus, qwen-turbo, qwen-max</p></div>
+                            </div>
+                            <a href="https://bailian.console.alibabacloud.com/?tab=model#/api-key" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#D97757] hover:bg-[#D97757]/10 rounded-lg transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                Get API
+                            </a>
+                        </div>
+                        <input type="password" x-model="kQwen" placeholder="sk-..." class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400">
+                        <p class="text-[11px] text-gray-400 dark:text-stone-500 mt-1.5">Endpoint: https://dashscope-intl.aliyuncs.com/compatible-mode/v1</p>
+                    </div>
                     {{-- 9Router --}}
                     <div class="p-4 rounded-lg border border-claude-border-light dark:border-claude-border-dark">
                         <div class="flex items-center justify-between mb-3">
@@ -803,6 +848,9 @@
                         <option value="anthropic">Anthropic</option>
                         <option value="google">Google</option>
                         <option value="mistral">Mistral</option>
+                        <option value="glm">GLM (Z.ai)</option>
+                        <option value="kimi">Kimi (Moonshot)</option>
+                        <option value="qwen">Qwen (Alibaba)</option>
                         <option value="ollama">Ollama (Local)</option>
                         <option value="proxy">9Router / Proxy</option>
                     </select>
@@ -825,7 +873,7 @@ function apiKeysPage(){
     return {
         tab:'hf',flashMessage:null,flashType:'success',ft:null,saving:false,
         hfKey:'',hfUrl:'https://api-inference.huggingface.co/v1',
-        kAnthropic:'',kOpenai:'',kGoogle:'',kMistral:'',kNineRouter:'',kProxy:'',
+        kAnthropic:'',kOpenai:'',kGoogle:'',kMistral:'',kGlm:'',kKimi:'',kQwen:'',kNineRouter:'',kProxy:'',
         useProxy:false,proxyUrl:'',
         models:[],filter:'all',
         dlgOpen:false,dlgEditId:null,dlgCode:'',dlgName:'',dlgActive:true,dlgProv:'huggingface',dlgErr:null,dlgSaving:false,
@@ -844,6 +892,9 @@ function apiKeysPage(){
                 this.kOpenai=k.openai?'••••••••••••••••':'';
                 this.kGoogle=k.google?'••••••••••••••••':'';
                 this.kMistral=k.mistral?'••••••••••••••••':'';
+                this.kGlm=k.glm?'••••••••••••••••':'';
+                this.kKimi=k.kimi?'••••••••••••••••':'';
+                this.kQwen=k.qwen?'••••••••••••••••':'';
                 this.kNineRouter=k.nine_router?'•••••••••9•••••••':'';
                 this.useProxy=k.use_proxy||false;
                 this.proxyUrl=k.proxy_base_url||'';
@@ -872,6 +923,9 @@ function apiKeysPage(){
             if(this.kOpenai&&this.kOpenai!=='••••••••••••••••')p.openai_api_key=this.kOpenai;
             if(this.kGoogle&&this.kGoogle!=='••••••••••••••••')p.google_api_key=this.kGoogle;
             if(this.kMistral&&this.kMistral!=='••••••••••••••••')p.mistral_api_key=this.kMistral;
+            if(this.kGlm&&this.kGlm!=='••••••••••••••••')p.glm_api_key=this.kGlm;
+            if(this.kKimi&&this.kKimi!=='••••••••••••••••')p.kimi_api_key=this.kKimi;
+            if(this.kQwen&&this.kQwen!=='••••••••••••••••')p.qwen_api_key=this.kQwen;
             if(this.kNineRouter&&this.kNineRouter!=='•••••••••9•••••••')p.nine_router_api_key=this.kNineRouter;
             if(this.kProxy&&this.kProxy!=='••••••••••••••••')p.proxy_api_key=this.kProxy;
             this._patch(p).then(()=>{this.saving=false;this.flashMessage='API Keys saved!';this.flashType='success';this.load()});

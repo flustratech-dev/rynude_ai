@@ -1,7 +1,7 @@
 <x-guest-layout>
     <div class="min-h-screen bg-[#FFFDF9] dark:bg-[#121212] flex flex-col font-claude-response text-[#2D2825] dark:text-stone-200">
         <!-- Header -->
-        <header x-data="{ mobileMenuOpen: false }" class="relative z-50 flex items-center justify-between px-6 py-4 lg:px-10 lg:py-6 w-full bg-[#FFFDF9] dark:bg-[#1C1C1C]">
+        <header x-data="{ mobileMenuOpen: false }" class="relative z-50 flex items-center justify-between px-6 py-4 lg:px-10 lg:py-6 w-full">
             <div class="flex items-center gap-2">
                 <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude Logo" class="h-8 w-auto object-contain">
                 <span class="font-claude-response text-[22px] font-medium tracking-tight">rynude</span>
@@ -75,14 +75,14 @@
         </header>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col lg:flex-row w-full max-w-[1400px] mx-auto px-6 lg:px-10 gap-10 pb-10">
+        <main class="flex-1 flex flex-col lg:flex-row w-full max-w-[1500px] mx-auto px-6 lg:px-12 gap-12 lg:gap-16 pb-10">
             <!-- Left Side -->
-            <div class="w-full lg:w-1/2 flex flex-col items-center justify-center pt-10 lg:pt-0">
-                <div class="text-center mb-8 max-w-md">
-                    <h1 class="font-claude-response text-[42px] lg:text-[56px] leading-[1.1] text-[#2D2825] dark:text-stone-100 mb-4 tracking-tight">
+            <div class="w-full lg:w-1/2 flex flex-col items-center justify-center pt-6 lg:pt-0">
+                <div class="text-center mb-4 max-w-lg">
+                    <h1 class="font-claude-response text-[36px] lg:text-[44px] leading-[1.1] text-[#2D2825] dark:text-stone-100 mb-2 tracking-tight">
                         Meet rynude Design
                     </h1>
-                    <p class="text-[18px] text-gray-600 dark:text-stone-400">
+                    <p class="text-[16px] text-gray-600 dark:text-stone-400">
                         Prototypes, slides, and websites, built with your design system.
                     </p>
                 </div>
@@ -90,13 +90,13 @@
                 <!-- Login Card -->
                 <div class="w-full max-w-[400px] bg-gradient-to-b from-[#E2EEFF] to-[#F0F5FF] dark:from-[#1E293B] dark:to-[#0F172A] rounded-[32px] border border-[#C2D6FF] dark:border-blue-900/50 overflow-hidden relative shadow-sm dark:shadow-none">
                     <!-- Banner -->
-                    <div class="pt-5 pb-7 px-4 text-center flex items-center justify-center gap-2">
+                    <div class="pt-4 pb-5 px-4 text-center flex items-center justify-center gap-2">
                         <span class="bg-[#C6DCFF] dark:bg-blue-900/50 text-[#1D4ED8] dark:text-blue-300 text-[12px] font-semibold px-2.5 py-0.5 rounded-md">New</span>
                         <span class="text-[14px] text-[#2563EB] dark:text-blue-300 font-medium">rynude Design: available for Max plans</span>
                     </div>
 
-                    <div class="bg-[#FFFDF9] dark:bg-[#1C1C1C] rounded-t-[32px] p-8 border-t border-[#E5E7EB] dark:border-stone-700 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-none flex flex-col">
-                        <button type="button" class="w-full flex items-center justify-center gap-3 px-4 py-3.5 border border-gray-300 dark:border-stone-600 rounded-2xl hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors mb-6 shadow-sm bg-white dark:bg-[#323232]">
+                    <div class="bg-[#FFFDF9] dark:bg-[#1C1C1C] rounded-t-[32px] p-6 border-t border-[#E5E7EB] dark:border-stone-700 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-none flex flex-col">
+                        <button type="button" class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-stone-600 rounded-2xl hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors mb-4 shadow-sm bg-white dark:bg-[#323232]">
                             <svg class="w-5 h-5" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -106,27 +106,27 @@
                             <span class="text-[15px] font-semibold text-[#2D2825] dark:text-stone-200">Continue with Google</span>
                         </button>
 
-                        <div class="text-center text-[12px] font-medium text-gray-500 dark:text-stone-500 uppercase tracking-wider mb-6">
+                        <div class="text-center text-[12px] font-medium text-gray-500 dark:text-stone-500 uppercase tracking-wider mb-4">
                             OR
                         </div>
 
                         <form method="POST" action="{{ route('login') }}">
                             @csrf
-                            <div class="mb-6">
-                                <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Enter your email" class="w-full px-4 py-3.5 rounded-2xl border border-gray-300 dark:border-stone-600 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-500 dark:placeholder-stone-500 focus:outline-none focus:border-[#2D2825] dark:focus:border-stone-400 focus:ring-1 focus:ring-[#2D2825] dark:focus:ring-stone-400 transition-all shadow-sm bg-white dark:bg-[#323232]" required autofocus>
+                            <div class="mb-4">
+                                <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="Enter your email" class="w-full px-4 py-3 rounded-2xl border border-gray-300 dark:border-stone-600 text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-gray-500 dark:placeholder-stone-500 focus:outline-none focus:border-[#2D2825] dark:focus:border-stone-400 focus:ring-1 focus:ring-[#2D2825] dark:focus:ring-stone-400 transition-all shadow-sm bg-white dark:bg-[#323232]" required autofocus>
                                 @error('email') <p class="mt-1.5 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                             </div>
 
-                            <button type="submit" class="w-full py-3.5 bg-[#1C1A19] hover:bg-black dark:hover:bg-[#3A3A38] text-white rounded-2xl text-[16px] font-semibold transition-colors shadow-md">
+                            <button type="submit" class="w-full py-3 bg-[#1C1A19] hover:bg-black dark:hover:bg-[#3A3A38] text-white rounded-2xl text-[16px] font-semibold transition-colors shadow-md">
                                 Continue with email
                             </button>
                         </form>
 
-                        <p class="text-[13px] text-gray-500 dark:text-stone-400 text-center mt-6">
+                        <p class="text-[13px] text-gray-500 dark:text-stone-400 text-center mt-4">
                             By continuing, you acknowledge rynude's <a href="#" class="underline hover:text-gray-700 dark:hover:text-stone-300">Privacy Policy</a>.
                         </p>
                         
-                        <div class="mt-6 pt-5 border-t border-gray-100 dark:border-stone-700 text-center w-full">
+                        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-stone-700 text-center w-full">
                             <p class="text-[14px] text-gray-600 dark:text-stone-400">
                                 Don't have an account? <a href="{{ route('register') }}" class="text-[#2D2825] dark:text-stone-200 font-semibold underline hover:text-gray-800 dark:hover:text-stone-300">Sign up</a>
                             </p>
@@ -134,7 +134,7 @@
                     </div>
                 </div>
 
-                <div class="mt-8">
+                <div class="mt-6">
                     <button type="button" class="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-stone-600 rounded-xl hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-[#323232] shadow-sm text-sm font-medium text-gray-700 dark:text-stone-300">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -147,23 +147,16 @@
             </div>
 
             <!-- Right Side (Video Container) -->
-            <div class="w-full lg:w-1/2 flex items-center justify-center p-4">
-                <div class="w-full max-w-[640px] aspect-video bg-[#0D0F12] rounded-[1.5rem] overflow-hidden relative shadow-2xl border border-gray-800 dark:border-stone-600 flex items-center justify-center group">
-                    
+            <div class="w-full lg:w-1/2 flex items-start justify-center p-4 pt-10 lg:pt-4">
+                <div class="w-full max-w-[760px] aspect-[4/5] bg-[#0D0F12] rounded-[1.5rem] overflow-hidden relative shadow-2xl border border-gray-800 dark:border-stone-600 flex items-center justify-center group lg:sticky lg:top-24">
+
                     <!-- Video placeholder (User will change src here) -->
                     <!-- Upload your video file and set the source below -->
                     <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-90 transition-opacity duration-500 group-hover:opacity-100" id="hero-video">
-                        <source src="{{ asset('video/video_halaman_utama.mp4') }}" type="video/mp4">
+                        <source src="{{ asset('video/model-launch-login-hero.mp4') }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
 
-                    <!-- Overlay content (mimics the 'Designi' badge) -->
-                    <div class="absolute bottom-10 right-5 z-10 bg-white dark:bg-[#323232] rounded-lg px-3 py-1.5 shadow-md flex items-center gap-1.5 border border-gray-100 dark:border-stone-600">
-                        <svg class="w-4 h-4 text-[#D97757]" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2l2.4 7.6H22l-6.2 4.5 2.4 7.6-6.2-4.5-6.2 4.5 2.4-7.6L2 9.6h7.6z"/>
-                        </svg>
-                        <span class="font-claude-response text-[15px] font-medium text-[#2D2825] dark:text-stone-200 tracking-tight">Rynude</span>
-                    </div>
                 </div>
             </div>
         </main>

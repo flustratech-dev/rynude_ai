@@ -25,6 +25,11 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
         $isOllama = $aiModel && $aiModel->provider === 'ollama';
+        // GLM (Zhipu / z.ai) and Kimi (Moonshot) are OpenAI-compatible providers.
+        // Match by registered provider OR model-code prefix so custom models route too.
+        $isGlm = ($aiModel && $aiModel->provider === 'glm') || str_starts_with($model, 'glm');
+        $isKimi = ($aiModel && $aiModel->provider === 'kimi') || str_starts_with($model, 'kimi') || str_starts_with($model, 'moonshot');
+        $isQwen = ($aiModel && $aiModel->provider === 'qwen') || str_starts_with($model, 'qwen') || str_starts_with($model, 'qwq');
 
         if ($isHuggingFace) {
             $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
@@ -60,6 +65,15 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             } else {
                 $baseUrl = 'http://127.0.0.1:20128/v1';
             }
+        } elseif ($isGlm) {
+            $apiKey = ($user && !empty($user->glm_api_key)) ? trim($user->glm_api_key) : '';
+            $baseUrl = 'https://api.z.ai/api/paas/v4';
+        } elseif ($isKimi) {
+            $apiKey = ($user && !empty($user->kimi_api_key)) ? trim($user->kimi_api_key) : '';
+            $baseUrl = 'https://api.moonshot.ai/v1';
+        } elseif ($isQwen) {
+            $apiKey = ($user && !empty($user->qwen_api_key)) ? trim($user->qwen_api_key) : '';
+            $baseUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
         } else {
             $apiKey = $user ? $user->openai_api_key : null;
             if (empty($apiKey)) {
@@ -72,13 +86,13 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             $apiKey = 'sk-dummy-key-for-local-proxy';
         }
 
-        $label = $isHuggingFace ? 'huggingface' : ($isProxy ? 'proxy' : 'openai');
+        $label = $isHuggingFace ? 'huggingface' : ($isGlm ? 'glm' : ($isKimi ? 'kimi' : ($isQwen ? 'qwen' : ($isProxy ? 'proxy' : 'openai'))));
 
         // Native OpenAI function-calling is only reliable on the genuine OpenAI
         // endpoint. Local proxies, 9Router (kr/*) and HuggingFace routers either
         // reject the `tools` param or can't round-trip tool messages — those fall
         // back to AgentRunner's text-protocol (ReAct) loop instead.
-        $nativeTools = !($isProxy || $is9RouterAuto || $isHuggingFace);
+        $nativeTools = !($isProxy || $is9RouterAuto || $isHuggingFace || $isGlm || $isKimi || $isQwen);
 
         return [$apiKey, $baseUrl, $label, $nativeTools];
     }
@@ -140,6 +154,11 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
         $isOllama = $aiModel && $aiModel->provider === 'ollama';
+        // GLM (Zhipu / z.ai) and Kimi (Moonshot) are OpenAI-compatible providers.
+        // Match by registered provider OR model-code prefix so custom models route too.
+        $isGlm = ($aiModel && $aiModel->provider === 'glm') || str_starts_with($model, 'glm');
+        $isKimi = ($aiModel && $aiModel->provider === 'kimi') || str_starts_with($model, 'kimi') || str_starts_with($model, 'moonshot');
+        $isQwen = ($aiModel && $aiModel->provider === 'qwen') || str_starts_with($model, 'qwen') || str_starts_with($model, 'qwq');
 
         if ($isHuggingFace) {
             $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
@@ -181,6 +200,15 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             } else {
                 $baseUrl = 'http://127.0.0.1:20128/v1';
             }
+        } elseif ($isGlm) {
+            $apiKey = ($user && !empty($user->glm_api_key)) ? trim($user->glm_api_key) : '';
+            $baseUrl = 'https://api.z.ai/api/paas/v4';
+        } elseif ($isKimi) {
+            $apiKey = ($user && !empty($user->kimi_api_key)) ? trim($user->kimi_api_key) : '';
+            $baseUrl = 'https://api.moonshot.ai/v1';
+        } elseif ($isQwen) {
+            $apiKey = ($user && !empty($user->qwen_api_key)) ? trim($user->qwen_api_key) : '';
+            $baseUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
         } else {
             $apiKey = $user ? $user->openai_api_key : null;
             if (empty($apiKey)) {

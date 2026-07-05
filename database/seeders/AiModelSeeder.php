@@ -66,11 +66,18 @@ class AiModelSeeder extends Seeder
             ['code' => 'qwen3.6-max', 'name' => 'Qwen3.6 Max'],
             ['code' => 'qwen3.6-plus', 'name' => 'Qwen3.6 Plus'],
             ['code' => 'qwen3.5-flash', 'name' => 'Qwen3.5 Flash'],
+            ['code' => 'qwen-plus', 'name' => 'Qwen Plus', 'provider' => 'qwen'],
+            ['code' => 'qwen-flash', 'name' => 'Qwen Flash', 'provider' => 'qwen'],
+            ['code' => 'qwen-turbo', 'name' => 'Qwen Turbo', 'provider' => 'qwen'],
+            ['code' => 'qwen-max', 'name' => 'Qwen Max', 'provider' => 'qwen'],
             ['code' => 'glm-5.2', 'name' => 'GLM 5.2'],
             ['code' => 'glm-5.1', 'name' => 'GLM 5.1'],
             ['code' => 'glm-5-turbo', 'name' => 'GLM 5 Turbo'],
             ['code' => 'glm-5', 'name' => 'GLM 5'],
             ['code' => 'glm-4.7-flash', 'name' => 'GLM 4.7 Flash'],
+            ['code' => 'glm-4.5-flash', 'name' => 'GLM 4.5 Flash (Free)', 'provider' => 'glm'],
+            ['code' => 'glm-4.7-flash', 'name' => 'GLM 4.7 Flash (Free)', 'provider' => 'glm'],
+            ['code' => 'glm-4.6', 'name' => 'GLM 4.6', 'provider' => 'glm'],
             ['code' => 'llama-4-maverick', 'name' => 'Llama 4 Maverick'],
             ['code' => 'llama-4-scout', 'name' => 'Llama 4 Scout'],
             ['code' => 'llama-3.3-70b', 'name' => 'Llama 3.3 70B'],
@@ -111,17 +118,30 @@ class AiModelSeeder extends Seeder
             ['code' => 'moonshotai/Kimi-K2.7-Code', 'name' => 'HG Kimi-K2.7-Code', 'provider' => 'huggingface'],
             ['code' => 'google/gemma-4-31B-it', 'name' => 'HG gemma-4-31B-it', 'provider' => 'huggingface'],
             ['code' => 'google/gemma-3-12b-it', 'name' => 'HG gemma-3-12b-it', 'provider' => 'huggingface'],
+            
+            // Kimi (Moonshot) — OpenAI-compatible via https://api.moonshot.ai/v1, uses kimi_api_key
+            ['code' => 'kimi-latest', 'name' => 'Kimi Latest', 'provider' => 'kimi'],
+            ['code' => 'moonshot-v1-8k', 'name' => 'Moonshot v1 8K', 'provider' => 'kimi'],
         ];
 
-        foreach ($models as $model) {
+        // The array index doubles as the display order (sort_order) so the model
+        // picker follows this list exactly instead of DB insertion order.
+        foreach ($models as $index => $model) {
             DB::table('ai_models')->updateOrInsert(
                 ['code' => $model['code']],
                 [
-                    'name' => $model['name'], 
+                    'name' => $model['name'],
                     'is_active' => true,
-                    'provider' => $model['provider'] ?? null
+                    'provider' => $model['provider'] ?? null,
+                    'sort_order' => $index,
                 ]
             );
         }
+
+        // Anything not in this curated list (older seeds, custom models) sinks
+        // below it so the picker stays tidy and follows the order above.
+        DB::table('ai_models')
+            ->whereNotIn('code', array_column($models, 'code'))
+            ->update(['sort_order' => 9999]);
     }
 }
