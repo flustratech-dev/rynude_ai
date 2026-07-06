@@ -13,6 +13,17 @@ class AiModelSeeder extends Seeder
         $models = [
             ['code' => 'kr/claude-sonnet-4.5', 'name' => 'Rynude Sonnet'],
             ['code' => 'kr/claude-haiku-4.5', 'name' => 'Rynude Haiku'],
+            
+            // Local AI Engine (Model Hub GGUF). Display names are rebranded to
+            // "rynude"; the `code` stays stable (it keys LlamaServerService::CATALOG
+            // and the .gguf filenames — those are NOT the HF repo IDs).
+            ['code' => 'qwen-2.5-0.5b', 'name' => 'rynude Vignette', 'provider' => 'local'],
+            ['code' => 'qwen-2.5-1.5b', 'name' => 'rynude Lyric', 'provider' => 'local'],
+            ['code' => 'llama-3.2-3b', 'name' => 'rynude Stanza', 'provider' => 'local'],
+            ['code' => 'mistral-7b-v0.3', 'name' => 'rynude Canto', 'provider' => 'local'],
+            ['code' => 'llama-3.1-8b', 'name' => 'rynude Symphony', 'provider' => 'local'],
+            ['code' => 'qwen-2.5-14b', 'name' => 'rynude Magnum', 'provider' => 'local'],
+
             ['code' => 'gpt-chat-latest', 'name' => 'GPT Chat Latest'],
             ['code' => 'gpt-5.5', 'name' => 'GPT 5.5'],
             ['code' => 'gpt-5.4-pro', 'name' => 'GPT 5.4 Pro'],

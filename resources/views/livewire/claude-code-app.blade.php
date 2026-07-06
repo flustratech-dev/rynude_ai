@@ -243,17 +243,20 @@
                             </template>
 
                             {{-- Live stream indicator --}}
-                            <div x-show="isStreaming" class="w-full flex justify-start pb-4">
+                            <div x-show="isStreaming || (streamContent && streamContent !== '')" class="w-full flex justify-start pb-4">
                                 <div class="max-w-[85%] text-[#E5E5E5] text-[14px] font-mono prose dark:prose-invert prose-stone">
                                     <div class="flex gap-4">
-                                        <div class="flex-shrink-0 mt-1">
+                                        <div x-show="isStreaming" class="flex-shrink-0 mt-1">
                                             <svg class="w-7 h-7 text-[#D97757]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93"/>
                                             </svg>
                                         </div>
+                                        <div x-show="!isStreaming && streamContent" class="flex-shrink-0 mt-1">
+                                            <svg class="w-7 h-7 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                        </div>
                                         <div class="flex-1 leading-relaxed custom-prose">
                                             <div x-html="renderContent(streamContent)"></div>
-                                            <div class="text-stone-500 dark:text-stone-400 text-[12px] flex items-center gap-2 mt-2 font-mono">
+                                            <div x-show="isStreaming" class="text-stone-500 dark:text-stone-400 text-[12px] flex items-center gap-2 mt-2 font-mono">
                                                 <img src="{{ asset('images/logo_rynudee.png') }}" alt="" class="animate-spin h-3.5 w-3.5 object-contain">
                                                 <span>Rynude Code is thinking...</span>
                                             </div>

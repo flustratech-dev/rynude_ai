@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@tailwindcss/typography": "^0.5.20",
-        "mermaid": "^11.4.1"
+        "mermaid": "^11.4.1",
+        "node-llama-cpp": "^3.0.0"
     }
 }

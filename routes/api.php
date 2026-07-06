@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\DesignApiController;
 use App\Http\Controllers\Api\ProjectApiController;
 use App\Http\Controllers\Api\ProviderTokenController;
 use App\Http\Controllers\Api\SettingsApiController;
+use App\Http\Controllers\Api\ModelHubController;
+use App\Http\Controllers\Api\SystemHardwareController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -81,6 +83,15 @@ Route::middleware('auth')->group(function () {
     Route::post('settings/validate-api-key', [SettingsApiController::class, 'validateApiKey'])->name('settings.validate-api-key');
     Route::post('settings/activate-9router', [SettingsApiController::class, 'activate9router'])->name('settings.activate-9router');
     Route::get('token-usage', [SettingsApiController::class, 'tokenUsage'])->name('token-usage.index');
+
+    // ── System Hardware Detection ────────────────────────────────────────
+    Route::get('system/hardware', [SystemHardwareController::class, 'detect'])->name('system.hardware');
+
+    // ── Model Hub (GGUF Local AI Models) ─────────────────────────────────
+    Route::get('models', [ModelHubController::class, 'index'])->name('models.index');
+    Route::post('models/download', [ModelHubController::class, 'download'])->name('models.download');
+    Route::get('models/progress', [ModelHubController::class, 'progress'])->name('models.progress');
+    Route::delete('models/{modelId}', [ModelHubController::class, 'destroy'])->name('models.destroy');
 
     // ── Projects ────────────────────────────────────────────────────────
     Route::get('projects', [ProjectApiController::class, 'index'])->name('projects.index');

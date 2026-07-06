@@ -60,4 +60,12 @@ return [
         'key' => env('SEARCH_API_KEY'),
     ],
 
+    // Dedicated local GGUF inference engine (Model Hub models). Runs on its own
+    // port, completely separate from Ollama (11434) and 9router (20128).
+    'local_gguf' => [
+        'port' => env('LOCAL_GGUF_PORT', 8091),
+        'base_url' => env('LOCAL_GGUF_BASE_URL'),
+        'node' => env('LOCAL_GGUF_NODE', 'node'),
+    ],
+
 ];

@@ -317,8 +317,8 @@ class SettingsApiController extends Controller
             $is_available = false;
             if (str_starts_with($model->code, 'kr/claude')) {
                 $is_available = true;
-            } elseif ($model->provider === 'ollama') {
-                // Ollama is a local provider — no API key required, always available
+            } elseif (in_array($model->provider, ['ollama', 'local', 'gguf', '9router'])) {
+                // Local AI / Ollama / Model Hub GGUF is a local provider — always available
                 $is_available = true;
             } elseif ($useProxy || $hasNineRouter) {
                 $is_available = true;

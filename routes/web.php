@@ -64,6 +64,11 @@ Route::get('/api-keys', function () {
     return view('api-keys');
 })->middleware(['auth', 'verified'])->name('api-keys');
 
+// Model Hub (Local AI Engine) page
+Route::get('/model-hub', function () {
+    return view('model-hub');
+})->middleware(['auth', 'verified'])->name('model-hub');
+
 // Download browser extension as zip
 Route::get('/api-keys/extension/download/{browser?}', function (string $browser = 'chrome') {
     $extPath = base_path('browser-extension');

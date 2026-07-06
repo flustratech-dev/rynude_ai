@@ -67,6 +67,13 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
                     AI Models
                 </button>
+                <a href="{{ route('model-hub') }}" class="flex items-center justify-between pl-8 pr-3 py-2 rounded-lg text-[12px] font-medium transition-colors text-left text-gray-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 hover:bg-gray-100 dark:hover:bg-[#2E2E32] group">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
+                        <span>Model Hub (GGUF)</span>
+                    </div>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#D97757]/10 text-[#D97757] dark:bg-[#D97757]/20">Local AI</span>
+                </a>
                 <button @click="tab='keys'" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors text-left" :class="tab==='keys'?'bg-[#EAE9E5] dark:bg-[#1E1E20] text-[#2D2825] dark:text-stone-200':'text-gray-500 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#2E2E32]'">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1221.75 8.25z"/></svg>
                     API Keys

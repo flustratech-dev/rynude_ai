@@ -23,17 +23,55 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $isProxy = $user && $user->use_proxy;
 
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
-        $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo') || ($aiModel && $aiModel->provider === 'nine_router');
+        // STRICT engine separation:
+        //  - 'ollama'          => Ollama daemon (11434)
+        //  - 'local' / 'gguf'  => dedicated local GGUF engine (LlamaServerService), NEVER Ollama
+        //  - 'nine_router'     => 9router gateway (20128)
+        // GGUF is detected by CODE (LlamaServerService catalog), not just the DB
+        // provider column, so a mistagged row can't leak a local model to cloud.
+        $isGguf = app(\App\Services\LlamaServerService::class)->isGgufModel($model)
+            || ($aiModel && in_array($aiModel->provider, ['local', 'gguf']));
+        $isOllama = !$isGguf && $aiModel && $aiModel->provider === 'ollama';
+        $isLocalEngine = $isGguf || str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo') || ($aiModel && in_array($aiModel->provider, ['nine_router', 'ollama']));
 
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
-        $isOllama = $aiModel && $aiModel->provider === 'ollama';
-        // GLM (Zhipu / z.ai) and Kimi (Moonshot) are OpenAI-compatible providers.
-        // Match by registered provider OR model-code prefix so custom models route too.
-        $isGlm = ($aiModel && $aiModel->provider === 'glm') || str_starts_with($model, 'glm');
-        $isKimi = ($aiModel && $aiModel->provider === 'kimi') || str_starts_with($model, 'kimi') || str_starts_with($model, 'moonshot');
-        $isQwen = ($aiModel && $aiModel->provider === 'qwen') || str_starts_with($model, 'qwen') || str_starts_with($model, 'qwq');
+        $isGlm = ($aiModel && $aiModel->provider === 'glm') || (!$isLocalEngine && str_starts_with($model, 'glm'));
+        $isKimi = ($aiModel && $aiModel->provider === 'kimi') || (!$isLocalEngine && (str_starts_with($model, 'kimi') || str_starts_with($model, 'moonshot')));
+        $isQwen = ($aiModel && $aiModel->provider === 'qwen') || (!$isLocalEngine && (str_starts_with($model, 'qwen') || str_starts_with($model, 'qwq')));
 
-        if ($isHuggingFace) {
+        if ($isLocalEngine) {
+            if ($isGguf) {
+                // Model Hub GGUF: served STRICTLY by the dedicated local GGUF
+                // engine (LlamaServerService) on its own port. This path must
+                // never touch Ollama — no ollama serve, no ollama create, no
+                // 11434. The engine is launched with an explicit large context
+                // window so large prompts don't overflow the old 4096 default.
+                $apiKey = 'sk-dummy-key-for-local-gguf';
+                $llama = app(\App\Services\LlamaServerService::class);
+                $baseUrl = $llama->ensureRunning($model) ?? $llama->baseUrl();
+            } elseif ($isOllama) {
+                // Native Ollama models ONLY.
+                $apiKey = 'sk-dummy-key-for-ollama';
+                $baseUrl = 'http://127.0.0.1:11434/v1';
+
+                // Pastikan server lokal berjalan
+                $connection = @fsockopen('127.0.0.1', 11434, $errno, $errstr, 1);
+                if (is_resource($connection)) {
+                    fclose($connection);
+                } else {
+                    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                        @pclose(@popen('start /B ollama serve > NUL 2>&1', 'r'));
+                        sleep(2);
+                    } else {
+                        @exec('nohup ollama serve > /dev/null 2>&1 &');
+                        sleep(2);
+                    }
+                }
+            } else {
+                $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-local-engine';
+                $baseUrl = ($user && !empty($user->nine_router_base_url)) ? rtrim($user->nine_router_base_url, '/') : 'http://127.0.0.1:20128/v1';
+            }
+        } elseif ($isHuggingFace) {
             $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
 
             $savedUrl = $user->huggingface_base_url;
@@ -54,12 +92,6 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                     $baseUrl .= '/v1';
                 }
             }
-        } elseif ($is9RouterAuto) {
-            $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
-            $baseUrl = ($user && !empty($user->nine_router_base_url)) ? rtrim($user->nine_router_base_url, '/') : 'http://127.0.0.1:20128/v1';
-        } elseif ($isOllama) {
-            $apiKey = 'sk-dummy-key-for-ollama';
-            $baseUrl = 'http://127.0.0.1:11434/v1';
         } elseif ($isProxy) {
             $apiKey = ($user && !empty($user->proxy_api_key)) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
             if (!empty($user->proxy_base_url)) {
@@ -84,19 +116,36 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             $baseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
         }
 
-        if (empty($apiKey) && $isProxy) {
-            $apiKey = 'sk-dummy-key-for-local-proxy';
+        if (empty($apiKey) && ($isProxy || $isLocalEngine)) {
+            $apiKey = 'sk-dummy-key-for-local-engine';
         }
 
-        $label = $isHuggingFace ? 'huggingface' : ($isGlm ? 'glm' : ($isKimi ? 'kimi' : ($isQwen ? 'qwen' : ($isProxy ? 'proxy' : 'openai'))));
+        $label = $isHuggingFace ? 'huggingface' : ($isGlm ? 'glm' : ($isKimi ? 'kimi' : ($isQwen ? 'qwen' : ($isLocalEngine ? 'local' : ($isProxy ? 'proxy' : 'openai')))));
 
-        // Native OpenAI function-calling is only reliable on the genuine OpenAI
-        // endpoint. Local proxies, 9Router (kr/*) and HuggingFace routers either
-        // reject the `tools` param or can't round-trip tool messages — those fall
-        // back to AgentRunner's text-protocol (ReAct) loop instead.
-        $nativeTools = !($isProxy || $is9RouterAuto || $isHuggingFace || $isGlm || $isKimi || $isQwen);
+        $nativeTools = !($isProxy || $isLocalEngine || $isHuggingFace || $isGlm || $isKimi || $isQwen);
 
         return [$apiKey, $baseUrl, $label, $nativeTools];
+    }
+
+    /**
+     * Guard against "ghost model" answers: if the selected model is a Model Hub
+     * GGUF whose .gguf file has NOT been downloaded, there is nothing to run it
+     * locally — we must block, never fall through to any other engine. Returns a
+     * user-facing error string when blocked, or null when the model is fine.
+     */
+    private function ggufNotInstalledError(string $model): ?string
+    {
+        $llama = app(\App\Services\LlamaServerService::class);
+        if (!$llama->isGgufModel($model)) {
+            return null; // not a Model Hub GGUF — nothing to check here
+        }
+        if ($llama->ggufPath($model) !== null) {
+            return null; // downloaded and present
+        }
+
+        $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        $name = $aiModel->name ?? $model;
+        return "Model \"{$name}\" is not installed. Please download it from the Model Hub first.";
     }
 
     private function guzzle(): \GuzzleHttp\Client
@@ -122,6 +171,11 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
      */
     public function streamAgentTurn(array $messages, string $model, array $tools): \Generator
     {
+        if ($installError = $this->ggufNotInstalledError($model)) {
+            yield ['type' => 'text', 'text' => $installError];
+            return ['stop_reason' => 'error', 'error' => 'model_not_installed'];
+        }
+
         [$apiKey, $baseUrl, , $nativeTools] = $this->resolveConfig($model);
 
         // Endpoint can't be trusted with native tools — signal AgentRunner to use
@@ -131,7 +185,8 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         }
 
         if (empty($apiKey)) {
-            yield ['type' => 'text', 'text' => 'OpenAI API key is not configured. Please add it in your Settings.'];
+            $providerName = strtoupper($label === 'openai' ? 'OpenAI' : $label);
+            yield ['type' => 'text', 'text' => $providerName . ' API key is not configured. Please add it in your Settings.'];
             return ['stop_reason' => 'error', 'error' => 'missing_key'];
         }
 
@@ -147,86 +202,20 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 
     public function streamResponse(array $messages, string $model): \Generator
     {
-        // Get the API key from the currently authenticated user, or fallback to config
-        $user = \Illuminate\Support\Facades\Auth::user();
-
-        $isProxy = $user && $user->use_proxy;
-        $is9RouterAuto = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo');
-        
-        $aiModel = \App\Models\AiModel::where('code', $model)->first();
-        $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
-        $isOllama = $aiModel && $aiModel->provider === 'ollama';
-        // GLM (Zhipu / z.ai) and Kimi (Moonshot) are OpenAI-compatible providers.
-        // Match by registered provider OR model-code prefix so custom models route too.
-        $isGlm = ($aiModel && $aiModel->provider === 'glm') || str_starts_with($model, 'glm');
-        $isKimi = ($aiModel && $aiModel->provider === 'kimi') || str_starts_with($model, 'kimi') || str_starts_with($model, 'moonshot');
-        $isQwen = ($aiModel && $aiModel->provider === 'qwen') || str_starts_with($model, 'qwen') || str_starts_with($model, 'qwq');
-
-        if ($isHuggingFace) {
-            $apiKey = ($user && !empty($user->huggingface_api_key)) ? trim($user->huggingface_api_key) : 'sk-dummy-key-for-huggingface';
-            
-            // Auto-migrate the deprecated api-inference domain to the new router domain
-            $savedUrl = $user->huggingface_base_url;
-            if (!empty($savedUrl) && str_contains($savedUrl, 'api-inference.huggingface.co')) {
-                $savedUrl = str_replace('api-inference.huggingface.co', 'router.huggingface.co', $savedUrl);
-            }
-            
-            $hfBaseUrl = !empty($savedUrl) ? rtrim(trim($savedUrl), '/') : '';
-            
-            if (empty($hfBaseUrl)) {
-                $baseUrl = "https://router.huggingface.co/v1";
-            } else {
-                $baseUrl = $hfBaseUrl;
-                // Prepend https:// if no scheme is provided
-                if (!preg_match('~^https?://~i', $baseUrl)) {
-                    $baseUrl = "https://" . $baseUrl;
-                }
-                // Ensure OpenAI compatibility path is present
-                if (!str_ends_with($baseUrl, '/v1')) {
-                    $baseUrl .= '/v1';
-                }
-            }
-        } elseif ($is9RouterAuto) {
-            $apiKey = ($user && !empty($user->nine_router_api_key)) ? $user->nine_router_api_key : 'sk-dummy-key-for-9router';
-            $baseUrl = ($user && !empty($user->nine_router_base_url)) ? rtrim($user->nine_router_base_url, '/') : 'http://127.0.0.1:20128/v1';
-        } elseif ($isOllama) {
-            $apiKey = 'sk-dummy-key-for-ollama';
-            $baseUrl = 'http://127.0.0.1:11434/v1';
-        } elseif ($isProxy) {
-            // Always try to use the proxy key if provided, otherwise fallback to dummy
-            $apiKey = ($user && !empty($user->proxy_api_key)) ? $user->proxy_api_key : 'sk-dummy-key-for-local-proxy';
-            
-            // If proxy base url is set by user AND proxy is enabled, use it.
-            if (!empty($user->proxy_base_url)) {
-                $baseUrl = rtrim($user->proxy_base_url, '/');
-            } else {
-                $baseUrl = 'http://127.0.0.1:20128/v1';
-            }
-        } elseif ($isGlm) {
-            $apiKey = ($user && !empty($user->glm_api_key)) ? trim($user->glm_api_key) : '';
-            $baseUrl = 'https://api.z.ai/api/paas/v4';
-        } elseif ($isKimi) {
-            $apiKey = ($user && !empty($user->kimi_api_key)) ? trim($user->kimi_api_key) : '';
-            $baseUrl = 'https://api.moonshot.ai/v1';
-        } elseif ($isQwen) {
-            $apiKey = ($user && !empty($user->qwen_api_key)) ? trim($user->qwen_api_key) : '';
-            $baseUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
-        } else {
-            $apiKey = $user ? $user->openai_api_key : null;
-            if (empty($apiKey)) {
-                $apiKey = config('services.openai.key');
-            }
-            $baseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
+        // Block uninstalled Model Hub GGUF models before any dispatch, so an
+        // uninstalled local model can NEVER produce an answer.
+        if ($installError = $this->ggufNotInstalledError($model)) {
+            yield "\n[" . $installError . "]";
+            return;
         }
 
+        [$apiKey, $baseUrl, $label, $nativeTools] = $this->resolveConfig($model);
+        $user = \Illuminate\Support\Facades\Auth::user();
+
         if (empty($apiKey)) {
-            if ($isProxy) {
-                // Local proxies like LM Studio or 9Router might not require an API key
-                $apiKey = 'sk-dummy-key-for-local-proxy';
-            } else {
-                yield "OpenAI API key is not configured. Please add it in your Settings.";
-                return;
-            }
+            $providerName = strtoupper($label === 'openai' ? 'OpenAI' : $label);
+            yield $providerName . " API key is not configured. Please add it in your Settings.";
+            return;
         }
 
         // Filter messages (OpenAI only supports system, user, assistant)
@@ -279,7 +268,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         ]);
 
         // Auto-detect Ollama model if using the generic 'rynude-ollama'
-        if ($isOllama && $model === 'rynude-ollama') {
+        if ($model === 'rynude-ollama') {
             try {
                 $tagsResponse = $client->get('http://127.0.0.1:11434/api/tags', ['timeout' => 2]);
                 if ($tagsResponse->getStatusCode() === 200) {
@@ -411,7 +400,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 
             // Record any usage the endpoint reported.
             if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
-                $providerLabel = $isHuggingFace ? 'huggingface' : ($isProxy ? 'proxy' : 'openai');
+                $providerLabel = $label;
                 [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
                 \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
             }
