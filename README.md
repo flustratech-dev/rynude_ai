@@ -293,6 +293,7 @@ Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukura
 
 <div align="center">
   <img src="public/images/readme/Rynude_Hub.png" alt="Rynude AI Dashboard" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
+  <br />
 
 </div>
 
