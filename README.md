@@ -85,6 +85,7 @@ sequenceDiagram
 
 | Provider Terdukung | Status Dukungan | Keunggulan Utama | Model Terbaik Saat Ini |
 | :--- | :---: | :--- | :--- |
+| **rynude Local Engine** 🆕 | ✅ Native | Gratis & 100% lokal & offline | `rynude Lyric`, `rynude Magnum`, 'dan 4 model lainnya'|
 | **Hugging Face** | ✅ Native | Gratis, Ratusan Model Open-Source | `Llama-3.3-70B`, `DeepSeek-V4` |
 | **Anthropic** | ✅ Native | Resmi, Paling Cerdas (Coding & Logika) | `Claude 3.5 Sonnet` |
 | **OpenAI** | ✅ Native | Resmi, Ekosistem Terbesar | `GPT-4o` |
