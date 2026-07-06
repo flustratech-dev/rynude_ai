@@ -113,6 +113,7 @@
     @show-shortcuts.window="shortcutsOpen = true"
     @toggle-sidebar.window="toggle()"
     @close-customize.window="activePanel = null; sidebarOpen = true; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: true } }));"
+    @close-api-keys.window="activePanel = null; sidebarOpen = true; window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: { open: true } }));"
     @open-panel.window="activePanel = $event.detail"
     @close-panel.window="activePanel = null"
     @open-artifact.window="
@@ -199,6 +200,10 @@
 
                 <div x-show="activePanel === 'customize'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
                     @include('livewire.customize-panel')
+                </div>
+
+                <div x-show="activePanel === 'api-keys'" x-cloak class="absolute inset-0 z-10 bg-[#F9F8F6] dark:bg-claude-bg-dark h-full overflow-hidden min-h-0 flex flex-col">
+                    @include('livewire.api-keys-panel')
                 </div>
 
                 <div :class="activePanel ? 'invisible pointer-events-none' : 'flex flex-col'" class="absolute inset-0 z-0 h-full min-h-0 min-w-0 overflow-hidden">

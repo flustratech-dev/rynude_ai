@@ -2,8 +2,12 @@
 <div x-data="modelHubPage()" x-init="init()">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {{-- Header --}}
-        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
+                <a href="{{ route('chat') }}?panel=api-keys" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#D97757] dark:text-stone-400 dark:hover:text-[#D97757] mb-3 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                    Kembali
+                </a>
                 <h1 class="text-2xl font-bold text-[#2D2825] dark:text-stone-200">Model Hub (Local AI Engine)</h1>
                 <p class="text-sm text-gray-500 dark:text-stone-400 mt-1">Unduh dan kelola model AI lokal (.gguf) dari Hugging Face secara aman dan otomatis.</p>
             </div>
