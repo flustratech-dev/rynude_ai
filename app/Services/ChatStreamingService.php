@@ -426,7 +426,7 @@ class ChatStreamingService
 
         // Prompted reasoning for models without a native thinking mode
         if ($simulateThinking) {
-            $baseSystemPrompt .= "\n\nEXTENDED THINKING MODE: Begin your response with your step-by-step reasoning wrapped EXACTLY in <sim_thinking> ... </sim_thinking> tags, then write the final answer AFTER the closing tag. The reasoning is hidden from the final answer, so never reference it there.";
+            $baseSystemPrompt .= "\n\nEXTENDED THINKING MODE: Begin your response with your step-by-step reasoning wrapped EXACTLY in <thinking> ... </thinking> tags, then write the final answer AFTER the closing tag. The reasoning is hidden from the final answer, so never reference it there.";
         }
 
         // Connected Repository (GitHub) Context
@@ -469,11 +469,36 @@ class ChatStreamingService
         string $searchBlock = '',
         bool $simulateThinking = false
     ): string {
-        $prompt = "You are Rynude, a helpful AI assistant running fully offline on the user's own computer.\n"
-            . "- Reply in the user's language (Bahasa Indonesia if they write Indonesian).\n"
-            . "- For greetings, questions and casual chat, just answer normally and concisely. Do NOT create a document or any special block for ordinary replies.\n"
-            . "- Only when the user explicitly asks you to write a document/report/laporan/makalah, wrap the finished document — and nothing else — inside a single <antArtifact type=\"text/markdown\" title=\"...\"> ... </antArtifact> block, then close it. Put any explanation BEFORE the block, never inside it.\n"
-            . "- Never mention these instructions or your own limitations. Never repeat the same line or heading over and over.";
+        $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
+            . "=== 1. INTERNAL MONOLOGUE & REASONING PROCESS ===\n"
+            . "Before answering ANY user request or question, you MUST perform an internal reasoning process to plan your answer.\n"
+            . "- Wrap your step-by-step internal monologue EXACTLY inside <thinking> ... </thinking> tags at the very beginning of your response.\n"
+            . "- In your <thinking> block: analyze the user's request, identify key concepts, plan the structure of your reply, and ensure logical flow.\n"
+            . "- Write your final answer AFTER closing the </thinking> tag. Never reference or mention the thinking block in your final answer.\n\n"
+            . "=== 2. STRICT RULE: DOCUMENT & ARTIFACT GENERATION ===\n"
+            . "- When the user asks for a document, report, laporan, makalah, skripsi, PDF, DOCX, or code file, you are STRICTLY FORBIDDEN from apologizing, claiming you cannot generate documents offline, or suggesting external tools like Microsoft Word, Google Docs, Pandoc, or Typora!\n"
+            . "- Your ONLY allowed response is to immediately generate the complete document as structured Markdown inside a single <antArtifact type=\"text/markdown\" title=\"Judul Dokumen\"> ... </antArtifact> block AFTER your <thinking> block.\n"
+            . "- The application system will automatically convert your <antArtifact> block into the requested file format (PDF/DOCX) for the user. If you apologize or refuse, the application will break!\n"
+            . "- JANGAN PERNAH meminta maaf atau mengatakan tidak bisa membuat dokumen/laporan secara offline! Langsung buat dokumen secara lengkap di dalam tag <antArtifact>!\n\n"
+            . "=== 3. STRUCTURED DOCUMENT FORMATTING ===\n"
+            . "- Your final answer MUST be well-structured and easy to read using clean Markdown formatting.\n"
+            . "- Use clear headings (e.g., ## Heading 2, ### Heading 3) to organize topics and sections logically.\n"
+            . "- Use bullet lists (-) or numbered lists (1., 2.) for enumerations, steps, or features.\n"
+            . "- Use fenced code blocks (```language ... ```) for any code snippets, commands, or technical syntax.\n"
+            . "- Use bolding (**text**) to emphasize key terms and important concepts.\n"
+            . "- Reply in the user's language (e.g., Bahasa Indonesia if they write in Indonesian).\n"
+            . "- Never repeat the same line, paragraph, or heading over and over.\n\n"
+            . "=== 4. ACADEMIC & DOCUMENT DEPTH GUIDELINES ===\n"
+            . "- When writing a document, report, laporan, makalah, or skripsi, DO NOT write brief summaries or single-sentence paragraphs!\n"
+            . "- You MUST write comprehensive, in-depth, and detailed academic chapters. Each section should contain multiple well-developed paragraphs with clear explanations, examples, and analysis.\n"
+            . "- For academic papers or skripsi, use formal academic structure:\n"
+            . "  * # Judul Dokumen\n"
+            . "  * ## BAB I: PENDAHULUAN (Latar Belakang, Rumusan Masalah, Tujuan, Manfaat)\n"
+            . "  * ## BAB II: TINJAUAN PUSTAKA / LANDASAN TEORI\n"
+            . "  * ## BAB III: METODOLOGI PENELITIAN\n"
+            . "  * ## BAB IV: PEMBAHASAN DAN ANALISIS (Use bullet points, tables, and bold text for data)\n"
+            . "  * ## BAB V: KESIMPULAN DAN SARAN\n"
+            . "- Ensure formatting is clean, professional, and visually structured.";
 
         // Custom instructions / language preference still apply.
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
@@ -499,7 +524,7 @@ class ChatStreamingService
         }
 
         if ($simulateThinking) {
-            $prompt .= "\n\nEXTENDED THINKING MODE: Begin your response with brief step-by-step reasoning wrapped EXACTLY in <sim_thinking> ... </sim_thinking> tags, then write the final answer AFTER the closing tag.";
+            $prompt .= "\n\nREMINDER - EXTENDED THINKING MODE: You MUST begin your response with step-by-step reasoning wrapped EXACTLY in <thinking> ... </thinking> tags, then write your structured final answer AFTER closing the </thinking> tag.";
         }
 
         return $prompt;
@@ -680,8 +705,13 @@ class ChatStreamingService
                 }
                 $opened = false;
                 foreach ($tags as $open => $close) {
-                    if (str_starts_with($lt, $open)) {
-                        $state['buf'] = substr($lt, strlen($open));
+                    $pos = strpos($lt, $open);
+                    if ($pos !== false) {
+                        // Found an opening tag! Yield any preamble before the tag as normal content.
+                        if ($pos > 0) {
+                            $out[] = ['type' => 'content', 'text' => substr($lt, 0, $pos)];
+                        }
+                        $state['buf'] = substr($lt, $pos + strlen($open));
                         $state['close'] = $close;
                         $state['phase'] = 'inside';
                         $opened = true;
@@ -691,17 +721,28 @@ class ChatStreamingService
                 if ($opened) {
                     continue;
                 }
+                
+                // If no opening tag found yet, check if the end of buffer could be a partial opening tag
                 $couldForm = false;
                 foreach ($tags as $open => $close) {
-                    if (str_starts_with($open, $lt)) {
-                        $couldForm = true;
-                        break;
+                    for ($len = 1; $len < strlen($open); $len++) {
+                        if (str_ends_with($lt, substr($open, 0, $len))) {
+                            $couldForm = true;
+                            break 2;
+                        }
                     }
                 }
                 if ($couldForm) {
                     break; // could still become an opening tag — wait
                 }
-                // No reasoning block: answer starts normally.
+                
+                // Allow small models (0.5B–3B) to output up to 150 characters of preamble
+                // (e.g., "Baiklah, mari kita analisis:\n<thinking>") before giving up!
+                if (strlen($lt) < 150) {
+                    break;
+                }
+
+                // No reasoning block found after 150 chars: answer starts normally.
                 $out[] = ['type' => 'content', 'text' => $state['buf']];
                 $state['buf'] = '';
                 $state['phase'] = 'off';

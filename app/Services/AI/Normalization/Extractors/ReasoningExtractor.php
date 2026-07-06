@@ -8,7 +8,7 @@ class ReasoningExtractor
 {
     public function extract(string $text): array
     {
-        $pattern = '/<thinking>([\s\S]*?)<\/thinking>/i';
+        $pattern = '/<(?:thinking|sim_thinking|think)>([\s\S]*?)<\/(?:thinking|sim_thinking|think)>/i';
         
         if (preg_match($pattern, $text, $matches)) {
             $fullMatch = $matches[0];

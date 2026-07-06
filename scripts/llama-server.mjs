@@ -50,17 +50,19 @@ const modelId = args.id || modelPath.split(/[\\/]/).pop();
 // ceiling echoing the same line hundreds of times. These defaults keep local
 // output sane; all are overridable via env.
 const GEN = {
-    temperature: parseFloat(process.env.LOCAL_GGUF_TEMPERATURE || "0.7"),
-    topP: parseFloat(process.env.LOCAL_GGUF_TOP_P || "0.9"),
+    // Lower temperature (0.4) and topP (0.85) make compact models (Vignette 0.5B, Lyric 1.5B)
+    // much more logical, disciplined in closing <thinking> tags, and consistent in Markdown formatting.
+    temperature: parseFloat(process.env.LOCAL_GGUF_TEMPERATURE || "0.4"),
+    topP: parseFloat(process.env.LOCAL_GGUF_TOP_P || "0.85"),
     topK: parseInt(process.env.LOCAL_GGUF_TOP_K || "40", 10),
-    // Cap generation length regardless of what the caller requests (the app asks
-    // for up to 8192): a tiny model rarely produces that much *coherent* text,
-    // and an uncapped loop is exactly the "355 headings" failure.
-    maxTokensCap: parseInt(process.env.LOCAL_GGUF_MAX_TOKENS || "4096", 10),
+    // Increase cap to 8192 so internal monologue (<thinking>) + structured document fit comfortably.
+    maxTokensCap: parseInt(process.env.LOCAL_GGUF_MAX_TOKENS || "8192", 10),
     repeatPenalty: {
-        penalty: parseFloat(process.env.LOCAL_GGUF_REPEAT_PENALTY || "1.2"),
-        frequencyPenalty: parseFloat(process.env.LOCAL_GGUF_FREQUENCY_PENALTY || "0.3"),
-        presencePenalty: parseFloat(process.env.LOCAL_GGUF_PRESENCE_PENALTY || "0.3"),
+        // Slightly gentler frequency/presence penalties so Markdown formatting syntax
+        // (# headings, - lists, ``` code blocks) is not penalized during structured output.
+        penalty: parseFloat(process.env.LOCAL_GGUF_REPEAT_PENALTY || "1.12"),
+        frequencyPenalty: parseFloat(process.env.LOCAL_GGUF_FREQUENCY_PENALTY || "0.1"),
+        presencePenalty: parseFloat(process.env.LOCAL_GGUF_PRESENCE_PENALTY || "0.1"),
         lastTokens: parseInt(process.env.LOCAL_GGUF_REPEAT_LAST || "128", 10),
     },
 };
