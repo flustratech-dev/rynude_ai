@@ -68,17 +68,6 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        <!-- Highlight.js -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-        <!-- Marked.js for Markdown rendering -->
-        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-        <!-- KaTeX for LaTeX math rendering -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-
         <!-- Theme Initialization -->
         <script>
             // Force dark mode on /code route (Claude Code terminal page)

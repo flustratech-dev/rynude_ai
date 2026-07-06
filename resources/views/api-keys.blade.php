@@ -121,7 +121,7 @@
                                     <div class="w-2 h-2 rounded-full flex-shrink-0" :class="m.is_active?'bg-green-500':'bg-gray-300 dark:bg-stone-600'"></div>
                                     <div class="min-w-0">
                                         <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="m.name"></div>
-                                        <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate" x-text="m.code"></div>
+                                        <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate" x-text="formatDisplayCode(m.code)"></div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
@@ -165,7 +165,7 @@
                                 <div class="min-w-0">
                                     <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="m.name"></div>
                                     <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate flex items-center gap-2">
-                                        <span x-text="m.code"></span>
+                                        <span x-text="formatDisplayCode(m.code)"></span>
                                         <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-stone-700 text-gray-600 dark:text-stone-300" x-text="m.provider||'?'"></span>
                                     </div>
                                 </div>
@@ -1078,7 +1078,23 @@ function apiKeysPage(){
             }).catch(()=>{this.dlgSaving=false;this.dlgErr='Network error.'});
         },
         toggleModel(m){this._patch({_action:'toggle_model',model_id:m.id}).then(()=>this.load())},
-        async delModel(m){if(!(await showConfirm('Delete this model?')))return;this._patch({_action:'delete_model',model_id:m.id}).then(()=>this.load())}
+        async delModel(m){if(!(await showConfirm('Delete this model?')))return;this._patch({_action:'delete_model',model_id:m.id}).then(()=>this.load())},
+        formatDisplayCode(c) {
+            if(!c) return '';
+            const m = {
+                'kr/claude-sonnet-4.5': 'rynude Sonnet 4.5',
+                'kr/claude-haiku-4.5': 'rynude Haiku 4.5',
+                'claude-opus-4-8': 'rynude Opus 4.8',
+                'llama-3.1-8b': 'rynude Symphony',
+                'qwen-2.5-0.5b': 'rynude Vignette',
+                'qwen-2.5-1.5b': 'rynude Lyric',
+                'llama-3.2-3b': 'rynude Stanza',
+                'mistral-7b-v0.3': 'rynude Canto',
+                'qwen-2.5-14b': 'rynude Magnum'
+            };
+            if (m[c]) return m[c];
+            return c.replace(/^kr\//,'').replace(/-/g,' ').replace(/\b(v0\.\d+|v\d+)\b/g,'').trim().split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+        }
     };
 }
 </script>

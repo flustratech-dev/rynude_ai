@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'highlight.js/styles/github-dark.css';
+@import 'katex/dist/katex.min.css';
 
 @font-face {
     font-family: 'Anthropic Serif';
