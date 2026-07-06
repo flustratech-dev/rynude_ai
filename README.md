@@ -289,6 +289,13 @@ Ini adalah <i>backend guard</i> yang bekerja sesuai desain, bukan bug. Untuk mod
 Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>16384</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric (1.5B)</b>.
 </details>
 
+### 📸 Tampilan 
+
+<div align="center">
+  <img src="public/images/readme/Rynude_Hub.png" alt="Rynude AI Dashboard" width="800" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
+
+</div>
+
 ---
 
 ## 🤖 All-in-One Local AI Engine (9Router Integration)
