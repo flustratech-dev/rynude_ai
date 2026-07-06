@@ -121,7 +121,7 @@
                                     <div class="w-2 h-2 rounded-full flex-shrink-0" :class="m.is_active?'bg-green-500':'bg-gray-300 dark:bg-stone-600'"></div>
                                     <div class="min-w-0">
                                         <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="m.name"></div>
-                                        <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate" x-text="m.code"></div>
+                                        <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate" x-text="formatDisplayCode(m.code)"></div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
@@ -157,15 +157,17 @@
                     </template>
                 </div>
 
-                <div class="relative mb-6">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-4 w-4 text-gray-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                    </div>
-                    <input type="text" x-model="searchQuery" placeholder="Search by name, provider, code..." class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#1E1E20] text-[14px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] transition-colors placeholder-gray-400 dark:placeholder-stone-500 shadow-sm">
-                    <button x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-stone-300 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
+<div class="relative mb-6">
+    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+    </svg>
+    <input 
+        type="text" 
+        x-model="searchQuery" 
+        placeholder="Search by name, provider, code..." 
+        class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all"
+    >
+</div>
 
                 <div class="space-y-2">
                     <template x-for="m in filteredModels" :key="m.id">
@@ -175,7 +177,7 @@
                                 <div class="min-w-0">
                                     <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="m.name"></div>
                                     <div class="text-[12px] text-gray-500 dark:text-stone-400 truncate flex items-center gap-2">
-                                        <span x-text="m.code"></span>
+                                        <span x-text="formatDisplayCode(m.code)"></span>
                                         <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-stone-700 text-gray-600 dark:text-stone-300" x-text="m.provider||'?'"></span>
                                     </div>
                                 </div>
@@ -1123,7 +1125,23 @@ function apiKeysPage(){
             }).catch(()=>{this.dlgSaving=false;this.dlgErr='Network error.'});
         },
         toggleModel(m){this._patch({_action:'toggle_model',model_id:m.id}).then(()=>this.load())},
-        async delModel(m){if(!(await showConfirm('Delete this model?')))return;this._patch({_action:'delete_model',model_id:m.id}).then(()=>this.load())}
+        async delModel(m){if(!(await showConfirm('Delete this model?')))return;this._patch({_action:'delete_model',model_id:m.id}).then(()=>this.load())},
+        formatDisplayCode(c) {
+            if(!c) return '';
+            const m = {
+                'kr/claude-sonnet-4.5': 'rynude Sonnet 4.5',
+                'kr/claude-haiku-4.5': 'rynude Haiku 4.5',
+                'claude-opus-4-8': 'rynude Opus 4.8',
+                'llama-3.1-8b': 'rynude Symphony',
+                'qwen-2.5-0.5b': 'rynude Vignette',
+                'qwen-2.5-1.5b': 'rynude Lyric',
+                'llama-3.2-3b': 'rynude Stanza',
+                'mistral-7b-v0.3': 'rynude Canto',
+                'qwen-2.5-14b': 'rynude Magnum'
+            };
+            if (m[c]) return m[c];
+            return c.replace(/^kr\//,'').replace(/-/g,' ').replace(/\b(v0\.\d+|v\d+)\b/g,'').trim().split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+        }
     };
 }
 </script>

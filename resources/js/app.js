@@ -1,6 +1,13 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
 import mermaid from 'mermaid';
+import hljs from 'highlight.js';
+import { marked } from 'marked';
+import katex from 'katex';
+
+window.hljs = hljs;
+window.marked = marked;
+window.katex = katex;
 
 // Initialize Mermaid.js
 mermaid.initialize({
