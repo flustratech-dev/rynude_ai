@@ -89,6 +89,13 @@
                         </div>
                     </template>
 
+                    {{-- Recommended ribbon (only when RAM is sufficient, so it never overlaps the RAM warning) --}}
+                    <template x-if="model.recommended && totalRamGb >= model.required_ram_gb">
+                        <div class="absolute top-0 right-0 bg-[#D97757] text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow">
+                            ⭐ Rekomendasi
+                        </div>
+                    </template>
+
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-[#D97757]/10 text-[#D97757] dark:bg-[#D97757]/20" x-text="model.parameter_size + ' PARAMS'"></span>

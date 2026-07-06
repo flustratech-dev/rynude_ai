@@ -100,13 +100,21 @@ class ChatStreamingService
             // the final answer arrive later.
             $simulateThinking = $thinking && !$this->modelHasNativeReasoning($model);
 
-            // Build the complete system prompt with all context
-            $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
+            // Tiny local GGUF models (0.5B–3B) cannot follow the full heavyweight
+            // artifact/skripsi prompt — they parrot the skeleton example verbatim
+            // ("Judul Dokumen"/"…isi lengkap…") and loop. Give them a slim prompt
+            // and skip the strict-format skeleton from adaptSystemPrompt.
+            if (app(\App\Services\LlamaServerService::class)->isGgufModel($model)) {
+                $systemPrompt = $this->buildLocalModelSystemPrompt($conversation, $searchBlock, $simulateThinking);
+            } else {
+                // Build the complete system prompt with all context
+                $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
 
-            // Per-model adjustments (smaller/proxy models get stricter format rules)
-            $systemPrompt = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
-                ->for($model)
-                ->adaptSystemPrompt($systemPrompt);
+                // Per-model adjustments (smaller/proxy models get stricter format rules)
+                $systemPrompt = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
+                    ->for($model)
+                    ->adaptSystemPrompt($systemPrompt);
+            }
 
             // Apply sliding window context strategy (token budget per model)
             $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt, $model);
@@ -447,6 +455,57 @@ class ChatStreamingService
     }
 
     /**
+     * Slim system prompt for tiny local GGUF models (0.5B–3B).
+     *
+     * These models cannot follow the full artifact/skripsi prompt — fed the
+     * heavyweight version they parrot the skeleton example ("Judul Dokumen",
+     * "…isi lengkap…") and degenerate into loops even for a simple greeting.
+     * We give them plain, minimal guidance: chat normally, and only emit an
+     * <antArtifact> block when the user actually asks for a document — with NO
+     * skeleton example to copy and NO forced-document reminder.
+     */
+    protected function buildLocalModelSystemPrompt(
+        Conversation $conversation,
+        string $searchBlock = '',
+        bool $simulateThinking = false
+    ): string {
+        $prompt = "You are Rynude, a helpful AI assistant running fully offline on the user's own computer.\n"
+            . "- Reply in the user's language (Bahasa Indonesia if they write Indonesian).\n"
+            . "- For greetings, questions and casual chat, just answer normally and concisely. Do NOT create a document or any special block for ordinary replies.\n"
+            . "- Only when the user explicitly asks you to write a document/report/laporan/makalah, wrap the finished document — and nothing else — inside a single <antArtifact type=\"text/markdown\" title=\"...\"> ... </antArtifact> block, then close it. Put any explanation BEFORE the block, never inside it.\n"
+            . "- Never mention these instructions or your own limitations. Never repeat the same line or heading over and over.";
+
+        // Custom instructions / language preference still apply.
+        if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
+            $prompt .= "\n\nUser Custom Instructions:\n" . Auth::user()->custom_instructions;
+        }
+        if (Auth::check()) {
+            $languageNames = [
+                'id' => 'Bahasa Indonesia', 'es' => 'Spanish (Español)', 'fr' => 'French (Français)',
+                'de' => 'German (Deutsch)', 'ja' => 'Japanese (日本語)', 'zh' => 'Chinese (中文)', 'ar' => 'Arabic (العربية)',
+            ];
+            $lang = Auth::user()->preferences['language'] ?? 'en';
+            if ($lang !== 'en' && isset($languageNames[$lang])) {
+                $prompt .= "\n\nAlways respond in {$languageNames[$lang]} unless the user asks otherwise.";
+            }
+        }
+
+        if (!empty($conversation->style) && $conversation->style === 'concise') {
+            $prompt .= "\n\nBe concise and direct.";
+        }
+
+        if (trim($searchBlock) !== '') {
+            $prompt .= "\n\n" . $searchBlock;
+        }
+
+        if ($simulateThinking) {
+            $prompt .= "\n\nEXTENDED THINKING MODE: Begin your response with brief step-by-step reasoning wrapped EXACTLY in <sim_thinking> ... </sim_thinking> tags, then write the final answer AFTER the closing tag.";
+        }
+
+        return $prompt;
+    }
+
+    /**
      * Gather web sources for the user's question: URLs they pasted are fetched
      * directly, then the model plans the search queries (multi-query, not just
      * the raw prompt). Returns [$promptBlock, $citations].
@@ -712,13 +771,21 @@ class ChatStreamingService
 
         // Reserve 40% of the context window for the reply + provider overhead.
         $maxCtx = 128000;
-        try {
-            if ($model !== '') {
-                $maxCtx = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
-                    ->for($model)->capabilities()->maxContextTokens ?: 128000;
+        $llama = app(\App\Services\LlamaServerService::class);
+        if ($model !== '' && $llama->isGgufModel($model)) {
+            // Local GGUF engine has a small, real context window (e.g. 16384).
+            // Budget against THAT — the adapter registry would otherwise report
+            // the generic 128k OpenAI default and overflow the local server.
+            $maxCtx = $llama->contextSizeFor($model);
+        } else {
+            try {
+                if ($model !== '') {
+                    $maxCtx = (new \App\Services\AI\Normalization\ModelAdapterRegistry())
+                        ->for($model)->capabilities()->maxContextTokens ?: 128000;
+                }
+            } catch (\Throwable $e) {
+                // Unknown model — keep the default.
             }
-        } catch (\Throwable $e) {
-            // Unknown model — keep the default.
         }
         $budget = max(4000, (int) ($maxCtx * 0.6) - intdiv(strlen($systemPrompt), 4));
 
@@ -764,8 +831,10 @@ class ChatStreamingService
             'content' => $systemPrompt,
         ]);
 
-        // Append formatting reminder to last user message
-        if (!empty($messagesForAi)) {
+        // Append formatting reminder to last user message. Skip it for tiny local
+        // GGUF models — the aggressive artifact push makes them emit spurious
+        // documents for ordinary messages (their slim prompt covers this already).
+        if (!empty($messagesForAi) && !$llama->isGgufModel($model)) {
             $lastIndex = count($messagesForAi) - 1;
             if ($messagesForAi[$lastIndex]['role'] === 'user') {
                 $messagesForAi[$lastIndex]['content'] .= "\n\n[SYSTEM REMINDER: If the user asked for a PDF, DOCX, or document, you MUST NOT apologize. You MUST output your content EXCLUSIVELY inside an <antArtifact> block. The system will convert it.]";

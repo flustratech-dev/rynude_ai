@@ -70,7 +70,11 @@ return new class extends Migration
             ['code' => 'llama-4-maverick', 'name' => 'Llama 4 Maverick'],
             ['code' => 'llama-4-scout', 'name' => 'Llama 4 Scout'],
             ['code' => 'llama-3.3-70b', 'name' => 'Llama 3.3 70B'],
-            ['code' => 'llama-3.1-8b', 'name' => 'Llama 3.1 8B'],
+            // NOTE: 'llama-3.1-8b' intentionally omitted here — that code belongs to
+            // the local Model Hub GGUF (rynude Symphony, provider=local). A cloud row
+            // with the same code shadowed the local one and let an *uninstalled* model
+            // answer via the cloud proxy. Cloud 8B is still available as the HF entry
+            // 'meta-llama/Llama-3.1-8B-Instruct' below.
             ['code' => 'minimax-m3', 'name' => 'MiniMax M3'],
             ['code' => 'minimax-m2.7', 'name' => 'MiniMax M2.7'],
             ['code' => 'minimax-m2.5', 'name' => 'MiniMax M2.5'],

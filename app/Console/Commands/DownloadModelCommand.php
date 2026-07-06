@@ -42,15 +42,9 @@ class DownloadModelCommand extends Command
 
         // Check if already downloaded
         if (file_exists($finalPath) && filesize($finalPath) > 0) {
-            try {
-                $modelfilePath = $modelsDir . DIRECTORY_SEPARATOR . 'Modelfile.' . $modelId;
-                @file_put_contents($modelfilePath, "FROM {$finalPath}");
-                @exec("ollama create \"{$modelId}\" -f \"{$modelfilePath}\" > NUL 2>&1");
-                @unlink($modelfilePath);
-            } catch (\Throwable $e) {
-                // Ignore if ollama not running/installed
-            }
-
+            // GGUF models are served directly from this file by the dedicated
+            // local GGUF engine (LlamaServerService). Do NOT import them into
+            // Ollama — the two engines are strictly separate.
             Cache::put('model_download_' . $modelId, [
                 'status' => 'completed',
                 'progress' => 100,
@@ -106,15 +100,8 @@ class DownloadModelCommand extends Command
             if (file_exists($partPath) && filesize($partPath) > 0) {
                 rename($partPath, $finalPath);
 
-                try {
-                    $modelfilePath = $modelsDir . DIRECTORY_SEPARATOR . 'Modelfile.' . $modelId;
-                    @file_put_contents($modelfilePath, "FROM {$finalPath}");
-                    @exec("ollama create \"{$modelId}\" -f \"{$modelfilePath}\" > NUL 2>&1");
-                    @unlink($modelfilePath);
-                } catch (\Throwable $e) {
-                    // Ignore if ollama not running/installed
-                }
-
+                // No Ollama import: the GGUF is served straight from this file by
+                // LlamaServerService (the dedicated local GGUF engine).
                 Cache::put('model_download_' . $modelId, [
                     'status' => 'completed',
                     'progress' => 100,

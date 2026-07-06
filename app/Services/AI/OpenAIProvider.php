@@ -23,8 +23,16 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $isProxy = $user && $user->use_proxy;
 
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
-        $isOllama = $aiModel && in_array($aiModel->provider, ['ollama', 'local', 'gguf']);
-        $isLocalEngine = str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo') || ($aiModel && in_array($aiModel->provider, ['nine_router', 'local', 'gguf', 'ollama']));
+        // STRICT engine separation:
+        //  - 'ollama'          => Ollama daemon (11434)
+        //  - 'local' / 'gguf'  => dedicated local GGUF engine (LlamaServerService), NEVER Ollama
+        //  - 'nine_router'     => 9router gateway (20128)
+        // GGUF is detected by CODE (LlamaServerService catalog), not just the DB
+        // provider column, so a mistagged row can't leak a local model to cloud.
+        $isGguf = app(\App\Services\LlamaServerService::class)->isGgufModel($model)
+            || ($aiModel && in_array($aiModel->provider, ['local', 'gguf']));
+        $isOllama = !$isGguf && $aiModel && $aiModel->provider === 'ollama';
+        $isLocalEngine = $isGguf || str_starts_with($model, 'kr/claude') || str_starts_with($model, 'mmf/mimo') || ($aiModel && in_array($aiModel->provider, ['nine_router', 'ollama']));
 
         $isHuggingFace = $aiModel && $aiModel->provider === 'huggingface';
         $isGlm = ($aiModel && $aiModel->provider === 'glm') || (!$isLocalEngine && str_starts_with($model, 'glm'));
@@ -32,7 +40,17 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         $isQwen = ($aiModel && $aiModel->provider === 'qwen') || (!$isLocalEngine && (str_starts_with($model, 'qwen') || str_starts_with($model, 'qwq')));
 
         if ($isLocalEngine) {
-            if ($isOllama) {
+            if ($isGguf) {
+                // Model Hub GGUF: served STRICTLY by the dedicated local GGUF
+                // engine (LlamaServerService) on its own port. This path must
+                // never touch Ollama — no ollama serve, no ollama create, no
+                // 11434. The engine is launched with an explicit large context
+                // window so large prompts don't overflow the old 4096 default.
+                $apiKey = 'sk-dummy-key-for-local-gguf';
+                $llama = app(\App\Services\LlamaServerService::class);
+                $baseUrl = $llama->ensureRunning($model) ?? $llama->baseUrl();
+            } elseif ($isOllama) {
+                // Native Ollama models ONLY.
                 $apiKey = 'sk-dummy-key-for-ollama';
                 $baseUrl = 'http://127.0.0.1:11434/v1';
 
@@ -47,30 +65,6 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                     } else {
                         @exec('nohup ollama serve > /dev/null 2>&1 &');
                         sleep(2);
-                    }
-                }
-
-                // Jika model berasal dari Model Hub (GGUF), otomatis import ke engine lokal
-                if ($aiModel && in_array($aiModel->provider, ['local', 'gguf'])) {
-                    $storagePath = storage_path('app/models');
-                    $modelfilePath = $storagePath . DIRECTORY_SEPARATOR . 'Modelfile.' . $model;
-                    $catalogMap = [
-                        'qwen-2.5-0.5b' => 'qwen2.5-0.5b-instruct-q8_0.gguf',
-                        'qwen-2.5-1.5b' => 'qwen2.5-1.5b-instruct-q5_k_m.gguf',
-                        'llama-3.2-3b' => 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
-                        'mistral-7b-v0.3' => 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
-                        'llama-3.1-8b' => 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf',
-                        'qwen-2.5-14b' => 'qwen2.5-14b-instruct-q4_k_m.gguf',
-                    ];
-                    $targetGguf = isset($catalogMap[$model]) ? ($storagePath . DIRECTORY_SEPARATOR . $catalogMap[$model]) : null;
-                    if ($targetGguf && file_exists($targetGguf)) {
-                        try {
-                            @file_put_contents($modelfilePath, "FROM {$targetGguf}");
-                            @exec("ollama create \"{$model}\" -f \"{$modelfilePath}\"");
-                            @unlink($modelfilePath);
-                        } catch (\Throwable $e) {
-                            \Illuminate\Support\Facades\Log::warning("Gagal auto-import GGUF: " . $e->getMessage());
-                        }
                     }
                 }
             } else {
@@ -133,6 +127,27 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         return [$apiKey, $baseUrl, $label, $nativeTools];
     }
 
+    /**
+     * Guard against "ghost model" answers: if the selected model is a Model Hub
+     * GGUF whose .gguf file has NOT been downloaded, there is nothing to run it
+     * locally — we must block, never fall through to any other engine. Returns a
+     * user-facing error string when blocked, or null when the model is fine.
+     */
+    private function ggufNotInstalledError(string $model): ?string
+    {
+        $llama = app(\App\Services\LlamaServerService::class);
+        if (!$llama->isGgufModel($model)) {
+            return null; // not a Model Hub GGUF — nothing to check here
+        }
+        if ($llama->ggufPath($model) !== null) {
+            return null; // downloaded and present
+        }
+
+        $aiModel = \App\Models\AiModel::where('code', $model)->first();
+        $name = $aiModel->name ?? $model;
+        return "Model \"{$name}\" is not installed. Please download it from the Model Hub first.";
+    }
+
     private function guzzle(): \GuzzleHttp\Client
     {
         // CurlHandler buffers the ENTIRE response body before returning, which
@@ -156,6 +171,11 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
      */
     public function streamAgentTurn(array $messages, string $model, array $tools): \Generator
     {
+        if ($installError = $this->ggufNotInstalledError($model)) {
+            yield ['type' => 'text', 'text' => $installError];
+            return ['stop_reason' => 'error', 'error' => 'model_not_installed'];
+        }
+
         [$apiKey, $baseUrl, , $nativeTools] = $this->resolveConfig($model);
 
         // Endpoint can't be trusted with native tools — signal AgentRunner to use
@@ -182,6 +202,13 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
 
     public function streamResponse(array $messages, string $model): \Generator
     {
+        // Block uninstalled Model Hub GGUF models before any dispatch, so an
+        // uninstalled local model can NEVER produce an answer.
+        if ($installError = $this->ggufNotInstalledError($model)) {
+            yield "\n[" . $installError . "]";
+            return;
+        }
+
         [$apiKey, $baseUrl, $label, $nativeTools] = $this->resolveConfig($model);
         $user = \Illuminate\Support\Facades\Auth::user();
 

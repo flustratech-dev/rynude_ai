@@ -15,6 +15,14 @@ class AiService
     {
         $user = Auth::user();
 
+        // Model Hub GGUF codes are ALWAYS local, keyed by code (not the DB
+        // provider column). This is authoritative: even if a row is mistagged
+        // (e.g. a cloud proxy sharing the same code), a known GGUF code must
+        // route to the local engine — never silently to a cloud provider.
+        if (app(\App\Services\LlamaServerService::class)->isGgufModel($model)) {
+            return new OpenAIProvider();
+        }
+
         // Local AI models are always local — resolve first regardless of proxy setting
         $aiModel = \App\Models\AiModel::where('code', $model)->first();
         if ($aiModel && in_array($aiModel->provider, ['ollama', 'local', 'gguf', '9router'])) {
