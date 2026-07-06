@@ -1,3 +1,4 @@
+@include('partials.model-name-helper')
 <div class="h-full bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col font-sans overflow-hidden"
      x-data="coworkPanelState()"
      x-init="init()">
@@ -90,7 +91,7 @@
                                     <div class="text-[14px] font-medium text-[#2D2825] dark:text-stone-100 truncate" x-text="task.title"></div>
                                     <div x-show="task.description" class="text-[12px] text-stone-500 dark:text-stone-400 truncate mt-0.5" x-text="task.description"></div>
                                     <div class="flex items-center gap-2 mt-1.5 text-[11px] text-stone-400">
-                                        <span x-text="task.model"></span>
+                                        <span x-text="rynudeModelName(task.model)"></span>
                                         <span x-show="task.scheduled_for">· Scheduled <span x-text="task.scheduled_for"></span></span>
                                     </div>
                                 </div>
@@ -160,7 +161,7 @@
                     <span class="px-2.5 py-1 rounded-md text-[12px] font-medium" :class="{'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300':activeTask.status==='pending','bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300':activeTask.status==='in_progress','bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300':activeTask.status==='completed','bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300':activeTask.status==='failed'}" x-text="statusLabel(activeTask.status)"></span>
                 </div>
                 <div class="flex items-center gap-2 text-[12px] text-stone-400 mb-4">
-                    <span x-text="activeTask.model"></span>
+                    <span x-text="rynudeModelName(activeTask.model)"></span>
                     <span x-text="'· ' + activeTask.priority + ' priority'"></span>
                     <span x-show="activeTask.scheduled_for">· Scheduled <span x-text="activeTask.scheduled_for"></span></span>
                 </div>

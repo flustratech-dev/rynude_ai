@@ -1,3 +1,4 @@
+@include('partials.model-name-helper')
 <div id="chat-interface-root" class="flex flex-col h-full min-h-0 w-full bg-transparent dark:bg-claude-bg-dark relative overflow-hidden"
      x-data="chatInterfaceState()"
      x-init="init()"
@@ -571,7 +572,7 @@
                                                         </button>
                                                     </div>
                                                 </template>
-                                                <span x-show="msg.model" x-cloak class="text-[11px] text-stone-400 px-1.5" x-text="msg.model"></span>
+                                                <span x-show="msg.model" x-cloak class="text-[11px] text-stone-400 px-1.5" x-text="modelDisplayName(msg.model)"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -805,9 +806,15 @@ function chatInterfaceState() {
         selectedProjectForAdd: null,
 
         get selectedModelName() {
-            var all = this.models.concat(this.moreModels);
-            var m = all.find(function(m) { return m.code === this.selectedModel; }.bind(this));
-            return m ? m.name : 'Select Model';
+            return this.modelDisplayName(this.selectedModel) || 'Select Model';
+        },
+
+        // Map an internal model code to its branded display name. Delegates to the
+        // shared global helper (partials/model-name-helper), passing this view's
+        // in-memory model list so it's used ahead of the localStorage fallback.
+        // Display-only — the code stored on the message (msg.model) is never changed.
+        modelDisplayName: function(code) {
+            return window.rynudeModelName(code, this.models.concat(this.moreModels));
         },
 
         get greeting() {

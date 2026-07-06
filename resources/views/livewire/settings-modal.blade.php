@@ -1,3 +1,4 @@
+@include('partials.model-name-helper')
 <div
     x-data="settingsState()"
     x-init="init(); $watch('open', val => { if (val) document.body.classList.add('overflow-hidden'); else document.body.classList.remove('overflow-hidden'); })"
@@ -364,7 +365,7 @@
                                     <div class="border-t border-claude-border-light dark:border-claude-border-dark">
                                         <div class="grid px-4 py-3 text-[13px] items-center" style="grid-template-columns: 1fr 80px 80px 80px 70px">
                                             <div>
-                                                <div class="font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="row.model"></div>
+                                                <div class="font-medium text-[#2D2825] dark:text-stone-200 truncate" x-text="rynudeModelName(row.model)"></div>
                                                 <div class="text-[11px] text-gray-400 dark:text-stone-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
                                                     <span class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-stone-800" x-text="row.provider || 'unknown'"></span>
                                                     <span x-show="row.days_active > 0" x-text="row.days_active + 'd active'"></span>
