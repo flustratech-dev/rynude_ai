@@ -246,6 +246,50 @@ Jadi walau folder project ditimpa update, data Anda tetap utuh. Untuk memulihkan
 
 ---
 
+## 🧩 Mesin AI Lokal "rynude" (Dedicated Local GGUF Engine)
+
+Rynude kini memiliki **mesin inferensi lokal miliknya sendiri** untuk menjalankan model `.gguf` dari Model Hub. Mesin ini **berdiri sendiri secara arsitektur**  sehingga model lokal benar-benar dieksekusi di komputer Anda tanpa ketergantungan pada layanan eksternal.
+
+### 📚 Katalog Model "rynude"
+
+Enam model lokal (`rynude`):
+
+| Nama `rynude` | Parameter | Kode Internal | Estimasi RAM | Use Case Backend Ideal |
+| :--- | :---: | :--- | :---: | :--- |
+| **rynude Vignette** | 0.5B | ~2 GB | Uji coba, percakapan dasar, spesifikasi sangat rendah |
+| **rynude Lyric** ⭐ | 1.5B | ~4 GB | **Rekomendasi default** — tugas ringan & generasi dokumen |
+| **rynude Stanza** | 3B | ~6 GB | Asisten *coding* ringan & rangkuman dokumen |
+| **rynude Canto** | 7B | ~8 GB | Penalaran & pemrograman bahasa yang kuat |
+| **rynude Symphony** | 8B |  ~10 GB | Percakapan kompleks, terjemahan, pemecahan masalah |
+| **rynude Magnum** | 14B |  ~16 GB | *Heavy reasoning* setara model cloud besar |
+
+**Variabel konfigurasi** :
+
+| Variabel `.env` | Default | Fungsi |
+| :--- | :--- | :--- |
+| `LOCAL_GGUF_PORT` | `8091` | Port server GGUF lokal |
+| `LOCAL_GGUF_NODE` | `node` | Path *binary* Node.js (jika PHP dijalankan dengan PATH terbatas) |
+| `LOCAL_GGUF_BASE_URL` | *(auto)* | *Override* base URL bila diperlukan |
+| `LOCAL_GGUF_MAX_TOKENS` | `4096` | Batas maksimum token generasi (anti-*runaway*) |
+| `LOCAL_GGUF_REPEAT_PENALTY` | `1.2` | Penalti pengulangan token |
+| `LOCAL_GGUF_TEMPERATURE` | `0.7` | Suhu *sampling* |
+
+### ❓ Troubleshooting Teknis / FAQ
+
+<details>
+<summary><b>Kenapa muncul error "Model belum diinstal" (Model not installed)?</b></summary>
+<br/>
+Ini adalah <i>backend guard</i> yang bekerja sesuai desain, bukan bug. Untuk model lokal <code>rynude</code>, backend memverifikasi keberadaan berkas <code>.gguf</code> di <code>storage/app/models/</code> <b>sebelum</b> melakukan <i>routing</i>. Jika file belum ada, request diblokir agar model yang belum terpasang tidak dieksekusi dan tidak bocor ke provider lain. Solusinya: unduh model tersebut terlebih dahulu (endpoint unduhan menyimpan file ke <code>storage/app/models/</code>). Setelah berkas tersedia, request akan diproses normal oleh mesin di port <code>8091</code>.
+</details>
+
+<details>
+<summary><b>Berapa kebutuhan RAM untuk model besar (Symphony / Magnum)?</b></summary>
+<br/>
+Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>16384</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric (1.5B)</b>.
+</details>
+
+---
+
 ## 🤖 All-in-One Local AI Engine (9Router Integration)
 
 Rynude AI mendukung API resmi secara *native* (OpenAI, Anthropic, dll). Namun, jika Anda ingin merasakan kecerdasan model premium secara **gratis dan tanpa limit** (via proxy lokal `9router`), Rynude kini telah mengintegrasikan **9Router secara langsung ke dalam aplikasi**!
@@ -345,70 +389,6 @@ Tiga provider populer kini bisa dicolokkan langsung via **API Key** — endpoint
 
 ---
 
-## 🧩 Mesin AI Lokal "rynude" (Dedicated Local GGUF Engine)
-
-Rynude kini memiliki **mesin inferensi lokal miliknya sendiri** untuk menjalankan model `.gguf` dari Model Hub. Mesin ini **berdiri sendiri secara arsitektur**  sehingga model lokal benar-benar dieksekusi di komputer Anda tanpa ketergantungan pada layanan eksternal.
-
-### 📚 Katalog Model "rynude"
-
-Enam model lokal (`rynude`):
-
-| Nama `rynude` | Parameter | Kode Internal | Estimasi RAM | Use Case Backend Ideal |
-| :--- | :---: | :--- | :---: | :--- |
-| **rynude Vignette** | 0.5B | ~2 GB | Uji coba, percakapan dasar, spesifikasi sangat rendah |
-| **rynude Lyric** ⭐ | 1.5B | ~4 GB | **Rekomendasi default** — tugas ringan & generasi dokumen |
-| **rynude Stanza** | 3B | ~6 GB | Asisten *coding* ringan & rangkuman dokumen |
-| **rynude Canto** | 7B | ~8 GB | Penalaran & pemrograman bahasa yang kuat |
-| **rynude Symphony** | 8B |  ~10 GB | Percakapan kompleks, terjemahan, pemecahan masalah |
-| **rynude Magnum** | 14B |  ~16 GB | *Heavy reasoning* setara model cloud besar |
-
-### 🔧 Detail Teknis & Arsitektur (untuk Developer)
-
-**Pemisahan routing (Local GGUF vs Ollama vs Cloud):**
-
-```mermaid
-graph TD
-    Req[⚙️ Chat Request<br>model = code] --> Router{🔀 AiService::resolveProvider}
-    Router -->|isGgufModel(code) == true| Guard{🛡️ File .gguf ada?}
-    Guard -->|Tidak| Block[⛔ Blokir + Exception<br>'Model not installed']
-    Guard -->|Ya| GGUF[🧩 Local GGUF Engine<br>127.0.0.1:8091]
-    Router -->|provider = ollama| Ollama[🦙 Ollama<br>127.0.0.1:11434]
-    Router -->|provider = nine_router| NineRouter[🔓 9router<br>127.0.0.1:20128]
-    Router -->|anthropic / openai / dst| Cloud[☁️ Cloud API]
-
-    style GGUF fill:#dfd,stroke:#333,stroke-width:2px
-    style Block fill:#fdd,stroke:#333,stroke-width:2px
-    style Guard fill:#ffd,stroke:#333,stroke-width:2px
-```
-
-**Global Model Name Resolver (konsistensi data):** identifier model dinormalisasi menjadi nama tampilan `rynude` yang konsisten di seluruh *output* sistem (Chat, Cowork, Billing) melalui satu *resolver* terpusat `window.rynudeModelName` (`resources/views/partials/model-name-helper.blade.php`). Urutan resolusi: (1) daftar model dari database → nama; (2) *fallback* statis untuk 6 kode GGUF lokal; (3) kode mentah sebagai *last resort* (tidak pernah kosong). Kode internal yang dikirim ke backend **tidak pernah** berubah — normalisasi ini murni pada lapisan penyajian data.
-
-**Variabel konfigurasi** (`config/services.php` → `services.local_gguf`):
-
-| Variabel `.env` | Default | Fungsi |
-| :--- | :--- | :--- |
-| `LOCAL_GGUF_PORT` | `8091` | Port server GGUF lokal |
-| `LOCAL_GGUF_NODE` | `node` | Path *binary* Node.js (jika PHP dijalankan dengan PATH terbatas) |
-| `LOCAL_GGUF_BASE_URL` | *(auto)* | *Override* base URL bila diperlukan |
-| `LOCAL_GGUF_MAX_TOKENS` | `4096` | Batas maksimum token generasi (anti-*runaway*) |
-| `LOCAL_GGUF_REPEAT_PENALTY` | `1.2` | Penalti pengulangan token |
-| `LOCAL_GGUF_TEMPERATURE` | `0.7` | Suhu *sampling* |
-
-### ❓ Troubleshooting Teknis / FAQ
-
-<details>
-<summary><b>Kenapa muncul error "Model belum diinstal" (Model not installed)?</b></summary>
-<br/>
-Ini adalah <i>backend guard</i> yang bekerja sesuai desain, bukan bug. Untuk model lokal <code>rynude</code>, backend memverifikasi keberadaan berkas <code>.gguf</code> di <code>storage/app/models/</code> <b>sebelum</b> melakukan <i>routing</i>. Jika file belum ada, request diblokir agar model yang belum terpasang tidak dieksekusi dan tidak bocor ke provider lain. Solusinya: unduh model tersebut terlebih dahulu (endpoint unduhan menyimpan file ke <code>storage/app/models/</code>). Setelah berkas tersedia, request akan diproses normal oleh mesin di port <code>8091</code>.
-</details>
-
-<details>
-<summary><b>Berapa kebutuhan RAM untuk model besar (Symphony / Magnum)?</b></summary>
-<br/>
-Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>16384</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric (1.5B)</b>.
-</details>
-
----
 
 ## 🦙 Menjalankan Model Lokal 100% Bebas Kuota (Ollama)
 
