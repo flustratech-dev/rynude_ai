@@ -320,7 +320,7 @@
     display: inline-block;
     width: 8px;
     height: 1em;
-    background-color: #D97757;
+    background-color: currentColor;
     vertical-align: middle;
     margin-left: 2px;
 }
@@ -358,3 +358,169 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 }
+
+/* ─── Landing Page: Scroll-reveal ─────────────────────────────────────── */
+.lp-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-reveal.lp-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.lp-reveal-delay-1 { transition-delay: 0.08s; }
+.lp-reveal-delay-2 { transition-delay: 0.16s; }
+.lp-reveal-delay-3 { transition-delay: 0.24s; }
+.lp-reveal-delay-4 { transition-delay: 0.32s; }
+.lp-reveal-delay-5 { transition-delay: 0.40s; }
+.lp-reveal-delay-6 { transition-delay: 0.48s; }
+
+/* ─── Provider Marquee ─────────────────────────────────────────────────── */
+@keyframes marquee-ltr {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.lp-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-ltr 28s linear infinite;
+}
+.lp-marquee-track:hover { animation-play-state: paused; }
+
+/* ─── Pricing card shine on hover ─────────────────────────────────────── */
+@keyframes lp-shine {
+    0%   { left: -120%; }
+    100% { left: 120%; }
+}
+.lp-pricing-card {
+    position: relative;
+    overflow: hidden;
+}
+.lp-pricing-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.07) 50%, transparent 80%);
+    pointer-events: none;
+    transition: none;
+}
+.lp-pricing-card:hover::after {
+    animation: lp-shine 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ─── Step connector line ──────────────────────────────────────────────── */
+.lp-step-line::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 2.5rem;
+    background: linear-gradient(to bottom, rgba(120, 120, 120, 0.3) 0%, transparent 100%);
+    opacity: 0.8;
+}
+
+/* ─── Floating badge animation ─────────────────────────────────────────── */
+@keyframes lp-float {
+    0%, 100% { transform: translateY(0px);   }
+    50%       { transform: translateY(-6px);  }
+}
+.lp-float { animation: lp-float 5s ease-in-out infinite; }
+
+/* ─── Feature card gradient border on hover ───────────────────────────── */
+.lp-feat-card {
+    background-clip: padding-box;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-feat-card:hover {
+    transform: translateY(-3px);
+}
+
+/* ─── Comparison table highlight row ──────────────────────────────────── */
+.lp-table-row-highlight {
+    background: linear-gradient(90deg, rgba(217,119,87,0.06) 0%, transparent 80%);
+}
+.dark .lp-table-row-highlight {
+    background: linear-gradient(90deg, rgba(217,119,87,0.09) 0%, transparent 80%);
+}
+
+/* ─── Display font override for hero headings ─────────────────────────── */
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('/fonts/AnthropicSerif-Display-Regular-Static.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('/fonts/AnthropicSerif-Display-Medium-Static.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('/fonts/AnthropicSerif-Display-Semibold-Static.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('/fonts/AnthropicSerif-Display-Bold-Static.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ─── Root color-scheme, background & custom premium scrollbar ────────────────── */
+html {
+    color-scheme: light;
+    background-color: #FFFDF9;
+}
+html.dark {
+    color-scheme: dark;
+    background-color: #121212;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(45, 40, 37, 0.16);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(45, 40, 37, 0.32);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+html.dark ::-webkit-scrollbar-thumb,
+html.dark::-webkit-scrollbar-thumb {
+    background: rgba(240, 240, 240, 0.12);
+}
+html.dark ::-webkit-scrollbar-thumb:hover,
+html.dark::-webkit-scrollbar-thumb:hover {
+    background: rgba(240, 240, 240, 0.28);
+}
+
+/* ─── Scroll-margin-top offset for sticky header ────────────────── */
+section[id],
+div[id^="step-"] {
+    scroll-margin-top: 5.5rem; /* ~88px offset matching the header height */
+}
+

@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="bg-[#FFFDF9] dark:bg-[#121212]">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#F9F8F6" media="(prefers-color-scheme: light)">
-        <meta name="theme-color" content="#1C1C1C" media="(prefers-color-scheme: dark)">
+        <meta name="theme-color" content="#FFFDF9">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        <script>
+            // Sync dark mode class immediately on page load to prevent light theme flash
+            (function() {
+                const isDark = localStorage.getItem('darkMode') === 'true' || 
+                    (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', isDark);
+                // We'll update the content dynamically once DOM is parsed or in line below
+            })();
+        </script>
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
@@ -16,9 +25,9 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-[#2D2825] antialiased bg-[#F9F8F6] dark:bg-[#121212] dark:text-stone-200"
+    <body class="font-sans text-[#2D2825] antialiased bg-[#FFFDF9] dark:bg-[#121212] dark:text-stone-200"
           x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches) }"
-          x-init="$watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val); })"
+          x-init="document.documentElement.classList.toggle('dark', darkMode); document.querySelector('meta[name=\'theme-color\']').content = darkMode ? '#121212' : '#FFFDF9'; $watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val); document.querySelector('meta[name=\'theme-color\']').content = val ? '#121212' : '#FFFDF9'; })"
           :class="{ 'dark': darkMode }">
         @if(request()->routeIs('login') || request()->routeIs('register'))
             {{ $slot }}

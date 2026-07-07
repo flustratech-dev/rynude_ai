@@ -28,7 +28,7 @@ export default {
                 'claude-bg-dark': '#2C2C2A',
                 'claude-border-light': '#E5E5E5',
                 'claude-border-dark': '#3A3A38',
-                'claude-accent': '#D97757', // Typical terracotta accent
+                'claude-accent': '#DE7356', // Typical terracotta accent
                 primary: {
                     DEFAULT: 'hsl(var(--primary))',
                     foreground: 'hsl(var(--primary-foreground))',

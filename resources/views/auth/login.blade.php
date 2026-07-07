@@ -1,32 +1,172 @@
 <x-guest-layout>
     <div class="min-h-screen bg-[#FFFDF9] dark:bg-[#121212] flex flex-col font-claude-response text-[#2D2825] dark:text-stone-200">
         <!-- Header -->
-        <header x-data="{ mobileMenuOpen: false }" class="relative z-50 flex items-center justify-between px-6 py-4 lg:px-10 lg:py-6 w-full">
+        <header x-data="{ mobileMenuOpen: false }" class="sticky top-0 z-50 flex items-center justify-between px-6 py-4 lg:px-10 lg:py-4 w-full bg-[#FFFDF9]/80 dark:bg-[#121212]/80 backdrop-blur-md border-b border-gray-100 dark:border-stone-800/50 transition-all duration-300">
             <div class="flex items-center gap-2">
                 <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude Logo" class="h-8 w-auto object-contain">
                 <span class="font-claude-response text-[22px] font-medium tracking-tight">rynude</span>
             </div>
 
-            <!-- Desktop Menu -->
-            <div class="hidden lg:flex items-center gap-6 text-[14px] font-medium text-gray-700 dark:text-stone-300">
-                <a href="#" class="hover:text-black dark:hover:text-white transition-colors">Meet rynude</a>
-                <a href="#" class="hover:text-black dark:hover:text-white transition-colors">Platform</a>
-                <a href="#" class="hover:text-black dark:hover:text-white transition-colors">Solutions</a>
-                <a href="#" class="hover:text-black dark:hover:text-white transition-colors">Pricing</a>
-                <a href="#" class="hover:text-black dark:hover:text-white transition-colors">Resources</a>
-            </div>
-            <div class="hidden lg:flex items-center gap-4">
-                <a href="#" class="text-[14px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white px-4 py-2 border border-gray-300 dark:border-stone-600 rounded-xl transition-colors">Contact sales</a>
-                <a href="#" class="text-[14px] font-medium text-white bg-[#1C1A19] hover:bg-black dark:hover:bg-[#3A3A38] px-4 py-2 rounded-xl transition-colors">Try rynude</a>
-                <!-- Dark mode toggle -->
-                <button @click="darkMode = !darkMode" type="button" class="p-2 rounded-xl text-gray-600 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#3A3A38] transition-colors" title="Toggle theme">
-                    <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                    </svg>
-                    <svg x-show="darkMode" style="display: none;" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                    </svg>
-                </button>
+            <!-- Desktop Right Navigation (Links + Buttons) -->
+            <div class="hidden lg:flex items-center gap-10 ml-auto mr-4">
+                <!-- Desktop Menu with Premium Hover Dropdowns -->
+                <div class="flex items-center gap-6 text-[14px] font-medium text-gray-700 dark:text-stone-300">
+                    <!-- Dropdown: Meet rynude -->
+                    <div x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" class="relative">
+                        <button class="flex items-center gap-1 hover:text-black dark:hover:text-white transition-colors focus:outline-none py-2">
+                            <span>Meet rynude</span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             class="absolute left-0 mt-1 w-64 rounded-2xl bg-[#FFFDF9] dark:bg-[#1E1E1E] border border-stone-200/50 dark:border-stone-800 shadow-xl py-2.5 z-50"
+                             style="display: none;">
+                            <button @click="const el = document.querySelector('#hero-tagline'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#hero-tagline'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Satu Antarmuka</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Semua AI terbaik dunia dalam satu tempat</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#marquee-provider'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#marquee-provider'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Integrasi Provider</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Terhubung ke Claude, GPT, Ollama Lokal, dll.</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Fitur -->
+                    <div x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" class="relative">
+                        <button class="flex items-center gap-1 hover:text-black dark:hover:text-white transition-colors focus:outline-none py-2">
+                            <span>Fitur</span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             class="absolute left-0 mt-1 w-64 rounded-2xl bg-[#FFFDF9] dark:bg-[#1E1E1E] border border-stone-200/50 dark:border-stone-800 shadow-xl py-2.5 z-50"
+                             style="display: none;">
+                            <button @click="const el = document.querySelector('#fitur'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#fitur'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Mengapa Rynude AI?</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Streaming Real-time, Artifacts, RTK, dll.</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#local-engine'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#local-engine'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Rynude Local Engine</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">GGUF lokal offline & privat tanpa kuota</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#mengapa-beralih'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#mengapa-beralih'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Rynude vs Konvensional</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Tabel perbandingan keuntungan beralih</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Harga -->
+                    <div x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" class="relative">
+                        <button class="flex items-center gap-1 hover:text-black dark:hover:text-white transition-colors focus:outline-none py-2">
+                            <span>Harga</span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             class="absolute left-0 mt-1 w-64 rounded-2xl bg-[#FFFDF9] dark:bg-[#1E1E1E] border border-stone-200/50 dark:border-stone-800 shadow-xl py-2.5 z-50"
+                             style="display: none;">
+                            <button @click="const el = document.querySelector('#harga'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#harga'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Paket Gratis (Free)</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Akses model open-source dasar selamanya</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#harga'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#harga'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Paket Premium (Pro)</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Model AI unggulan dengan limit tinggi</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#harga'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#harga'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Paket Max (Unlimited)</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Akses tak terbatas ke semua AI terbaik dunia</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown: Instalasi -->
+                    <div x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" class="relative">
+                        <button class="flex items-center gap-1 hover:text-black dark:hover:text-white transition-colors focus:outline-none py-2">
+                            <span>Instalasi</span>
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             class="absolute left-0 mt-1 w-64 rounded-2xl bg-[#FFFDF9] dark:bg-[#1E1E1E] border border-stone-200/50 dark:border-stone-800 shadow-xl py-2.5 z-50"
+                             style="display: none;">
+                            <button @click="const el = document.querySelector('#step-1'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#step-1'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Langkah 1: Pasang Package</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Salin & jalankan satu perintah NPM CLI</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#step-2'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#step-2'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Langkah 2: Konfigurasi Engine</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Installer cerdas menyiapkan semua dependensi</span>
+                            </button>
+                            <button @click="const el = document.querySelector('#step-3'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } else { window.location.href = '{{ route('login') }}#step-3'; }" 
+                                    class="w-full text-left px-4 py-2 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors flex flex-col gap-0.5 mt-1">
+                                <span class="font-semibold text-[13px] text-stone-800 dark:text-stone-100">Langkah 3: Jalankan Engine</span>
+                                <span class="text-[11px] text-gray-500 dark:text-stone-500">Nyalakan server & mulai chatting offline</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Buttons -->
+                <div class="flex items-center gap-4">
+                    <a href="https://github.com/flustratech/rynude" target="_blank" rel="noopener noreferrer" class="text-[14px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white px-3 py-2 border border-gray-300 dark:border-stone-600 rounded-xl transition-colors flex items-center gap-1.5" title="GitHub Repository">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+                        </svg>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="{{ route('login') }}" class="text-[14px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white px-4 py-2 border border-gray-300 dark:border-stone-600 rounded-xl transition-colors">Masuk</a>
+                    <a href="{{ route('register') }}" class="text-[14px] font-medium text-white bg-[#1C1A19] hover:bg-black dark:hover:bg-[#3A3A38] px-4 py-2 rounded-xl transition-colors">Register</a>
+                    <!-- Dark mode toggle -->
+                    <button @click="darkMode = !darkMode" type="button" class="p-2 rounded-xl text-gray-600 dark:text-stone-400 hover:bg-gray-100 dark:hover:bg-[#3A3A38] transition-colors" title="Toggle theme">
+                        <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="darkMode" style="display: none;" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <!-- Mobile Hamburger Button -->
@@ -54,13 +194,18 @@
                  style="display: none;">
                 <div class="px-6 py-5 flex flex-col gap-4">
                     <a href="#" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Meet rynude</a>
-                    <a href="#" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Platform</a>
-                    <a href="#" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Solutions</a>
-                    <a href="#" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Pricing</a>
-                    <a href="#" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Resources</a>
+                    <a href="#fitur" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Fitur</a>
+                    <a href="#harga" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Harga</a>
+                    <a href="#instalasi" class="text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white transition-colors">Instalasi</a>
                     <div class="h-px bg-gray-200 dark:bg-stone-700 my-2"></div>
-                    <a href="#" class="text-[15px] font-medium text-center text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white px-4 py-3 border border-gray-300 dark:border-stone-600 rounded-xl transition-colors">Contact sales</a>
-                    <a href="#" class="text-[15px] font-medium text-center text-white bg-[#1C1A19] hover:bg-black dark:hover:bg-[#3A3A38] px-4 py-3 rounded-xl transition-colors">Try rynude</a>
+                    <a href="https://github.com/flustratech-dev/rynude_ai" target="_blank" rel="noopener noreferrer" class="text-[15px] font-medium text-center text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white px-4 py-3 border border-gray-300 dark:border-stone-600 rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+                        </svg>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="{{ route('login') }}" class="text-[15px] font-medium text-center text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white px-4 py-3 border border-gray-300 dark:border-stone-600 rounded-xl transition-colors">Masuk</a>
+                    <a href="{{ route('register') }}" class="text-[15px] font-medium text-center text-white bg-[#1C1A19] hover:bg-black dark:hover:bg-[#3A3A38] px-4 py-3 rounded-xl transition-colors">Register</a>
                     <button @click="darkMode = !darkMode; mobileMenuOpen = false" type="button" class="flex items-center gap-2 px-4 py-3 text-[15px] font-medium text-gray-700 dark:text-stone-300 hover:text-black dark:hover:text-white border border-gray-300 dark:border-stone-600 rounded-xl transition-colors">
                         <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -68,7 +213,7 @@
                         <svg x-show="darkMode" style="display: none;" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                         </svg>
-                        <span x-text="darkMode ? 'Light mode' : 'Dark mode'"></span>
+                        <span x-text="darkMode ? 'Mode Terang' : 'Mode Gelap'"></span>
                     </button>
                 </div>
             </div>
@@ -98,7 +243,7 @@
                     <div class="bg-[#FFFDF9] dark:bg-[#1C1C1C] rounded-t-[32px] p-6 border-t border-[#E5E7EB] dark:border-stone-700 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-none flex flex-col">
                         <button type="button" class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-stone-600 rounded-2xl hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors mb-4 shadow-sm bg-white dark:bg-[#323232]">
                             <svg class="w-5 h-5" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92(3.28-4.74 3.28-8.09z"/>
                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
@@ -125,12 +270,7 @@
                         <p class="text-[13px] text-gray-500 dark:text-stone-400 text-center mt-4">
                             By continuing, you acknowledge rynude's <a href="#" class="underline hover:text-gray-700 dark:hover:text-stone-300">Privacy Policy</a>.
                         </p>
-                        
-                        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-stone-700 text-center w-full">
-                            <p class="text-[14px] text-gray-600 dark:text-stone-400">
-                                Don't have an account? <a href="{{ route('register') }}" class="text-[#2D2825] dark:text-stone-200 font-semibold underline hover:text-gray-800 dark:hover:text-stone-300">Sign up</a>
-                            </p>
-                        </div>
+
                     </div>
                 </div>
 
@@ -161,154 +301,668 @@
             </div>
         </main>
 
-        {{-- ===== Landing sections (below the login form) ===== --}}
-        {{-- Hero --}}
-        <section>
-            <div class="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-[#323232] border border-gray-200 dark:border-stone-700 text-[12.5px] text-gray-600 dark:text-stone-400 mb-7 shadow-sm">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#D97757]"></span>
-                    Now with Cowork, Design &amp; multi-model chat
+        {{-- ═══════════════════════════════════════════════════════════════
+             LANDING SECTIONS — Redesign Total (Bahasa Indonesia)
+             Semua section di bawah Form Login dan Video
+        ════════════════════════════════════════════════════════════════ --}}
+
+        {{-- ── 1. HERO TAGLINE ──────────────────────────────────────── --}}
+        <section id="hero-tagline" class="relative overflow-hidden bg-[#FFFDF9] dark:bg-[#121212] border-b border-gray-100 dark:border-stone-800">
+            <div class="relative max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
+                {{-- Badge kecil --}}
+                <div class="lp-reveal inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-stone-800 text-[12px] font-medium text-stone-800 dark:text-stone-200 mb-8 shadow-sm lp-float">
+                    <span class="w-1.5 h-1.5 rounded-full bg-stone-800 dark:bg-stone-200 inline-block"></span>
+                    Open-source &middot; Gratis Selamanya &middot; Multi-Provider AI
                 </div>
-                <h1 class="font-claude-response text-[44px] md:text-[60px] leading-[1.05] font-medium tracking-tight max-w-3xl mx-auto">
-                    The AI workspace that<br>
-                    <span class="text-[#D97757]">works the way you think</span>
-                </h1>
-                <p class="text-[16px] md:text-[18px] text-gray-500 dark:text-stone-400 max-w-2xl mx-auto mt-6 leading-relaxed">
-                    Chat, build artifacts, hand off tasks, and design — all in one place. Bring your own keys for Rynude, GPT, Gemini, and Mistral.
+
+                {{-- Heading utama --}}
+                <h2 class="lp-reveal lp-reveal-delay-1 font-claude-response text-[42px] md:text-[62px] lg:text-[72px] leading-[1.04] font-medium tracking-tight text-[#2D2825] dark:text-stone-50 max-w-4xl mx-auto">
+                    Satu antarmuka untuk<br>
+                    <span class="text-black dark:text-white font-semibold">semua AI terbaik dunia</span>
+                </h2>
+
+                {{-- Sub-heading --}}
+                <p class="lp-reveal lp-reveal-delay-2 mt-6 text-[17px] md:text-[19px] text-gray-500 dark:text-stone-400 max-w-2xl mx-auto leading-relaxed">
+                    Rynude AI adalah platform chat open-source yang menyatukan Claude, GPT, Gemini, Llama, dan ratusan model lainnya&mdash;dalam satu antarmuka elegan yang berjalan 100% di komputer Anda sendiri.
                 </p>
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-9">
-                    <a href="{{ route('register') }}" class="w-full sm:w-auto px-6 py-3 bg-[#D97757] hover:bg-[#c56647] text-white rounded-xl text-[15px] font-medium transition-colors shadow-sm">
-                        Start for free
+
+                {{-- CTA Buttons --}}
+                <div class="lp-reveal lp-reveal-delay-3 flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
+                    <a href="{{ route('register') }}" id="lp-cta-primary"
+                       class="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-[#191919] hover:bg-[#000000] text-white rounded-2xl text-[15px] font-semibold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                        Mulai Gratis Sekarang
+                        <svg class="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                     </a>
-                    <a href="{{ route('register') }}" class="w-full sm:w-auto px-6 py-3 bg-white dark:bg-[#323232] border border-gray-200 dark:border-stone-700 hover:border-gray-300 dark:hover:border-stone-600 rounded-xl text-[15px] font-medium transition-colors shadow-sm dark:text-stone-200">
-                        Get started
+                    <a href="https://github.com/flustratech-dev/rynude_ai" target="_blank"
+                       class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white dark:bg-[#2a2a28] border border-gray-200 dark:border-stone-700 hover:border-gray-300 dark:hover:border-stone-600 rounded-2xl text-[15px] font-medium text-[#2D2825] dark:text-stone-200 transition-all shadow-sm hover:-translate-y-0.5">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.66-.22.66-.48l-.01-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85l-.01 2.75c0 .27.16.58.67.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+                        Lihat di GitHub
                     </a>
                 </div>
 
-                {{-- Hero mock window --}}
-                <div class="floaty mt-16 max-w-4xl mx-auto">
-                    <div class="rounded-2xl border border-gray-200 dark:border-stone-700 bg-white dark:bg-[#1C1C1C] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] overflow-hidden text-left">
-                        <div class="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-stone-700">
-                            <span class="w-3 h-3 rounded-full bg-red-400"></span>
-                            <span class="w-3 h-3 rounded-full bg-amber-400"></span>
-                            <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
-                        </div>
-                        <div class="p-6 space-y-4">
-                            <div class="flex justify-end">
-                                <div class="bg-[#EAE9E5] dark:bg-[#323232] rounded-2xl rounded-br-sm px-4 py-2.5 text-[13.5px] max-w-[75%] dark:text-stone-200">Design a pricing page for my SaaS and draft a launch email.</div>
-                            </div>
-                            <div class="flex items-start gap-3">
-                                <div class="w-7 h-7 rounded-lg bg-[#D97757]/15 flex items-center justify-center text-[#D97757] flex-shrink-0 mt-0.5">
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6-6.3 4.6L7.9 14 2 9.4h7.6z"/></svg>
-                                </div>
-                                <div class="space-y-2 flex-1">
-                                    <div class="h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full w-full"></div>
-                                    <div class="h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full w-[85%]"></div>
-                                    <div class="h-2.5 bg-gray-100 dark:bg-stone-700 rounded-full w-[60%]"></div>
-                                    <div class="flex gap-2 pt-1">
-                                        <span class="text-[11px] px-2 py-1 rounded-md bg-[#D97757]/10 text-[#D97757] font-medium">Artifact: pricing.html</span>
-                                        <span class="text-[11px] px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">Task queued</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                {{-- Stats strip --}}
+                <div class="lp-reveal lp-reveal-delay-4 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 mt-14 text-[13.5px] text-gray-500 dark:text-stone-400">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-[#2D2825] dark:text-stone-200 text-[15px]">9+</span>
+                        Provider AI terdukung
+                    </div>
+                    <div class="w-px h-4 bg-gray-300 dark:bg-stone-700 hidden sm:block"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-[#2D2825] dark:text-stone-200 text-[15px]">100%</span>
+                        Data di komputer Anda
+                    </div>
+                    <div class="w-px h-4 bg-gray-300 dark:bg-stone-700 hidden sm:block"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-[#2D2825] dark:text-stone-200 text-[15px]">Rp.0</span>
+                        Biaya antarmuka
+                    </div>
+                    <div class="w-px h-4 bg-gray-300 dark:bg-stone-700 hidden sm:block"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-[#2D2825] dark:text-stone-200 text-[15px]">Tanpa Batas</span>
+                        Pesan per hari
                     </div>
                 </div>
             </div>
         </section>
 
-        {{-- Features --}}
-        <section id="features" class="max-w-6xl mx-auto w-full px-6 py-20">
-            <div class="text-center mb-12">
-                <h2 class="font-claude-response text-[34px] font-medium tracking-tight">Everything in one workspace</h2>
-                <p class="text-gray-500 dark:text-stone-400 mt-3 text-[15.5px]">A focused set of tools that work together.</p>
+        {{-- ── 2. MARQUEE PROVIDER ──────────────────────────────────── --}}
+        <section id="marquee-provider" class="py-10 border-y border-gray-100 dark:border-stone-800 bg-white/50 dark:bg-[#1a1a18]/50 overflow-hidden">
+            <p class="text-center text-[11.5px] font-medium uppercase tracking-widest text-gray-400 dark:text-stone-600 mb-6">Terhubung ke Provider AI Terkemuka</p>
+            <div class="relative">
+                <div class="lp-marquee-track items-center gap-8 px-6">
+                    @php
+                        $providers = [
+                            ['name' => 'Anthropic Claude',    'color' => 'text-black dark:text-stone-300',  'icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z'],
+                            ['name' => 'OpenAI GPT',          'color' => 'text-emerald-600','icon' => 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'],
+                            ['name' => 'Google Gemini',       'color' => 'text-blue-500',   'icon' => 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'],
+                            ['name' => 'Hugging Face',        'color' => 'text-amber-500',  'icon' => 'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 12 5zm-1 8h2v2h-2v-2zm0-6h2v5h-2V7z'],
+                            ['name' => 'Ollama Lokal',        'color' => 'text-violet-600', 'icon' => 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'],
+                            ['name' => 'GLM / Z.ai',          'color' => 'text-teal-600',   'icon' => 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'],
+                            ['name' => 'Kimi Moonshot',       'color' => 'text-indigo-500', 'icon' => 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z'],
+                            ['name' => 'Qwen Alibaba',        'color' => 'text-stone-800 dark:text-stone-200', 'icon' => 'M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6-6.3 4.6L7.9 14 2 9.4h7.6z'],
+                            ['name' => 'Rynude Local Engine', 'color' => 'text-black dark:text-stone-300',  'icon' => 'M13 2L3 14h9l-1 8 10-12h-9l1-8z'],
+                        ];
+                        $doubled = array_merge($providers, $providers);
+                    @endphp
+                    @foreach($doubled as $p)
+                        <div class="flex-shrink-0 flex items-center gap-3 px-5 py-3 bg-white dark:bg-[#232321] border border-gray-200 dark:border-stone-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-default">
+                            <svg class="w-4 h-4 {{ $p['color'] }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="{{ $p['icon'] }}"/>
+                            </svg>
+                            <span class="text-[13px] font-medium text-[#2D2825] dark:text-stone-300 whitespace-nowrap">{{ $p['name'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+                {{-- fade edges --}}
+                <div class="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white dark:from-[#121212] to-transparent"></div>
+                <div class="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-white dark:from-[#121212] to-transparent"></div>
             </div>
+        </section>
+
+        {{-- ── 3. FITUR UNGGULAN ────────────────────────────────────── --}}
+        <section id="fitur" class="max-w-6xl mx-auto w-full px-6 py-24">
+            <div class="text-center mb-16">
+                <p class="lp-reveal text-[11.5px] uppercase tracking-widest font-medium text-black dark:text-white mb-3">Mengapa Rynude AI?</p>
+                <h2 class="lp-reveal lp-reveal-delay-1 font-claude-response text-[36px] md:text-[44px] font-medium tracking-tight text-[#2D2825] dark:text-stone-50 leading-[1.1]">
+                    Fitur yang tidak akan Anda<br>temukan di tempat lain
+                </h2>
+                <p class="lp-reveal lp-reveal-delay-2 text-[15px] text-gray-500 dark:text-stone-400 mt-4 max-w-xl mx-auto leading-relaxed">
+                    Dirancang untuk developer, researcher, dan siapapun yang ingin pengalaman AI tanpa batas dan tanpa biaya tersembunyi.
+                </p>
+            </div>
+
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 @php
-                    $features = [
-                        ['title' => 'Multi-model chat', 'desc' => 'Rynude, GPT, Gemini, and Mistral side by side. Bring your own API keys.', 'color' => 'text-[#D97757]', 'bg' => 'bg-[#D97757]/10', 'path' => 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
-                        ['title' => 'Live artifacts', 'desc' => 'Generate code and HTML with syntax highlighting, live preview, and versions.', 'color' => 'text-blue-600', 'bg' => 'bg-blue-500/10', 'path' => 'M16 18l6-6-6-6M8 6l-6 6 6 6'],
-                        ['title' => 'Cowork tasks', 'desc' => 'Hand off complex work, assign a model, and come back to a finished result.', 'color' => 'text-emerald-600', 'bg' => 'bg-emerald-500/10', 'path' => 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
-                        ['title' => 'Design generation', 'desc' => 'Describe what you want and get a ready-to-use, live-previewed design.', 'color' => 'text-fuchsia-600', 'bg' => 'bg-fuchsia-500/10', 'path' => 'M3 3h18v18H3zM3 9h18M9 21V9'],
-                        ['title' => 'Projects &amp; skills', 'desc' => 'Organize chats into projects with custom instructions and reusable skills.', 'color' => 'text-amber-600', 'bg' => 'bg-amber-500/10', 'path' => 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'],
-                        ['title' => 'Usage tracking', 'desc' => 'See real token usage per model so you always know where your spend goes.', 'color' => 'text-indigo-600', 'bg' => 'bg-indigo-500/10', 'path' => 'M18 20V10M12 20V4M6 20v-6'],
+                    $fitur = [
+                        [
+                            'index' => '01',
+                            'judul' => 'Streaming Real-time (SSE)',
+                            'desc'  => 'Teks AI mengalir seketika via Server-Sent Events. Tidak ada loading panjang—respons langsung muncul karakter per karakter layaknya mengetik.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>'
+                        ],
+                        [
+                            'index' => '02',
+                            'judul' => 'Artifacts Panel Cerdas',
+                            'desc'  => 'Bukan sekadar chat biasa. Render source code, dokumen HTML, hingga komponen UI secara langsung layaknya IDE sungguhan—lengkap dengan versioning.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"/></svg>'
+                        ],
+                        [
+                            'index' => '03',
+                            'judul' => 'RTK: Hemat Token hingga 50%',
+                            'desc'  => 'Teknologi Response Token Kuration secara otomatis mengompresi output boilerplate sebelum dikirim ke LLM. Lebih hemat, lebih cepat, tanpa kehilangan konteks.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"/></svg>'
+                        ],
+                        [
+                            'index' => '04',
+                            'judul' => 'Connect Account Tanpa API Key',
+                            'desc'  => 'Punya akun claude.ai atau Gemini gratis? Sambungkan via Rynude Connector extension dan chat gratis sepenuhnya—tanpa API key sama sekali.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>'
+                        ],
+                        [
+                            'index' => '05',
+                            'judul' => 'Konfigurasi API Dinamis',
+                            'desc'  => 'Ganti API Key, ubah Base URL, dan tambah Custom Provider langsung dari menu Settings—tanpa menyentuh satu baris source code pun.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869L9.594 3.94z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'
+                        ],
+                        [
+                            'index' => '06',
+                            'judul' => 'Dark & Light Mode Otomatis',
+                            'desc'  => 'Tema pintar yang tersinkronisasi dengan pengaturan sistem operasi Anda secara real-time, dengan transisi warna yang lembut dan nyaman di mata.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>'
+                        ],
+                        [
+                            'index' => '07',
+                            'judul' => 'Mesin AI Lokal (rynude Engine)',
+                            'desc'  => 'Jalankan 6 model GGUF lokal—dari rynude Lyric (1.5B) hingga rynude Magnum (14B)—langsung di komputer Anda, 100% offline tanpa kuota.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5m0-6a3 3 0 013-3m-3 3a3 3 0 100 6M5.25 5.25h13.5m-13.5 0a3 3 0 00-3 3m3-3a3 3 0 110 6h13.5m0-6a3 3 0 003 3m-3-3a3 3 0 110 6M4.5 9h.008v.008H4.5V9zm0 6h.008v.008H4.5V15zm0 6h.008v.008H4.5V21zm15-12h.008v.008H19.5V9zm0 6h.008v.008H19.5V15zm0 6h.008v.008H19.5V21z"/></svg>'
+                        ],
+                        [
+                            'index' => '08',
+                            'judul' => 'Bagikan Chat & Artifact',
+                            'desc'  => 'Buat tautan publik read-only untuk satu percakapan atau artifact kapan saja lewat menu titik-tiga. Cocok untuk kolaborasi tim dan dokumentasi.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186l5.302-3.03m-5.302 5.216l5.302 3.03m1.42-3.03a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0zm0-6a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0zm0 12a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0z"/></svg>'
+                        ],
+                        [
+                            'index' => '09',
+                            'judul' => 'Dikte Suara & Baca Lantang',
+                            'desc'  => 'Gunakan mikrofon untuk mendikte pesan, atau biarkan AI membacakan balasannya menggunakan Web Speech API bawaan browser—tanpa plugin tambahan.',
+                            'icon'  => '<svg class="w-6 h-6 text-stone-800 dark:text-stone-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>'
+                        ]
                     ];
                 @endphp
-                @foreach($features as $f)
-                    <div class="group bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-stone-700 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-stone-600 hover:shadow-lg dark:hover:shadow-none transition-all">
-                        <div class="w-11 h-11 rounded-xl {{ $f['bg'] }} {{ $f['color'] }} flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $f['path'] }}"/></svg>
+
+                @foreach($fitur as $i => $f)
+                    <div class="lp-reveal lp-reveal-delay-{{ min($i % 3 + 1, 6) }} group relative bg-[#FCFAF7] dark:bg-[#1C1C1A] border border-stone-200/40 dark:border-stone-850 rounded-[20px] p-8 transition-all duration-300 hover:bg-[#FAF5EE] dark:hover:bg-[#232321]">
+                        {{-- Index number in top-right --}}
+                        <span class="absolute top-6 right-8 font-claude-response text-[14px] font-semibold text-stone-300 dark:text-stone-700 select-none">
+                            {{ $f['index'] }}
+                        </span>
+
+                        {{-- Icon --}}
+                        <div class="mb-5 inline-block group-hover:scale-105 transition-transform duration-300">
+                            {!! $f['icon'] !!}
                         </div>
-                        <h3 class="text-[16px] font-semibold mb-1.5">{!! $f['title'] !!}</h3>
-                        <p class="text-[13.5px] text-gray-500 dark:text-stone-400 leading-relaxed">{!! $f['desc'] !!}</p>
+
+                        {{-- Text content --}}
+                        <h3 class="font-claude-response text-[17px] font-semibold text-[#2D2825] dark:text-stone-100 mb-2.5 leading-snug tracking-tight">
+                            {{ $f['judul'] }}
+                        </h3>
+                        <p class="text-[13px] text-stone-500 dark:text-stone-400 leading-relaxed font-light">
+                            {{ $f['desc'] }}
+                        </p>
                     </div>
                 @endforeach
             </div>
         </section>
 
-        {{-- Models --}}
-        <section id="models" class="border-y border-gray-200 dark:border-stone-700 bg-[#FFFDF9] dark:bg-[#1C1C1C]">
-            <div class="max-w-6xl mx-auto px-6 py-20 text-center">
-                <h2 class="font-claude-response text-[34px] font-medium tracking-tight">Your favorite models, one interface</h2>
-                <p class="text-gray-500 dark:text-stone-400 mt-3 text-[15.5px] max-w-2xl mx-auto">Switch providers without switching tools. Add your keys in Settings and start chatting.</p>
-                <div class="flex flex-wrap items-center justify-center gap-3 mt-10">
-                    @foreach(['Rynude Opus 4.8', 'Rynude Sonnet 4.6', 'GPT', 'Gemini 2.5 Pro', 'Mistral Large', 'Codestral'] as $m)
-                        <span class="px-5 py-2.5 bg-white dark:bg-[#323232] border border-gray-200 dark:border-stone-700 rounded-full text-[14px] font-medium shadow-sm dark:text-stone-200">{{ $m }}</span>
-                    @endforeach
-                </div>
-            </div>
-        </section>
+        {{-- ── 4. MESIN LOKAL ───────────────────────────────────────── --}}
+        <section id="local-engine" class="border-y border-gray-100 dark:border-stone-800 bg-[#FDFCFB] dark:bg-[#1a1a18]">
+            <div class="max-w-6xl mx-auto px-6 py-24">
+                <div class="grid lg:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <p class="lp-reveal text-[11.5px] uppercase tracking-widest font-medium text-black dark:text-white mb-3">Rynude Local Engine</p>
+                        <h2 class="lp-reveal lp-reveal-delay-1 font-claude-response text-[36px] md:text-[42px] font-medium tracking-tight text-[#2D2825] dark:text-stone-50 leading-[1.1] mb-5">
+                            AI kelas dunia,<br>berjalan di laptop Anda
+                        </h2>
+                        <p class="lp-reveal lp-reveal-delay-2 text-[15.5px] text-gray-500 dark:text-stone-400 leading-relaxed mb-8">
+                            Rynude hadir dengan mesin inferensi lokal bawaan untuk model <code class="text-[13px] bg-gray-100 dark:bg-stone-800 px-1.5 py-0.5 rounded font-mono">.gguf</code>. Enam model tersedia dari yang paling ringan hingga yang paling powerful—semuanya berjalan sepenuhnya offline tanpa batasan kuota.
+                        </p>
+                        <div class="lp-reveal lp-reveal-delay-3 flex items-center gap-3">
+                            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#191919] hover:bg-[#000000] text-white rounded-xl text-[14px] font-medium transition-all shadow-sm hover:-translate-y-0.5">
+                                Coba Sekarang
+                            </a>
+                            <span class="text-[13px] text-gray-500 dark:text-stone-500">GPU tidak wajib untuk model kecil</span>
+                        </div>
+                    </div>
 
-        {{-- Workspace CTA --}}
-        <section id="workspace" class="max-w-6xl mx-auto w-full px-6 py-24">
-            <div class="rounded-3xl border border-gray-800 dark:border-stone-600 px-8 py-16 text-center relative overflow-hidden">
-                <video autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover">
-                    <source src="{{ asset('video/video_halaman_utama.mp4') }}" type="video/mp4">
-                </video>
-                <div class="absolute inset-0 bg-black/50"></div>
-                <div class="relative">
-                    <h2 class="font-claude-response text-[36px] md:text-[42px] font-medium text-white tracking-tight max-w-2xl mx-auto leading-tight">Ready to build with Rynude?</h2>
-                    <p class="text-gray-300 mt-4 text-[16px] max-w-xl mx-auto">Start free in seconds. No credit card required.</p>
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
-                        <a href="{{ route('register') }}" class="w-full sm:w-auto px-7 py-3 bg-[#D97757] hover:bg-[#c56647] text-white rounded-xl text-[15px] font-medium transition-colors shadow-lg">
-                            Create your account
-                        </a>
-                        <a href="{{ route('register') }}" class="w-full sm:w-auto px-7 py-3 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-xl text-[15px] font-medium transition-colors">Get started</a>
+                    <div class="lp-reveal lp-reveal-delay-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        @php
+                            $models = [
+                                ['nama' => 'rynude Vignette', 'param' => '0.5B', 'ram' => '~2 GB',  'badge' => 'Paling Ringan', 'badge_color' => 'bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400'],
+                                ['nama' => 'rynude Lyric',    'param' => '1.5B', 'ram' => '~4 GB',  'badge' => '⭐ Default',    'badge_color' => 'bg-stone-900/10 dark:bg-stone-100/10 text-stone-900 dark:text-stone-100'],
+                                ['nama' => 'rynude Stanza',   'param' => '3B',   'ram' => '~6 GB',  'badge' => 'Ringan',        'badge_color' => 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'],
+                                ['nama' => 'rynude Canto',    'param' => '7B',   'ram' => '~8 GB',  'badge' => 'Seimbang',      'badge_color' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'],
+                                ['nama' => 'rynude Symphony', 'param' => '8B',   'ram' => '~10 GB', 'badge' => 'Pintar',        'badge_color' => 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400'],
+                                ['nama' => 'rynude Magnum',   'param' => '14B',  'ram' => '~16 GB', 'badge' => 'Paling Cerdas', 'badge_color' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'],
+                            ];
+                        @endphp
+                        @foreach($models as $m)
+                            <div class="group bg-white dark:bg-[#232321] border border-gray-200 dark:border-stone-800 rounded-2xl p-4 hover:border-stone-400 dark:hover:border-stone-700 hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all duration-300 cursor-default">
+                                <span class="inline-block text-[10.5px] font-semibold px-2 py-0.5 rounded-lg {{ $m['badge_color'] }} mb-3">{{ $m['badge'] }}</span>
+                                <p class="text-[13px] font-semibold text-[#2D2825] dark:text-stone-200 mb-1 leading-snug">{{ $m['nama'] }}</p>
+                                <p class="text-[11px] text-gray-400 dark:text-stone-600">{{ $m['param'] }} &middot; RAM {{ $m['ram'] }}</p>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </section>
 
-        {{-- Footer --}}
-        <footer class="border-t border-gray-200 dark:border-stone-700">
-            <div class="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-2.5">
-                    <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude" class="w-6 h-6 rounded-md object-contain">
-                    <span class="font-claude-response text-[16px] font-medium">Rynude</span>
+        {{-- ── 5. PERBANDINGAN ──────────────────────────────────────── --}}
+        <section id="mengapa-beralih" class="max-w-6xl mx-auto px-6 py-24">
+            <div class="text-center mb-14">
+                <p class="lp-reveal text-[11.5px] uppercase tracking-widest font-medium text-black dark:text-white mb-3">Mengapa beralih?</p>
+                <h2 class="lp-reveal lp-reveal-delay-1 font-claude-response text-[36px] md:text-[42px] font-medium tracking-tight text-[#2D2825] dark:text-stone-50 leading-[1.1]">
+                    Rynude vs. Langganan Konvensional
+                </h2>
+                <p class="lp-reveal lp-reveal-delay-2 text-[15px] text-gray-500 dark:text-stone-400 mt-3 max-w-lg mx-auto">
+                    Kenapa harus bayar mahal, kalau ada yang gratis and lebih powerful?
+                </p>
+            </div>
+
+            <div class="lp-reveal lp-reveal-delay-2 overflow-x-auto rounded-2xl border border-gray-200 dark:border-stone-800 shadow-sm">
+                <table class="w-full min-w-[600px] text-left text-[14px]">
+                    <thead>
+                        <tr class="border-b border-gray-100 dark:border-stone-800 bg-[#FDFCFB] dark:bg-[#1e1e1c]">
+                            <th class="px-6 py-4 font-semibold text-[#2D2825] dark:text-stone-200 text-[13px] uppercase tracking-wider w-2/5">Fitur</th>
+                            <th class="px-6 py-4 font-semibold text-gray-500 dark:text-stone-400 text-[13px] uppercase tracking-wider">ChatGPT / Claude Pro</th>
+                            <th class="px-6 py-4 text-[13px] uppercase tracking-wider">
+                                <span class="inline-flex items-center gap-1.5 font-bold text-black dark:text-white">
+                                    <img src="{{ asset('images/logo_rynudee.png') }}" class="w-4 h-4 rounded" alt="">
+                                    Rynude AI
+                                </span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-[#232321] divide-y divide-gray-100 dark:divide-stone-800">
+                        @php
+                            $rows = [
+                                ['fitur' => '💵 Biaya Antarmuka (UI)',     'konv' => '$20/bulan (~Rp 320.000)',   'rynude' => 'GRATIS 100%',          'hl' => true],
+                                ['fitur' => '🧠 Pilihan Model AI',         'konv' => 'Terkunci 1 perusahaan',     'rynude' => 'Multi-provider bebas',  'hl' => false],
+                                ['fitur' => '🎁 Akses Model Premium',      'konv' => 'Berbayar penuh',             'rynude' => 'Bisa gratis via Proxy', 'hl' => false],
+                                ['fitur' => '🚦 Batas Pesan per Hari',     'konv' => 'Maks 40 pesan / 3 jam',    'rynude' => 'Tanpa batas',           'hl' => true],
+                                ['fitur' => '🛡️ Privasi & Keamanan Data',  'konv' => 'Disimpan di cloud',         'rynude' => '100% di komputer Anda', 'hl' => false],
+                                ['fitur' => '🗜️ Kompresi Token (RTK)',      'konv' => 'Tidak ada',                 'rynude' => 'Hemat hingga 50%',      'hl' => true],
+                                ['fitur' => '📦 Panel Artifacts',          'konv' => 'Hanya di Claude',           'rynude' => 'Tersedia penuh',        'hl' => false],
+                                ['fitur' => '🎨 Kustomisasi Tema',         'konv' => 'Sangat terbatas',           'rynude' => 'Bebas (Tailwind CSS)',  'hl' => false],
+                            ];
+                        @endphp
+                        @foreach($rows as $r)
+                            <tr class="{{ $r['hl'] ? 'lp-table-row-highlight' : '' }} hover:bg-gray-50/50 dark:hover:bg-stone-800/30 transition-colors">
+                                <td class="px-6 py-4 font-medium text-[#2D2825] dark:text-stone-200">{{ $r['fitur'] }}</td>
+                                <td class="px-6 py-4 text-gray-500 dark:text-stone-500">
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        {{ $r['konv'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-[#2D2825] dark:text-stone-200 font-medium">
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        {{ $r['rynude'] }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {{-- ── 6. PRICING ───────────────────────────────────────────── --}}
+        <section id="harga" class="border-y border-gray-100 dark:border-stone-800 bg-[#FDFCFB] dark:bg-[#1a1a18]">
+            <div class="max-w-6xl mx-auto px-6 py-24">
+                <div class="text-center mb-16">
+                    <p class="lp-reveal text-[11.5px] uppercase tracking-widest font-medium text-black dark:text-white mb-3">Harga yang jujur</p>
+                    <h2 class="lp-reveal lp-reveal-delay-1 font-claude-response text-[36px] md:text-[46px] font-medium tracking-tight text-[#2D2825] dark:text-stone-50 leading-[1.08]">
+                        Semua plan, satu harga:<br>
+                        <span class="text-black dark:text-white font-semibold">Sepenuhnya Gratis</span>
+                    </h2>
+                    <p class="lp-reveal lp-reveal-delay-2 text-[15.5px] text-gray-500 dark:text-stone-400 mt-5 max-w-xl mx-auto leading-relaxed">
+                        Rynude AI adalah software open-source. Tidak ada biaya tersembunyi, tidak ada trial period, tidak ada kartu kredit. Untuk selamanya.
+                    </p>
                 </div>
-                <div class="flex items-center gap-6 text-[13.5px] text-gray-500 dark:text-stone-400">
-                    <a href="#features" class="hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Features</a>
-                    <a href="#models" class="hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Models</a>
-                    <a href="#workspace" class="hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Workspace</a>
+
+                <div class="grid md:grid-cols-3 gap-8 items-stretch">
+
+                    {{-- Card 1: Free (Pemula) --}}
+                    <div class="lp-reveal lp-reveal-delay-1 flex flex-col bg-white dark:bg-[#1E1E1C] border border-gray-200 dark:border-stone-800 rounded-[24px] p-8 transition-all duration-300 hover:shadow-lg">
+                        {{-- Claude Tree Icon 1 (Free Style) --}}
+                        <div class="text-stone-800 dark:text-stone-200">
+                            <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <!-- Main Trunk -->
+                                <path d="M24 44V22" stroke-linecap="round"/>
+                                <!-- Branches -->
+                                <path d="M24 34C18 34 16 30 16 26" stroke-linecap="round"/>
+                                <path d="M24 30C30 30 32 26 32 22" stroke-linecap="round"/>
+                                <path d="M24 22C20 18 20 14 20 10" stroke-linecap="round"/>
+                                <path d="M24 22C28 18 28 14 28 10" stroke-linecap="round"/>
+                                <!-- Hollow Nodes -->
+                                <circle cx="16" cy="26" r="2.5" fill="white" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="32" cy="22" r="2.5" fill="white" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="20" cy="10" r="2.5" fill="white" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="28" cy="10" r="2.5" fill="white" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="24" cy="6" r="2.5" fill="white" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M24 10V6"/>
+                            </svg>
+                        </div>
+                        
+                        <div class="mt-6 mb-2">
+                            <h3 class="font-claude-response text-[32px] font-semibold text-[#2D2825] dark:text-stone-100 tracking-tight leading-none">Free</h3>
+                            <p class="text-[14px] text-gray-500 dark:text-stone-400 mt-2">Coba Rynude</p>
+                        </div>
+
+                        <div class="my-5">
+                            <p class="text-[13px] text-gray-400 dark:text-stone-600 line-through mb-0.5">Normalnya: Rp 79.000</p>
+                            <div class="flex items-baseline gap-1">
+                                <span class="font-claude-response text-[36px] font-medium text-[#2D2825] dark:text-stone-50 leading-none">Rp.0</span>
+                            </div>
+                            <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-2">Gratis untuk semua orang</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <a href="{{ route('register') }}" class="block w-full text-center py-3 bg-[#191919] hover:bg-[#000000] text-white text-[14px] font-semibold rounded-xl transition-all duration-200">
+                                Coba Rynude
+                            </a>
+                        </div>
+
+                        <hr class="border-t border-gray-150 dark:border-stone-800 mb-6">
+
+                        <ul class="space-y-4 flex-1">
+                            @php
+                                $freeFeatures = [
+                                    'Chat di web, iOS, Android, dan desktop Anda',
+                                    'Hasilkan kode dan visualisasikan data',
+                                    'Tulis, edit, dan buat konten',
+                                    'Kemampuan untuk mencari web',
+                                    'Memori lintas percakapan',
+                                    'Buat file dan jalankan kode',
+                                    'Akses lebih banyak fitur dengan ekstensi desktop',
+                                    'Hubungkan layanan Slack dan Google Workspace',
+                                    'Integrasikan konteks atau alat dengan remote MCP',
+                                    'Mode berpikir mendalam (Extended thinking) untuk tugas kompleks'
+                                ];
+                            @endphp
+                            @foreach($freeFeatures as $item)
+                            <li class="flex items-start text-[13px] text-[#2D2825] dark:text-stone-300 leading-snug">
+                                <span class="text-stone-400 dark:text-stone-500 mr-3 flex-shrink-0 text-[14px] font-semibold">&#10003;</span>
+                                <span>{{ $item }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    {{-- Card 2: Pro (Pengguna Aktif) --}}
+                    <div class="lp-reveal lp-reveal-delay-2 flex flex-col bg-white dark:bg-[#1E1E1C] border border-gray-200 dark:border-stone-800 rounded-[24px] p-8 transition-all duration-300 hover:shadow-lg">
+                        {{-- Claude Tree Icon 2 (Pro Style) --}}
+                        <div class="text-stone-800 dark:text-stone-200">
+                            <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <!-- Main Trunk -->
+                                <path d="M24 44V18" stroke-linecap="round"/>
+                                <!-- More complex branches -->
+                                <path d="M24 36C16 36 14 30 14 24" stroke-linecap="round"/>
+                                <path d="M24 32C32 32 34 26 34 20" stroke-linecap="round"/>
+                                <path d="M24 24C18 20 18 16 18 12" stroke-linecap="round"/>
+                                <path d="M24 24C30 20 30 16 30 12" stroke-linecap="round"/>
+                                <path d="M14 24C10 24 8 20 8 16" stroke-linecap="round"/>
+                                <path d="M34 20C38 20 40 16 40 12" stroke-linecap="round"/>
+                                <!-- Filled Nodes -->
+                                <circle cx="14" cy="24" r="2.5" fill="currentColor"/>
+                                <circle cx="34" cy="20" r="2.5" fill="currentColor"/>
+                                <circle cx="18" cy="12" r="2.5" fill="currentColor"/>
+                                <circle cx="30" cy="12" r="2.5" fill="currentColor"/>
+                                <circle cx="8" cy="16" r="2.5" fill="currentColor"/>
+                                <circle cx="40" cy="12" r="2.5" fill="currentColor"/>
+                                <circle cx="24" cy="8" r="2.5" fill="currentColor"/>
+                                <path d="M24 18V8"/>
+                            </svg>
+                        </div>
+
+                        <div class="mt-6 mb-2">
+                            <h3 class="font-claude-response text-[32px] font-semibold text-[#2D2825] dark:text-stone-100 tracking-tight leading-none">Pro</h3>
+                            <p class="text-[14px] text-gray-500 dark:text-stone-400 mt-2">Untuk produktivitas harian</p>
+                        </div>
+
+                        <div class="my-5">
+                            <p class="text-[13px] text-gray-400 dark:text-stone-600 line-through mb-0.5">Normalnya: Rp 199.000</p>
+                            <div class="flex items-baseline gap-1">
+                                <span class="font-claude-response text-[36px] font-medium text-[#2D2825] dark:text-stone-50 leading-none">Rp.0</span>
+                            </div>
+                            <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-2">Gratis Selamanya untuk Pengguna Aktif</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <a href="{{ route('register') }}" class="block w-full text-center py-3 bg-[#191919] hover:bg-[#000000] text-white text-[14px] font-semibold rounded-xl transition-all duration-200">
+                                Coba Rynude
+                            </a>
+                        </div>
+
+                        <hr class="border-t border-gray-150 dark:border-stone-850 mb-6">
+
+                        <p class="text-[13px] font-bold text-[#2D2825] dark:text-stone-200 mb-4">Semua fitur Gratis, plus:</p>
+
+                        <ul class="space-y-4 flex-1">
+                            @php
+                                $proFeatures = [
+                                    'Penggunaan lebih tinggi*',
+                                    'Termasuk Rynude Code (Claude Code clone)',
+                                    'Termasuk Rynude Cowork (Claude Cowork clone)',
+                                    'Termasuk Rynude Design (Claude Design clone)',
+                                    'Termasuk Rynude Science (Claude Science clone)',
+                                    'Akses proyek tak terbatas untuk mengelompokkan chat dan dokumen',
+                                    'Akses ke fitur riset (Web Search)',
+                                    'Kemampuan menggunakan model AI lebih banyak',
+                                    'Rynude untuk Microsoft 365'
+                                ];
+                            @endphp
+                            @foreach($proFeatures as $item)
+                            <li class="flex items-start text-[13px] text-[#2D2825] dark:text-stone-300 leading-snug">
+                                <span class="text-stone-400 dark:text-stone-500 mr-3 flex-shrink-0 text-[14px] font-semibold">&#10003;</span>
+                                <span>{{ $item }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    {{-- Card 3: Max (Tim & Enterprise) — Subtle Blue/Indigo Highlight --}}
+                    <div class="lp-reveal lp-reveal-delay-3 flex flex-col bg-white dark:bg-[#1E1E1C] border border-[#C2D6FF] dark:border-blue-900/50 rounded-[24px] p-8 transition-all duration-300 hover:shadow-lg shadow-[0_8px_30px_rgba(194,214,255,0.18)]">
+                        {{-- Claude Tree Icon 3 (Max Style - Colored Nodes) --}}
+                        <div>
+                            <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <!-- Main Trunk -->
+                                <path d="M24 44V18" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <!-- Complex branch system -->
+                                <path d="M24 36C16 36 14 30 14 24" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <path d="M24 32C32 32 34 26 34 20" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <path d="M24 24C18 20 18 16 18 12" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <path d="M24 24C30 20 30 16 30 12" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <path d="M14 24C10 24 8 20 8 16" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <path d="M34 20C38 20 40 16 40 12" stroke-linecap="round" class="text-stone-800 dark:text-stone-200"/>
+                                <!-- Node 1 (blue) -->
+                                <circle cx="14" cy="24" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <!-- Node 2 (blue) -->
+                                <circle cx="34" cy="20" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <!-- Node 3 (blue) -->
+                                <circle cx="18" cy="12" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <!-- Node 4 (blue) -->
+                                <circle cx="30" cy="12" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <!-- Node 5 (blue) -->
+                                <circle cx="8" cy="16" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <!-- Node 6 (blue) -->
+                                <circle cx="40" cy="12" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <!-- Top Node (blue) -->
+                                <circle cx="24" cy="8" r="2.5" fill="#4285F4" stroke="#4285F4"/>
+                                <path d="M24 18V8" class="text-stone-800 dark:text-stone-200"/>
+                            </svg>
+                        </div>
+
+                        <div class="mt-6 mb-2">
+                            <h3 class="font-claude-response text-[32px] font-semibold text-[#2D2825] dark:text-stone-100 tracking-tight leading-none">Max</h3>
+                            <p class="text-[14px] text-gray-500 dark:text-stone-400 mt-2">Dapatkan yang terbaik dari Rynude</p>
+                        </div>
+
+                        <div class="my-5">
+                            <p class="text-[13px] text-gray-400 dark:text-stone-600 line-through mb-0.5">Normalnya: Mulai Rp 499.000</p>
+                            <div class="flex items-baseline gap-1">
+                                <span class="font-claude-response text-[36px] font-medium text-[#2D2825] dark:text-stone-50 leading-none">Rp.0</span>
+                            </div>
+                            <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-2">Gratis Selamanya untuk Organisasi</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <a href="{{ route('register') }}" class="block w-full text-center py-3 bg-[#191919] hover:bg-[#000000] text-white text-[14px] font-semibold rounded-xl transition-all duration-200">
+                                Coba Rynude
+                            </a>
+                        </div>
+
+                        <hr class="border-t border-gray-100 dark:border-stone-850 mb-6">
+
+                        <p class="text-[13px] font-bold text-[#2D2825] dark:text-stone-200 mb-4">Semua fitur Pro, plus:</p>
+
+                        <ul class="space-y-4 flex-1">
+                            @php
+                                $maxFeatures = [
+                                    'Pilih penggunaan 5x atau 20x lebih banyak dibanding Pro*',
+                                    'Batas output yang lebih tinggi untuk semua tugas',
+                                    'Akses awal ke canggih Rynude berikutnya',
+                                    'Akses prioritas tinggi saat trafik sibuk'
+                                ];
+                            @endphp
+                            @foreach($maxFeatures as $item)
+                            <li class="flex items-start text-[13px] text-[#2D2825] dark:text-stone-300 leading-snug">
+                                <span class="text-stone-400 dark:text-stone-500 mr-3 flex-shrink-0 text-[14px] font-semibold">&#10003;</span>
+                                <span>{{ $item }}</span>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                </div>{{-- /grid pricing --}}
+
+                <p class="lp-reveal lp-reveal-delay-4 text-center text-[13px] text-gray-400 dark:text-stone-600 mt-8">
+                    Biaya API (ke Anthropic, OpenAI, dll.) tetap ditanggung sendiri sesuai pemakaian. Rynude sebagai antarmuka selalu gratis.
+                </p>
+            </div>
+        </section>
+
+        {{-- ── 7. INSTALASI MUDAH ───────────────────────────────────── --}}
+        <section id="instalasi" class="max-w-6xl mx-auto px-6 py-24">
+            <div class="text-center mb-16">
+                <p class="lp-reveal text-[11.5px] uppercase tracking-widest font-medium text-black dark:text-white mb-3">Mulai dalam hitungan detik</p>
+                <h2 class="lp-reveal lp-reveal-delay-1 font-claude-response text-[36px] md:text-[44px] font-medium tracking-tight text-[#2D2825] dark:text-stone-50 leading-[1.1]">
+                    Instalasi "One-Click"<br>yang benar-benar mudah
+                </h2>
+                <p class="lp-reveal lp-reveal-delay-2 text-[15.5px] text-gray-500 dark:text-stone-400 mt-4 max-w-lg mx-auto leading-relaxed">
+                    Lupakan setup manual yang menyiksa. Satu perintah terminal sudah cukup&mdash;sisanya ditangani secara otomatis.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                @php
+                    $steps = [
+                        ['num' => '01', 'judul' => 'Salin & Jalankan',     'desc' => 'Buka terminal dari mana saja—Desktop, Documents, atau folder apapun—lalu ketikkan satu perintah ini.', 'code' => 'npx install-rynude', 'delay' => '1'],
+                        ['num' => '02', 'judul' => 'Duduk & Nikmati Kopi', 'desc' => 'Installer cerdas kami otomatis mengunduh source code, menyiapkan database, dan mengonfigurasi semua dependensi.', 'code' => null, 'delay' => '2'],
+                        ['num' => '03', 'judul' => 'Nyalakan & Mulai Chat','desc' => 'Jalankan perintah "rynude" dari terminal mana saja—backend, frontend, dan queue worker langsung aktif otomatis.', 'code' => 'rynude', 'delay' => '3'],
+                    ];
+                @endphp
+                @foreach($steps as $i => $s)
+                    <div id="step-{{ $i + 1 }}" class="lp-reveal lp-reveal-delay-{{ $s['delay'] }} relative flex flex-col items-center text-center">
+                        <div class="relative {{ $i < count($steps)-1 ? 'lp-step-line' : '' }} w-14 h-14 rounded-2xl bg-stone-900/10 dark:bg-stone-100/10 border border-stone-200 dark:border-stone-800 flex items-center justify-center mb-5">
+                            <span class="font-claude-response text-[18px] font-semibold text-black dark:text-white">{{ $s['num'] }}</span>
+                        </div>
+                        <h3 class="font-semibold text-[16px] text-[#2D2825] dark:text-stone-100 mb-2">{{ $s['judul'] }}</h3>
+                        <p class="text-[13.5px] text-gray-500 dark:text-stone-500 leading-relaxed mb-4">{{ $s['desc'] }}</p>
+                        @if($s['code'])
+                            <div class="w-full bg-[#1C1A19] dark:bg-[#111110] rounded-xl px-4 py-3 font-mono text-[13px] text-stone-300 border border-stone-850 shadow-sm text-left">
+                                $ {{ $s['code'] }}
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="lp-reveal lp-reveal-delay-3 flex flex-wrap items-center justify-center gap-3 mt-12">
+                <p class="text-[13px] text-gray-400 dark:text-stone-600 mr-2">Prasyarat sistem:</p>
+                @foreach(['PHP &ge; 8.2', 'Node.js &ge; 18', 'Composer', 'Git'] as $req)
+                    <span class="inline-flex items-center gap-1.5 text-[12.5px] px-3 py-1 rounded-lg bg-gray-100 dark:bg-stone-800 text-gray-600 dark:text-stone-400 font-medium">
+                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        {!! $req !!}
+                    </span>
+                @endforeach
+            </div>
+        </section>
+
+        {{-- Brand Sign-off Watermark --}}
+        <div class="lp-reveal text-center py-10 md:py-16 px-6 overflow-hidden select-none pointer-events-none">
+            <h2 class="font-claude-response text-[#2D2825]/[0.06] dark:text-stone-100/[0.018] text-[68px] sm:text-[100px] md:text-[150px] lg:text-[210px] font-semibold tracking-[0.45em] -mr-[0.45em] uppercase leading-none">
+                RYNUDE
+            </h2>
+        </div>
+
+        {{-- ── 9. FOOTER ─────────────────────────────────────────────── --}}
+        <footer class="border-t border-gray-100 dark:border-stone-800">
+            <div class="max-w-6xl mx-auto px-6 py-12">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+                    <div class="col-span-2 md:col-span-1">
+                        <div class="flex items-center gap-2.5 mb-3">
+                            <img src="{{ asset('images/logo_rynudee.png') }}" alt="Rynude" class="w-7 h-7 rounded-lg object-contain">
+                            <span class="font-claude-response text-[18px] font-medium text-[#2D2825] dark:text-stone-100">Rynude AI</span>
+                        </div>
+                        <p class="text-[13px] text-gray-500 dark:text-stone-500 leading-relaxed">Platform chat AI open-source yang memberikan kebebasan penuh kepada Anda.</p>
+                    </div>
+                    <div>
+                        <p class="text-[11.5px] font-semibold uppercase tracking-widest text-gray-400 dark:text-stone-600 mb-4">Produk</p>
+                        <ul class="space-y-2.5">
+                            <li><a href="#fitur"    class="text-[13.5px] text-gray-500 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Fitur Unggulan</a></li>
+                            <li><a href="#harga"    class="text-[13.5px] text-gray-500 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Harga & Plan</a></li>
+                            <li><a href="#instalasi"class="text-[13.5px] text-gray-500 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Cara Instalasi</a></li>
+                            <li><a href="#mulai"    class="text-[13.5px] text-gray-500 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">Mulai Sekarang</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="text-[11.5px] font-semibold uppercase tracking-widest text-gray-400 dark:text-stone-600 mb-4">Sumber Daya</p>
+                        <ul class="space-y-2.5">
+                            @foreach(['Dokumentasi', 'GitHub', 'Komunitas Discord', 'Blog'] as $item)
+                                <li><a href="#" class="text-[13.5px] text-gray-500 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">{{ $item }}</a></li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="text-[11.5px] font-semibold uppercase tracking-widest text-gray-400 dark:text-stone-600 mb-4">Legal</p>
+                        <ul class="space-y-2.5">
+                            @foreach(['Kebijakan Privasi', 'Syarat Penggunaan', 'Lisensi Apache 2.0'] as $item)
+                                <li><a href="#" class="text-[13.5px] text-gray-500 dark:text-stone-500 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">{{ $item }}</a></li>
+                            @endforeach
+                        </ul>
+                    </div>
                 </div>
-                <p class="text-[12.5px] text-gray-400 dark:text-stone-500">&copy; {{ date('Y') }} Rynude. All rights reserved.</p>
+
+                <div class="border-t border-gray-100 dark:border-stone-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <p class="text-[12.5px] text-gray-400 dark:text-stone-600">&copy; {{ date('Y') }} Rynude AI. Hak cipta dilindungi. Dirilis di bawah lisensi Apache 2.0.</p>
+                    <div class="flex items-center gap-5">
+                        <a href="https://github.com" target="_blank" class="text-gray-400 dark:text-stone-600 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors" aria-label="GitHub">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.66-.22.66-.48l-.01-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85l-.01 2.75c0 .27.16.58.67.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+                        </a>
+                        <a href="https://discord.com" target="_blank" class="text-gray-400 dark:text-stone-600 hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors" aria-label="Discord">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>
+                        </a>
+                    </div>
+                </div>
             </div>
         </footer>
-    </div>
+
+    </div>{{-- /min-h-screen wrapper --}}
 
     <style>
-        .hero-gradient {
-            background:
-                radial-gradient(900px 500px at 15% -10%, rgba(217,119,87,0.18), transparent 60%),
-                radial-gradient(700px 500px at 95% 0%, rgba(94,114,228,0.12), transparent 55%);
-        }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-float { animation: float 6s infinite ease-in-out; }
         @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .floaty { animation: floaty 6s ease-in-out infinite; }
     </style>
+
+    <script>
+        /* ── Scroll-reveal via IntersectionObserver ── */
+        (function () {
+            var els = document.querySelectorAll('.lp-reveal');
+            if (!els.length) return;
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('lp-visible');
+                        io.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+            els.forEach(function (el) { io.observe(el); });
+        })();
+    </script>
+
 </x-guest-layout>
