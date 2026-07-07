@@ -7,16 +7,31 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <script>
-            // Sync dark mode class immediately on page load to prevent light theme flash
             (function() {
-                const isDark = localStorage.getItem('darkMode') === 'true' || 
-                    (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                const theme = localStorage.getItem('theme') || 'system';
+                const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 document.documentElement.classList.toggle('dark', isDark);
-                // We'll update the content dynamically once DOM is parsed or in line below
+                document.addEventListener('DOMContentLoaded', function() {
+                    const meta = document.querySelector('meta[name="theme-color"]');
+                    if (meta) meta.content = isDark ? '#121212' : '#FFFDF9';
+                });
             })();
         </script>
 
         <title>{{ config('app.name', 'Laravel') }}</title>
+
+        <!-- PWA Manifest & Setup -->
+        <link rel="manifest" href="/manifest.json">
+        <script>
+            window.deferredPrompt = null;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                window.deferredPrompt = e;
+            });
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js');
+            }
+        </script>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -25,10 +40,7 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-[#2D2825] antialiased bg-[#FFFDF9] dark:bg-[#121212] dark:text-stone-200"
-          x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches) }"
-          x-init="document.documentElement.classList.toggle('dark', darkMode); document.querySelector('meta[name=\'theme-color\']').content = darkMode ? '#121212' : '#FFFDF9'; $watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val); document.querySelector('meta[name=\'theme-color\']').content = val ? '#121212' : '#FFFDF9'; })"
-          :class="{ 'dark': darkMode }">
+    <body class="font-sans text-[#2D2825] antialiased bg-[#FFFDF9] dark:bg-[#121212] dark:text-stone-200">
         @if(request()->routeIs('login') || request()->routeIs('register'))
             {{ $slot }}
         @else

@@ -105,8 +105,9 @@ class ChatStreamingService
             // ("Judul Dokumen"/"…isi lengkap…") and loop. Give them a slim prompt
             // and skip the strict-format skeleton from adaptSystemPrompt.
             if (app(\App\Services\LlamaServerService::class)->isGgufModel($model)) {
-                $systemPrompt = $this->buildLocalModelSystemPrompt($conversation, $searchBlock, $simulateThinking);
+                [$systemPrompt, $isGgufDocRequest] = $this->buildLocalModelSystemPrompt($conversation, $messages, $searchBlock, $simulateThinking);
             } else {
+                $isGgufDocRequest = false;
                 // Build the complete system prompt with all context
                 $systemPrompt = $this->buildSystemPrompt($conversation, $messages, $webSearch, $researchMode, $searchBlock, $simulateThinking);
 
@@ -118,6 +119,48 @@ class ChatStreamingService
 
             // Apply sliding window context strategy (token budget per model)
             $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt, $model);
+
+            // For GGUF models on a document request, inject a targeted SYSTEM REMINDER
+            // into the last user message — same mechanism used by the cloud path but
+            // only fired when actually needed (prevents spurious artifacts on greetings).
+            if ($isGgufDocRequest && !empty($messagesForAi)) {
+                $lastIdx = count($messagesForAi) - 1;
+                if ($messagesForAi[$lastIdx]['role'] === 'user') {
+                    $messagesForAi[$lastIdx]['content'] .= "\n\n[SYSTEM REMINDER — ARTIFACT OUTPUT REQUIRED:\n"
+                        . "You MUST output your document EXCLUSIVELY inside an <antArtifact> block. "
+                        . "NEVER use ```markdown code blocks for the document.\n"
+                        . "Format your response exactly as:\n"
+                        . "<antArtifact type=\"text/markdown\" title=\"Judul Skripsi Anda\">\n"
+                        . "---\n"
+                        . "mode: skripsi\n"
+                        . "judul: Judul Lengkap Skripsi\n"
+                        . "penulis: Nama Penulis\n"
+                        . "nim: NIM-12345\n"
+                        . "prodi: Program Studi\n"
+                        . "fakultas: Nama Fakultas\n"
+                        . "universitas: Nama Universitas\n"
+                        . "kota: Kota\n"
+                        . "tahun: 2024\n"
+                        . "pembimbing: Nama Pembimbing\n"
+                        . "---\n"
+                        . "# HALAMAN PENGESAHAN\n"
+                        . "# ABSTRAK\n"
+                        . "# ABSTRACT\n"
+                        . "# BAB I PENDAHULUAN\n"
+                        . "## 1.1 Latar Belakang\n"
+                        . "## 1.2 Perumusan Masalah\n"
+                        . "## 1.3 Tujuan\n"
+                        . "## 1.4 Batasan Masalah\n"
+                        . "## 1.5 Manfaat\n"
+                        . "# BAB II TINJAUAN PUSTAKA\n"
+                        . "# BAB III METODOLOGI\n"
+                        . "# BAB IV PEMBAHASAN\n"
+                        . "# BAB V KESIMPULAN DAN SARAN\n"
+                        . "# DAFTAR PUSTAKA\n"
+                        . "</antArtifact>\n"
+                        . "Write FULL paragraphs in every sub-section — no placeholder text, no one-sentence summaries.\n"
+                        . "Before the <antArtifact> tag write 2-3 sentences explaining your structure in the user's language.]";                }
+            }
 
             // Stream from AI service
             $stream = $this->aiService->streamResponse($messagesForAi, $model);
@@ -183,6 +226,15 @@ class ChatStreamingService
         // If the user stopped an empty generation, store a small placeholder
         if ($stopped && trim($fullResponse) === '') {
             $fullResponse = '_Generation stopped._';
+        }
+
+        // Safety net for GGUF local models: if the model wrapped the document
+        // in a ```markdown ... ``` code block instead of <antArtifact> tags
+        // (common failure mode for tiny models), convert it automatically so
+        // the artifact panel still opens correctly in the UI.
+        $isGgufModel = app(\App\Services\LlamaServerService::class)->isGgufModel($model);
+        if ($isGgufModel && !str_contains($fullResponse, '<antArtifact') && !str_contains($fullResponse, '<artifact')) {
+            $fullResponse = $this->normalizeGgufCodeBlockToArtifact($fullResponse);
         }
 
         // Parse artifacts if present (a reply may carry several)
@@ -455,50 +507,51 @@ class ChatStreamingService
     }
 
     /**
-     * Slim system prompt for tiny local GGUF models (0.5B–3B).
+     * System prompt for local GGUF models (Vignette 0.5B → Magnum 14B).
      *
-     * These models cannot follow the full artifact/skripsi prompt — fed the
-     * heavyweight version they parrot the skeleton example ("Judul Dokumen",
-     * "…isi lengkap…") and degenerate into loops even for a simple greeting.
-     * We give them plain, minimal guidance: chat normally, and only emit an
-     * <antArtifact> block when the user actually asks for a document — with NO
-     * skeleton example to copy and NO forced-document reminder.
+     * Returns [string $prompt, bool $isDocumentRequest] so the caller can
+     * inject a targeted SYSTEM REMINDER into the last user message when needed.
+     *
+     * For plain chat the prompt stays minimal (prevents looping / parroting).
+     * For document requests the YAML front-matter example is intentionally kept
+     * OUT of the system prompt — small models confuse prose YAML examples with
+     * a cue to wrap output in ```markdown blocks. The full structural example is
+     * delivered instead via the SYSTEM REMINDER in-message injection.
      */
     protected function buildLocalModelSystemPrompt(
         Conversation $conversation,
+        array $messages = [],
         string $searchBlock = '',
         bool $simulateThinking = false
-    ): string {
+    ): array {
+        // ── Detect whether this turn is a document / skripsi request ──────────
+        $lastUserText = '';
+        foreach (array_reverse($messages) as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                $lastUserText = strtolower(is_array($msg['content'])
+                    ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                    : ($msg['content'] ?? ''));
+                break;
+            }
+        }
+        $isDocumentRequest = (bool) preg_match(
+            '/\b(skripsi|makalah|laporan|proposal|tesis|jurnal|artikel ilmiah|dokumen|document|report|pdf|docx|buatkan|generate|tulis|buat).{0,60}(skripsi|makalah|laporan|proposal|tesis|jurnal|artikel|dokumen|document|report|pdf|docx|full|lengkap|complete)|\b(skripsi|makalah|laporan|proposal|tesis|jurnal ilmiah)\b/i',
+            $lastUserText
+        );
+
+        // ── Base identity & thinking rules (always injected) ──────────────────
         $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
-            . "=== 1. INTERNAL MONOLOGUE & REASONING PROCESS ===\n"
-            . "Before answering ANY user request or question, you MUST perform an internal reasoning process to plan your answer.\n"
-            . "- Wrap your step-by-step internal monologue EXACTLY inside <thinking> ... </thinking> tags at the very beginning of your response.\n"
-            . "- In your <thinking> block: analyze the user's request, identify key concepts, plan the structure of your reply, and ensure logical flow.\n"
-            . "- Write your final answer AFTER closing the </thinking> tag. Never reference or mention the thinking block in your final answer.\n\n"
-            . "=== 2. STRICT RULE: DOCUMENT & ARTIFACT GENERATION ===\n"
-            . "- When the user asks for a document, report, laporan, makalah, skripsi, PDF, DOCX, or code file, you are STRICTLY FORBIDDEN from apologizing, claiming you cannot generate documents offline, or suggesting external tools like Microsoft Word, Google Docs, Pandoc, or Typora!\n"
-            . "- Your ONLY allowed response is to immediately generate the complete document as structured Markdown inside a single <antArtifact type=\"text/markdown\" title=\"Judul Dokumen\"> ... </antArtifact> block AFTER your <thinking> block.\n"
-            . "- The application system will automatically convert your <antArtifact> block into the requested file format (PDF/DOCX) for the user. If you apologize or refuse, the application will break!\n"
-            . "- JANGAN PERNAH meminta maaf atau mengatakan tidak bisa membuat dokumen/laporan secara offline! Langsung buat dokumen secara lengkap di dalam tag <antArtifact>!\n\n"
-            . "=== 3. STRUCTURED DOCUMENT FORMATTING ===\n"
-            . "- Your final answer MUST be well-structured and easy to read using clean Markdown formatting.\n"
-            . "- Use clear headings (e.g., ## Heading 2, ### Heading 3) to organize topics and sections logically.\n"
-            . "- Use bullet lists (-) or numbered lists (1., 2.) for enumerations, steps, or features.\n"
-            . "- Use fenced code blocks (```language ... ```) for any code snippets, commands, or technical syntax.\n"
-            . "- Use bolding (**text**) to emphasize key terms and important concepts.\n"
-            . "- Reply in the user's language (e.g., Bahasa Indonesia if they write in Indonesian).\n"
-            . "- Never repeat the same line, paragraph, or heading over and over.\n\n"
-            . "=== 4. ACADEMIC & DOCUMENT DEPTH GUIDELINES ===\n"
-            . "- When writing a document, report, laporan, makalah, or skripsi, DO NOT write brief summaries or single-sentence paragraphs!\n"
-            . "- You MUST write comprehensive, in-depth, and detailed academic chapters. Each section should contain multiple well-developed paragraphs with clear explanations, examples, and analysis.\n"
-            . "- For academic papers or skripsi, use formal academic structure:\n"
-            . "  * # Judul Dokumen\n"
-            . "  * ## BAB I: PENDAHULUAN (Latar Belakang, Rumusan Masalah, Tujuan, Manfaat)\n"
-            . "  * ## BAB II: TINJAUAN PUSTAKA / LANDASAN TEORI\n"
-            . "  * ## BAB III: METODOLOGI PENELITIAN\n"
-            . "  * ## BAB IV: PEMBAHASAN DAN ANALISIS (Use bullet points, tables, and bold text for data)\n"
-            . "  * ## BAB V: KESIMPULAN DAN SARAN\n"
-            . "- Ensure formatting is clean, professional, and visually structured.";
+            . "=== REASONING PROCESS ===\n"
+            . "Before answering, wrap step-by-step internal reasoning inside <thinking>...</thinking> at the very start of your response. Write your final answer AFTER </thinking>. Never mention the thinking block in your answer.\n\n"
+            . "=== FORMATTING ===\n"
+            . "Reply in the user's language. Use clean Markdown: headings (##/###), bullet lists (-), numbered lists, fenced code blocks, **bold** for key terms. Never repeat the same line or paragraph.\n\n"
+            . "=== DOCUMENT & ARTIFACT RULE ===\n"
+            . "When the user asks for a document, skripsi, makalah, laporan, proposal, PDF, or DOCX:\n"
+            . "1. NEVER apologize, NEVER claim you cannot create files offline, NEVER suggest Google Docs or Microsoft Word.\n"
+            . "2. Write 2-3 sentences in chat explaining your structure (in the user's language).\n"
+            . "3. Then output the COMPLETE document inside ONE <antArtifact type=\"text/markdown\" title=\"Document Title\"> ... </antArtifact> block.\n"
+            . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
+            . "5. Do NOT wrap a plain chat answer in <antArtifact>.";
 
         // Custom instructions / language preference still apply.
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
@@ -527,8 +580,39 @@ class ChatStreamingService
             $prompt .= "\n\nREMINDER - EXTENDED THINKING MODE: You MUST begin your response with step-by-step reasoning wrapped EXACTLY in <thinking> ... </thinking> tags, then write your structured final answer AFTER closing the </thinking> tag.";
         }
 
-        return $prompt;
+        return [$prompt, $isDocumentRequest];
     }
+
+    /**
+     * Safety net for GGUF local models: if the model emitted the document
+     * inside a ```markdown ... ``` fenced code block instead of proper
+     * <antArtifact> tags, convert it so the artifact panel opens correctly.
+     * Only fires when no <antArtifact> tags were found in the response.
+     */
+    protected function normalizeGgufCodeBlockToArtifact(string $response): string
+    {
+        // Match a top-level ```markdown ... ``` block (possibly with leading chat text)
+        if (!preg_match('/^(.*?)```(?:markdown)?\s*\n([\s\S]*?)```\s*$/s', $response, $m)) {
+            return $response; // nothing to convert
+        }
+
+        $chatPart    = trim($m[1]);
+        $docContent  = trim($m[2]);
+
+        // Extract a title from the document (first # heading or YAML judul field)
+        $title = 'Dokumen';
+        if (preg_match('/^judul:\s*(.+)$/im', $docContent, $tm)) {
+            $title = trim($tm[1]);
+        } elseif (preg_match('/^#\s+(.+)$/m', $docContent, $tm)) {
+            $title = trim($tm[1]);
+        }
+
+        $artifact = "<antArtifact type=\"text/markdown\" title=\"" . htmlspecialchars($title, ENT_QUOTES) . "\">\n"
+            . $docContent . "\n</antArtifact>";
+
+        return $chatPart !== '' ? $chatPart . "\n\n" . $artifact : $artifact;
+    }
+
 
     /**
      * Gather web sources for the user's question: URLs they pasted are fetched

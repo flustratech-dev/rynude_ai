@@ -649,6 +649,11 @@ function settingsState() {
                 document.documentElement.classList.remove('dark');
             }
 
+            var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+            if (themeColorMeta) {
+                themeColorMeta.content = isDark ? '#121212' : '#fdf8f6';
+            }
+
             // Save to localStorage
             localStorage.setItem('theme', theme);
 

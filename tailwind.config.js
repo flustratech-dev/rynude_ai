@@ -25,7 +25,8 @@ export default {
                 foreground: 'hsl(var(--foreground))',
                 // Claude specific exact colors
                 'claude-bg-light': '#FDFCFB',
-                'claude-bg-dark': '#2C2C2A',
+                'claude-bg-dark': '#121212',
+                'claude-sidebar-dark': '#0A0A0A',
                 'claude-border-light': '#E5E5E5',
                 'claude-border-dark': '#3A3A38',
                 'claude-accent': '#DE7356', // Typical terracotta accent

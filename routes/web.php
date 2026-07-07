@@ -178,4 +178,8 @@ Route::middleware('auth')->group(function () {
     })->name('artifact.preview.pdf');
 });
 
+// Socialite Google Auth Routes
+Route::get('/auth/google', [\App\Http\Controllers\Auth\SocialAuthController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\SocialAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
 require __DIR__.'/auth.php';

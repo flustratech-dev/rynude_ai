@@ -1,7 +1,7 @@
 <div
     x-data="{ open: true }"
     @sidebar-toggle.window="open = $event.detail.open"
-    class="h-full w-full flex-1 min-h-0 flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark font-claude-response"
+    class="h-full w-full flex-1 min-h-0 flex flex-col bg-[#F9F8F6] dark:bg-claude-sidebar-dark font-claude-response"
 >
     {{-- ========== EXPANDED MODE ========== --}}
     <div x-show="open" x-cloak class="h-full w-full flex-1 min-h-0 flex flex-col" x-data="{ searchOpen: false, searchQuery: '' }">
@@ -341,7 +341,7 @@
         </div>
 
         {{-- Bottom Profile --}}
-        <div class="border-t border-claude-border-light dark:border-claude-border-dark px-2 py-2 relative bg-[#F9F8F6] dark:bg-claude-bg-dark">
+        <div class="border-t border-claude-border-light dark:border-claude-border-dark px-2 py-2 relative bg-[#F9F8F6] dark:bg-claude-sidebar-dark">
             @auth
                 <div x-data="{ profileMenuOpen: false }">
                     <div
@@ -565,7 +565,7 @@
     </div>
 
     {{-- ========== COLLAPSED MODE (icons only) ========== --}}
-    <div x-show="!open" x-cloak class="h-full w-full flex-1 min-h-0 flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-y-auto custom-scrollbar">
+    <div x-show="!open" x-cloak class="h-full w-full flex-1 min-h-0 flex flex-col items-center py-4 px-2 gap-1 bg-[#F9F8F6] dark:bg-claude-sidebar-dark overflow-y-auto custom-scrollbar">
         <button
             @click="window.dispatchEvent(new CustomEvent('toggle-sidebar'))"
             class="p-2 rounded-lg hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] transition-colors text-gray-500 dark:text-stone-200 hover:text-[#2D2825] dark:hover:text-stone-200 w-full flex items-center justify-center mb-4 group"

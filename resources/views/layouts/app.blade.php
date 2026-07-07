@@ -84,7 +84,7 @@
                 var isDark = _isCodePage || theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 document.documentElement.classList.toggle('dark', isDark);
                 var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-                if (themeColorMeta) themeColorMeta.content = isDark ? '#2C2C2A' : '#fdf8f6';
+                if (themeColorMeta) themeColorMeta.content = isDark ? '#121212' : '#fdf8f6';
             }
             
             applyTheme(getTheme());
