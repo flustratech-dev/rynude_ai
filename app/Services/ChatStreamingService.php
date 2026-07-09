@@ -204,6 +204,15 @@ class ChatStreamingService
                 // block. The "document stuck in chat" failure mode disappears.
                 $genOptions = $isGgufDocRequest ? ['grammar' => $this->docArtifactGrammar()] : [];
                 $stream = $this->aiService->streamResponse($messagesForAi, $model, $genOptions);
+
+                // Language watchdog for local plain chat: when the user wrote
+                // Indonesian, sniff the first ~250 chars of the answer; if the
+                // model drifted into English, scrap that answer BEFORE it is
+                // shown and regenerate with a hard Indonesian-only directive.
+                if (!$isGgufDocRequest && $llamaService->isGgufModel($model)
+                    && !$this->looksEnglish($this->recentUserRequestText($messages, 1))) {
+                    $stream = $this->guardIndonesianAnswer($stream, $messagesForAi, $model);
+                }
             }
         }
 
@@ -730,6 +739,10 @@ class ChatStreamingService
             $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
                 . "=== REASONING PROCESS ===\n"
                 . "Before answering, wrap step-by-step internal reasoning inside <thinking>...</thinking> at the very start of your response. Write your final answer AFTER </thinking>. Never mention the thinking block in your answer.\n\n"
+                . "=== CONVERSATION STYLE ===\n"
+                . "- Greetings/small talk → reply warmly in 1-2 sentences, then offer help. No speeches.\n"
+                . "- Simple requests → just do/answer them directly. Ask AT MOST one short clarifying question, and only when truly necessary — never interrogate the user with a list of questions.\n"
+                . "- Never talk about yourself, your abilities, or your limitations as an AI unless directly asked.\n\n"
                 . "=== UNDERSTANDING THE USER ===\n"
                 . "First identify what the user is really asking, then answer that directly in the user's language. Follow-up messages refer to the previous topic.\n\n"
                 . "=== ANSWER LENGTH ===\n"
@@ -743,6 +756,15 @@ class ChatStreamingService
                 . "3. Then output the COMPLETE document inside ONE <antArtifact type=\"text/markdown\" title=\"Document Title\"> ... </antArtifact> block.\n"
                 . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
                 . "5. Do NOT wrap a plain chat answer in <antArtifact>.";
+        }
+
+        // Hard per-turn language pin: small local models reason in English and
+        // drift into answering in English mid-conversation. When THIS turn is
+        // written in Indonesian, make the answer language non-negotiable.
+        if ($lastUserText !== '' && !$this->looksEnglish($lastUserText)) {
+            $prompt .= "\n\n=== ATURAN BAHASA (MUTLAK) ===\n"
+                . "Pengguna menulis dalam Bahasa Indonesia. SELURUH jawaban Anda WAJIB dalam Bahasa Indonesia — dari kata pertama sampai kata terakhir. "
+                . "Menjawab dalam bahasa Inggris adalah KESALAHAN FATAL. (Proses berpikir internal boleh bahasa apa pun, tapi jawaban final 100% Bahasa Indonesia.)";
         }
 
         // Custom instructions / language preference still apply.
@@ -1054,7 +1076,10 @@ GBNF;
                     "Permintaan pengguna: {$request}\n"
                     . "Judul skripsi: {$meta['judul']}\n"
                     . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
-                    . "\nTugas Anda SEKARANG: tulis {$label} secara LENGKAP dalam Markdown murni, mulai langsung dengan heading '# {$heading}'.\n{$guide}"],
+                    . "\nTugas Anda SEKARANG: tulis {$label} secara LENGKAP dalam Markdown murni, mulai langsung dengan heading '# {$heading}'.\n{$guide}\n\n"
+                    . ($ci === 0
+                        ? "BAHASA: HALAMAN PENGESAHAN dan ABSTRAK wajib Bahasa Indonesia baku; HANYA bagian '# ABSTRACT' yang ditulis dalam bahasa Inggris."
+                        : "⚠️ PENTING — BAHASA: Tulis SELURUH {$label} dalam Bahasa Indonesia baku, dari kalimat pertama sampai kalimat terakhir. DILARANG memakai bahasa Inggris sama sekali. Abaikan bahasa apa pun yang muncul pada ringkasan di atas — bagian ini 100% Bahasa Indonesia.")],
             ];
 
             $chapterText = '';
@@ -1106,10 +1131,39 @@ GBNF;
             }
 
             $chapterText = $this->cleanChapterText($chapterText, $heading);
+
+            // Language guard: BAB I–V must be Indonesian. A small model drifts
+            // into English right after the (legitimately English) ABSTRACT —
+            // detect that and rewrite the chapter in Indonesian once.
+            if ($ci >= 1 && $ci <= 5 && !Cache::get($stopKey) && $this->looksEnglish($chapterText)) {
+                yield ['type' => 'thinking', 'text' => "Bagian {$heading} terdeteksi berbahasa Inggris — menulis ulang dalam Bahasa Indonesia…\n", 'transient' => true];
+                $fixed = '';
+                foreach ($this->aiService->streamResponse([
+                    ['role' => 'system', 'content' => 'Anda penerjemah akademik profesional. Terjemahkan dokumen Markdown berikut ke Bahasa Indonesia baku akademik. Pertahankan SEMUA heading (#/##/###), penomoran sub-bab, dan struktur persis sama. Keluarkan HANYA hasil terjemahannya, tanpa komentar apa pun.'],
+                    ['role' => 'user', 'content' => $chapterText],
+                ], $model, ['max_tokens' => $maxTokensPerChapter]) as $chunk) {
+                    if (Cache::get($stopKey)) {
+                        break;
+                    }
+                    if (is_string($chunk)) {
+                        $fixed .= $chunk;
+                    }
+                }
+                $fixed = $this->cleanChapterText($fixed, $heading);
+                // Only swap in the rewrite when it is genuinely Indonesian and
+                // did not lose a big part of the chapter to truncation.
+                if (!$this->looksEnglish($fixed) && strlen($fixed) >= (int) (strlen($chapterText) * 0.5)) {
+                    $chapterText = $fixed;
+                }
+            }
+
             $outline = $this->chapterOutlineLines($chapterText);
             $chapterOutlines[] = ['heading' => $heading, 'lines' => $outline];
+            // Rolling context for the NEXT chapters: drop ABSTRACT lines — that
+            // English text is what dragged BAB I into English in the first place.
+            $contextOutline = array_values(array_filter($outline, fn ($l) => !preg_match('/^abstract\b/i', trim($l))));
             $summary .= "• {$heading}:\n"
-                . ($outline ? implode("\n", array_map(fn ($l) => '  ' . $l, $outline)) : '  (sudah ditulis)') . "\n";
+                . ($contextOutline ? implode("\n", array_map(fn ($l) => '  ' . $l, $contextOutline)) : '  (sudah ditulis)') . "\n";
 
             // Stream the finished chapter out in typewriter-sized bites.
             foreach (str_split($chapterText . "\n\n", 400) as $piece) {
@@ -1251,8 +1305,88 @@ GBNF;
             . "1. Tulis HANYA bagian yang diminta — jangan menulis bab lain dan jangan mengulang bab sebelumnya.\n"
             . "2. Keluarkan Markdown murni: mulai LANGSUNG dengan heading '# ...' — TANPA kalimat pembuka, TANPA penutup, TANPA ``` code fence, TANPA tag <antArtifact>.\n"
             . "3. Setiap sub-bab (## heading) berisi minimal 3 paragraf prosa akademik yang utuh dan substantif — bukan outline satu kalimat, bukan placeholder.\n"
-            . "4. Bahasa Indonesia baku (kecuali bagian ABSTRACT yang berbahasa Inggris).\n"
+            . "4. BAHASA: seluruh tulisan WAJIB Bahasa Indonesia baku. SATU-SATUNYA pengecualian adalah bagian berjudul '# ABSTRACT' (terjemahan abstrak) yang ditulis dalam bahasa Inggris. Di luar bagian itu, menulis kalimat berbahasa Inggris adalah KESALAHAN.\n"
             . "5. JANGAN menulis 'Sistematika Penulisan' dan jangan merangkum isi bab lain.";
+    }
+
+    /**
+     * Language watchdog for local-model plain chat (user wrote Indonesian).
+     * Buffers the first ~250 chars of the answer; if it sniffs as English the
+     * whole attempt is scrapped (never shown) and ONE retry with a hard
+     * Indonesian-only directive is streamed instead. Thinking chunks pass
+     * through live either way.
+     */
+    protected function guardIndonesianAnswer(\Generator $stream, array $messagesForAi, string $model): \Generator
+    {
+        $retryIndonesian = function () use ($messagesForAi, $model, &$buf): \Generator {
+            $retry = $messagesForAi;
+            if (($retry[0]['role'] ?? '') === 'system') {
+                $retry[0]['content'] = "JAWAB 100% DALAM BAHASA INDONESIA. Menulis bahasa Inggris DILARANG KERAS.\n\n" . $retry[0]['content'];
+            }
+            $retry[] = ['role' => 'assistant', 'content' => $buf];
+            $retry[] = ['role' => 'user', 'content' => '[SISTEM: Jawaban Anda barusan memakai bahasa Inggris — itu salah. Ulangi jawaban dari awal SEPENUHNYA dalam Bahasa Indonesia baku. Jangan menyinggung kesalahan ini, langsung jawab.]'];
+            foreach ($this->aiService->streamResponse($retry, $model) as $c) {
+                yield $c;
+            }
+        };
+
+        // Inline <think> blocks are legitimately English (the model's
+        // reasoning language) — sniff only the visible answer text.
+        $visible = fn (string $s): string => trim((string) preg_replace(
+            '/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $s
+        ));
+
+        $buf = '';
+        $checked = false;
+        foreach ($stream as $chunk) {
+            if (!is_string($chunk) || $checked) {
+                yield $chunk;
+                continue;
+            }
+            $buf .= $chunk;
+            $sniff = $visible($buf);
+            if (strlen($sniff) < 250 && strlen($buf) < 6000) {
+                continue; // keep sniffing until enough visible answer text
+            }
+            $checked = true;
+            if ($sniff !== '' && $this->looksEnglish($sniff)) {
+                yield from $retryIndonesian();
+                return; // original stream abandoned (server aborts on disconnect)
+            }
+            yield $buf; // Indonesian — release the buffer, passthrough from here
+        }
+
+        // Stream ended below the sniff threshold (short answers like
+        // "Hello! How can I help you today?") — same check on what we have.
+        if (!$checked && $buf !== '') {
+            $sniff = $visible($buf);
+            if ($sniff !== '' && $this->looksEnglish($sniff)) {
+                yield from $retryIndonesian();
+            } else {
+                yield $buf;
+            }
+        }
+    }
+
+    /**
+     * Cheap language sniff: does this chapter read as English? Counts common
+     * English vs Indonesian function words in the first few KB. Used by the
+     * pipeline's language guard for BAB I–V (ABSTRACT and DAFTAR PUSTAKA may
+     * legitimately contain English, so they are never checked).
+     */
+    protected function looksEnglish(string $text): bool
+    {
+        $sample = ' ' . mb_strtolower(mb_substr($text, 0, 4000)) . ' ';
+        $en = 0;
+        foreach ([' the ', ' of ', ' and ', ' this ', ' is ', ' are ', ' with ', ' that ', ' research ', ' study ', ' will ', ' to '] as $w) {
+            $en += substr_count($sample, $w);
+        }
+        $id = 0;
+        foreach ([' yang ', ' dan ', ' dengan ', ' ini ', ' pada ', ' dalam ', ' untuk ', ' adalah ', ' penelitian ', ' terhadap ', ' dari ', ' akan '] as $w) {
+            $id += substr_count($sample, $w);
+        }
+
+        return $en > $id;
     }
 
     /**

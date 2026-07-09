@@ -222,6 +222,14 @@ async function handleChat(req, res) {
     const id = "chatcmpl-" + Math.random().toString(36).slice(2);
 
     await enqueue(async () => {
+        // Abort generation when the client disconnects (e.g. the PHP language
+        // watchdog scrapped this answer) — otherwise the doomed generation
+        // keeps burning compute and the retry request queues behind it.
+        const ac = new AbortController();
+        res.on("close", () => {
+            if (!res.writableEnded) ac.abort();
+        });
+
         const sequence = context.getSequence();
         const session = new LlamaChatSession({
             contextSequence: sequence,
@@ -257,6 +265,8 @@ async function handleChat(req, res) {
                 const meta = await session.promptWithMeta(lastUser, promptOptions({
                     maxTokens,
                     grammar,
+                    signal: ac.signal,
+                    stopOnAbortSignal: true,
                     onResponseChunk(chunk) {
                         if (!chunk || chunk.text === "") return;
                         emitted = true;
@@ -281,7 +291,7 @@ async function handleChat(req, res) {
                 res.write("data: [DONE]\n\n");
                 res.end();
             } else {
-                const meta = await session.promptWithMeta(lastUser, promptOptions({ maxTokens, grammar }));
+                const meta = await session.promptWithMeta(lastUser, promptOptions({ maxTokens, grammar, signal: ac.signal, stopOnAbortSignal: true }));
                 const body = {
                     id, object: "chat.completion", created, model: modelId,
                     choices: [{
