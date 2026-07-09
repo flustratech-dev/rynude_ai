@@ -1136,7 +1136,7 @@ function chatInterfaceState() {
             // via claude.ai) models it saves the user message and replies with a
             // `need_extension` event (handled in the stream reader) instead of
             // generating server-side.
-            fetch('/api/chats/send', { method: 'POST', headers: headers, body: body })
+            fetch('/api/chats/send', { method: 'POST', headers: headers, body: body, signal: self.streamController ? self.streamController.signal : undefined })
                 .then(function(response) { self.handleStreamResponse(response); })
                 .catch(function(err) { self.handleStreamNetworkError(err); });
         },
@@ -1317,6 +1317,8 @@ function chatInterfaceState() {
 
         // Reset all streaming state before a send/edit/regenerate kicks off.
         beginStreamingState: function(model) {
+            if (this.streamController) { try { this.streamController.abort(); } catch(e) {} }
+            this.streamController = new AbortController();
             this._fromExtensionLive = false;
             this._receivedLiveChunks = 0;
             this._inThinkingTag = false;
@@ -1493,6 +1495,9 @@ function chatInterfaceState() {
                         }
                         read();
                     }).catch(function(err) {
+                        if (self.streamController && self.streamController.signal.aborted) {
+                            return;
+                        }
                         // Connection dropped mid-stream: the server keeps
                         // generating (ignore_user_abort) — reattach instead of
                         // giving up.
@@ -1504,6 +1509,9 @@ function chatInterfaceState() {
         },
 
         handleStreamNetworkError: function(err) {
+            if (this.streamController && this.streamController.signal.aborted) {
+                return;
+            }
             console.error("Fetch network error:", err);
             showAlert("Network error sending message. Please check connection.", 'error');
             this.stopWaitFeed();
@@ -1525,10 +1533,14 @@ function chatInterfaceState() {
             var contentLen = enc.encode(this.streamContent + this.contentQueue).length;
             var thinkingLen = enc.encode(this.thinkingContent + this.thinkQueue).length;
             fetch('/api/chats/' + this.conversationId + '/stream-resume?content_len=' + contentLen + '&thinking_len=' + thinkingLen, {
-                headers: {'Accept': 'text/event-stream'}
+                headers: {'Accept': 'text/event-stream'},
+                signal: this.streamController ? this.streamController.signal : undefined
             })
             .then(function(response) { self.handleStreamResponse(response); })
-            .catch(function() { setTimeout(function() { self.resumeStream(); }, 1000); });
+            .catch(function() {
+                if (self.streamController && self.streamController.signal.aborted) return;
+                setTimeout(function() { self.resumeStream(); }, 1000);
+            });
         },
 
         // Resume gave up: keep whatever partial answer we have as a local
@@ -1731,22 +1743,23 @@ function chatInterfaceState() {
 
         stopGeneration: function() {
             var self = this;
-            if (!this.conversationId) return;
-            fetch('/api/chats/stop', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json','Accept':'application/json'},
-                body: JSON.stringify({conversation_id: this.conversationId})
-            })
-            .then(function(){
-                // Show whatever is still queued right away, then let the
-                // reader's done-event finalize via finishStream()
-                self.stopWaitFeed();
-                self.streamContent += self.contentQueue;
-                self.thinkingContent += self.thinkQueue;
-                self.contentQueue = '';
-                self.thinkQueue = '';
-                self.sending = false;
-            });
+            if (this.streamController) {
+                try { this.streamController.abort(); } catch(e) {}
+            }
+            if (this.conversationId) {
+                fetch('/api/chats/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','Accept':'application/json'},
+                    body: JSON.stringify({conversation_id: this.conversationId})
+                }).catch(function(){});
+            }
+            self.stopWaitFeed();
+            self.streamContent += self.contentQueue;
+            self.thinkingContent += self.thinkQueue;
+            self.contentQueue = '';
+            self.thinkQueue = '';
+            self.sending = false;
+            self.finishStream();
         },
 
         handleFileUpload: function(event) {
@@ -1878,7 +1891,8 @@ function chatInterfaceState() {
                     research_mode: this.researchMode ? 1 : 0,
                     thinking: this.thinkingMode ? 1 : 0,
                     style: this.chatStyle
-                })
+                }),
+                signal: this.streamController ? this.streamController.signal : undefined
             })
             .then(function(response) { self.handleStreamResponse(response); })
             .catch(function(err) { self.handleStreamNetworkError(err); });
@@ -1896,7 +1910,8 @@ function chatInterfaceState() {
             fetch('/api/chats/' + this.conversationId + '/regenerate', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','Accept':'text/event-stream'},
-                body: JSON.stringify({ message_id: msg.id, model: useModel, thinking: this.thinkingMode ? 1 : 0 })
+                body: JSON.stringify({ message_id: msg.id, model: useModel, thinking: this.thinkingMode ? 1 : 0 }),
+                signal: this.streamController ? this.streamController.signal : undefined
             })
             .then(function(response) { self.handleStreamResponse(response); })
             .catch(function(err) { self.handleStreamNetworkError(err); });

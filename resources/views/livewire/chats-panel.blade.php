@@ -8,16 +8,18 @@
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                 <template x-if="isSelectMode">
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <template x-if="selectedChats.length > 0">
-                            <button @click="archiveSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
-                                <span x-text="(showArchived ? 'Unarchive' : 'Archive') + ' (' + selectedChats.length + ')'"></span>
-                            </button>
-                        </template>
-                        <template x-if="selectedChats.length > 0">
-                            <button @click="deleteSelectedChats()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-red-200 text-[13px] sm:text-[14px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
-                                <span x-text="'Delete (' + selectedChats.length + ')'"></span>
-                            </button>
-                        </template>
+                        <button @click="selectAll()" class="px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">
+                            <span x-text="conversations.length > 0 && selectedChats.length === conversations.length ? 'Deselect All' : 'Select All'"></span>
+                        </button>
+                        
+                        <button @click="archiveSelectedChats()" :disabled="selectedChats.length === 0" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-text="selectedChats.length > 0 && selectedChats.length === conversations.length ? (showArchived ? 'Unarchive All' : 'Archive All') : ((showArchived ? 'Unarchive' : 'Archive') + (selectedChats.length > 0 ? ' (' + selectedChats.length + ')' : ''))"></span>
+                        </button>
+                        
+                        <button @click="deleteSelectedChats()" :disabled="selectedChats.length === 0" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl border border-red-200 text-[13px] sm:text-[14px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors bg-white dark:bg-claude-bg-dark active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-text="selectedChats.length > 0 && selectedChats.length === conversations.length ? 'Delete All' : 'Delete' + (selectedChats.length > 0 ? ' (' + selectedChats.length + ')' : '')"></span>
+                        </button>
+                        
                         <button @click="toggleSelectMode()" class="px-3 sm:px-4 py-2 rounded-xl border border-[#E5E5E5] dark:border-stone-700 text-[13px] sm:text-[14px] font-medium text-[#2D2825] dark:text-stone-200 hover:bg-gray-50 dark:hover:bg-[#3A3A38] transition-colors bg-white dark:bg-claude-bg-dark active:scale-95">Cancel</button>
                     </div>
                 </template>
@@ -79,7 +81,7 @@
                         <div>
                             <div class="text-[12px] font-semibold text-gray-400 dark:text-stone-500 uppercase tracking-wider pt-5 pb-2" x-text="period"></div>
                             <template x-for="conversation in items" :key="conversation.id">
-                                <div class="group flex items-center justify-between py-4 border-b border-[#E5E5E5] dark:border-stone-800 hover:bg-gray-50/50 dark:hover:bg-[#3A3A38]/50 transition-colors">
+                                <div class="group flex items-center justify-between px-3 py-3 border-b border-stone-200/50 dark:border-stone-800/40 hover:bg-stone-200/40 dark:hover:bg-[#3A3A38]/40 rounded-xl transition-all duration-200 ease-in-out">
                                     <template x-if="renamingId === conversation.id">
                                         <div class="flex items-center flex-1 gap-2 pr-4" @click.stop>
                                             <input
@@ -241,6 +243,17 @@ function chatsPanelState() {
             var idx = this.selectedChats.indexOf(id);
             if (idx > -1) this.selectedChats.splice(idx, 1);
             else this.selectedChats.push(id);
+        },
+
+        selectAll: function() {
+            var self = this;
+            var ids = this.conversations.map(function(c) { return c.id; });
+            var allSelected = ids.length > 0 && ids.every(function(id) { return self.selectedChats.includes(id); });
+            if (allSelected) {
+                this.selectedChats = [];
+            } else {
+                this.selectedChats = ids;
+            }
         },
 
         startNewChat: function() {

@@ -283,15 +283,20 @@ async function handleChat(req, res) {
                 // Report "length" when generation hit maxTokens so the PHP
                 // side can trigger its auto-continue logic.
                 const finishReason = meta.stopReason === "maxTokens" ? "length" : "stop";
+                const pTokens = meta.promptTokens ?? Math.max(1, Math.ceil((systemPrompt.length + lastUser.length) / 4));
+                const cTokens = meta.responseTokens ?? Math.max(1, Math.ceil((meta.responseText || "").length / 4));
                 const done = {
                     id, object: "chat.completion.chunk", created, model: modelId,
                     choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+                    usage: { prompt_tokens: pTokens, completion_tokens: cTokens, total_tokens: pTokens + cTokens },
                 };
                 res.write(`data: ${JSON.stringify(done)}\n\n`);
                 res.write("data: [DONE]\n\n");
                 res.end();
             } else {
                 const meta = await session.promptWithMeta(lastUser, promptOptions({ maxTokens, grammar, signal: ac.signal, stopOnAbortSignal: true }));
+                const pTokens = meta.promptTokens ?? Math.max(1, Math.ceil((systemPrompt.length + lastUser.length) / 4));
+                const cTokens = meta.responseTokens ?? Math.max(1, Math.ceil((meta.responseText || "").length / 4));
                 const body = {
                     id, object: "chat.completion", created, model: modelId,
                     choices: [{
@@ -299,6 +304,7 @@ async function handleChat(req, res) {
                         message: { role: "assistant", content: meta.responseText },
                         finish_reason: meta.stopReason === "maxTokens" ? "length" : "stop",
                     }],
+                    usage: { prompt_tokens: pTokens, completion_tokens: cTokens, total_tokens: pTokens + cTokens },
                 };
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(JSON.stringify(body));

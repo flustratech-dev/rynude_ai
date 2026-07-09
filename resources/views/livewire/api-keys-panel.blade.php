@@ -9,6 +9,21 @@
         </div>
 
         <div class="px-2 mt-2 space-y-1">
+            {{-- Highlighted Model Hub (GGUF) Local AI at the top --}}
+            <button @click="tab='model-hub'" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] transition-all duration-200 border"
+                :class="tab==='model-hub'
+                    ?'bg-stone-900 border-stone-950/10 text-white dark:bg-stone-200 dark:border-stone-100/10 dark:text-stone-900 font-bold shadow-sm'
+                    : 'bg-stone-100/60 border-stone-200 text-stone-700 dark:bg-stone-800/40 dark:border-stone-700 dark:text-stone-300 font-semibold hover:bg-stone-200/50 dark:hover:bg-stone-800'">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
+                    <span>Model Hub (GGUF)</span>
+                </div>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                      :class="tab==='model-hub'?'bg-white/20 text-white dark:bg-stone-900/20 dark:text-stone-900':'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-300'">Local AI</span>
+            </button>
+
+            <div class="h-px bg-stone-200 dark:bg-stone-800 my-1.5"></div>
+
             <button @click="tab='hf'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='hf'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
                 <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
                 Hugging Face
@@ -17,13 +32,6 @@
                 <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
                 AI Models
             </button>
-            <a href="{{ route('model-hub') }}" class="w-full flex items-center justify-between pl-8 pr-2 py-1.5 rounded-lg text-[12px] transition-colors group text-stone-500 dark:text-stone-400 hover:text-[#2D2825] dark:hover:text-stone-200 hover:bg-gray-100 dark:hover:bg-[#3A3A38]">
-                <div class="flex items-center gap-2">
-                    <svg class="w-3.5 h-3.5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
-                    <span>Model Hub (GGUF)</span>
-                </div>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#D97757]/10 text-[#D97757] dark:bg-[#D97757]/20">Local AI</span>
-            </a>
             <button @click="tab='keys'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='keys'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
                 <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1221.75 8.25z"/></svg>
                 API Keys
@@ -86,6 +94,112 @@
                     </button>
                 </div>
             </div>
+
+        {{-- ==================== MODEL HUB TAB ==================== --}}
+        <div x-show="tab==='model-hub'" x-transition class="w-full">
+            {{-- Hardware Recommendation Banner --}}
+            <div class="mb-8 p-5 rounded-2xl border transition-all"
+                 :class="hwStatus === 'high' ? 'bg-green-50/70 border-green-200 dark:bg-green-900/10 dark:border-green-800' : (hwStatus === 'medium' ? 'bg-amber-50/70 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800' : 'bg-red-50/70 border-red-200 dark:bg-red-900/10 dark:border-red-800')">
+                <div class="flex items-start gap-4">
+                    <div class="p-3 rounded-xl bg-white dark:bg-[#2C2C2A] shadow-sm shrink-0">
+                        <svg class="w-6 h-6" :class="hwStatus === 'high' ? 'text-green-600 dark:text-green-400' : (hwStatus === 'medium' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-stone-100">Spesifikasi Hardware Anda: <span x-text="totalRamGb + ' GB RAM'"></span></h3>
+                            <span x-show="hasGpu" class="px-2 py-0.5 text-[11px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-md" x-text="'GPU: ' + gpuName + ' (' + vramGb + ' GB VRAM)'"></span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-stone-300 mt-1" x-text="hwMessage"></p>
+                        <div class="mt-2 flex items-center gap-2 text-xs font-semibold"
+                             :class="hwStatus === 'high' ? 'text-green-700 dark:text-green-400' : (hwStatus === 'medium' ? 'text-amber-700 dark:text-amber-400' : 'text-red-700 dark:text-red-400')">
+                            <span>Rekomendasi Batas Ukuran Model:</span>
+                            <span class="px-2 py-0.5 rounded bg-white/80 dark:bg-black/20 border" x-text="'Maksimal ' + maxParamSize + ' Parameter'"></span>
+                            <span class="px-2 py-0.5 rounded bg-white/80 dark:bg-black/20 border text-stone-600 dark:text-stone-300" x-text="'Sisa Hardisk: ' + freeSpaceGb + ' GB'"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Model Catalog Grid --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="model in localModels" :key="model.id">
+                    <div class="bg-[#F5F4F0] dark:bg-[#2C2C2A] border border-stone-300/80 dark:border-stone-700 rounded-2xl p-6 flex flex-col justify-between shadow-[0_2px_12px_rgba(45,40,37,0.03)] dark:shadow-none hover:shadow-[0_4px_20px_rgba(45,40,37,0.06)] hover:border-stone-400 dark:hover:border-stone-500 transition-all relative overflow-hidden">
+                        
+                        {{-- Warning Ribbon if RAM is insufficient --}}
+                        <template x-if="totalRamGb < model.required_ram_gb">
+                            <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow">
+                                RAM Kurang (< <span x-text="model.required_ram_gb + 'GB'"></span>)
+                            </div>
+                        </template>
+
+                        {{-- Recommended ribbon --}}
+                        <template x-if="model.recommended && totalRamGb >= model.required_ram_gb">
+                            <div class="absolute top-0 right-0 bg-stone-900/90 dark:bg-stone-300 text-white dark:text-stone-950 text-[10px] font-bold px-3.5 py-1 rounded-bl-xl uppercase tracking-wider shadow-md">
+                                ⭐ Rekomendasi
+                            </div>
+                        </template>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-stone-800 border border-stone-200 dark:bg-[#3A3A38] dark:text-stone-300 dark:border-stone-700" x-text="model.parameter_size + ' PARAMS'"></span>
+                                <span class="text-xs font-semibold text-gray-500 dark:text-stone-400" x-text="model.file_size_label"></span>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-stone-100" x-text="model.name"></h3>
+                            <p class="text-sm text-gray-600 dark:text-stone-400 mt-2 leading-relaxed" x-text="model.description"></p>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-stone-700/60">
+                            {{-- Status: Completed --}}
+                            <template x-if="model.status === 'completed'">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="flex items-center gap-1.5 text-xs font-bold text-green-600 dark:text-green-400">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Terunduh Siap Pakai
+                                    </span>
+                                    <button @click="deleteLocalModel(model.id)" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Hapus file model">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                                    </button>
+                                </div>
+                            </template>
+
+                            {{-- Status: Downloading --}}
+                            <template x-if="model.status === 'downloading'">
+                                <div>
+                                    <div class="flex items-center justify-between text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
+                                        <span>Mengunduh... (<span x-text="model.progress + '%'"></span>)</span>
+                                        <button @click="deleteLocalModel(model.id)" class="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1" title="Batalkan dan Hapus Unduhan">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            Batalkan & Hapus
+                                        </button>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-stone-700 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-stone-900/90 dark:bg-stone-300 h-2.5 rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + model.progress + '%'"></div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Status: Not Downloaded or Error --}}
+                            <template x-if="model.status !== 'completed' && model.status !== 'downloading'">
+                                <div>
+                                    <template x-if="model.status === 'error'">
+                                        <p class="text-xs text-red-600 dark:text-red-400 font-medium mb-2" x-text="model.error_message || 'Gagal mengunduh'"></p>
+                                    </template>
+                                    <button @click="downloadLocalModel(model.id)"
+                                            :disabled="totalRamGb < model.required_ram_gb"
+                                            class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm border"
+                                            :class="totalRamGb < model.required_ram_gb ? 'bg-stone-50 border-stone-200/80 text-stone-400 dark:bg-stone-800/40 dark:border-stone-700/60 dark:text-stone-500 cursor-not-allowed' : 'bg-stone-900 border-stone-950/10 text-white hover:bg-black dark:bg-stone-200 dark:border-stone-100/10 dark:text-stone-900 dark:hover:bg-stone-100 active:scale-95'">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                                        <span x-text="totalRamGb < model.required_ram_gb ? 'Tidak Disarankan (RAM < ' + model.required_ram_gb + 'GB)' : 'Unduh Model (' + model.file_size_label + ')'"></span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
 
         {{-- ==================== HUGGING FACE TAB ==================== --}}
         <div x-show="tab==='hf'" x-transition>
@@ -992,7 +1106,7 @@
 <script>
 function apiKeysPage(){
     return {
-        tab:'hf',flashMessage:null,flashType:'success',ft:null,saving:false,
+        tab:'model-hub',flashMessage:null,flashType:'success',ft:null,saving:false,
         hfKey:'',hfUrl:'https://api-inference.huggingface.co/v1',
         kAnthropic:'',kOpenai:'',kGoogle:'',kMistral:'',kGlm:'',kKimi:'',kQwen:'',kNineRouter:'',kProxy:'',
         nineRouterUrl:'http://localhost:20128/v1',
@@ -1000,6 +1114,17 @@ function apiKeysPage(){
         models:[],filter:'all',
         dlgOpen:false,dlgEditId:null,dlgCode:'',dlgName:'',dlgActive:true,dlgProv:'huggingface',dlgErr:null,dlgSaving:false,
         searchQuery:'',
+
+        localModels: [],
+        freeSpaceGb: 0,
+        totalRamGb: 8.0,
+        hwStatus: 'medium',
+        maxParamSize: '7B',
+        hwMessage: 'Memuat informasi hardware...',
+        hasGpu: false,
+        gpuName: '',
+        vramGb: 0,
+        localPollingInterval: null,
 
         get hfModels(){return this.models.filter(m=>m.provider==='huggingface')},
         get filteredModels(){
@@ -1018,7 +1143,19 @@ function apiKeysPage(){
             return list;
         },
 
-        init(){this.load()},
+        init(){
+            this.load();
+            this.fetchHardware();
+            this.fetchLocalModels();
+            this.localPollingInterval = setInterval(() => {
+                if (this.tab === 'model-hub') {
+                    const hasDownloading = this.localModels.some(m => m.status === 'downloading');
+                    if (hasDownloading) {
+                        this.fetchLocalProgress();
+                    }
+                }
+            }, 2000);
+        },
 
         load(){
             fetch('/api/settings',{headers:{'Accept':'application/json'}})
@@ -1141,6 +1278,115 @@ function apiKeysPage(){
             };
             if (m[c]) return m[c];
             return c.replace(/^kr\//,'').replace(/-/g,' ').replace(/\b(v0\.\d+|v\d+)\b/g,'').trim().split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+        },
+
+        async fetchHardware() {
+            try {
+                const res = await fetch('/api/system/hardware');
+                const data = await res.json();
+                if (data.success) {
+                    this.totalRamGb = data.total_ram_gb;
+                    this.hasGpu = data.has_gpu;
+                    this.gpuName = data.gpu_name || '';
+                    this.vramGb = data.vram_gb || 0;
+                    this.hwStatus = data.recommendation.status;
+                    this.maxParamSize = data.recommendation.max_parameter_size;
+                    this.hwMessage = data.recommendation.message;
+                }
+            } catch (e) {
+                console.error('Failed to fetch hardware:', e);
+                this.hwMessage = 'Gagal mendeteksi spesifikasi sistem. Menggunakan rekomendasi default.';
+            }
+        },
+
+        async fetchLocalModels() {
+            try {
+                const res = await fetch('/api/models');
+                const data = await res.json();
+                if (data.success) {
+                    this.localModels = data.models;
+                    this.freeSpaceGb = data.free_space_gb;
+                }
+            } catch (e) {
+                console.error('Failed to fetch models:', e);
+            }
+        },
+
+        async fetchLocalProgress() {
+            try {
+                const res = await fetch('/api/models/progress');
+                const data = await res.json();
+                if (data.success && data.progress) {
+                    this.localModels = this.localModels.map(m => {
+                        if (data.progress[m.id]) {
+                            const p = data.progress[m.id];
+                            return {
+                                ...m,
+                                status: p.status,
+                                progress: p.progress || 0,
+                                error_message: p.message || null
+                            };
+                        }
+                        return m;
+                    });
+                    if (this.localModels.some(m => m.status === 'completed' && !m.is_downloaded)) {
+                        this.fetchLocalModels();
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch progress:', e);
+            }
+        },
+
+        async downloadLocalModel(modelId) {
+            try {
+                const res = await fetch('/api/models/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({ model_id: modelId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.flashMessage = data.message;
+                    this.flashType = 'success';
+                    this.fetchLocalModels();
+                } else {
+                    this.flashMessage = data.message || 'Gagal memulai unduhan.';
+                    this.flashType = 'error';
+                }
+            } catch (e) {
+                console.error('Download error:', e);
+                this.flashMessage = 'Terjadi kesalahan koneksi saat mengunduh.';
+                this.flashType = 'error';
+            }
+        },
+
+        async deleteLocalModel(modelId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus atau membatalkan unduhan model ini dari sistem?')) return;
+            try {
+                const res = await fetch('/api/models/' + modelId, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.flashMessage = data.message;
+                    this.flashType = 'success';
+                    this.fetchLocalModels();
+                } else {
+                    this.flashMessage = data.message || 'Gagal menghapus model.';
+                    this.flashType = 'error';
+                }
+            } catch (e) {
+                console.error('Delete error:', e);
+                this.flashMessage = 'Terjadi kesalahan saat menghapus model.';
+                this.flashType = 'error';
+            }
         }
     };
 }

@@ -421,6 +421,10 @@ class ChatApiController extends ApiController
                         ob_flush();
                     }
                     flush();
+
+                    if (connection_aborted() || \Illuminate\Support\Facades\Cache::get('chat_stop_' . $conversation->id)) {
+                        break;
+                    }
                 }
 
                 $buffer->flush();

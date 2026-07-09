@@ -358,6 +358,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             $wasTruncated = false;
             $inputTokens = 0;
             $outputTokens = 0;
+            $generatedContent = '';
 
             while (!$body->eof()) {
                 $chunk = $body->read(1024);
@@ -385,10 +386,12 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                         // can show it live without mixing it into the final answer.
                         $reasoning = $delta['reasoning_content'] ?? $delta['reasoning'] ?? null;
                         if (is_string($reasoning) && $reasoning !== '') {
+                            $generatedContent .= $reasoning;
                             yield ['type' => 'thinking', 'text' => $reasoning];
                         }
 
                         if (isset($delta['content']) && $delta['content'] !== '') {
+                            $generatedContent .= $delta['content'];
                             yield $delta['content'];
                         } elseif ($data && isset($data['error'])) {
                             $errorMsg = is_string($data['error']) ? $data['error'] : ($data['error']['message'] ?? 'Unknown error');
@@ -412,11 +415,22 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                 yield ['type' => 'truncated'];
             }
 
-            // Record any usage the endpoint reported.
-            if ($user && ($inputTokens > 0 || $outputTokens > 0)) {
-                $providerLabel = $label;
-                [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
-                \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
+            // Record any usage the endpoint reported or estimate if missing.
+            if ($user) {
+                if ($inputTokens <= 0 && $outputTokens <= 0) {
+                    $inputChars = 0;
+                    foreach ($openAiMessages as $m) {
+                        $contentStr = is_string($m['content'] ?? '') ? $m['content'] : json_encode($m['content'] ?? '');
+                        $inputChars += strlen($contentStr);
+                    }
+                    $inputTokens = max(1, intdiv($inputChars, 4));
+                    $outputTokens = max(1, intdiv(strlen($generatedContent), 4));
+                }
+                if ($inputTokens > 0 || $outputTokens > 0) {
+                    $providerLabel = $label;
+                    [$rtkSaved, $rtkOriginal] = RtkTracker::flushAndGet();
+                    \App\Models\TokenUsage::record($user->id, $model, $providerLabel, $inputTokens, $outputTokens, $rtkSaved, $rtkOriginal);
+                }
             }
 
             // Fallback: If no streaming chunks were received, maybe the API returned a flat JSON object

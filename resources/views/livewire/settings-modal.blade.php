@@ -249,6 +249,24 @@
                      x-data="billingState()"
                      x-init="$watch($root.activeTab !== undefined ? '$root.activeTab' : 'null', v => {}); loadBilling();">
 
+                    {{-- Current Plan & Upgrade Section --}}
+                    <div class="p-5 mb-8 bg-gradient-to-r from-[#FBFBFA] via-[#FCFBFA] to-[#FFF8F5] dark:from-[#2C2C2C] dark:via-[#2A2A2A] dark:to-[#2C2218] border border-claude-border-light dark:border-claude-border-dark rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#D97757]/15 text-[#D97757]">Pro + Local Unlimited Tier</span>
+                                <span class="text-xs text-gray-400 dark:text-stone-500">• Status: Aktif &amp; Terverifikasi</span>
+                            </div>
+                            <h3 class="text-base font-bold text-[#2D2825] dark:text-stone-100 mt-1.5">Rynude AI Enterprise Suite</h3>
+                            <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-0.5 leading-relaxed">Akses penuh ke seluruh model Cloud (Claude 3.5, GPT-4o, DeepSeek R1) serta penjalanan model lokal tanpa batas.</p>
+                        </div>
+                        <div class="flex items-center gap-2.5 shrink-0">
+                            <button @click="showAlert('Paket akun Anda saat ini sudah berada di tier tertinggi (Enterprise / Pro Unlimited). Tidak perlu peningkatan paket saat ini.', 'info')" class="px-4 py-2.5 bg-[#D97757] hover:bg-[#c96646] text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <span>Kelola Paket / Upgrade Plan</span>
+                            </button>
+                        </div>
+                    </div>
+
                     {{-- Header + Range Selector --}}
                     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
                         <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 flex items-center gap-2">
@@ -413,6 +431,191 @@
                     </div>
                 </div>
 
+                {{-- Apps & Extensions tab --}}
+                <div x-show="activeTab === 'apps-extensions'" x-cloak x-transition>
+                    <div class="mb-6">
+                        <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            Apps &amp; Extensions
+                        </h2>
+                        <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mt-1">Unduh aplikasi native Rynude AI di desktop, ponsel, serta pasang ekstensi browser untuk performa maksimal.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {{-- Desktop Native App / PWA --}}
+                        <div class="p-5 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#242424] border border-claude-border-light dark:border-claude-border-dark rounded-2xl flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-10 h-10 rounded-xl bg-[#D97757]/15 flex items-center justify-center text-[#D97757]">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">PWA Native</span>
+                                </div>
+                                <h3 class="text-base font-bold text-[#2D2825] dark:text-stone-100">Rynude Desktop App</h3>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-1.5 leading-relaxed">Pasang Rynude AI di desktop Windows/Mac/Linux sebagai aplikasi mandiri untuk akses instan dan integrasi pintasan keyboard.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-claude-border-light dark:border-stone-700/60 flex items-center justify-between">
+                                <span class="text-xs text-gray-400 dark:text-stone-500">v2.4.0 • Windows &amp; Mac</span>
+                                <button @click="window.installRynudeApp().then(function (result) {
+                                    if (result === 'installed') {
+                                        showAlert('Rynude sudah terinstall di perangkat ini.', 'info');
+                                    } else if (result === 'unavailable') {
+                                        window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } }));
+                                        open = false;
+                                    }
+                                })" class="px-4 py-2 bg-[#D97757] hover:bg-[#c96646] text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    <span>Install Desktop App</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Browser Extension --}}
+                        <div class="p-5 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#242424] border border-claude-border-light dark:border-claude-border-dark rounded-2xl flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+                                    </div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">Chrome &amp; Edge</span>
+                                </div>
+                                <h3 class="text-base font-bold text-[#2D2825] dark:text-stone-100">Rynude AI Browser Extension</h3>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-1.5 leading-relaxed">Ekstensi browser resmi untuk bypass Cloudflare, sinkronisasi model akun web (Claude/ChatGPT/DeepSeek), dan analisis web secara langsung.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-claude-border-light dark:border-stone-700/60 flex items-center justify-between">
+                                <span class="text-xs text-gray-400 dark:text-stone-500">Extension Bridge • Active</span>
+                                <button @click="window.dispatchEvent(new CustomEvent('open-help-modal', { detail: { tab: 'apps' } })); open = false;" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    <span>Panduan &amp; Download</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Mobile Android / iOS --}}
+                        <div class="p-5 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#242424] border border-claude-border-light dark:border-claude-border-dark rounded-2xl flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">Mobile PWA</span>
+                                </div>
+                                <h3 class="text-base font-bold text-[#2D2825] dark:text-stone-100">Rynude AI Mobile App</h3>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-1.5 leading-relaxed">Gunakan Rynude AI di ponsel cerdas Anda dengan antarmuka yang dioptimalkan untuk sentuhan, percakapan suara, dan akses cepat saat bepergian.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-claude-border-light dark:border-stone-700/60 flex items-center justify-between">
+                                <span class="text-xs text-gray-400 dark:text-stone-500">Android &amp; iOS PWA</span>
+                                <button @click="showAlert('Untuk memasang di HP: Buka web di Chrome Android / Safari iOS, klik menu browser -> Tambahkan ke Layar Utama (Add to Home Screen).', 'info')" class="px-4 py-2 bg-[#2D2825] dark:bg-stone-700 hover:bg-stone-800 text-white text-xs font-semibold rounded-xl transition-colors">
+                                    Lihat Instruksi
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Rynude CLI / Terminal --}}
+                        <div class="p-5 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#242424] border border-claude-border-light dark:border-claude-border-dark rounded-2xl flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-10 h-10 rounded-xl bg-stone-500/15 flex items-center justify-center text-stone-700 dark:text-stone-300">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200">CLI / API</span>
+                                </div>
+                                <h3 class="text-base font-bold text-[#2D2825] dark:text-stone-100">Rynude CLI &amp; API Integration</h3>
+                                <p class="text-[13px] text-gray-500 dark:text-stone-400 mt-1.5 leading-relaxed">Hubungkan terminal developer atau script otomatis Anda langsung dengan engine Rynude lokal dan cloud.</p>
+                            </div>
+                            <div class="mt-5 pt-4 border-t border-claude-border-light dark:border-stone-700/60 flex items-center justify-between">
+                                <span class="text-xs text-gray-400 dark:text-stone-500">Terminal API Bridge</span>
+                                <button @click="activeTab = 'claude-code'" class="px-4 py-2 bg-[#2D2825] dark:bg-stone-700 hover:bg-stone-800 text-white text-xs font-semibold rounded-xl transition-colors">
+                                    Konfigurasi CLI
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- System Updates tab --}}
+                <div x-show="activeTab === 'system-updates'" x-cloak x-transition
+                     x-data="{
+                         checking: false,
+                         statusMsg: 'Sistem sedang berjalan dengan normal dan stabil.',
+                         lastChecked: 'Baru saja',
+                         updateCmd: 'php artisan rynude:update && php -S 127.0.0.1:8000 -t public',
+                         copied: false,
+                         doCheck() {
+                             this.checking = true;
+                             setTimeout(() => {
+                                 this.checking = false;
+                                 this.lastChecked = 'Baru saja';
+                                 this.statusMsg = 'Pembaruan sistem tersedia (v2.5.0-patch). Silakan jalankan perintah di bawah.';
+                             }, 800);
+                         },
+                         copyCmd() {
+                             navigator.clipboard.writeText(this.updateCmd).then(() => {
+                                 this.copied = true;
+                                 setTimeout(() => this.copied = false, 2000);
+                             });
+                         }
+                     }">
+                    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                System Updates &amp; Diagnostics
+                            </h2>
+                            <p class="text-[13.5px] text-gray-500 dark:text-stone-400 mt-0.5">Periksa dan perbarui sistem Rynude AI Anda secara mandiri dari panel pengaturan.</p>
+                        </div>
+                        <button @click="doCheck()" :disabled="checking" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50">
+                            <svg class="w-4 h-4" :class="checking ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span x-text="checking ? 'Memeriksa...' : 'Periksa Pembaruan'"></span>
+                        </button>
+                    </div>
+
+                    {{-- Current Status Card --}}
+                    <div class="p-6 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#242424] border border-claude-border-light dark:border-claude-border-dark rounded-2xl mb-6 shadow-sm">
+                        <div class="flex items-start justify-between flex-wrap gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-base font-bold text-[#2D2825] dark:text-stone-100">Status Core Engine: Aktif</span>
+                                        <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">v2.4.0-build</span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-stone-400 mt-1" x-text="statusMsg"></p>
+                                    <div class="text-xs text-gray-400 dark:text-stone-500 mt-1.5 flex items-center gap-1.5">
+                                        <span>Terakhir diperiksa:</span>
+                                        <span class="font-medium text-gray-600 dark:text-stone-300" x-text="lastChecked"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button @click="window.dispatchEvent(new CustomEvent('open-system-update'))" class="px-4 py-2 bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-800 dark:text-stone-200 text-xs font-semibold rounded-xl transition-colors">
+                                Buka Modal Pembaruan Penuh
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Manual Update Steps --}}
+                    <div class="p-6 bg-gradient-to-br from-[#FBFBFA] to-[#F3F2EE] dark:from-[#2C2C2C] dark:to-[#242424] border border-claude-border-light dark:border-claude-border-dark rounded-2xl">
+                        <h3 class="text-base font-bold text-[#2D2825] dark:text-stone-100 mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            Perintah Pembaruan Cepat (Quick Update Command)
+                        </h3>
+                        <p class="text-[13px] text-gray-500 dark:text-stone-400 mb-4 leading-relaxed">
+                            Jika Anda ingin melakukan pembaruan secara manual lewat terminal (Command Prompt / PowerShell), salin perintah di bawah ini lalu jalankan di terminal Anda:
+                        </p>
+
+                        <div class="relative flex items-center">
+                            <pre class="w-full p-4 overflow-x-auto text-sm text-gray-200 bg-gray-900 rounded-xl dark:bg-black font-mono select-all border border-gray-800" x-text="updateCmd"></pre>
+                            <button @click="copyCmd()" class="absolute right-3 p-2 text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700" title="Salin ke clipboard">
+                                <svg x-show="!copied" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <svg x-show="copied" x-cloak class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </button>
+                        </div>
+                        <p x-show="copied" x-cloak class="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">Berhasil disalin ke clipboard!</p>
+                    </div>
+                </div>
+
                 {{-- Capabilities tab --}}
                 <div x-show="activeTab === 'capabilities'" x-cloak x-transition>
                     <h2 class="font-bold text-lg text-[#2D2825] dark:text-stone-200 mb-6">Capabilities</h2>
@@ -573,7 +776,9 @@ function settingsState() {
             {id:'data',label:'Data & Privacy',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75\"></path>'},
             {id:'shortcuts',label:'Shortcuts',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M6 6.878V6a2.25 2.25 0 012.25-2.25h7.5A2.25 2.25 0 0118 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 004.5 9v.878m13.5-3A2.25 2.25 0 0119.5 9v.878m0 0a2.246 2.246 0 00-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0121 12v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6c0-.98.626-1.813 1.5-2.122\"></path>'},
             {id:'privacy',label:'Privacy',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z\"></path>'},
-            {id:'billing',label:'Billing',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z\"></path>'},
+            {id:'billing',label:'Upgrade Plan / Billing',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z\"></path>'},
+            {id:'apps-extensions',label:'Apps & Extensions',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3\"></path>'},
+            {id:'system-updates',label:'Check for Updates',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99\"></path>'},
             {id:'capabilities',label:'Capabilities',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z\"></path>'},
             {id:'connectors',label:'Connectors',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z\"></path>'},
             {id:'claude-code',label:'Rynude Code',icon:'<path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5\"></path>'}

@@ -155,8 +155,8 @@
     <div
         x-show="!isMobile"
         x-cloak
-        :class="sidebarOpen ? 'w-[290px]' : 'w-[60px]'"
-        class="transition-all duration-300 overflow-hidden flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:flex md:flex-col h-full min-h-0 bg-[#F9F8F6] dark:bg-claude-bg-dark"
+        :class="sidebarOpen ? 'w-[290px] overflow-hidden' : 'w-[60px] overflow-visible'"
+        class="transition-all duration-300 flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:flex md:flex-col h-full min-h-0 bg-[#F9F8F6] dark:bg-claude-bg-dark"
     >
         @include('livewire.sidebar')
     </div>

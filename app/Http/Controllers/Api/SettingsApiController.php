@@ -495,7 +495,7 @@ class SettingsApiController extends Controller
             $totalRtkOriginal += (int) $row->rtk_original;
 
             // Calculate cost using CostTracker pricing
-            $costUsd = $this->estimateCost($row->model, $inp, $out);
+            $costUsd = $this->estimateCost($row->model, $inp, $out, $row->provider);
             $totalCost += $costUsd;
 
             $rtkSaved = (int) $row->rtk_saved;
@@ -503,19 +503,21 @@ class SettingsApiController extends Controller
             $rtkPct = $rtkOrig > 0 ? round(($rtkSaved / $rtkOrig) * 100) : 0;
             $rtkTokens = intdiv($rtkSaved, 4);
 
-            $byModel[] = [
-                'model'       => $row->model,
-                'provider'    => $row->provider ?? 'unknown',
-                'input_tokens'  => $inp,
-                'output_tokens' => $out,
-                'total_tokens'  => $modelTotal,
-                'cost_usd'    => round($costUsd, 4),
-                'days_active' => (int) $row->days_active,
-                'rtk_saved_chars' => $rtkSaved,
-                'rtk_saved_tokens' => $rtkTokens,
-                'rtk_saved_pct'   => $rtkPct,
-                'bar_pct'     => 0, // filled below
-            ];
+            if ($modelTotal > 0 || (int) $row->days_active > 0) {
+                $byModel[] = [
+                    'model'       => $row->model,
+                    'provider'    => $row->provider ?? 'unknown',
+                    'input_tokens'  => $inp,
+                    'output_tokens' => $out,
+                    'total_tokens'  => $modelTotal,
+                    'cost_usd'    => round($costUsd, 4),
+                    'days_active' => (int) $row->days_active,
+                    'rtk_saved_chars' => $rtkSaved,
+                    'rtk_saved_tokens' => $rtkTokens,
+                    'rtk_saved_pct'   => $rtkPct,
+                    'bar_pct'     => 0, // filled below
+                ];
+            }
         }
 
         // Compute bar percentages after we know the max
@@ -548,29 +550,32 @@ class SettingsApiController extends Controller
         $dailyTrend = [];
         if ($days !== null) {
             for ($i = $days - 1; $i >= 0; $i--) {
-                $date = Carbon::now()->subDays($i)->toDateString();
-                $row = $dailyRows->get($date);
-                $inp = $row ? (int) $row->input_total : 0;
-                $out = $row ? (int) $row->output_total : 0;
+                $dateStr = Carbon::today()->subDays($i)->toDateString();
+                $dayRow = $dailyRows[$dateStr] ?? null;
+                $inp = $dayRow ? (int) $dayRow->input_total : 0;
+                $out = $dayRow ? (int) $dayRow->output_total : 0;
+                $tot = $inp + $out;
                 $dailyTrend[] = [
-                    'date'         => $date,
-                    'total_tokens' => $inp + $out,
+                    'date'         => $dateStr,
                     'input_tokens' => $inp,
                     'output_tokens'=> $out,
-                    'cost_usd'     => round($this->estimateCostBlended($inp + $out), 4),
+                    'total_tokens' => $tot,
+                    'cost_usd'     => 0.0, // simplified per-day cost estimate
+                    'bar_pct'      => 0,
                 ];
             }
         } else {
-            // All time — group by month for readability
-            foreach ($dailyRows as $date => $row) {
-                $inp = (int) $row->input_total;
-                $out = (int) $row->output_total;
+            foreach ($dailyRows as $dateStr => $dayRow) {
+                $inp = (int) $dayRow->input_total;
+                $out = (int) $dayRow->output_total;
+                $tot = $inp + $out;
                 $dailyTrend[] = [
-                    'date'         => $date,
-                    'total_tokens' => $inp + $out,
+                    'date'         => $dateStr,
                     'input_tokens' => $inp,
                     'output_tokens'=> $out,
-                    'cost_usd'     => round($this->estimateCostBlended($inp + $out), 4),
+                    'total_tokens' => $tot,
+                    'cost_usd'     => 0.0,
+                    'bar_pct'      => 0,
                 ];
             }
         }
@@ -612,8 +617,12 @@ class SettingsApiController extends Controller
     /**
      * Estimate cost using CostTracker pricing data.
      */
-    private function estimateCost(string $model, int $inputTokens, int $outputTokens): float
+    private function estimateCost(string $model, int $inputTokens, int $outputTokens, ?string $provider = null): float
     {
+        if ($provider === 'local' || $provider === 'gguf' || $provider === 'ollama' || in_array($model, ['qwen-2.5-0.5b', 'qwen-2.5-1.5b', 'llama-3.2-3b', 'mistral-7b-v0.3', 'llama-3.1-8b', 'qwen-2.5-14b', 'rynude-ollama']) || app(\App\Services\LlamaServerService::class)->isGgufModel($model)) {
+            return 0.0;
+        }
+
         // Re-use CostTracker logic
         $pricing = [
             'claude-3-5-sonnet-20241022' => ['input' => 3.0, 'output' => 15.0],

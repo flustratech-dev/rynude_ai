@@ -4,15 +4,15 @@
         {{-- Header --}}
         <div class="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-                <a href="{{ route('chat') }}?panel=api-keys" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#D97757] dark:text-stone-400 dark:hover:text-[#D97757] mb-3 transition-colors">
+                <a href="{{ route('chat') }}?panel=api-keys" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#2D2825] dark:text-stone-400 dark:hover:text-stone-200 mb-3 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
                     Kembali
                 </a>
                 <h1 class="text-2xl font-bold text-[#2D2825] dark:text-stone-200">Model Hub (Local AI Engine)</h1>
                 <p class="text-sm text-gray-500 dark:text-stone-400 mt-1">Unduh dan kelola model AI lokal (.gguf) dari Hugging Face secara aman dan otomatis.</p>
             </div>
-            <div class="flex items-center gap-2 bg-[#F5F4F0] dark:bg-[#2C2C2A] px-4 py-2 rounded-xl border border-gray-200 dark:border-stone-700">
-                <svg class="w-5 h-5 text-[#D97757]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <div class="flex items-center gap-2 bg-[#F5F4F0] dark:bg-[#2C2C2A] px-4 py-2 rounded-xl border border-gray-200 dark:border-stone-700 shadow-sm">
+                <svg class="w-5 h-5 text-stone-700 dark:text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/>
                 </svg>
                 <span class="text-xs font-medium text-gray-600 dark:text-stone-300">Sisa Hardisk: <strong x-text="freeSpaceGb + ' GB'"></strong></span>
@@ -84,7 +84,7 @@
         {{-- Model Catalog Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <template x-for="model in models" :key="model.id">
-                <div class="bg-white dark:bg-[#2C2C2A] border border-gray-200 dark:border-stone-700 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+                <div class="bg-[#F5F4F0] dark:bg-[#2C2C2A] border border-stone-300/80 dark:border-stone-700 rounded-2xl p-6 flex flex-col justify-between shadow-[0_2px_12px_rgba(45,40,37,0.03)] dark:shadow-none hover:shadow-[0_4px_20px_rgba(45,40,37,0.06)] hover:border-stone-400 dark:hover:border-stone-500 transition-all relative overflow-hidden">
                     
                     {{-- Warning Ribbon if RAM is insufficient --}}
                     <template x-if="totalRamGb < model.required_ram_gb">
@@ -95,14 +95,14 @@
 
                     {{-- Recommended ribbon (only when RAM is sufficient, so it never overlaps the RAM warning) --}}
                     <template x-if="model.recommended && totalRamGb >= model.required_ram_gb">
-                        <div class="absolute top-0 right-0 bg-[#D97757] text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow">
+                        <div class="absolute top-0 right-0 bg-stone-900/90 dark:bg-stone-300 text-white dark:text-stone-950 text-[10px] font-bold px-3.5 py-1 rounded-bl-xl uppercase tracking-wider shadow-md">
                             ⭐ Rekomendasi
                         </div>
                     </template>
 
                     <div>
                         <div class="flex items-center justify-between mb-2">
-                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-[#D97757]/10 text-[#D97757] dark:bg-[#D97757]/20" x-text="model.parameter_size + ' PARAMS'"></span>
+                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-stone-800 border border-stone-200 dark:bg-[#3A3A38] dark:text-stone-300 dark:border-stone-700" x-text="model.parameter_size + ' PARAMS'"></span>
                             <span class="text-xs font-semibold text-gray-500 dark:text-stone-400" x-text="model.file_size_label"></span>
                         </div>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-stone-100" x-text="model.name"></h3>
@@ -126,7 +126,7 @@
                         {{-- Status: Downloading --}}
                         <template x-if="model.status === 'downloading'">
                             <div>
-                                <div class="flex items-center justify-between text-xs font-semibold text-[#D97757] mb-1.5">
+                                <div class="flex items-center justify-between text-xs font-bold text-[#2D2825] dark:text-stone-200 mb-1.5">
                                     <span>Mengunduh... (<span x-text="model.progress + '%'"></span>)</span>
                                     <button @click="deleteModel(model.id)" class="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1" title="Batalkan dan Hapus Unduhan">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -134,7 +134,7 @@
                                     </button>
                                 </div>
                                 <div class="w-full bg-gray-200 dark:bg-stone-700 rounded-full h-2.5 overflow-hidden">
-                                    <div class="bg-[#D97757] h-2.5 rounded-full transition-all duration-300" :style="'width: ' + model.progress + '%'"></div>
+                                    <div class="bg-stone-900/90 dark:bg-stone-300 h-2.5 rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + model.progress + '%'"></div>
                                 </div>
                             </div>
                         </template>
@@ -147,8 +147,8 @@
                                 </template>
                                 <button @click="downloadModel(model.id)"
                                         :disabled="totalRamGb < model.required_ram_gb"
-                                        class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
-                                        :class="totalRamGb < model.required_ram_gb ? 'bg-gray-100 text-gray-400 dark:bg-stone-800 dark:text-stone-600 cursor-not-allowed' : 'bg-[#D97757] text-white hover:bg-[#c96646] active:scale-95'">
+                                        class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm border"
+                                        :class="totalRamGb < model.required_ram_gb ? 'bg-stone-50 border-stone-200/80 text-stone-400 dark:bg-stone-800/40 dark:border-stone-700/60 dark:text-stone-500 cursor-not-allowed' : 'bg-stone-900 border-stone-950/10 text-white hover:bg-black dark:bg-stone-200 dark:border-stone-100/10 dark:text-stone-900 dark:hover:bg-stone-100 active:scale-95'">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                                     <span x-text="totalRamGb < model.required_ram_gb ? 'Tidak Disarankan (RAM < ' + model.required_ram_gb + 'GB)' : 'Unduh Model (' + model.file_size_label + ')'"></span>
                                 </button>
