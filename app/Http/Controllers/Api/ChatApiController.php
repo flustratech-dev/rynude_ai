@@ -727,6 +727,7 @@ class ChatApiController extends ApiController
                 'model' => $msg->model,
                 'thinking' => $msg->thinking,
                 'citations' => $msg->citations,
+                'suggestions' => $msg->suggestions,
                 'sibling_ids' => $siblingIds,
                 'sibling_index' => $siblingIds ? array_search($msg->id, $siblingIds) : 0,
                 'sibling_count' => count($siblingIds),

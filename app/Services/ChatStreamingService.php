@@ -125,9 +125,23 @@ class ChatStreamingService
 
             // Per-chapter skripsi pipeline (perubahan.md #2): a full skripsi never
             // fits one local generation, so skripsi-shaped requests are written
-            // chapter by chapter and stitched into one artifact. The in-message
-            // reminder and grammar below are for the remaining single-shot docs.
-            $useChapterPipeline = $isGgufDocRequest && $this->isSkripsiPipelineRequest($messages);
+            // chapter by chapter and stitched into one artifact.
+            // Two triggers: (a) the turn itself asks for a skripsi, or (b) the
+            // turn ANSWERS the pipeline's clarify question — a chip answer like
+            // "Metode kualitatif" carries no skripsi keyword, so the last-message
+            // doc detector ($isGgufDocRequest) misses it by design.
+            $useChapterPipeline = false;
+            if ($llamaService->isGgufModel($model)) {
+                $lastAssistantText = '';
+                for ($i = count($messages) - 1; $i >= 0; $i--) {
+                    if (($messages[$i]['role'] ?? '') === 'assistant') {
+                        $lastAssistantText = (string) ($messages[$i]['content'] ?? '');
+                        break;
+                    }
+                }
+                $useChapterPipeline = ($isGgufDocRequest && $this->isSkripsiPipelineRequest($messages))
+                    || str_contains($lastAssistantText, 'Metode penelitian apa yang ingin Anda pakai');
+            }
 
             // For GGUF models on a document request, inject a targeted SYSTEM REMINDER
             // into the last user message — same mechanism used by the cloud path but
@@ -182,7 +196,7 @@ class ChatStreamingService
 
             // Stream from AI service
             if ($useChapterPipeline) {
-                $stream = $this->streamSkripsiPerChapter($messages, $model, $ggufTier, $stopKey);
+                $stream = $this->streamSkripsiPerChapter($conversation, $messages, $model, $ggufTier, $stopKey);
             } else {
                 // Constrained output (perubahan.md #3): on local GGUF document
                 // requests a GBNF grammar physically forces the reply shape —
@@ -197,6 +211,10 @@ class ChatStreamingService
         $thinkingText = '';
         $stopped = false;
         $truncated = false;
+        // Option chips (Claude-style buttons above the composer): clarifying
+        // answer choices or follow-up actions. Filled either by the skripsi
+        // pipeline (structured chunks) or by an <antOptions> tag in the reply.
+        $suggestions = [];
         // The tag scanner runs whenever thinking mode is on — not just when we
         // prompted for it — so models that natively emit inline <think>/<thinking>
         // blocks in their content (DeepSeek-style via HF/proxies) also get their
@@ -218,12 +236,24 @@ class ChatStreamingService
             // forward them live but keep them out of the stored answer text.
             if (!is_string($chunk)) {
                 if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
-                    $thinkingText .= $chunk['text'];
+                    // 'transient' thinking (skripsi pipeline) is shown live but
+                    // NOT merged into the final message — each stage's reasoning
+                    // is stored on its own report bubble instead.
+                    if (empty($chunk['transient'])) {
+                        $thinkingText .= $chunk['text'];
+                    }
                     yield ['type' => 'thinking', 'data' => $chunk['text']];
                 } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
                     // Answer hit the provider's max_tokens ceiling — reported
                     // via the done event so the UI can offer "Continue".
                     $truncated = true;
+                } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'progress') {
+                    // Per-stage report from the skripsi pipeline: already saved
+                    // as its own Message row — forward so the client renders a
+                    // separate bubble immediately, without stopping the run.
+                    yield $chunk;
+                } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'suggestions') {
+                    $suggestions = is_array($chunk['data'] ?? null) ? $chunk['data'] : [];
                 }
                 continue;
             }
@@ -331,8 +361,33 @@ class ChatStreamingService
             $fullResponse = $this->normalizeGgufCodeBlockToArtifact($fullResponse);
         }
 
+        // Option chips embedded by the model: <antOptions>A | B | C</antOptions>
+        // at the end of the reply (clarifying answer choices or follow-up
+        // actions). Strip the tag from the visible/stored text and surface the
+        // options as buttons. Pipeline-provided suggestions take precedence.
+        if (preg_match('/<antOptions>([\s\S]*?)<\/antOptions>/i', $fullResponse, $optMatch)) {
+            $parsedOptions = array_values(array_filter(
+                array_map(fn ($o) => trim(strip_tags($o)), preg_split('/\||\n/', $optMatch[1])),
+                fn ($o) => $o !== '' && mb_strlen($o) <= 120
+            ));
+            if (empty($suggestions) && !empty($parsedOptions)) {
+                $suggestions = array_slice($parsedOptions, 0, 4);
+            }
+        }
+        $fullResponse = trim((string) preg_replace('/<antOptions>[\s\S]*?(?:<\/antOptions>|$)/i', '', $fullResponse));
+
         // Parse artifacts if present (a reply may carry several)
         $parsedArtifacts = $this->parseArtifacts($fullResponse);
+
+        // A document artifact always deserves "what's next" chips — fall back
+        // to sensible defaults when neither pipeline nor model supplied any.
+        if (empty($suggestions) && !empty($parsedArtifacts['items'])) {
+            $suggestions = [
+                'Perpanjang dan perdalam isinya',
+                'Perbaiki struktur/format dokumen',
+                'Buat versi PDF/DOCX-nya',
+            ];
+        }
 
         // Save assistant message to database
         $assistantMessage = Message::create([
@@ -343,6 +398,7 @@ class ChatStreamingService
             'parent_id' => $parentMessageId,
             'citations' => !empty($citations) ? $citations : null,
             'thinking' => trim($thinkingText) !== '' ? $thinkingText : null,
+            'suggestions' => !empty($suggestions) ? $suggestions : null,
         ]);
 
         // When using "connect akun" (web browser extension mode, where precomputed !== null),
@@ -426,6 +482,12 @@ class ChatStreamingService
             yield ['type' => 'citations', 'data' => $citations];
         }
 
+        // Option chips (clarifying choices / follow-up actions) — rendered as
+        // buttons right above the composer, one tap sends the choice.
+        if (!empty($suggestions)) {
+            yield ['type' => 'suggestions', 'data' => array_values($suggestions)];
+        }
+
         // Signal completion before dispatching housekeeping jobs: on a sync
         // queue those dispatches run inline (the title job makes an AI call),
         // and the client must not keep its loading state up while they run
@@ -488,6 +550,7 @@ class ChatStreamingService
         $baseSystemPrompt .= $this->getDiagramGenerationInstructions();
         $baseSystemPrompt .= $this->getDocumentQualityInstructions();
         $baseSystemPrompt .= $this->getResponsePrinciples();
+        $baseSystemPrompt .= $this->getOptionChipsInstructions();
 
         // Custom instructions from user settings
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {
@@ -660,7 +723,9 @@ class ChatStreamingService
                 . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
                 . "5. Do NOT wrap a plain chat answer in <antArtifact>.\n"
                 . "6. Academic documents (skripsi/tesis/makalah) must start with YAML front-matter between --- lines (mode, judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing), then full chapters with # / ## headings. Every sub-section gets real, complete paragraphs (minimum 3 substantial paragraphs per sub-bab) — never placeholder text like '...isi...' and never one-sentence sections. End with DAFTAR PUSTAKA containing at least 10 plausible, properly formatted references.\n"
-                . "7. Substantial content the user will reuse or edit (documents, long reports, full code files) belongs in an artifact; short explanations and answers stay in chat.";
+                . "7. Substantial content the user will reuse or edit (documents, long reports, full code files) belongs in an artifact; short explanations and answers stay in chat.\n\n"
+                . "=== OPTION CHIPS ===\n"
+                . "For a plain chat answer (NOT when producing an <antArtifact> document), you may end the reply with ONE tag: <antOptions>Opsi A | Opsi B | Opsi C</antOptions> (max 4 options, ≤ 60 chars each, user's language). The system renders it as one-tap buttons. Use it only to (a) ask ONE clarifying question when the request is genuinely ambiguous, or (b) offer up to 3 concrete follow-up actions after a substantial answer. Never mention the tag in your prose.";
         } else {
             $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
                 . "=== REASONING PROCESS ===\n"
@@ -747,15 +812,83 @@ class ChatStreamingService
      */
     protected function isSkripsiPipelineRequest(array $messages): bool
     {
+        // Scan the last few user turns, not just the latest: after a clarify
+        // chip the newest message is only the answer ("Metode kuantitatif"),
+        // while the skripsi ask lives one turn earlier.
+        return (bool) preg_match('/\b(skripsi|tesis|thesis|tugas akhir)\b/i', $this->recentUserRequestText($messages));
+    }
+
+    /**
+     * The last few user turns joined oldest→newest — the working "request
+     * context" for the skripsi pipeline, so chip answers and follow-up details
+     * are read together with the original ask.
+     */
+    protected function recentUserRequestText(array $messages, int $take = 3, int $cap = 1500): string
+    {
+        $texts = [];
         foreach (array_reverse($messages) as $msg) {
-            if (($msg['role'] ?? '') === 'user') {
-                $text = is_array($msg['content'])
-                    ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ')
-                    : (string) ($msg['content'] ?? '');
-                return (bool) preg_match('/\b(skripsi|tesis|thesis|tugas akhir)\b/i', $text);
+            if (($msg['role'] ?? '') !== 'user') {
+                continue;
+            }
+            $t = is_array($msg['content'])
+                ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                : (string) ($msg['content'] ?? '');
+            if (trim($t) !== '') {
+                $texts[] = trim($t);
+            }
+            if (count($texts) >= $take) {
+                break;
             }
         }
-        return false;
+
+        return mb_substr(implode("\n", array_reverse($texts)), 0, $cap);
+    }
+
+    /**
+     * Should the pipeline ask its one clarifying question (research method +
+     * cover data) before writing? Never asks twice in a conversation, and
+     * skips entirely when the user already stated a method or opted out.
+     */
+    protected function needsSkripsiClarification(array $messages): bool
+    {
+        $recent = $this->recentUserRequestText($messages);
+        if (preg_match('/kuantitatif|kualitatif|campuran|mixed ?method|eksperimen|deskriptif|surv[ea]i|survey|studi kasus|etnografi|fenomenologi|\br ?& ?d\b|\bptk\b|asumsi terbaik|langsung tulis/i', $recent)) {
+            return false;
+        }
+        foreach ($messages as $msg) {
+            if (($msg['role'] ?? '') === 'assistant'
+                && str_contains((string) ($msg['content'] ?? ''), 'Metode penelitian apa yang ingin Anda pakai')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Persist a per-stage pipeline report as its OWN assistant message and
+     * return the SSE-shaped event the client turns into a separate bubble.
+     * The run does not pause — reports are informational.
+     */
+    protected function progressEvent(Conversation $conversation, string $model, string $content, ?string $thinking = null): array
+    {
+        $thinking = ($thinking !== null && trim($thinking) !== '') ? trim($thinking) : null;
+        $msg = Message::create([
+            'conversation_id' => $conversation->id,
+            'role' => 'assistant',
+            'content' => $content,
+            'model' => $model,
+            // Each stage keeps ITS OWN reasoning, openable on its report bubble
+            // forever — nothing is merged into one giant panel at the end.
+            'thinking' => $thinking,
+        ]);
+
+        return ['type' => 'progress', 'data' => [
+            'message_id' => $msg->id,
+            'content' => $content,
+            'model' => $model,
+            'thinking' => $thinking,
+        ]];
     }
 
     /**
@@ -826,20 +959,40 @@ GBNF;
      * content, ['type' => 'thinking'] arrays), so the main stream() loop
      * consumes it unchanged.
      */
-    protected function streamSkripsiPerChapter(array $messages, string $model, string $tier, string $stopKey): \Generator
+    protected function streamSkripsiPerChapter(Conversation $conversation, array $messages, string $model, string $tier, string $stopKey): \Generator
     {
-        $request = '';
-        foreach (array_reverse($messages) as $msg) {
-            if (($msg['role'] ?? '') === 'user') {
-                $request = is_array($msg['content'])
-                    ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ')
-                    : (string) ($msg['content'] ?? '');
-                break;
-            }
+        // Working request = last few user turns joined, so a chip answer
+        // ("Metode kuantitatif") still carries the original skripsi ask.
+        $request = $this->recentUserRequestText($messages);
+
+        // ── Stage 0: ask before groping (clarify chips, one time only) ───────
+        // The research method reshapes BAB III–IV entirely; asking one tap-able
+        // question beats guessing. The reply also lets the user drop cover data
+        // (nama, NIM, universitas) in the same message.
+        if ($this->needsSkripsiClarification($messages)) {
+            yield "Sebelum saya menyusun skripsinya, satu hal penting dulu:\n\n"
+                . "**Metode penelitian apa yang ingin Anda pakai?** Pilihan ini menentukan seluruh isi BAB III (metodologi) dan cara BAB IV menyajikan hasil, jadi lebih baik saya pastikan daripada menebak.\n\n"
+                . "Silakan pilih salah satu tombol di bawah — atau ketik jawaban sendiri, sekaligus boleh sebutkan **nama Anda, NIM, universitas, program studi, dan nama pembimbing** agar halaman judulnya akurat.";
+            yield ['type' => 'suggestions', 'data' => [
+                'Metode kuantitatif (data angka & statistik)',
+                'Metode kualitatif (wawancara & observasi)',
+                'Metode campuran (mixed methods)',
+                'Langsung tulis saja dengan asumsi terbaik',
+            ]];
+
+            return;
         }
 
+        // Instant acknowledgement bubble BEFORE the (slow) metadata call, so a
+        // chip click gets visible feedback immediately instead of silence.
+        yield $this->progressEvent($conversation, $model,
+            "🚀 **Siap — saya mulai menyusun skripsinya sekarang.**\n\n"
+            . "Prosesnya 8 tahap: persiapan judul & metadata, lalu 7 bagian dokumen (Pengesahan & Abstrak, BAB I–V, Daftar Pustaka). "
+            . "Setiap satu tahap selesai, saya melapor di chat ini — Anda tidak perlu menekan apa pun sampai dokumen final jadi.\n\n"
+            . "_Tahap 1/8 — menentukan judul dan metadata dokumen…_");
+
         // ── Stage 1: metadata for the cover / front-matter ───────────────────
-        yield ['type' => 'thinking', 'text' => "Tahap 1/8 — menyusun judul dan metadata dokumen…\n"];
+        yield ['type' => 'thinking', 'text' => "Tahap 1/8 — menyusun judul dan metadata dokumen…\n", 'transient' => true];
         $meta = $this->collectSkripsiMeta($request, $model);
 
         $frontMatter = "---\n"
@@ -855,9 +1008,15 @@ GBNF;
             . "pembimbing: {$meta['pembimbing']}\n"
             . "---\n\n";
 
+        // Separate report bubble: preparation done, run continues unattended.
+        yield $this->progressEvent($conversation, $model,
+            "📋 **Tahap 1/8 selesai — persiapan dokumen.**\n\n"
+            . "Judul ditetapkan: _{$meta['judul']}_\n"
+            . "Penulis: {$meta['penulis']} · {$meta['prodi']}, {$meta['universitas']}\n\n"
+            . "Saya akan menulis dokumen ini bab demi bab (7 bagian) dan melapor di chat setiap satu bagian selesai. Proses berjalan terus tanpa perlu Anda tunggu-tekan apa pun sampai dokumen final jadi.");
+
         $titleAttr = htmlspecialchars($meta['judul'], ENT_QUOTES);
-        yield "Saya menyusun skripsi \"{$meta['judul']}\" bab demi bab agar setiap bab utuh dan tidak terpotong. Dokumen lengkap tersusun di panel artifact.\n\n"
-            . "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n" . $frontMatter;
+        yield "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n" . $frontMatter;
 
         // [nama tahap, heading pembuka, panduan isi]
         $chapters = [
@@ -879,14 +1038,15 @@ GBNF;
 
         $maxTokensPerChapter = $tier === 'large' ? 4096 : 3072;
         $summary = '';
-        $stage = 2;
+        $chapterOutlines = [];
+        $totalChapters = count($chapters);
 
-        foreach ($chapters as [$label, $heading, $guide]) {
+        foreach ($chapters as $ci => [$label, $heading, $guide]) {
             if (Cache::get($stopKey)) {
                 break;
             }
-            yield ['type' => 'thinking', 'text' => "Tahap {$stage}/8 — menulis {$heading}…\n"];
-            $stage++;
+            $stage = $ci + 2; // stage 1 was metadata
+            yield ['type' => 'thinking', 'text' => "Tahap {$stage}/8 — menulis {$heading}…\n", 'transient' => true];
 
             $chapterMessages = [
                 ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
@@ -898,6 +1058,7 @@ GBNF;
             ];
 
             $chapterText = '';
+            $chapterThinking = '';
             $truncated = false;
             foreach ($this->aiService->streamResponse($chapterMessages, $model, ['max_tokens' => $maxTokensPerChapter]) as $chunk) {
                 if (Cache::get($stopKey)) {
@@ -905,7 +1066,11 @@ GBNF;
                 }
                 if (!is_string($chunk)) {
                     if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
-                        yield $chunk; // live reasoning stays visible in the panel
+                        // Live in the scratchpad panel now; permanently attached
+                        // to THIS stage's report bubble below ('transient' keeps
+                        // it out of the final message's merged panel).
+                        $chapterThinking .= $chunk['text'];
+                        yield ['type' => 'thinking', 'text' => $chunk['text'], 'transient' => true];
                     } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
                         $truncated = true;
                     }
@@ -941,12 +1106,26 @@ GBNF;
             }
 
             $chapterText = $this->cleanChapterText($chapterText, $heading);
-            $summary .= $this->summarizeChapterForContext($heading, $chapterText);
+            $outline = $this->chapterOutlineLines($chapterText);
+            $chapterOutlines[] = ['heading' => $heading, 'lines' => $outline];
+            $summary .= "• {$heading}:\n"
+                . ($outline ? implode("\n", array_map(fn ($l) => '  ' . $l, $outline)) : '  (sudah ditulis)') . "\n";
 
             // Stream the finished chapter out in typewriter-sized bites.
             foreach (str_split($chapterText . "\n\n", 400) as $piece) {
                 yield $piece;
             }
+
+            // Separate report bubble in chat — informational only, the run
+            // continues immediately with the next chapter.
+            $isLast = $ci === $totalChapters - 1;
+            $reportBody = $outline
+                ? "Isi ringkasnya:\n" . implode("\n", array_map(fn ($l) => '- ' . $l, array_slice($outline, 0, 6)))
+                : 'Bagian ini sudah masuk ke dokumen.';
+            yield $this->progressEvent($conversation, $model,
+                "✅ **Tahap {$stage}/8 — {$heading} selesai.**\n\n{$reportBody}\n\n"
+                . ($isLast ? '_Semua bagian selesai — merapikan dokumen final…_' : '_Lanjut menulis bagian berikutnya…_'),
+                $chapterThinking);
 
             if (Cache::get($stopKey)) {
                 break; // close the artifact gracefully with what we have
@@ -954,6 +1133,60 @@ GBNF;
         }
 
         yield "</antArtifact>";
+
+        // The user asked for a THOROUGH debrief after the artifact: what was
+        // built, how, per-chapter contents, and what they can do next.
+        if (!Cache::get($stopKey)) {
+            yield "\n\n" . $this->buildSkripsiExplanation($meta, $chapterOutlines);
+            yield ['type' => 'suggestions', 'data' => [
+                'Perdalam BAB IV (analisis & pembahasan)',
+                'Tambah tabel dan diagram pendukung',
+                'Ubah judul atau data halaman sampul',
+                'Buat versi PDF-nya',
+            ]];
+        }
+    }
+
+    /**
+     * The long-form debrief appended after the assembled skripsi artifact —
+     * structure, per-chapter contents, metadata used, academic conventions
+     * applied, and concrete next actions. Deterministic (built from the
+     * pipeline's own outlines), so it is always complete and accurate even
+     * on the smallest local models.
+     */
+    protected function buildSkripsiExplanation(array $meta, array $chapterOutlines): string
+    {
+        $struktur = '';
+        foreach ($chapterOutlines as $c) {
+            $struktur .= "**{$c['heading']}**\n";
+            $struktur .= $c['lines']
+                ? implode("\n", array_map(fn ($l) => '- ' . $l, $c['lines'])) . "\n\n"
+                : "- (bagian ini ditulis ringkas)\n\n";
+        }
+
+        return "---\n\n"
+            . "## 📖 Penjelasan Lengkap Pekerjaan Saya\n\n"
+            . "Dokumen skripsi **\"{$meta['judul']}\"** sudah selesai disusun — silakan buka di panel artifact. Berikut penjelasan detail tentang apa yang saya kerjakan, bagaimana caranya, dan mengapa demikian:\n\n"
+            . "### 1. Cara dokumen ini disusun\n"
+            . "Saya tidak menulisnya dalam satu tarikan napas (cara itu membuat dokumen panjang terpotong di tengah). Dokumen disusun **bab demi bab dalam 8 tahap**: tahap pertama menetapkan judul dan metadata halaman sampul, lalu tujuh tahap penulisan — halaman pengesahan & abstrak, BAB I sampai BAB V, dan daftar pustaka. Setiap bab baru menerima ringkasan bab-bab sebelumnya sebagai konteks, sehingga istilah, alur argumen, dan rujukan antar-bab tetap konsisten dari awal sampai akhir.\n\n"
+            . "### 2. Struktur dokumen dan isi tiap bagian\n{$struktur}"
+            . "### 3. Metadata halaman sampul yang dipakai\n"
+            . "- **Judul:** {$meta['judul']}\n"
+            . "- **Penulis:** {$meta['penulis']} (NIM {$meta['nim']})\n"
+            . "- **Institusi:** {$meta['prodi']}, {$meta['fakultas']}, {$meta['universitas']}\n"
+            . "- **Kota/Tahun:** {$meta['kota']}, {$meta['tahun']}\n"
+            . "- **Pembimbing:** {$meta['pembimbing']}\n\n"
+            . "Data yang tidak Anda sebutkan saya isi dengan placeholder yang wajar — cukup beri tahu nilai yang benar dan saya perbarui halaman sampulnya.\n\n"
+            . "### 4. Standar akademik yang diterapkan\n"
+            . "- Halaman **cover dan DAFTAR ISI dibuat otomatis** oleh sistem dari front-matter dan struktur heading, jadi tidak perlu ditulis manual.\n"
+            . "- **ABSTRAK** satu paragraf ≤ 250 kata dengan kata kunci, plus **ABSTRACT** versi bahasa Inggris.\n"
+            . "- Kutipan memakai pola penulis-tahun di BAB II dan dirangkum dalam **DAFTAR PUSTAKA** yang urut alfabetis.\n"
+            . "- Penomoran sub-bab baku (1.1, 2.2.1, dst.) sehingga rapi saat diekspor ke **PDF/DOCX** dengan penomoran halaman akademik.\n\n"
+            . "### 5. Yang bisa Anda lakukan sekarang\n"
+            . "- **Meninjau per bab** — sebutkan bagian yang kurang pas, saya revisi secara tertarget tanpa menulis ulang semuanya.\n"
+            . "- **Memperdalam** — misal \"perdalam BAB IV\" atau \"tambah 5 referensi di BAB II\".\n"
+            . "- **Mengekspor** — dokumen siap diunduh sebagai PDF/DOCX dari panel artifact.\n\n"
+            . "Gunakan tombol saran di bawah kolom chat, atau langsung ketik permintaan Anda.";
     }
 
     /**
@@ -1050,20 +1283,21 @@ GBNF;
     }
 
     /**
-     * Compact outline of a finished chapter (headings + first sentence each)
-     * used as context for the next chapter calls — keeps the story consistent
-     * without re-feeding whole chapters into a 16K context window.
+     * Compact outline of a finished chapter (sub-headings + first sentence
+     * each). Shared by three consumers: the rolling context for later chapter
+     * calls, the per-stage report bubbles, and the final long-form debrief.
      */
-    protected function summarizeChapterForContext(string $heading, string $text): string
+    protected function chapterOutlineLines(string $text): array
     {
         $lines = [];
         if (preg_match_all('/^(#{1,3}\s+[^\n]+)\n+([^#\n][^\n]*)/m', $text, $mm, PREG_SET_ORDER)) {
             foreach (array_slice($mm, 0, 10) as $m) {
-                $lines[] = '  ' . trim($m[1]) . ' — ' . \Illuminate\Support\Str::limit(trim($m[2]), 110, '…');
+                $lines[] = trim((string) preg_replace('/^#+\s*/', '', $m[1]))
+                    . ' — ' . \Illuminate\Support\Str::limit(trim($m[2]), 110, '…');
             }
         }
 
-        return "• {$heading}:\n" . ($lines ? implode("\n", $lines) : '  (sudah ditulis)') . "\n";
+        return $lines;
     }
 
 
@@ -1595,6 +1829,23 @@ GBNF;
     }
 
     /**
+     * Option chips: the model may end a reply with ONE <antOptions> tag whose
+     * choices are rendered as one-tap buttons right above the composer (the
+     * tag itself is stripped from the visible text by the streaming service).
+     */
+    protected function getOptionChipsInstructions(): string
+    {
+        return "\n\n--- OPTION CHIPS (interactive answer buttons) ---\n"
+            . "You may end a reply with EXACTLY ONE tag of this form (options separated by |, max 4, each ≤ 60 chars, written in the user's language):\n"
+            . "<antOptions>Pilihan A | Pilihan B | Pilihan C</antOptions>\n"
+            . "The system strips the tag and renders the options as buttons above the chat box; clicking one sends it as the user's next message. Use it in exactly these situations:\n"
+            . "1. BEFORE generating a large document (skripsi/makalah/laporan/proposal) when critical information is missing (e.g. research method, scope, target institution): ask ONE focused clarifying question in your reply, put the likely answers in <antOptions>, and DO NOT generate the document yet — wait for the answer. Always include an escape option like 'Langsung tulis saja dengan asumsi terbaik'. Ask at most once per document; if the user already answered or says to proceed, generate immediately.\n"
+            . "2. When a request is genuinely ambiguous between a few interpretations: answer the most likely one briefly, then offer the alternatives as options.\n"
+            . "3. AFTER completing a substantial answer or document: offer up to 3 concrete follow-up actions (e.g. 'Perdalam BAB IV', 'Buat versi PDF-nya', 'Tambah contoh kode').\n"
+            . "Rules: never mention the tag or the buttons in your prose; never use it for trivial questions; options must be self-contained statements that make sense as a sent message. When a reply contains an <antArtifact> block, the <antOptions> tag goes AFTER the closing </antArtifact> as the very last thing in the reply (this is the ONLY thing allowed after </antArtifact>).";
+    }
+
+    /**
      * Get document quality and formatting instructions.
      */
     protected function getDocumentQualityInstructions(): string
@@ -1623,7 +1874,7 @@ GBNF;
             . "  • Academic standards applied: Detail which academic conventions you followed (citation style, formatting rules, structural requirements)\n"
             . "  • Design decisions: Explain key choices you made (topic organization, depth of coverage, source selection)\n"
             . "  • Quality considerations: Describe how you ensured academic rigor and completeness\n"
-            . "- This process explanation should be EXTENSIVE (300-500 words minimum for full documents)\n"
+            . "- This process explanation is MANDATORY and should be EXTENSIVE (minimum 500-800 words for full documents — longer is welcome): the user explicitly wants to understand everything that was done, section by section, in plain language\n"
             . "- Write this explanation in a clear, educational tone that helps the user understand what was created and why\n"
             . "- The goal is to provide transparency into your work process, NOT just to announce completion\n"
             . "- Example structure for your chat response:\n"

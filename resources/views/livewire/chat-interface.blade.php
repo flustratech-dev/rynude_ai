@@ -634,6 +634,22 @@
             </button>
 
             <div class="shrink-0 h-fit bg-transparent">
+                {{-- Option chips: the AI's clarifying choices / follow-up actions,
+                     rendered as one-tap buttons right above the composer --}}
+                <div x-show="suggestions.length > 0 && !streaming && !sending" x-cloak
+                    class="w-full mx-auto px-3 md:px-4 pt-2" style="max-width: 800px;">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <template x-for="(sug, sidx) in suggestions" :key="'sug-' + sidx">
+                            <button type="button" @click="chooseSuggestion(sug)"
+                                class="px-3 py-1.5 rounded-full border border-claude-border-light dark:border-claude-border-dark bg-white dark:bg-[#3A3A38] text-[13px] font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-[#45423f] transition-colors shadow-sm"
+                                x-text="sug"></button>
+                        </template>
+                        <button type="button" @click="suggestions = []"
+                            class="p-1.5 rounded-full text-stone-400 hover:text-stone-600 transition-colors" title="Sembunyikan saran">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
                 <form @submit.prevent="sendMessage()" class="w-full mx-auto pb-2 md:pb-3 px-3 md:px-4 pt-2 md:pt-3" style="max-width: 800px;">
                     <div class="relative bg-white dark:bg-[#3A3A38] border border-claude-border-light dark:border-claude-border-dark rounded-2xl shadow-sm flex flex-col focus-within:shadow-lg focus-within:border-stone-300 dark:focus-within:border-stone-600 transition-all duration-200">
                         <div x-show="uploading" class="px-4 pt-4 pb-2 flex items-center gap-3">
@@ -788,6 +804,10 @@ function chatInterfaceState() {
         thinkingMode: localStorage.getItem('rynude_thinking_mode') !== '0',
         chatStyle: 'normal',
         pendingCitations: null,
+        // Option chips (AI's clarifying choices / follow-up actions) shown as
+        // one-tap buttons right above the composer.
+        suggestions: [],
+        pendingSuggestions: null,
         userScrolledUp: false,
         quoteSel: '',
         quoteX: 0,
@@ -874,6 +894,8 @@ function chatInterfaceState() {
                 self.streamContent = '';
                 self.streaming = false;
                 self.sending = false;
+                self.suggestions = [];
+                self.pendingSuggestions = null;
             });
             window.addEventListener('startProjectChat', function(e) {
                 if (e.detail) {
@@ -986,6 +1008,11 @@ function chatInterfaceState() {
                             self.lastThinking = '';
                         }
                         self.messages = msgs;
+                        // Option chips survive reloads: only the LAST assistant
+                        // message's saved suggestions are actionable.
+                        var lastMsg = msgs.length ? msgs[msgs.length - 1] : null;
+                        self.suggestions = (lastMsg && lastMsg.role !== 'user' && lastMsg.suggestions && lastMsg.suggestions.length)
+                            ? lastMsg.suggestions : [];
                         self.memoryDraft = resp.data.memory || '';
                         self.chatStyle = resp.data.style || 'normal';
 
@@ -1038,6 +1065,14 @@ function chatInterfaceState() {
             var self = this;
             fetch('/api/chats', {headers:{'Accept':'application/json'}})
                 .then(function(r){return r.json()});
+        },
+
+        // One-tap option chip: send the choice as the user's next message.
+        chooseSuggestion: function(text) {
+            if (this.sending || this.streaming) return;
+            this.suggestions = [];
+            this.prompt = text;
+            this.sendMessage();
         },
 
         sendMessage: function() {
@@ -1300,6 +1335,9 @@ function chatInterfaceState() {
             this.doneMeta = null;
             this.pendingArtifacts = [];
             this.pendingCitations = null;
+            // A new turn consumes the previous chips
+            this.suggestions = [];
+            this.pendingSuggestions = null;
             this.lastUsedModel = model || this.selectedModel;
             this.canContinue = false;
             this.resumeAttempts = 0;
@@ -1411,6 +1449,34 @@ function chatInterfaceState() {
                                         if (data.data) self.pendingArtifacts.push(data.data);
                                     } else if (data.type === 'citations') {
                                         self.pendingCitations = data.data || null;
+                                    } else if (data.type === 'progress') {
+                                        // Per-stage pipeline report: already saved
+                                        // server-side as its own message — show it as
+                                        // a separate bubble NOW; generation continues.
+                                        // The bubble carries that stage's OWN reasoning
+                                        // (openable via its "Proses berpikir" dropdown).
+                                        if (data.data && data.data.content) {
+                                            self.messages.push({
+                                                id: data.data.message_id || null,
+                                                role: 'assistant',
+                                                content: data.data.content,
+                                                thinking: data.data.thinking || null,
+                                                model: data.data.model || self.lastUsedModel || self.selectedModel,
+                                                artifact: null,
+                                                artifacts: [],
+                                                attachments: []
+                                            });
+                                            // That stage's reasoning now lives on its
+                                            // report bubble — reset the live scratchpad
+                                            // so the next stage starts fresh instead of
+                                            // growing one giant merged panel.
+                                            self.thinkQueue = '';
+                                            self.thinkingContent = '';
+                                        }
+                                    } else if (data.type === 'suggestions') {
+                                        // Option chips — held until the stream
+                                        // finalizes, then rendered above the composer.
+                                        self.pendingSuggestions = (data.data && data.data.length) ? data.data : null;
                                     } else if (data.type === 'need_extension') {
                                         // Web-account turn: hand off to the browser
                                         // extension (claude.ai tab), then it saves
@@ -1645,6 +1711,9 @@ function chatInterfaceState() {
             }
             // Answer hit the model's output limit — offer to continue it
             this.canContinue = !!(this.doneMeta && this.doneMeta.truncated);
+            // Reveal the option chips (clarifying choices / follow-up actions)
+            this.suggestions = this.pendingSuggestions || [];
+            this.pendingSuggestions = null;
             try { sessionStorage.removeItem('rynude_active_stream'); } catch(e) {}
             // Keep the thinking text so it can be re-attached to the saved message
             this.lastThinking = this.thinkingContent;
