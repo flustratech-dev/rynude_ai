@@ -441,7 +441,7 @@
                 [
                     'index' => '07',
                     'judul' => 'Mesin AI Lokal (rynude Engine)',
-                    'desc'  => 'Jalankan 6 model GGUF lokal—dari rynude Lyric (1.5B) hingga rynude Magnum (14B)—langsung di komputer Anda, 100% offline tanpa kuota.',
+                    'desc'  => 'Jalankan model GGUF lokal—dari rynude Lyric 4.5 (1.5B) hingga rynude Magnum (14B)—langsung di komputer Anda, 100% offline tanpa kuota.',
                     'icon'  => '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5m0-6a3 3 0 013-3m-3 3a3 3 0 100 6M5.25 5.25h13.5m-13.5 0a3 3 0 00-3 3m3-3a3 3 0 110 6h13.5m0-6a3 3 0 003 3m-3-3a3 3 0 110 6M4.5 9h.008v.008H4.5V9zm0 6h.008v.008H4.5V15zm0 6h.008v.008H4.5V21zm15-12h.008v.008H19.5V9zm0 6h.008v.008H19.5V15zm0 6h.008v.008H19.5V21z"/></svg>'
                 ],
                 [
@@ -513,9 +513,10 @@
             <div class="lp-reveal lp-reveal-delay-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
                 @php
                     $models = [
-                        ['nama' => 'rynude Vignette', 'param' => '0.5B', 'ram' => '~2 GB',  'badge' => 'Paling Ringan', 'featured' => false],
-                        ['nama' => 'rynude Lyric',    'param' => '1.5B', 'ram' => '~4 GB',  'badge' => '⭐ Default',    'featured' => true],
-                        ['nama' => 'rynude Stanza',   'param' => '3B',   'ram' => '~6 GB',  'badge' => 'Ringan',        'featured' => false],
+                        ['nama' => 'rynude Vignette',   'param' => '0.5B', 'ram' => '~2 GB',  'badge' => 'Paling Ringan', 'featured' => false],
+                        ['nama' => 'rynude Lyric 4.5',  'param' => '1.5B', 'ram' => '~4 GB',  'badge' => '⭐ Default',    'featured' => true],
+                        ['nama' => 'rynude Lyric 4.6',  'param' => '1.7B', 'ram' => '~4 GB',  'badge' => '✨ Tuned',      'featured' => false],
+                        ['nama' => 'rynude Stanza',     'param' => '3B',   'ram' => '~6 GB',  'badge' => 'Ringan',        'featured' => false],
                         ['nama' => 'rynude Canto',    'param' => '7B',   'ram' => '~8 GB',  'badge' => 'Seimbang',      'featured' => false],
                         ['nama' => 'rynude Symphony', 'param' => '8B',   'ram' => '~10 GB', 'badge' => 'Pintar',        'featured' => false],
                         ['nama' => 'rynude Magnum',   'param' => '14B',  'ram' => '~16 GB', 'badge' => 'Paling Cerdas', 'featured' => false],

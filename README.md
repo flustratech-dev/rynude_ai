@@ -85,7 +85,7 @@ sequenceDiagram
 
 | Provider Terdukung | Status Dukungan | Keunggulan Utama | Model Terbaik Saat Ini |
 | :--- | :---: | :--- | :--- |
-| **rynude Local Engine** 🆕 | ✅ Native | Gratis & 100% lokal & offline | `rynude Lyric`, `rynude Magnum`, 'dan 4 model lainnya'|
+| **rynude Local Engine** 🆕 | ✅ Native | Gratis & 100% lokal & offline | `rynude Lyric 4.5`, `rynude Lyric 4.6`, `rynude Magnum`, 'dan model lainnya'|
 | **Hugging Face** | ✅ Native | Gratis, Ratusan Model Open-Source | `Llama-3.3-70B`, `DeepSeek-V4` |
 | **Anthropic** | ✅ Native | Resmi, Paling Cerdas (Coding & Logika) | `Claude 3.5 Sonnet` |
 | **OpenAI** | ✅ Native | Resmi, Ekosistem Terbesar | `GPT-4o` |
@@ -258,7 +258,8 @@ Enam model lokal (`rynude`):
 | Nama `rynude` | Parameter | Kode Internal | Estimasi RAM | Use Case Backend Ideal |
 | :--- | :---: | :--- | :---: | :--- |
 | **rynude Vignette** | 0.5B | ~2 GB | Uji coba, percakapan dasar, spesifikasi sangat rendah |
-| **rynude Lyric** ⭐ | 1.5B | ~4 GB | **Rekomendasi default** — tugas ringan & generasi dokumen |
+| **rynude Lyric 4.5** ⭐ | 1.5B | ~4 GB | **Rekomendasi default** — tugas ringan & generasi dokumen |
+| **rynude Lyric 4.6** | 1.7B (LoRA) | ~4 GB | Versi fine-tuned Lyric 4.5 — Bahasa Indonesia & format lebih baik |
 | **rynude Stanza** | 3B | ~6 GB | Asisten *coding* ringan & rangkuman dokumen |
 | **rynude Canto** | 7B | ~8 GB | Penalaran & pemrograman bahasa yang kuat |
 | **rynude Symphony** | 8B |  ~10 GB | Percakapan kompleks, terjemahan, pemecahan masalah |
@@ -286,7 +287,7 @@ Ini adalah <i>backend guard</i> yang bekerja sesuai desain, bukan bug. Untuk mod
 <details>
 <summary><b>Berapa kebutuhan RAM untuk model besar (Symphony / Magnum)?</b></summary>
 <br/>
-Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>16384</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric (1.5B)</b>.
+Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>16384</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric 4.5 (1.5B)</b>.
 </details>
 
 ### 📸 Tampilan 

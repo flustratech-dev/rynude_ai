@@ -109,6 +109,8 @@ class ChatApiController extends ApiController
             'attachments.*' => ['nullable', 'file', 'max:50000'], // 50MB per file
             'edit_of' => ['nullable', 'integer', 'exists:messages,id'],
             'thinking' => ['nullable', 'boolean'],
+            // Self-critique quality mode: draft → review → improved rewrite
+            'quality' => ['nullable', 'boolean'],
             'style' => ['nullable', 'string', 'in:normal,concise,explanatory,formal'],
             // Answer already generated client-side by the browser extension
             // (claude.ai tab). When present the server skips the AI call and
@@ -124,6 +126,7 @@ class ChatApiController extends ApiController
         $researchMode = $validated['research_mode'] ?? false;
         $repoUrl = $validated['repo_url'] ?? null;
         $thinking = (bool) ($validated['thinking'] ?? false);
+        $quality = (bool) ($validated['quality'] ?? false);
         $style = $validated['style'] ?? null;
         $precomputed = $validated['precomputed_response'] ?? null;
 
@@ -250,7 +253,7 @@ class ChatApiController extends ApiController
             return $this->streamNeedExtension($conversation, $messages, $model, $userMessage->id, $webProvider);
         }
 
-        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id, $thinking, $precomputed);
+        return $this->streamAiResponse($conversation, $messages, $model, $webSearch, $researchMode, $userMessage->id, $thinking, $precomputed, $quality);
     }
 
     /**
@@ -368,12 +371,13 @@ class ChatApiController extends ApiController
         bool $researchMode,
         ?int $parentMessageId,
         bool $thinking = false,
-        ?string $precomputed = null
+        ?string $precomputed = null,
+        bool $quality = false
     ) {
         // Resolve the service before the closure so mocks can intercept it
         $streamingService = app(\App\Services\ChatStreamingService::class);
 
-        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking, $precomputed) {
+        return response()->stream(function () use ($streamingService, $conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking, $precomputed, $quality) {
             // Keep generating even if the browser disconnects (refresh/closed
             // tab): the answer still gets saved, and the client can catch up
             // via stream-resume from the StreamBuffer mirror below.
@@ -408,7 +412,7 @@ class ChatApiController extends ApiController
                 $buffer = new \App\Services\StreamBuffer($conversation->id);
                 $buffer->start();
 
-                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking, $precomputed);
+                $generator = $streamingService->stream($conversation, $messages, $model, $webSearch, $researchMode, $parentMessageId, $thinking, $precomputed, $quality);
 
                 foreach ($generator as $event) {
                     $buffer->apply($event);

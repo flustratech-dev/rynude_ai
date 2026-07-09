@@ -19,7 +19,7 @@ return new class extends Migration
 {
     private array $rebrand = [
         'qwen-2.5-0.5b'   => 'rynude Vignette',
-        'qwen-2.5-1.5b'   => 'rynude Lyric',
+        'qwen-2.5-1.5b'   => 'rynude Lyric 4.5',
         'llama-3.2-3b'    => 'rynude Stanza',
         'mistral-7b-v0.3' => 'rynude Canto',
         'llama-3.1-8b'    => 'rynude Symphony',

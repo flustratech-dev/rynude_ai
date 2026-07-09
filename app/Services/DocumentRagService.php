@@ -73,6 +73,16 @@ class DocumentRagService
 
         $block = "\n\n[DOKUMEN LAMPIRAN: {$docName} — "
             . count($selected) . " kutipan paling relevan dari " . count($chunks) . " bagian (mode RAG)]\n";
+
+        // Document outline: RAG excerpts lose the table of contents, so the
+        // model has no way to know that "1.1 = Latar Belakang" and would
+        // happily follow a user's WRONG section number. The outline restores
+        // that map and powers the premise-correction grounding rule below.
+        $outline = $this->extractOutline($docText);
+        if ($outline !== '') {
+            $block .= "\n[STRUKTUR DOKUMEN — daftar bagian yang terdeteksi:\n{$outline}]\n";
+        }
+
         foreach ($selected as $i => $chunk) {
             $n = $i + 1;
             $pos = $chunk['position'];
@@ -85,6 +95,41 @@ class DocumentRagService
     }
 
     /**
+     * Detect the document's section headings (BAB I, 1.1, 2.3.1 …) so the
+     * prompt carries a compact table of contents. Cached alongside chunks.
+     */
+    public function extractOutline(string $docText): string
+    {
+        $key = 'rag_outline_' . md5(strlen($docText) . '|' . substr($docText, 0, 512));
+
+        return Cache::remember($key, 3600, function () use ($docText) {
+            $lines = [];
+            // BAB headings (BAB I PENDAHULUAN …) and numbered sections
+            // (1.1 Latar Belakang, 2.3.1 …) on their own line, short enough
+            // to be a heading rather than prose.
+            if (preg_match_all(
+                '/^[ \t]*((?:BAB\s+[IVXLC\d]+\b[^\n]{0,70})|(?:\d+(?:\.\d+){1,3}[\.\)]?\s+\p{Lu}[^\n]{2,70}))\s*$/miu',
+                $docText,
+                $m
+            )) {
+                foreach ($m[1] as $h) {
+                    $h = trim(preg_replace('/\s+/', ' ', $h));
+                    // Skip obvious non-headings (sentences ending with period + lowercase-heavy)
+                    if (mb_strlen($h) > 80) {
+                        continue;
+                    }
+                    $lines[] = $h;
+                    if (count($lines) >= 45) {
+                        break;
+                    }
+                }
+            }
+
+            return implode("\n", array_values(array_unique($lines)));
+        });
+    }
+
+    /**
      * Anti-hallucination grounding contract appended after every document block.
      */
     private function groundingInstructions(string $docName, bool $isExcerpts): string
@@ -94,7 +139,8 @@ class DocumentRagService
             . "1. Saat menjawab tentang \"{$docName}\", gunakan HANYA informasi yang tertulis dalam {$scope} di atas.\n"
             . "2. JANGAN mengarang isi, angka, nama, atau kesimpulan yang tidak ada dalam {$scope}.\n"
             . "3. Jika jawabannya tidak ditemukan dalam {$scope}, katakan dengan jujur bahwa informasi itu tidak ditemukan di bagian dokumen yang tersedia — jangan menebak.\n"
-            . "4. Saat mengutip, sebutkan sumbernya (mis. \"menurut dokumen {$docName}\" atau nomor kutipannya).]\n";
+            . "4. Saat mengutip, sebutkan sumbernya (mis. \"menurut dokumen {$docName}\" atau nomor kutipannya).\n"
+            . "5. PERIKSA PREMIS USER: jika pertanyaan user mengandung premis yang TIDAK COCOK dengan dokumen — misalnya menyebut nomor bagian yang salah (\"latar belakang di 1.3\" padahal menurut STRUKTUR DOKUMEN latar belakang ada di 1.1), nama, angka, atau klaim yang keliru — KOREKSI dulu dengan sopan berdasarkan struktur/isi dokumen, baru jawab pertanyaannya. DILARANG ikut-ikutan premis yang salah.]\n";
     }
 
     /**
@@ -221,6 +267,12 @@ class DocumentRagService
             $scores[$i] = $score;
         }
 
+        // Semantic blend (perubahan.md #6): when the local embedding model is
+        // available, rerank the top lexical candidates by meaning too — so
+        // "dampak finansial" still finds "pengaruh terhadap pendapatan".
+        // Any failure silently falls back to pure BM25.
+        $scores = $this->blendWithEmbeddings($chunks, $query, $scores);
+
         arsort($scores);
 
         // Always anchor with the opening chunk, then fill with top-scoring ones.
@@ -281,8 +333,165 @@ class DocumentRagService
      */
     private function tokenize(string $text): array
     {
-        preg_match_all('/[\p{L}\p{N}]{2,}/u', mb_strtolower($text), $m);
+        $lower = mb_strtolower($text);
+        preg_match_all('/[\p{L}\p{N}]{2,}/u', $lower, $m);
         $stop = array_flip(self::STOPWORDS);
-        return array_values(array_filter($m[0], fn ($t) => !isset($stop[$t])));
+        $tokens = array_values(array_filter($m[0], fn ($t) => !isset($stop[$t])));
+
+        // Section numbers ("1.3", "2.2.1") are prime retrieval keys for
+        // academic documents but the word regex splits them into 1-char
+        // digits that get dropped — keep them as whole tokens.
+        if (preg_match_all('/\b\d+(?:\.\d+)+\b/', $lower, $secs)) {
+            $tokens = array_merge($tokens, $secs[0]);
+        }
+
+        return $tokens;
+    }
+
+    // ─── Semantic reranking (perubahan.md #6) ────────────────────────────────
+
+    /** How many top-BM25 candidates get semantically reranked (cost bound). */
+    private const SEMANTIC_CANDIDATES = 40;
+
+    /**
+     * Blend BM25 scores with embedding cosine similarity for the top lexical
+     * candidates. 50/50 blend: lexical grounding is kept (exact numbers, NIM,
+     * names) while paraphrased questions stop missing relevant chunks.
+     * Returns the original scores untouched when embeddings are unavailable.
+     *
+     * @param array<int, array{text: string, position: int}> $chunks
+     * @param array<int, float> $scores
+     * @return array<int, float>
+     */
+    private function blendWithEmbeddings(array $chunks, string $query, array $scores): array
+    {
+        if (!$this->embeddingsAvailable()) {
+            return $scores;
+        }
+
+        $ranked = $scores;
+        arsort($ranked);
+        $candidateIdx = array_slice(array_keys($ranked), 0, self::SEMANTIC_CANDIDATES);
+        if (empty($candidateIdx)) {
+            return $scores;
+        }
+
+        // One batch: query first, then candidate chunk texts (truncated —
+        // embeddings don't need the whole chunk to capture its meaning).
+        $texts = [mb_substr($query, 0, 1000)];
+        foreach ($candidateIdx as $i) {
+            $texts[] = mb_substr($chunks[$i]['text'], 0, 1500);
+        }
+
+        $vectors = $this->embedTexts($texts);
+        if ($vectors === null || count($vectors) !== count($texts)) {
+            \Illuminate\Support\Facades\Log::warning('Semantic RAG: embedding call failed — falling back to pure BM25.');
+            return $scores;
+        }
+
+        // Visible proof in storage/logs/laravel.log that rynude Sense is working.
+        \Illuminate\Support\Facades\Log::info('Semantic RAG active: reranked ' . count($candidateIdx) . ' chunks with embeddings for query "' . mb_substr($query, 0, 80) . '"');
+
+        $queryVec = $vectors[0];
+        $maxBm25 = max(0.0001, max(array_map(fn ($i) => $scores[$i], $candidateIdx)));
+
+        $blended = $scores;
+        foreach ($candidateIdx as $k => $i) {
+            $cos = max(0.0, $this->cosine($queryVec, $vectors[$k + 1]));
+            $lex = $scores[$i] / $maxBm25; // 0..1
+            // +1000 keeps every reranked candidate above the non-candidates,
+            // whose raw BM25 scores live on a different scale.
+            $blended[$i] = 1000 + (0.5 * $lex + 0.5 * $cos);
+        }
+
+        return $blended;
+    }
+
+    /** Cosine similarity between two equal-length vectors. */
+    private function cosine(array $a, array $b): float
+    {
+        $dot = 0.0;
+        $na = 0.0;
+        $nb = 0.0;
+        $len = min(count($a), count($b));
+        for ($i = 0; $i < $len; $i++) {
+            $dot += $a[$i] * $b[$i];
+            $na += $a[$i] * $a[$i];
+            $nb += $b[$i] * $b[$i];
+        }
+        return ($na > 0 && $nb > 0) ? $dot / (sqrt($na) * sqrt($nb)) : 0.0;
+    }
+
+    /**
+     * Is the local GGUF engine up WITH an embedding model loaded? Cached for
+     * 60s so retrieval doesn't ping /health on every chunk lookup.
+     */
+    private function embeddingsAvailable(): bool
+    {
+        return (bool) Cache::remember('rag_embed_available', 60, function () {
+            try {
+                $port = (int) config('services.local_gguf.port', 8091);
+                $resp = \Illuminate\Support\Facades\Http::timeout(2)
+                    ->get("http://127.0.0.1:{$port}/health");
+                return $resp->ok() && ($resp->json('embed') === true);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        });
+    }
+
+    /**
+     * Batch-embed texts via the local engine, with a per-text cache (a chunk's
+     * vector never changes, so repeated questions on the same document only
+     * embed the query). Returns null on any failure → caller falls back to BM25.
+     *
+     * @param string[] $texts
+     * @return array<int, array<int, float>>|null
+     */
+    private function embedTexts(array $texts): ?array
+    {
+        try {
+            $port = (int) config('services.local_gguf.port', 8091);
+
+            // Resolve cache hits; collect misses for one batch call.
+            $result = [];
+            $missing = [];
+            foreach ($texts as $idx => $text) {
+                $key = 'rag_vec_' . md5($text);
+                $cached = Cache::get($key);
+                if (is_array($cached)) {
+                    $result[$idx] = $cached;
+                } else {
+                    $missing[$idx] = $text;
+                }
+            }
+
+            if (!empty($missing)) {
+                $resp = \Illuminate\Support\Facades\Http::timeout(30)
+                    ->post("http://127.0.0.1:{$port}/v1/embeddings", ['input' => array_values($missing)]);
+                if (!$resp->ok()) {
+                    return null;
+                }
+                $data = $resp->json('data');
+                if (!is_array($data) || count($data) !== count($missing)) {
+                    return null;
+                }
+                $missIdx = array_keys($missing);
+                foreach ($data as $j => $row) {
+                    $vec = $row['embedding'] ?? null;
+                    if (!is_array($vec)) {
+                        return null;
+                    }
+                    $idx = $missIdx[$j];
+                    $result[$idx] = $vec;
+                    Cache::put('rag_vec_' . md5($texts[$idx]), $vec, 86400);
+                }
+            }
+
+            ksort($result);
+            return array_values($result);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

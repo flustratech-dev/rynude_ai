@@ -286,6 +286,27 @@ class EvalModelCommand extends Command
                 'max_tokens' => 128,
                 'checks' => ['must_regex' => ['/biru/i'], 'max_chars' => 60, 'no_error' => true],
             ],
+            [
+                'id' => 'bahasa-anti-inggris', 'category' => 'bahasa',
+                'system' => $chatSystem,
+                'prompt' => 'Tolong jelaskan secara singkat apa itu artificial intelligence dan bagaimana cara kerjanya, tapi jawab wajib pakai bahasa Indonesia yang mudah dipahami.',
+                'max_tokens' => 512,
+                'checks' => ['must_regex' => ['/kecerdasan|sistem|mesin|belajar|data/i'], 'must_not_regex' => ['/\b(is a|are the|this is|and the|which can)\b/i'], 'no_loop' => true, 'no_error' => true],
+            ],
+            [
+                'id' => 'bahasa-istilah-campur', 'category' => 'bahasa',
+                'system' => $chatSystem,
+                'prompt' => 'Kenapa saat koding Python sering ketemu error "IndexError: list index out of range"? Jelaskan penyebab utamanya.',
+                'max_tokens' => 512,
+                'checks' => ['must_regex' => ['/indeks|elemen|panjang|batas/i'], 'must_not_regex' => ['/\b(because the|when you try|this error occurs|out of bounds)\b/i'], 'no_loop' => true, 'no_error' => true],
+            ],
+            [
+                'id' => 'anti-pidato-singkat', 'category' => 'chat',
+                'system' => $chatSystem,
+                'prompt' => 'oke paham makasih ya',
+                'max_tokens' => 256,
+                'checks' => ['max_chars' => 300, 'must_not_regex' => ['/sebagai model AI/i', '/kemampuan saya/i'], 'no_loop' => true, 'no_error' => true],
+            ],
         ];
     }
 }

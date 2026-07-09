@@ -27,9 +27,10 @@ class LlamaServerService
     private const CATALOG = [
         // Generation upgrade (perubahan.md #1): codes are stable keys, the
         // weights behind them are now Qwen3 (native <think>, 32K context).
-        'qwen-2.5-0.5b'   => 'Qwen3-0.6B-Q8_0.gguf',
-        'qwen-2.5-1.5b'   => 'Qwen3-1.7B-Q8_0.gguf',
-        'llama-3.2-3b'    => 'Qwen3-4B-Q4_K_M.gguf',
+        'qwen-2.5-0.5b'       => 'Qwen3-0.6B-Q8_0.gguf',
+        'qwen-2.5-1.5b'       => 'Qwen3-1.7B-Q8_0.gguf',
+        'rynude-lyric-plus-1' => 'Qwen3-1.7B-Lyric-Plus-Q8_0.gguf',
+        'llama-3.2-3b'        => 'Qwen3-4B-Q4_K_M.gguf',
         'mistral-7b-v0.3' => 'Qwen3-8B-Q4_K_M.gguf',
         'llama-3.1-8b'    => 'Qwen3-14B-Q4_K_M.gguf',
         'qwen-2.5-14b'    => 'Qwen3-30B-A3B-Q4_K_M.gguf',
@@ -45,9 +46,10 @@ class LlamaServerService
      * gates on (required_ram_gb). Tunable per-model here if a machine is tight.
      */
     private const CONTEXT_SIZES = [
-        'qwen-2.5-0.5b'   => 16384,
-        'qwen-2.5-1.5b'   => 16384,
-        'llama-3.2-3b'    => 16384,
+        'qwen-2.5-0.5b'       => 16384,
+        'qwen-2.5-1.5b'       => 16384,
+        'rynude-lyric-plus-1' => 16384,
+        'llama-3.2-3b'        => 16384,
         'mistral-7b-v0.3' => 16384,
         'llama-3.1-8b'    => 16384,
         'qwen-2.5-14b'    => 16384,
@@ -66,8 +68,9 @@ class LlamaServerService
      *    system prompt and more natural sampling for deeper, richer output.
      */
     private const TIERS = [
-        'qwen-2.5-0.5b'   => 'small',
-        'qwen-2.5-1.5b'   => 'small',
+        'qwen-2.5-0.5b'       => 'small',
+        'qwen-2.5-1.5b'       => 'small',
+        'rynude-lyric-plus-1' => 'small',
         // Qwen3-4B follows long instructions reliably — promoted to 'large'
         // so it gets the near-cloud prompt instead of the slim guardrail one.
         'llama-3.2-3b'    => 'large',
@@ -95,6 +98,20 @@ class LlamaServerService
             'max-tokens' => 8192,
         ],
     ];
+
+    /**
+     * Optional local embedding model (semantic RAG, perubahan.md #6). This is
+     * NOT a chat model — deliberately kept out of CATALOG so it can never be
+     * selected/served for chat. When the file exists, llama-server.mjs loads
+     * it alongside the chat model and serves POST /v1/embeddings.
+     */
+    public const EMBED_FILENAME = 'Qwen3-Embedding-0.6B-Q8_0.gguf';
+
+    public function embedModelPath(): ?string
+    {
+        $path = storage_path('app/models' . DIRECTORY_SEPARATOR . self::EMBED_FILENAME);
+        return file_exists($path) && filesize($path) > 0 ? $path : null;
+    }
 
     /** Capability tier ('small'|'large') for a Model Hub GGUF code. */
     public function tierFor(string $modelCode): string
@@ -176,16 +193,25 @@ class LlamaServerService
 
         $this->startServer($modelCode, $ggufPath);
 
-        // Wait briefly for the server to bind the port + load weights.
-        for ($i = 0; $i < 30; $i++) {
+        // Wait for the server to bind the port. The port only opens AFTER the
+        // weights finish loading, and load time scales with file size: a 1.7B
+        // model takes seconds, a 9GB 14B model can take minutes (disk read +
+        // RAM/VRAM allocation). The old fixed 15s window made big models fail
+        // with "Connection refused" while they were still loading.
+        $sizeGb = max(1, (int) ceil((@filesize($ggufPath) ?: 0) / 1_000_000_000));
+        $waitSeconds = min(420, 45 + $sizeGb * 30)
+            + ($this->embedModelPath() !== null ? 30 : 0); // embedding model adds load time
+        $deadline = time() + $waitSeconds;
+
+        while (time() < $deadline) {
             if ($this->isPortOpen()) {
                 Cache::put(self::CURRENT_KEY, $modelCode, 3600);
                 return $this->baseUrl();
             }
-            usleep(500000); // 0.5s
+            usleep(1000000); // 1s
         }
 
-        Log::warning("Local GGUF engine did not come up for model {$modelCode} on port {$this->port()}.");
+        Log::warning("Local GGUF engine did not come up for model {$modelCode} on port {$this->port()} after {$waitSeconds}s (file {$sizeGb}GB).");
         // Return the URL anyway; the provider's connection error is more informative than a silent null.
         return $this->baseUrl();
     }
@@ -230,6 +256,12 @@ class LlamaServerService
         $gpuLayers = config('services.local_gguf.gpu_layers');
         if (!empty($gpuLayers)) {
             $cmd .= ' --gpu-layers ' . escapeshellarg((string) $gpuLayers);
+        }
+
+        // Semantic RAG (perubahan.md #6): serve embeddings when the optional
+        // embedding model has been downloaded from the Model Hub.
+        if (($embedPath = $this->embedModelPath()) !== null) {
+            $cmd .= ' --embed-model ' . escapeshellarg($embedPath);
         }
 
         Log::info("Starting local GGUF engine: {$cmd}");

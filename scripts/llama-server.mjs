@@ -67,6 +67,10 @@ const GEN = {
         presencePenalty: parseFloat(opt("pres-penalty", "LOCAL_GGUF_PRESENCE_PENALTY", "0.1")),
         lastTokens: parseInt(process.env.LOCAL_GGUF_REPEAT_LAST || "128", 10),
     },
+    // Cap native reasoning (<think>) so a hard question over a big document
+    // can't burn the whole token budget on thinking and deliver an empty
+    // answer. Ignored gracefully by node-llama-cpp versions without budgets.
+    maxThoughtTokens: parseInt(opt("max-think", "LOCAL_GGUF_MAX_THINK", "2048"), 10),
 };
 
 function resolveMaxTokens(requested) {
@@ -80,6 +84,7 @@ function promptOptions(extra = {}) {
         topP: GEN.topP,
         topK: GEN.topK,
         repeatPenalty: GEN.repeatPenalty,
+        budgets: { thoughtTokens: GEN.maxThoughtTokens },
         ...extra,
     };
 }
@@ -92,6 +97,10 @@ function promptOptions(extra = {}) {
 const gpuArg = String(opt("gpu", "LOCAL_GGUF_GPU", "auto")).toLowerCase();
 const gpuPref = ["off", "false", "cpu", "none"].includes(gpuArg) ? false : gpuArg;
 const gpuLayersArg = args["gpu-layers"] ?? process.env.LOCAL_GGUF_GPU_LAYERS;
+
+// Optional embedding model (perubahan.md #6, semantic RAG). Loaded alongside
+// the chat model when present; serves POST /v1/embeddings.
+const embedModelPath = args["embed-model"] || process.env.LOCAL_GGUF_EMBED_MODEL || "";
 
 // ---- Load the model + a single context up front ----------------------------
 let llama, model, context;
@@ -132,6 +141,61 @@ try {
 } catch (err) {
     console.error(`[llama-server] failed to load model: ${err?.message || err}`);
     process.exit(1);
+}
+
+// ---- Optional embedding model (perubahan.md #6, semantic RAG) ---------------
+// Failure here must never take the chat model down — semantic RAG simply
+// stays disabled and retrieval falls back to BM25 on the PHP side.
+let embedContext = null;
+if (embedModelPath) {
+    try {
+        const embedModel = await llama.loadModel({ modelPath: embedModelPath });
+        embedContext = await embedModel.createEmbeddingContext();
+        console.log(`[llama-server] embedding model ready: ${embedModelPath.split(/[\\/]/).pop()}`);
+    } catch (err) {
+        console.warn(`[llama-server] embedding model failed to load (${err?.message || err}) — semantic RAG disabled`);
+    }
+}
+
+// Embeddings are serialized on their own small queue (separate context from
+// chat, so they never wait behind a long generation).
+let embedQueue = Promise.resolve();
+async function handleEmbeddings(req, res) {
+    if (!embedContext) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: { message: "No embedding model loaded", type: "invalid_request_error", code: 400 } }));
+        return;
+    }
+    let payload;
+    try {
+        payload = JSON.parse((await readBody(req)) || "{}");
+    } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: { message: "Invalid JSON", type: "invalid_request_error", code: 400 } }));
+        return;
+    }
+    const inputs = (Array.isArray(payload.input) ? payload.input : [payload.input])
+        .slice(0, 128)
+        .map((t) => String(t ?? "").slice(0, 4000));
+
+    const run = embedQueue.then(async () => {
+        const data = [];
+        for (let i = 0; i < inputs.length; i++) {
+            const emb = await embedContext.getEmbeddingFor(inputs[i]);
+            data.push({ object: "embedding", index: i, embedding: Array.from(emb.vector) });
+        }
+        return data;
+    });
+    embedQueue = run.catch(() => {});
+
+    try {
+        const data = await run;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ object: "list", model: "local-embed", data }));
+    } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: { message: err?.message || String(err), type: "server_error", code: 500 } }));
+    }
 }
 
 // ---- Constrained output (perubahan.md #3) -----------------------------------
@@ -332,7 +396,7 @@ const server = createServer(async (req, res) => {
             // `gpu` shows the active compute backend ("cuda"/"vulkan"/"metal",
             // or false = CPU) — the console log is discarded on Windows, so
             // this is the visible way to verify GPU offload is working.
-            res.end(JSON.stringify({ ok: ready, model: modelId, gpu: llama?.gpu ?? false, ctx: contextSize }));
+            res.end(JSON.stringify({ ok: ready, model: modelId, gpu: llama?.gpu ?? false, ctx: contextSize, embed: !!embedContext }));
             return;
         }
         if (req.method === "GET" && req.url.startsWith("/v1/models")) {
@@ -342,6 +406,10 @@ const server = createServer(async (req, res) => {
         }
         if (req.method === "POST" && req.url.startsWith("/v1/chat/completions")) {
             await handleChat(req, res);
+            return;
+        }
+        if (req.method === "POST" && req.url.startsWith("/v1/embeddings")) {
+            await handleEmbeddings(req, res);
             return;
         }
         res.writeHead(404, { "Content-Type": "application/json" });

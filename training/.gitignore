@@ -1,0 +1,7 @@
+# Generated training artifacts — never commit (may contain user data / are large)
+seeds.jsonl
+train.jsonl
+val.jsonl
+*.gguf
+outputs/
+rynude-lyric-plus/

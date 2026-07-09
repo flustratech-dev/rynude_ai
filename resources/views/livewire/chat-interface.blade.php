@@ -748,6 +748,10 @@
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                                     </button>
                                 </template>
+                                {{-- Quality mode (self-critique: draft → review → improve; ~2× slower) --}}
+                                <button @click="qualityMode=!qualityMode" type="button" title="Mode kualitas: AI meninjau & memperbaiki drafnya sendiri sebelum menjawab (lebih lambat, hasil lebih matang)" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center" :class="qualityMode?'bg-[#D97757]/10 text-[#D97757]':'text-stone-400 hover:text-stone-600'">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
+                                </button>
                                 {{-- Extended thinking --}}
                                 <button @click="thinkingMode=!thinkingMode" type="button" title="Extended thinking" class="rounded-lg transition-colors p-1 min-w-[36px] min-h-[36px] flex items-center justify-center" :class="thinkingMode?'bg-[#D97757]/10 text-[#D97757]':'text-stone-400 hover:text-stone-600'">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.6-3.2 5.9-.5.4-.8.9-.8 1.5V17h-6v-.6c0-.6-.3-1.1-.8-1.5A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/></svg>
@@ -812,6 +816,9 @@ function chatInterfaceState() {
         // reasoning models use their own; the rest get prompted sim-thinking).
         // Persisted so turning it off sticks.
         thinkingMode: localStorage.getItem('rynude_thinking_mode') !== '0',
+        // Quality mode (self-critique): draft → review → improved rewrite.
+        // ~2× slower, defaults OFF; persisted per user preference.
+        qualityMode: localStorage.getItem('rynude_quality_mode') === '1',
         chatStyle: 'normal',
         pendingCitations: null,
         // Option chips (AI's clarifying choices / follow-up actions) shown as
@@ -871,6 +878,9 @@ function chatInterfaceState() {
             });
             this.$watch('thinkingMode', function(value) {
                 localStorage.setItem('rynude_thinking_mode', value ? '1' : '0');
+            });
+            this.$watch('qualityMode', function(value) {
+                localStorage.setItem('rynude_quality_mode', value ? '1' : '0');
             });
 
             this.loadModels();
@@ -1103,6 +1113,7 @@ function chatInterfaceState() {
                     web_search: this.webSearch ? 1 : 0,
                     research_mode: this.researchMode ? 1 : 0,
                     thinking: this.thinkingMode ? 1 : 0,
+                    quality: this.qualityMode ? 1 : 0,
                     style: this.chatStyle
                 };
                 if (this.conversationId) payload.conversation_id = this.conversationId;
@@ -1115,6 +1126,7 @@ function chatInterfaceState() {
                 fd.append('web_search', this.webSearch ? '1' : '0');
                 fd.append('research_mode', this.researchMode ? '1' : '0');
                 fd.append('thinking', this.thinkingMode ? '1' : '0');
+                fd.append('quality', this.qualityMode ? '1' : '0');
                 fd.append('style', this.chatStyle);
                 if (this.conversationId) fd.append('conversation_id', this.conversationId);
                 if (this.selectedProject) fd.append('project_id', this.selectedProject);

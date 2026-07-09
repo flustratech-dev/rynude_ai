@@ -255,7 +255,7 @@ class ModelHubController extends Controller
             ],
             [
                 'id' => 'qwen-2.5-1.5b',
-                'name' => 'rynude Lyric',
+                'name' => 'rynude Lyric 4.5',
                 'description' => 'Generasi terbaru (Qwen3). Rekomendasi untuk sebagian besar pengguna: jauh lebih pintar dari generasi sebelumnya dengan penalaran bawaan, tetap ringan di komputer spesifikasi terbatas.',
                 'parameter_size' => '1.7B',
                 'required_ram_gb' => 4.0,
@@ -264,6 +264,19 @@ class ModelHubController extends Controller
                 'filename' => 'Qwen3-1.7B-Q8_0.gguf',
                 'download_url' => 'https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf',
                 'recommended' => true,
+                'recommended_for' => ['low', 'medium', 'high'],
+            ],
+            [
+                'id' => 'rynude-lyric-plus-1',
+                'name' => 'rynude Lyric 4.6',
+                'description' => 'Versi fine-tuned dari rynude Lyric 4.5 (Qwen3-1.7B) yang dilatih khusus dengan QLoRA untuk Bahasa Indonesia natural, format skripsi/akademik baku, dan kepatuhan format artifact.',
+                'parameter_size' => '1.7B (LoRA)',
+                'required_ram_gb' => 4.0,
+                'file_size_label' => '1.8 GB',
+                'file_size_bytes' => 1830000000,
+                'filename' => 'Qwen3-1.7B-Lyric-Plus-Q8_0.gguf',
+                'download_url' => 'https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf',
+                'recommended' => false,
                 'recommended_for' => ['low', 'medium', 'high'],
             ],
             [
@@ -317,6 +330,19 @@ class ModelHubController extends Controller
                 'download_url' => 'https://huggingface.co/Qwen/Qwen3-30B-A3B-GGUF/resolve/main/Qwen3-30B-A3B-Q4_K_M.gguf',
                 'recommended' => false,
                 'recommended_for' => ['high'],
+            ],
+            [
+                'id' => 'rynude-embed-0.6b',
+                'name' => 'rynude Sense (Modul Pemahaman Makna)',
+                'description' => 'BUKAN model chat — modul tambahan RAG semantik: membuat pembacaan dokumen lampiran memahami MAKNA kalimat (mis. "dampak finansial" ≈ "pengaruh terhadap pendapatan"), bukan sekadar kecocokan kata. Aktif otomatis setelah diunduh, bekerja mendampingi model chat lokal mana pun.',
+                'parameter_size' => '0.6B (embedding)',
+                'required_ram_gb' => 1.5,
+                'file_size_label' => '~640 MB',
+                'file_size_bytes' => 665000000,
+                'filename' => \App\Services\LlamaServerService::EMBED_FILENAME,
+                'download_url' => 'https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf',
+                'recommended' => false,
+                'recommended_for' => ['low', 'medium', 'high'],
             ],
         ];
     }

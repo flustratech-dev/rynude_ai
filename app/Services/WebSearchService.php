@@ -101,58 +101,170 @@ class WebSearchService
             'connect_timeout' => 4,
             'http_errors' => false,
             'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; RynudeBot/1.0; +https://localhost)',
+                // A real browser UA: DuckDuckGo silently serves an empty/anomaly
+                // page to bot-looking agents, which read as "0 results".
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                'Accept-Language' => 'id-ID,id;q=0.9,en;q=0.8',
             ],
         ]);
     }
 
-    /** Keyless: parse DuckDuckGo's HTML endpoint. */
+    /**
+     * Keyless search with a fallback chain: DuckDuckGo html → DuckDuckGo lite
+     * → Bing HTML. DuckDuckGo is blocked by several Indonesian ISPs (Kominfo),
+     * so Bing is essential as the last keyless resort.
+     */
     private function duckduckgo(string $query, int $limit): array
     {
-        $response = $this->client()->get('https://html.duckduckgo.com/html/', [
-            'query' => ['q' => $query],
-        ]);
+        $results = $this->duckduckgoHtml($query, $limit);
+        if (!empty($results)) {
+            return $results;
+        }
+        $results = $this->duckduckgoLite($query, $limit);
+        if (!empty($results)) {
+            return $results;
+        }
+        Log::warning("WebSearchService: DuckDuckGo returned 0 results for \"{$query}\" on both endpoints (blocked or markup changed) — trying Bing.");
+        $results = $this->bing($query, $limit);
+        if (empty($results)) {
+            Log::warning("WebSearchService: Bing also returned 0 results for \"{$query}\" — all keyless engines failed. Consider SEARCH_PROVIDER=tavily with an API key.");
+        }
+        return $results;
+    }
 
+    /** Keyless last resort: parse Bing's HTML results page. */
+    private function bing(string $query, int $limit): array
+    {
+        $response = $this->client()->get('https://www.bing.com/search', [
+            'query' => ['q' => $query, 'setlang' => 'id', 'count' => max(10, $limit)],
+        ]);
         if ($response->getStatusCode() !== 200) {
+            Log::info('WebSearchService: bing.com status ' . $response->getStatusCode());
             return [];
         }
 
         $html = (string) $response->getBody();
         $results = [];
 
-        if (!preg_match_all('/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/s', $html, $links, PREG_SET_ORDER)) {
+        // Each organic result lives in <li class="b_algo"> with an <h2><a href>.
+        if (!preg_match_all('/<li class="b_algo"[^>]*>(.*?)<\/li>/s', $html, $items)) {
             return [];
         }
 
-        preg_match_all('/<a[^>]*class="result__snippet"[^>]*>(.*?)<\/a>/s', $html, $snips, PREG_SET_ORDER);
+        foreach ($items[1] as $item) {
+            if (count($results) >= $limit) {
+                break;
+            }
+            if (!preg_match('/<h2[^>]*>\s*<a\b[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/s', $item, $lm)) {
+                continue;
+            }
+            $url = html_entity_decode($lm[1]);
+            $title = trim(html_entity_decode(strip_tags($lm[2])));
+            if ($title === '' || !preg_match('#^https?://#i', $url) || str_contains($url, 'bing.com/')) {
+                continue;
+            }
+            $snippet = '';
+            if (preg_match('/<p[^>]*>(.*?)<\/p>/s', $item, $sm)) {
+                $snippet = trim(html_entity_decode(strip_tags($sm[1])));
+            }
+            $results[] = ['title' => $title, 'url' => $url, 'snippet' => Str::limit($snippet, 300)];
+        }
+
+        return $results;
+    }
+
+    private function duckduckgoHtml(string $query, int $limit): array
+    {
+        $response = $this->client()->get('https://html.duckduckgo.com/html/', [
+            'query' => ['q' => $query],
+        ]);
+        if ($response->getStatusCode() !== 200) {
+            Log::info('WebSearchService: html.duckduckgo.com status ' . $response->getStatusCode());
+            return [];
+        }
+
+        $html = (string) $response->getBody();
+        $results = [];
+
+        // Attribute-order-insensitive: find every anchor whose class contains
+        // result__a, then pull the href from wherever it sits in the tag.
+        if (!preg_match_all('/<a\b([^>]*class="[^"]*result__a[^"]*"[^>]*)>(.*?)<\/a>/s', $html, $links, PREG_SET_ORDER)) {
+            return [];
+        }
+        preg_match_all('/<a\b[^>]*class="[^"]*result__snippet[^"]*"[^>]*>(.*?)<\/a>/s', $html, $snips, PREG_SET_ORDER);
 
         foreach ($links as $i => $link) {
             if (count($results) >= $limit) {
                 break;
             }
-            $url = html_entity_decode($link[1]);
-            // DuckDuckGo wraps target URLs in a redirect; pull out uddg param if present.
-            if (str_contains($url, 'uddg=')) {
-                parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
-                if (!empty($params['uddg'])) {
-                    $url = $params['uddg'];
-                }
-            }
-            $title = trim(html_entity_decode(strip_tags($link[2])));
-            $snippet = isset($snips[$i][1]) ? trim(html_entity_decode(strip_tags($snips[$i][1]))) : '';
-
-            if ($title === '') {
+            if (!preg_match('/href="([^"]+)"/', $link[1], $hm)) {
                 continue;
             }
-
-            $results[] = [
-                'title' => $title,
-                'url' => $url,
-                'snippet' => Str::limit($snippet, 300),
-            ];
+            $url = $this->unwrapDdgRedirect(html_entity_decode($hm[1]));
+            $title = trim(html_entity_decode(strip_tags($link[2])));
+            $snippet = isset($snips[$i][1]) ? trim(html_entity_decode(strip_tags($snips[$i][1]))) : '';
+            if ($title === '' || $url === '') {
+                continue;
+            }
+            $results[] = ['title' => $title, 'url' => $url, 'snippet' => Str::limit($snippet, 300)];
         }
 
         return $results;
+    }
+
+    private function duckduckgoLite(string $query, int $limit): array
+    {
+        $response = $this->client()->get('https://lite.duckduckgo.com/lite/', [
+            'query' => ['q' => $query],
+        ]);
+        if ($response->getStatusCode() !== 200) {
+            Log::info('WebSearchService: lite.duckduckgo.com status ' . $response->getStatusCode());
+            return [];
+        }
+
+        $html = (string) $response->getBody();
+        $results = [];
+
+        // Lite markup: <a rel="nofollow" href="..." class='result-link'>Title</a>
+        // followed by a snippet cell <td class='result-snippet'>...</td>.
+        if (!preg_match_all('/<a\b([^>]*class=[\'"][^\'"]*result-link[^\'"]*[\'"][^>]*)>(.*?)<\/a>/s', $html, $links, PREG_SET_ORDER)) {
+            return [];
+        }
+        preg_match_all('/<td\b[^>]*class=[\'"][^\'"]*result-snippet[^\'"]*[\'"][^>]*>(.*?)<\/td>/s', $html, $snips, PREG_SET_ORDER);
+
+        foreach ($links as $i => $link) {
+            if (count($results) >= $limit) {
+                break;
+            }
+            if (!preg_match('/href=[\'"]([^\'"]+)[\'"]/', $link[1], $hm)) {
+                continue;
+            }
+            $url = $this->unwrapDdgRedirect(html_entity_decode($hm[1]));
+            $title = trim(html_entity_decode(strip_tags($link[2])));
+            $snippet = isset($snips[$i][1]) ? trim(html_entity_decode(strip_tags($snips[$i][1]))) : '';
+            if ($title === '' || $url === '' || !preg_match('#^https?://#i', $url)) {
+                continue;
+            }
+            $results[] = ['title' => $title, 'url' => $url, 'snippet' => Str::limit($snippet, 300)];
+        }
+
+        return $results;
+    }
+
+    /** DuckDuckGo wraps target URLs in a redirect; pull out the uddg param. */
+    private function unwrapDdgRedirect(string $url): string
+    {
+        if (str_contains($url, 'uddg=')) {
+            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
+            if (!empty($params['uddg'])) {
+                return $params['uddg'];
+            }
+        }
+        // Protocol-relative redirect links ("//duckduckgo.com/l/?uddg=…")
+        if (str_starts_with($url, '//')) {
+            return 'https:' . $url;
+        }
+        return $url;
     }
 
     private function tavily(string $query, int $limit, string $key): array

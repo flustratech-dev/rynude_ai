@@ -1271,7 +1271,8 @@ function apiKeysPage(){
                 'claude-opus-4-8': 'rynude Opus 4.8',
                 'llama-3.1-8b': 'rynude Symphony',
                 'qwen-2.5-0.5b': 'rynude Vignette',
-                'qwen-2.5-1.5b': 'rynude Lyric',
+                'qwen-2.5-1.5b': 'rynude Lyric 4.5',
+                'rynude-lyric-plus-1': 'rynude Lyric 4.6',
                 'llama-3.2-3b': 'rynude Stanza',
                 'mistral-7b-v0.3': 'rynude Canto',
                 'qwen-2.5-14b': 'rynude Magnum'

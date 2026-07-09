@@ -41,7 +41,8 @@ class ChatStreamingService
         bool $researchMode = false,
         ?int $parentMessageId = null,
         bool $thinking = false,
-        ?string $precomputed = null
+        ?string $precomputed = null,
+        bool $quality = false
     ): \Generator {
         // Prevent PHP from killing the streaming process during long generations
         set_time_limit(0);
@@ -203,7 +204,61 @@ class ChatStreamingService
                 // optional reasoning, short preamble, then ONE <antArtifact>
                 // block. The "document stuck in chat" failure mode disappears.
                 $genOptions = $isGgufDocRequest ? ['grammar' => $this->docArtifactGrammar()] : [];
-                $stream = $this->aiService->streamResponse($messagesForAi, $model, $genOptions);
+
+                $lastUserPlain = $this->recentUserRequestText($messages, 1);
+                $lastUserHasFiles = false;
+                for ($i = count($messages) - 1; $i >= 0; $i--) {
+                    if (($messages[$i]['role'] ?? '') === 'user') {
+                        $lastUserHasFiles = !empty($messages[$i]['attachments']);
+                        break;
+                    }
+                }
+
+                // Document Q&A on local models: small Qwen3 drowns in its
+                // native thinking on these turns (finishes reasoning, then
+                // emits NO answer) and tends to wrap the answer in a spurious
+                // artifact. Fix both at the source: answer directly in chat,
+                // and disable thinking via Qwen3's official /no_think switch.
+                if ($llamaService->isGgufModel($model) && $lastUserHasFiles
+                    && !$isGgufDocRequest && !$useChapterPipeline && !empty($messagesForAi)) {
+                    $lastIdx = count($messagesForAi) - 1;
+                    if ($messagesForAi[$lastIdx]['role'] === 'user') {
+                        $messagesForAi[$lastIdx]['content'] .=
+                            "\n\n[SISTEM: Jawab pertanyaan tentang dokumen ini LANGSUNG di chat sebagai teks Markdown biasa. "
+                            . "JANGAN membuat <antArtifact> dan jangan membuat dokumen baru — user bertanya, bukan minta dibuatkan dokumen. "
+                            . "Jawab berdasarkan kutipan dokumen di atas.] /no_think";
+                    }
+                }
+
+                if (!$isGgufDocRequest && !$quality && !$webSearch && !$researchMode
+                    && $llamaService->isGgufModel($model) && !$lastUserHasFiles
+                    && $this->needsFreshInfo($lastUserPlain)) {
+                    // Deterministic fresh-info route (perubahan.md #8): questions
+                    // about prices/news/"terbaru" go STRAIGHT to search — small
+                    // models can't be trusted to ask for the tool themselves.
+                    $stream = $this->searchThenReanswer(
+                        \Illuminate\Support\Str::limit($lastUserPlain, 120, ''),
+                        $messagesForAi,
+                        $model,
+                        $stopKey
+                    );
+                } elseif ($quality) {
+                    // Self-critique (perubahan.md #5): draft silently, review,
+                    // then stream the improved rewrite as the visible answer.
+                    $stream = $this->streamWithSelfCritique($messagesForAi, $model, $genOptions, $stopKey);
+                } else {
+                    $stream = $this->aiService->streamResponse($messagesForAi, $model, $genOptions);
+
+                    // Local tool use (perubahan.md #8): the model may still ask
+                    // via <antSearch>; ALSO intercept "I have no access/offline"
+                    // surrender answers and turn them into a real search.
+                    // NEVER on attachment turns — document Q&A must stay on the
+                    // document, not get hijacked into a web search.
+                    if (!$isGgufDocRequest && !$webSearch && !$researchMode && !$lastUserHasFiles
+                        && $llamaService->isGgufModel($model)) {
+                        $stream = $this->interceptLocalSearch($stream, $messagesForAi, $model, $stopKey, $lastUserPlain);
+                    }
+                }
 
                 // Language watchdog for local plain chat: when the user wrote
                 // Indonesian, sniff the first ~250 chars of the answer; if the
@@ -263,6 +318,10 @@ class ChatStreamingService
                     yield $chunk;
                 } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'suggestions') {
                     $suggestions = is_array($chunk['data'] ?? null) ? $chunk['data'] : [];
+                } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'citations') {
+                    // Sources gathered mid-stream by the local search intercept —
+                    // saved on the message and emitted as chips after the answer.
+                    $citations = is_array($chunk['data'] ?? null) ? $chunk['data'] : $citations;
                 }
                 continue;
             }
@@ -361,11 +420,93 @@ class ChatStreamingService
             $fullResponse = '_Generation stopped._';
         }
 
+        // Diagnostic trail for "thinking only, no answer" reports: one line per
+        // turn with exactly what came out of the stream.
+        \Illuminate\Support\Facades\Log::info(sprintf(
+            'Chat stream finished: model=%s content=%dB thinking=%dB truncated=%s stopped=%s quality=%s pipeline=%s',
+            $model,
+            strlen($fullResponse),
+            strlen($thinkingText),
+            $truncated ? 'y' : 'n',
+            $stopped ? 'y' : 'n',
+            $quality ? 'y' : 'n',
+            ($useChapterPipeline ?? false) ? 'y' : 'n'
+        ));
+
+        // Safety net: the model reasoned but delivered no visible answer
+        // (Qwen3-small failure mode). AUTO-RETRY once with thinking disabled
+        // (/no_think) instead of bothering the user to resend manually.
+        if (trim($fullResponse) === '' && trim($thinkingText) !== '' && !$stopped
+            && $precomputed === null && isset($messagesForAi)
+            && app(\App\Services\LlamaServerService::class)->isGgufModel($model)) {
+            yield ['type' => 'thinking', 'data' => "\n⚠️ Jawaban kosong terdeteksi — mengulang otomatis tanpa mode berpikir…\n"];
+
+            $retryMsgs = $messagesForAi;
+            $li = count($retryMsgs) - 1;
+            if (($retryMsgs[$li]['role'] ?? '') === 'user') {
+                $retryMsgs[$li]['content'] .= "\n\n[SISTEM: Tulis jawaban akhirnya SEKARANG, langsung dan lengkap.] /no_think";
+            }
+
+            $retryText = '';
+            foreach ($this->aiService->streamResponse($retryMsgs, $model) as $chunk) {
+                if (Cache::get($stopKey)) {
+                    break;
+                }
+                if (is_string($chunk)) {
+                    $retryText .= $chunk;
+                }
+            }
+            $retryText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $retryText));
+
+            if ($retryText !== '') {
+                $fullResponse = $retryText;
+                foreach (str_split($retryText, 400) as $piece) {
+                    yield ['type' => 'content', 'data' => $piece];
+                }
+            }
+        }
+
+        // Still empty after the retry (or non-local model): honest notice
+        // instead of a silent empty bubble.
+        if (trim($fullResponse) === '' && trim($thinkingText) !== '' && !$stopped) {
+            $notice = "_Maaf, jawaban tidak sempat tersusun — seluruh keluaran terpakai untuk proses berpikir"
+                . ($truncated ? ' sampai batas token habis' : '')
+                . ". Coba kirim ulang pertanyaannya (atau matikan mode thinking 💡 untuk pertanyaan ini)._";
+            $fullResponse = $notice;
+            foreach (str_split($notice, 400) as $piece) {
+                yield ['type' => 'content', 'data' => $piece];
+            }
+        }
+
         // Safety net for GGUF local models: if the model wrapped the document
         // in a ```markdown ... ``` code block instead of <antArtifact> tags
         // (common failure mode for tiny models), convert it automatically so
         // the artifact panel still opens correctly in the UI.
         $isGgufModel = app(\App\Services\LlamaServerService::class)->isGgufModel($model);
+
+        // Stranded <antSearch> tag: the model asked for a web search on a path
+        // where no interceptor was armed (e.g. the globe toggle path, whose
+        // research had already run, or quality mode). HONOR the request instead
+        // of silently stripping it — stripping left the visible answer EMPTY.
+        if ($isGgufModel && !$stopped && $precomputed === null && isset($messagesForAi)
+            && preg_match('/<antSearch>([\s\S]{2,200}?)<\/antSearch>/i', $fullResponse, $searchTag)) {
+            $fullResponse = trim((string) preg_replace('/<antSearch>[\s\S]*?(?:<\/antSearch>|$)/i', '', $fullResponse));
+            foreach ($this->searchThenReanswer(trim($searchTag[1]), $messagesForAi, $model, $stopKey) as $chunk) {
+                if (!is_string($chunk)) {
+                    if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
+                        if (empty($chunk['transient'])) {
+                            $thinkingText .= $chunk['text'];
+                        }
+                        yield ['type' => 'thinking', 'data' => $chunk['text']];
+                    } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'citations') {
+                        $citations = is_array($chunk['data'] ?? null) ? $chunk['data'] : $citations;
+                    }
+                    continue;
+                }
+                $fullResponse .= $chunk;
+                yield ['type' => 'content', 'data' => $chunk];
+            }
+        }
         if ($isGgufModel && !str_contains($fullResponse, '<antArtifact') && !str_contains($fullResponse, '<artifact')) {
             $fullResponse = $this->normalizeGgufCodeBlockToArtifact($fullResponse);
         }
@@ -384,6 +525,9 @@ class ChatStreamingService
             }
         }
         $fullResponse = trim((string) preg_replace('/<antOptions>[\s\S]*?(?:<\/antOptions>|$)/i', '', $fullResponse));
+        // Stray search tags must never reach the saved answer (the intercept
+        // normally consumes them; this covers mid-answer or malformed ones).
+        $fullResponse = trim((string) preg_replace('/<antSearch>[\s\S]*?(?:<\/antSearch>|$)/i', '', $fullResponse));
 
         // Parse artifacts if present (a reply may carry several)
         $parsedArtifacts = $this->parseArtifacts($fullResponse);
@@ -734,7 +878,9 @@ class ChatStreamingService
                 . "6. Academic documents (skripsi/tesis/makalah) must start with YAML front-matter between --- lines (mode, judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing), then full chapters with # / ## headings. Every sub-section gets real, complete paragraphs (minimum 3 substantial paragraphs per sub-bab) — never placeholder text like '...isi...' and never one-sentence sections. End with DAFTAR PUSTAKA containing at least 10 plausible, properly formatted references.\n"
                 . "7. Substantial content the user will reuse or edit (documents, long reports, full code files) belongs in an artifact; short explanations and answers stay in chat.\n\n"
                 . "=== OPTION CHIPS ===\n"
-                . "For a plain chat answer (NOT when producing an <antArtifact> document), you may end the reply with ONE tag: <antOptions>Opsi A | Opsi B | Opsi C</antOptions> (max 4 options, ≤ 60 chars each, user's language). The system renders it as one-tap buttons. Use it only to (a) ask ONE clarifying question when the request is genuinely ambiguous, or (b) offer up to 3 concrete follow-up actions after a substantial answer. Never mention the tag in your prose.";
+                . "For a plain chat answer (NOT when producing an <antArtifact> document), you may end the reply with ONE tag: <antOptions>Opsi A | Opsi B | Opsi C</antOptions> (max 4 options, ≤ 60 chars each, user's language). The system renders it as one-tap buttons. Use it only to (a) ask ONE clarifying question when the request is genuinely ambiguous, or (b) offer up to 3 concrete follow-up actions after a substantial answer. Never mention the tag in your prose.\n\n"
+                . "=== WEB SEARCH TOOL ===\n"
+                . "The system can search the web FOR you — you are NOT cut off from current information. When the question needs fresh or specific facts (news, prices, versions, dates, people, products, statistics), reply with ONLY this single tag and nothing else: <antSearch>concise search keywords</antSearch> — the system will fetch sources and ask you to answer again using them. NEVER claim you \"have no access\", \"cannot access data\", or \"operate offline\" — that is FORBIDDEN; request a search instead. For stable general knowledge, answer directly without the tag. Never use the tag more than once.";
         } else {
             $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
                 . "=== REASONING PROCESS ===\n"
@@ -755,7 +901,9 @@ class ChatStreamingService
                 . "2. Write 2-3 sentences in chat explaining your structure (in the user's language).\n"
                 . "3. Then output the COMPLETE document inside ONE <antArtifact type=\"text/markdown\" title=\"Document Title\"> ... </antArtifact> block.\n"
                 . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
-                . "5. Do NOT wrap a plain chat answer in <antArtifact>.";
+                . "5. Do NOT wrap a plain chat answer in <antArtifact>.\n\n"
+                . "=== WEB SEARCH TOOL ===\n"
+                . "The system can search the web FOR you — you are NOT cut off from current information. When the question needs fresh or specific facts (news, prices, versions, dates, people, statistics), reply with ONLY this single tag and nothing else: <antSearch>concise search keywords</antSearch> — the system will fetch sources and ask you again. NEVER claim you \"have no access\" or \"operate offline\" — request a search instead. For stable general knowledge, answer directly without the tag.";
         }
 
         // Hard per-turn language pin: small local models reason in English and
@@ -788,6 +936,10 @@ class ChatStreamingService
 
         if (trim($searchBlock) !== '') {
             $prompt .= "\n\n" . $searchBlock;
+            // The research already ran — the model must answer from these
+            // sources NOW, not emit another <antSearch> request (that tag has
+            // no interceptor on this path and used to strand the answer).
+            $prompt .= "\n\n[PENTING: Sumber web di atas SUDAH disediakan untuk pertanyaan ini. JANGAN memakai tag <antSearch>. Jawab SEKARANG berdasarkan sumber-sumber itu dan kutip nomornya seperti [1].]";
         }
 
         if ($simulateThinking) {
@@ -1310,6 +1462,209 @@ GBNF;
     }
 
     /**
+     * Self-critique / quality mode (perubahan.md #5): the model writes a full
+     * draft first (never shown as the answer — it streams into the thinking
+     * panel so the user sees progress), then reviews its own draft and writes
+     * an improved final version, which is what actually streams as content.
+     * Costs ~2× time/tokens; only runs when the user turned the toggle on.
+     */
+    protected function streamWithSelfCritique(array $messagesForAi, string $model, array $genOptions, string $stopKey): \Generator
+    {
+        // ── Pass 1: silent draft ─────────────────────────────────────────────
+        yield ['type' => 'thinking', 'text' => "🔍 Mode kualitas aktif — menyusun draf awal…\n\n", 'transient' => true];
+
+        $draft = '';
+        foreach ($this->aiService->streamResponse($messagesForAi, $model, $genOptions) as $chunk) {
+            if (Cache::get($stopKey)) {
+                return;
+            }
+            if (is_string($chunk)) {
+                $draft .= $chunk;
+                // Show the draft forming in the thinking panel (transient: it
+                // never pollutes the saved final answer's thinking).
+                yield ['type' => 'thinking', 'text' => $chunk, 'transient' => true];
+            } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
+                yield ['type' => 'thinking', 'text' => $chunk['text'], 'transient' => true];
+            }
+        }
+
+        $draftClean = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $draft));
+        if ($draftClean === '') {
+            return; // nothing to improve — let the caller's empty-answer handling run
+        }
+
+        // ── Pass 2: review + improved rewrite (this is the visible answer) ───
+        yield ['type' => 'thinking', 'text' => "\n\n✏️ Draf selesai — memeriksa kelemahan dan menulis versi final yang lebih baik…\n", 'transient' => true];
+
+        $reviseMessages = array_merge($messagesForAi, [
+            ['role' => 'assistant', 'content' => $draftClean],
+            ['role' => 'user', 'content' => "[SISTEM — SELF-REVIEW:\n"
+                . "Tinjau jawaban Anda di atas sebagai editor yang kritis: cari bagian yang dangkal, kurang akurat, kurang terstruktur, bertele-tele, atau salah bahasa.\n"
+                . "Lalu tulis ULANG jawaban versi FINAL yang lebih baik: lebih dalam, lebih tepat, lebih rapi, bahasa konsisten dengan bahasa pengguna.\n"
+                . "Keluarkan HANYA jawaban final yang sudah diperbaiki — tanpa daftar kritik, tanpa menyebut proses review ini, dan pertahankan format yang diwajibkan (artifact/markdown) bila ada.]"],
+        ]);
+
+        $revised = '';
+        foreach ($this->aiService->streamResponse($reviseMessages, $model, $genOptions) as $chunk) {
+            if (Cache::get($stopKey)) {
+                break;
+            }
+            if (is_string($chunk)) {
+                $revised .= $chunk;
+                yield $chunk;
+            } else {
+                yield $chunk; // thinking/truncated pass through normally
+            }
+        }
+
+        // Safety net: revision came back empty/failed → fall back to the draft
+        // so quality mode can never produce a WORSE outcome than normal mode.
+        if (trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $revised)) === '') {
+            foreach (str_split($draftClean, 400) as $piece) {
+                yield $piece;
+            }
+        }
+    }
+
+    /**
+     * Local tool use (perubahan.md #8): local models are instructed that when
+     * a question needs fresh/factual information they should answer with ONE
+     * <antSearch>query</antSearch> tag instead of guessing. This wrapper
+     * sniffs the start of the stream for that tag; when found, the doomed
+     * answer is scrapped, the web is searched, and the model re-answers with
+     * numbered sources (emitted as citations chips).
+     */
+    /** Does this question need up-to-the-minute information? (deterministic trigger) */
+    protected function needsFreshInfo(string $text): bool
+    {
+        return (bool) preg_match(
+            '/\b(harga|termurah|termahal|terbaru|terkini|sekarang|saat ini|hari ini|minggu ini|bulan ini|berita|kurs|saham|crypto|bitcoin|skor|klasemen|jadwal|rilis|update terbaru|versi terbaru|baru rilis|tahun 202[4-9])\b'
+            . '|\b(latest|current|today|newest|price of|release date)\b/iu',
+            $text
+        );
+    }
+
+    /** The model gave up ("no access / offline") instead of using its search tool. */
+    protected const SURRENDER_RE = '/tidak (memiliki|punya|mempunyai) akses|tidak (dapat|bisa) mengakses'
+        . '|beroperasi secara offline|data (saya )?(terbatas|hanya sampai)|pengetahuan saya (terbatas|hanya)'
+        . '|don\'?t have access|cannot access|no access to (real[- ]?time|current)|as an ai/iu';
+
+    protected function interceptLocalSearch(\Generator $stream, array $messagesForAi, string $model, string $stopKey, string $userQuestion = ''): \Generator
+    {
+        $visible = fn (string $s): string => trim((string) preg_replace(
+            '/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $s
+        ));
+        $fallbackQuery = \Illuminate\Support\Str::limit($userQuestion, 120, '');
+
+        $buf = '';
+        $decided = false;
+        foreach ($stream as $chunk) {
+            if (!is_string($chunk) || $decided) {
+                yield $chunk;
+                continue;
+            }
+            $buf .= $chunk;
+            $sniff = $visible($buf);
+
+            if (preg_match('/<antSearch>([\s\S]{2,200}?)<\/antSearch>/i', $sniff, $m)) {
+                // Model asked for a search — scrap this stream and re-answer.
+                yield from $this->searchThenReanswer(trim($m[1]), $messagesForAi, $model, $stopKey);
+                return;
+            }
+
+            // Surrender answer ("saya tidak memiliki akses…") → the user wanted
+            // facts, so run the search anyway with the question as the query.
+            if ($fallbackQuery !== '' && strlen($sniff) >= 40 && preg_match(self::SURRENDER_RE, mb_substr($sniff, 0, 400))) {
+                yield from $this->searchThenReanswer($fallbackQuery, $messagesForAi, $model, $stopKey);
+                return;
+            }
+
+            // Both the tag and surrender phrases appear early in a reply —
+            // keep sniffing until enough visible text has arrived. Latency is
+            // fine: the Indonesian guard downstream buffers ~250 chars anyway.
+            if (strlen($sniff) < 420 && strlen($buf) < 8000) {
+                continue;
+            }
+
+            // Normal answer — release the buffer and passthrough from here.
+            $decided = true;
+            yield $buf;
+        }
+
+        if (!$decided && $buf !== '') {
+            $sniff = $visible($buf);
+            if (preg_match('/<antSearch>([\s\S]{2,200}?)<\/antSearch>/i', $sniff, $m)) {
+                yield from $this->searchThenReanswer(trim($m[1]), $messagesForAi, $model, $stopKey);
+            } elseif ($fallbackQuery !== '' && preg_match(self::SURRENDER_RE, mb_substr($sniff, 0, 400))) {
+                yield from $this->searchThenReanswer($fallbackQuery, $messagesForAi, $model, $stopKey);
+            } else {
+                yield $buf;
+            }
+        }
+    }
+
+    /**
+     * Run the model-requested web search and stream the re-answer grounded in
+     * numbered sources. Citations are forwarded as a structured chunk so the
+     * main loop saves them and renders source chips under the reply.
+     */
+    protected function searchThenReanswer(string $query, array $messagesForAi, string $model, string $stopKey): \Generator
+    {
+        yield ['type' => 'thinking', 'text' => "🔎 Model meminta pencarian web: \"{$query}\" — mencari sumber…\n", 'transient' => true];
+
+        $results = [];
+        try {
+            $results = (new \App\Services\WebSearchService())->search($query, 4);
+        } catch (\Throwable $e) {
+            // Search backend down — fall through to the no-results path.
+        }
+
+        if (empty($results)) {
+            // No sources — say so VISIBLY. A confident-sounding answer from
+            // stale model memory must never masquerade as a searched fact.
+            yield "⚠️ _Pencarian web tidak mengembalikan hasil (mesin pencari mungkin diblokir jaringan Anda — cek `storage/logs/laravel.log` baris `WebSearchService`; solusi permanen: isi `SEARCH_PROVIDER=tavily` + `SEARCH_API_KEY` di file .env). Jawaban di bawah berasal dari pengetahuan internal model dan BISA USANG:_\n\n";
+
+            $fallback = array_merge($messagesForAi, [
+                ['role' => 'assistant', 'content' => "<antSearch>{$query}</antSearch>"],
+                ['role' => 'user', 'content' => '[SISTEM: Pencarian web tidak tersedia/tidak menemukan hasil. Jawab pertanyaan pengguna sebaik mungkin dari pengetahuanmu sendiri, nyatakan dengan jelas bahwa angka/fakta terkini tidak bisa kamu verifikasi, dan JANGAN mengarang angka pasti. JANGAN memakai tag <antSearch> lagi.]'],
+            ]);
+            foreach ($this->aiService->streamResponse($fallback, $model) as $chunk) {
+                if (Cache::get($stopKey)) {
+                    return;
+                }
+                yield $chunk;
+            }
+
+            return;
+        }
+
+        $block = "[HASIL PENCARIAN WEB untuk \"{$query}\":\n";
+        $citations = [];
+        foreach ($results as $i => $r) {
+            $n = $i + 1;
+            $block .= "\n[{$n}] {$r['title']}\nURL: {$r['url']}\n{$r['snippet']}\n";
+            $citations[] = ['n' => $n, 'title' => $r['title'], 'url' => $r['url']];
+        }
+        $block .= "\nJawab pertanyaan pengguna SEKARANG berdasarkan sumber-sumber di atas, dalam bahasa pengguna. "
+            . "Kutip nomor sumbernya inline seperti [1] pada klaim yang bersumber. "
+            . "Jika sumber tidak menjawab pertanyaan, katakan jujur. JANGAN memakai tag <antSearch> lagi.]";
+
+        yield ['type' => 'citations', 'data' => $citations];
+        yield ['type' => 'thinking', 'text' => '✅ ' . count($citations) . " sumber ditemukan — menyusun jawaban berdasarkan sumber…\n", 'transient' => true];
+
+        $reanswer = array_merge($messagesForAi, [
+            ['role' => 'assistant', 'content' => "<antSearch>{$query}</antSearch>"],
+            ['role' => 'user', 'content' => $block],
+        ]);
+        foreach ($this->aiService->streamResponse($reanswer, $model) as $chunk) {
+            if (Cache::get($stopKey)) {
+                return;
+            }
+            yield $chunk;
+        }
+    }
+
+    /**
      * Language watchdog for local-model plain chat (user wrote Indonesian).
      * Buffers the first ~250 chars of the answer; if it sniffs as English the
      * whole attempt is scrapped (never shown) and ONE retry with a hard
@@ -1472,7 +1827,12 @@ GBNF;
 
         $maxSources = $researchMode ? 10 : 6;
         $seen = array_column($sources, 'url');
-        foreach ($this->planSearchQueries($lastUserText, $model, $researchMode ? 3 : 2) as $query) {
+        // Small local models can't be trusted to PLAN search queries (they
+        // reply NO_SEARCH or garbage) — for them, search the question as-is.
+        $queries = app(\App\Services\LlamaServerService::class)->isGgufModel($model)
+            ? [\Illuminate\Support\Str::limit($lastUserText, 150, '')]
+            : $this->planSearchQueries($lastUserText, $model, $researchMode ? 3 : 2);
+        foreach ($queries as $query) {
             foreach ($searchService->search($query, $researchMode ? 4 : 3) as $r) {
                 if (in_array($r['url'], $seen, true)) {
                     continue;
