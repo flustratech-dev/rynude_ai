@@ -104,8 +104,11 @@ class ChatStreamingService
             // artifact/skripsi prompt — they parrot the skeleton example verbatim
             // ("Judul Dokumen"/"…isi lengkap…") and loop. Give them a slim prompt
             // and skip the strict-format skeleton from adaptSystemPrompt.
-            if (app(\App\Services\LlamaServerService::class)->isGgufModel($model)) {
-                [$systemPrompt, $isGgufDocRequest] = $this->buildLocalModelSystemPrompt($conversation, $messages, $searchBlock, $simulateThinking);
+            $llamaService = app(\App\Services\LlamaServerService::class);
+            $ggufTier = 'small';
+            if ($llamaService->isGgufModel($model)) {
+                $ggufTier = $llamaService->tierFor($model);
+                [$systemPrompt, $isGgufDocRequest] = $this->buildLocalModelSystemPrompt($conversation, $messages, $searchBlock, $simulateThinking, $ggufTier);
             } else {
                 $isGgufDocRequest = false;
                 // Build the complete system prompt with all context
@@ -159,6 +162,15 @@ class ChatStreamingService
                         . "# DAFTAR PUSTAKA\n"
                         . "</antArtifact>\n"
                         . "Write FULL paragraphs in every sub-section — no placeholder text, no one-sentence summaries.\n"
+                        . ($ggufTier === 'large'
+                            ? "DEPTH REQUIREMENTS (mandatory):\n"
+                                . "- Every sub-bab (## heading) contains at least 3 substantial paragraphs of real academic prose.\n"
+                                . "- BAB II cites theories/definitions from named authors with years, e.g. (Sugiyono, 2019).\n"
+                                . "- BAB III describes the method concretely: population/sample or data sources, instruments, analysis steps.\n"
+                                . "- BAB IV presents actual analysis/discussion, not a restatement of BAB I.\n"
+                                . "- DAFTAR PUSTAKA lists at least 10 properly formatted references.\n"
+                                . "Keep writing until the document is COMPLETE through DAFTAR PUSTAKA — do not stop early or summarize remaining chapters.\n"
+                            : '')
                         . "Before the <antArtifact> tag write 2-3 sentences explaining your structure in the user's language.]";                }
             }
 
@@ -220,6 +232,68 @@ class ChatStreamingService
             } else {
                 $fullResponse .= $piece['text'];
                 yield ['type' => 'content', 'data' => $piece['text']];
+            }
+        }
+
+        // ── Auto-continue for cut-off documents (local GGUF) ─────────────────
+        // Local models routinely stop mid-document (early EOS or the output
+        // token cap), leaving an unclosed <antArtifact> and half a skripsi.
+        // Detect that and ask the model to continue — up to 2 rounds — then
+        // stitch the pieces into ONE complete document before artifact parsing.
+        if (($isGgufDocRequest ?? false) && !$stopped && isset($messagesForAi)) {
+            for ($round = 0; $round < 2; $round++) {
+                $unfinished = $truncated
+                    || (str_contains($fullResponse, '<antArtifact') && !str_contains($fullResponse, '</antArtifact>'));
+                if (!$unfinished) {
+                    break;
+                }
+                $truncated = false;
+
+                $tail = substr($fullResponse, -600);
+                $continueMessages = array_merge($messagesForAi, [
+                    ['role' => 'assistant', 'content' => $fullResponse],
+                    ['role' => 'user', 'content' => "[LANJUTKAN — output Anda terpotong sebelum dokumen selesai.\n"
+                        . "Lanjutkan PERSIS dari titik terakhir (potongan terakhir ada di bawah). "
+                        . "JANGAN mengulang teks yang sudah ditulis, JANGAN menulis kalimat pembuka, JANGAN memakai <thinking>. "
+                        . "Langsung sambung isinya, selesaikan seluruh bab sampai DAFTAR PUSTAKA, lalu tutup dengan </antArtifact>.\n"
+                        . "Potongan terakhir:\n...{$tail}]"],
+                ]);
+
+                $contText = '';
+                foreach ($this->aiService->streamResponse($continueMessages, $model) as $chunk) {
+                    if (Cache::get($stopKey)) {
+                        Cache::forget($stopKey);
+                        $stopped = true;
+                        break;
+                    }
+                    if (!is_string($chunk)) {
+                        if (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
+                            $truncated = true;
+                        }
+                        continue;
+                    }
+                    $contText .= $chunk;
+                }
+
+                // Strip stray reasoning tags and any overlap with what was
+                // already written, then splice + stream the remainder out.
+                $contText = trim(preg_replace('/<(?:thinking|sim_thinking|think)>.*?(?:<\/(?:thinking|sim_thinking|think)>|$)/is', '', $contText));
+                for ($k = min(300, strlen($contText), strlen($fullResponse)); $k > 20; $k--) {
+                    if (substr($fullResponse, -$k) === substr($contText, 0, $k)) {
+                        $contText = substr($contText, $k);
+                        break;
+                    }
+                }
+                if ($contText === '') {
+                    break; // model had nothing to add — avoid an infinite loop
+                }
+                $fullResponse .= $contText;
+                foreach (str_split($contText, 400) as $piece) {
+                    yield ['type' => 'content', 'data' => $piece];
+                }
+                if ($stopped) {
+                    break;
+                }
             }
         }
 
@@ -522,7 +596,8 @@ class ChatStreamingService
         Conversation $conversation,
         array $messages = [],
         string $searchBlock = '',
-        bool $simulateThinking = false
+        bool $simulateThinking = false,
+        string $tier = 'small'
     ): array {
         // ── Detect whether this turn is a document / skripsi request ──────────
         $lastUserText = '';
@@ -540,18 +615,50 @@ class ChatStreamingService
         );
 
         // ── Base identity & thinking rules (always injected) ──────────────────
-        $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
-            . "=== REASONING PROCESS ===\n"
-            . "Before answering, wrap step-by-step internal reasoning inside <thinking>...</thinking> at the very start of your response. Write your final answer AFTER </thinking>. Never mention the thinking block in your answer.\n\n"
-            . "=== FORMATTING ===\n"
-            . "Reply in the user's language. Use clean Markdown: headings (##/###), bullet lists (-), numbered lists, fenced code blocks, **bold** for key terms. Never repeat the same line or paragraph.\n\n"
-            . "=== DOCUMENT & ARTIFACT RULE ===\n"
-            . "When the user asks for a document, skripsi, makalah, laporan, proposal, PDF, or DOCX:\n"
-            . "1. NEVER apologize, NEVER claim you cannot create files offline, NEVER suggest Google Docs or Microsoft Word.\n"
-            . "2. Write 2-3 sentences in chat explaining your structure (in the user's language).\n"
-            . "3. Then output the COMPLETE document inside ONE <antArtifact type=\"text/markdown\" title=\"Document Title\"> ... </antArtifact> block.\n"
-            . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
-            . "5. Do NOT wrap a plain chat answer in <antArtifact>.";
+        // Two prompt tiers: 'small' (0.5B–3B) keeps the deliberately slim prompt
+        // that prevents looping/parroting; 'large' (7B–14B) gets a near-cloud
+        // prompt — these models follow long instructions reliably, and the slim
+        // prompt was artificially capping their answer depth and artifact quality.
+        if ($tier === 'large') {
+            $prompt = "You are Rynude, a highly capable, analytical AI assistant running fully offline on the user's computer. Aim for the answer quality of top cloud assistants.\n\n"
+                . "=== UNDERSTANDING THE USER ===\n"
+                . "Before answering, identify what the user actually needs: the task, the implied depth, the language, and any constraints. If the request is ambiguous, choose the most useful interpretation and state your assumption in one short sentence — do not stall with clarifying questions for simple requests. Follow-up messages refer to the previous topic unless clearly a new subject.\n\n"
+                . "=== REASONING PROCESS ===\n"
+                . "Before answering, wrap step-by-step internal reasoning inside <thinking>...</thinking> at the very start of your response: break the problem down, consider edge cases, plan the structure of your answer. Write your final answer AFTER </thinking>. Never mention the thinking block in your answer.\n\n"
+                . "=== ANSWER QUALITY BAR ===\n"
+                . "- Be thorough and substantive: explain the why, not just the what; add concrete examples, numbers, or code where they help.\n"
+                . "- Match depth to the question: simple question → direct answer; complex question → structured, multi-section answer.\n"
+                . "- Never give lazy one-line answers to substantive questions, and never pad simple answers with filler.\n"
+                . "- For coding: give complete, runnable code with brief explanation, not fragments.\n\n"
+                . "=== FORMATTING ===\n"
+                . "Reply in the user's language. Use clean Markdown: headings (##/###), bullet lists (-), numbered lists, tables when comparing, fenced code blocks with language tags, **bold** for key terms. Never repeat the same line or paragraph.\n\n"
+                . "=== DOCUMENT & ARTIFACT RULE ===\n"
+                . "When the user asks for a document, skripsi, makalah, laporan, proposal, PDF, or DOCX:\n"
+                . "1. NEVER apologize, NEVER claim you cannot create files offline, NEVER suggest Google Docs or Microsoft Word.\n"
+                . "2. Write 2-3 sentences in chat explaining your structure (in the user's language).\n"
+                . "3. Then output the COMPLETE document inside ONE <antArtifact type=\"text/markdown\" title=\"Document Title\"> ... </antArtifact> block.\n"
+                . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
+                . "5. Do NOT wrap a plain chat answer in <antArtifact>.\n"
+                . "6. Academic documents (skripsi/tesis/makalah) must start with YAML front-matter between --- lines (mode, judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing), then full chapters with # / ## headings. Every sub-section gets real, complete paragraphs (minimum 3 substantial paragraphs per sub-bab) — never placeholder text like '...isi...' and never one-sentence sections. End with DAFTAR PUSTAKA containing at least 10 plausible, properly formatted references.\n"
+                . "7. Substantial content the user will reuse or edit (documents, long reports, full code files) belongs in an artifact; short explanations and answers stay in chat.";
+        } else {
+            $prompt = "You are Rynude, an intelligent and analytical AI assistant running offline on the user's computer.\n\n"
+                . "=== REASONING PROCESS ===\n"
+                . "Before answering, wrap step-by-step internal reasoning inside <thinking>...</thinking> at the very start of your response. Write your final answer AFTER </thinking>. Never mention the thinking block in your answer.\n\n"
+                . "=== UNDERSTANDING THE USER ===\n"
+                . "First identify what the user is really asking, then answer that directly in the user's language. Follow-up messages refer to the previous topic.\n\n"
+                . "=== ANSWER LENGTH ===\n"
+                . "Give complete, developed answers: for substantive questions write several full paragraphs or structured sections, never a one-line reply. For documents, write EVERY section in full prose — never summarize, never stop after the first sections.\n\n"
+                . "=== FORMATTING ===\n"
+                . "Reply in the user's language. Use clean Markdown: headings (##/###), bullet lists (-), numbered lists, fenced code blocks, **bold** for key terms. Never repeat the same line or paragraph.\n\n"
+                . "=== DOCUMENT & ARTIFACT RULE ===\n"
+                . "When the user asks for a document, skripsi, makalah, laporan, proposal, PDF, or DOCX:\n"
+                . "1. NEVER apologize, NEVER claim you cannot create files offline, NEVER suggest Google Docs or Microsoft Word.\n"
+                . "2. Write 2-3 sentences in chat explaining your structure (in the user's language).\n"
+                . "3. Then output the COMPLETE document inside ONE <antArtifact type=\"text/markdown\" title=\"Document Title\"> ... </antArtifact> block.\n"
+                . "4. NEVER use ```markdown code blocks for the document content — always use <antArtifact> tags.\n"
+                . "5. Do NOT wrap a plain chat answer in <antArtifact>.";
+        }
 
         // Custom instructions / language preference still apply.
         if (Auth::check() && !empty(Auth::user()->custom_instructions)) {

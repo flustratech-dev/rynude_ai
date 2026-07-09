@@ -218,6 +218,15 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             return;
         }
 
+        // RAG parameters for document attachments: retrieval query is the latest
+        // user message; the budget is tight for local GGUF models (16K real
+        // context) and generous for cloud models.
+        $ragQuery = $this->ragQueryFrom($messages);
+        $llama = app(\App\Services\LlamaServerService::class);
+        $ragBudget = $llama->isGgufModel($model)
+            ? ($llama->tierFor($model) === 'large' ? 12_000 : 8_000)
+            : 48_000;
+
         // Filter messages (OpenAI only supports system, user, assistant)
         $openAiMessages = [];
         foreach ($messages as $msg) {
@@ -240,7 +249,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
             }
             
             // Handle attachments
-            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? [], $ragQuery, $ragBudget) as $part) {
                 $content[] = $part['kind'] === 'image'
                     ? ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $part['mime'] . ';base64,' . $part['base64']]]
                     : ['type' => 'text', 'text' => $part['text']];

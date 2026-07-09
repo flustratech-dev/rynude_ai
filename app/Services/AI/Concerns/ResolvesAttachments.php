@@ -15,13 +15,49 @@ trait ResolvesAttachments
     /**
      * Normalize message attachments into provider-agnostic parts.
      *
-     * @param array $attachments Each: ['file_path' => string, 'file_type' => ?string, 'file_name' => ?string]
+     * Documents go through DocumentRagService: content within $textBudget is
+     * injected whole, anything larger is chunked + BM25-retrieved against
+     * $ragQuery so only the most relevant excerpts reach the model. Both paths
+     * append grounding instructions (answer ONLY from the document, admit when
+     * the answer isn't there) — this is what keeps small local models from
+     * hallucinating document contents.
+     *
+     * @param array  $attachments Each: ['file_path' => string, 'file_type' => ?string, 'file_name' => ?string]
+     * @param string $ragQuery    The user's question — retrieval key for large documents.
+     * @param int    $textBudget  Max chars of document content to inject per attachment.
      * @return array<int, array{kind: 'image', mime: string, base64: string}|array{kind: 'text', text: string}>
      */
-    protected function resolveAttachmentParts(array $attachments): array
+    /**
+     * The latest user message text in a normalized message array — used as the
+     * RAG retrieval query so follow-up questions about an earlier attachment
+     * still retrieve against what the user is asking NOW.
+     */
+    protected function ragQueryFrom(array $messages): string
     {
-        // Cap extracted text per attachment so one big file can't blow the context window.
-        $textLimit = 100_000;
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (($messages[$i]['role'] ?? '') !== 'user') {
+                continue;
+            }
+            $content = $messages[$i]['content'] ?? '';
+            if (is_array($content)) {
+                $content = implode(' ', array_map(
+                    fn ($p) => is_array($p) ? ($p['text'] ?? '') : (string) $p,
+                    $content
+                ));
+            }
+            if (trim((string) $content) !== '') {
+                return (string) $content;
+            }
+        }
+        return '';
+    }
+
+    protected function resolveAttachmentParts(array $attachments, string $ragQuery = '', int $textBudget = 48_000): array
+    {
+        // Absolute cap on parsed text per attachment (pre-RAG); retrieval then
+        // narrows it down to $textBudget.
+        $textLimit = 400_000;
+        $rag = app(\App\Services\DocumentRagService::class);
         $parts = [];
 
         foreach ($attachments as $att) {
@@ -65,13 +101,15 @@ trait ResolvesAttachments
                 continue;
             }
             if (strlen($text) > $textLimit) {
-                $text = substr($text, 0, $textLimit) . "\n[... isi file dipotong karena terlalu panjang ...]";
+                $text = substr($text, 0, $textLimit);
             }
 
-            $parts[] = [
-                'kind' => 'text',
-                'text' => "\n\n[Isi Dokumen lampiran: {$name}]\n{$text}\n[Akhir Isi Dokumen]",
-            ];
+            $block = $rag->buildDocumentBlock($text, $name, $ragQuery, $textBudget);
+            if ($block === '') {
+                continue;
+            }
+
+            $parts[] = ['kind' => 'text', 'text' => $block];
         }
 
         return $parts;

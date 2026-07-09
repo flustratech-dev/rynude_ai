@@ -507,6 +507,7 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
     {
         $out = [];
         $systemPrompt = '';
+        $ragQuery = $this->ragQueryFrom($messages);
 
         foreach ($messages as $msg) {
             $role = $msg['role'] ?? 'user';
@@ -562,7 +563,7 @@ class AnthropicProvider implements LLMProviderInterface, SupportsToolUse
             if (!empty($msg['content'])) {
                 $content[] = ['type' => 'text', 'text' => (string) $msg['content']];
             }
-            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? [], $ragQuery) as $part) {
                 $content[] = $part['kind'] === 'image'
                     ? ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $part['mime'], 'data' => $part['base64']]]
                     : ['type' => 'text', 'text' => $part['text']];

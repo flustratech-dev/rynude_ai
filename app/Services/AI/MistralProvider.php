@@ -62,6 +62,7 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
         $supportsVision = (bool) preg_match('/pixtral|vision/i', $model);
 
         $mistralMessages = [];
+        $ragQuery = $this->ragQueryFrom($messages);
         foreach ($messages as $msg) {
             if ($msg['role'] === 'system') {
                 $mistralMessages[] = ['role' => 'system', 'content' => (string) ($msg['content'] ?? '')];
@@ -72,7 +73,7 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
             if (!empty($msg['content'])) {
                 $content[] = ['type' => 'text', 'text' => (string) $msg['content']];
             }
-            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? []) as $part) {
+            foreach ($this->resolveAttachmentParts($msg['attachments'] ?? [], $ragQuery) as $part) {
                 if ($part['kind'] === 'image') {
                     $content[] = $supportsVision
                         ? ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $part['mime'] . ';base64,' . $part['base64']]]

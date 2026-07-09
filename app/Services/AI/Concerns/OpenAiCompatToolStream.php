@@ -31,6 +31,7 @@ trait OpenAiCompatToolStream
     protected function mapMessagesToOpenAi(array $messages): array
     {
         $out = [];
+        $ragQuery = $this->ragQueryFrom($messages);
 
         foreach ($messages as $m) {
             $role = $m['role'] ?? 'user';
@@ -74,7 +75,7 @@ trait OpenAiCompatToolStream
             if (!empty($m['content'])) {
                 $content[] = ['type' => 'text', 'text' => (string) $m['content']];
             }
-            foreach ($this->resolveAttachmentParts($m['attachments'] ?? []) as $part) {
+            foreach ($this->resolveAttachmentParts($m['attachments'] ?? [], $ragQuery) as $part) {
                 $content[] = $part['kind'] === 'image'
                     ? ['type' => 'image_url', 'image_url' => ['url' => 'data:' . $part['mime'] . ';base64,' . $part['base64']]]
                     : ['type' => 'text', 'text' => $part['text']];

@@ -47,22 +47,24 @@ const modelId = args.id || modelPath.split(/[\\/]/).pop();
 
 // Generation guardrails. Small GGUF models (0.5B–3B) degenerate into infinite
 // repetition without a repeat penalty, and will happily run to the full token
-// ceiling echoing the same line hundreds of times. These defaults keep local
-// output sane; all are overridable via env.
+// ceiling echoing the same line hundreds of times. Defaults below are the
+// small-model profile; LlamaServerService passes per-tier CLI overrides so a
+// 7B–14B model gets more natural sampling. Precedence: CLI arg > env > default.
+const opt = (arg, env, def) => args[arg] ?? process.env[env] ?? def;
 const GEN = {
     // Lower temperature (0.4) and topP (0.85) make compact models (Vignette 0.5B, Lyric 1.5B)
     // much more logical, disciplined in closing <thinking> tags, and consistent in Markdown formatting.
-    temperature: parseFloat(process.env.LOCAL_GGUF_TEMPERATURE || "0.4"),
-    topP: parseFloat(process.env.LOCAL_GGUF_TOP_P || "0.85"),
-    topK: parseInt(process.env.LOCAL_GGUF_TOP_K || "40", 10),
+    temperature: parseFloat(opt("temp", "LOCAL_GGUF_TEMPERATURE", "0.4")),
+    topP: parseFloat(opt("top-p", "LOCAL_GGUF_TOP_P", "0.85")),
+    topK: parseInt(opt("top-k", "LOCAL_GGUF_TOP_K", "40"), 10),
     // Increase cap to 8192 so internal monologue (<thinking>) + structured document fit comfortably.
-    maxTokensCap: parseInt(process.env.LOCAL_GGUF_MAX_TOKENS || "8192", 10),
+    maxTokensCap: parseInt(opt("max-tokens", "LOCAL_GGUF_MAX_TOKENS", "8192"), 10),
     repeatPenalty: {
         // Slightly gentler frequency/presence penalties so Markdown formatting syntax
         // (# headings, - lists, ``` code blocks) is not penalized during structured output.
-        penalty: parseFloat(process.env.LOCAL_GGUF_REPEAT_PENALTY || "1.12"),
-        frequencyPenalty: parseFloat(process.env.LOCAL_GGUF_FREQUENCY_PENALTY || "0.1"),
-        presencePenalty: parseFloat(process.env.LOCAL_GGUF_PRESENCE_PENALTY || "0.1"),
+        penalty: parseFloat(opt("repeat-penalty", "LOCAL_GGUF_REPEAT_PENALTY", "1.12")),
+        frequencyPenalty: parseFloat(opt("freq-penalty", "LOCAL_GGUF_FREQUENCY_PENALTY", "0.1")),
+        presencePenalty: parseFloat(opt("pres-penalty", "LOCAL_GGUF_PRESENCE_PENALTY", "0.1")),
         lastTokens: parseInt(process.env.LOCAL_GGUF_REPEAT_LAST || "128", 10),
     },
 };
@@ -88,6 +90,7 @@ let ready = false;
 
 try {
     console.log(`[llama-server] loading ${modelPath} (ctx=${contextSize})`);
+    console.log(`[llama-server] gen profile: temp=${GEN.temperature} topP=${GEN.topP} topK=${GEN.topK} repeat=${GEN.repeatPenalty.penalty} maxTokens=${GEN.maxTokensCap}`);
     llama = await getLlama();
     model = await llama.loadModel({ modelPath });
     context = await model.createContext({ contextSize });

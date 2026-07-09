@@ -53,6 +53,48 @@ class LlamaServerService
 
     private const DEFAULT_CONTEXT = 16384;
 
+    /**
+     * Capability tier per model. Generation params and the system prompt are
+     * tuned per-tier instead of one-size-fits-all: the old single profile was
+     * tuned for Vignette 0.5B, which artificially capped the 7B–14B models.
+     *
+     *  - small: 0.5B–3B  — need low temperature + strict repeat penalties or
+     *    they loop/parrot; get the slim system prompt.
+     *  - large: 7B–14B  — follow instructions reliably; get a near-cloud
+     *    system prompt and more natural sampling for deeper, richer output.
+     */
+    private const TIERS = [
+        'qwen-2.5-0.5b'   => 'small',
+        'qwen-2.5-1.5b'   => 'small',
+        'llama-3.2-3b'    => 'small',
+        'mistral-7b-v0.3' => 'large',
+        'llama-3.1-8b'    => 'large',
+        'qwen-2.5-14b'    => 'large',
+    ];
+
+    /**
+     * Per-tier sampling profiles passed to llama-server.mjs as CLI args
+     * (they override the env/default values inside the script).
+     */
+    private const GEN_PROFILES = [
+        'small' => [
+            'temp' => 0.4, 'top-p' => 0.85, 'top-k' => 40,
+            'repeat-penalty' => 1.12, 'freq-penalty' => 0.1, 'pres-penalty' => 0.1,
+            'max-tokens' => 8192,
+        ],
+        'large' => [
+            'temp' => 0.7, 'top-p' => 0.92, 'top-k' => 60,
+            'repeat-penalty' => 1.05, 'freq-penalty' => 0.05, 'pres-penalty' => 0.05,
+            'max-tokens' => 8192,
+        ],
+    ];
+
+    /** Capability tier ('small'|'large') for a Model Hub GGUF code. */
+    public function tierFor(string $modelCode): string
+    {
+        return self::TIERS[$modelCode] ?? 'small';
+    }
+
     /** Cache key holding the model code currently loaded into the running server. */
     private const CURRENT_KEY = 'local_gguf_current_model';
 
@@ -150,14 +192,26 @@ class LlamaServerService
 
         // node-llama-cpp (v3) ships no OpenAI `serve` command, so we run our own
         // thin OpenAI-compatible server script. The explicit --ctx is the Bug 1 fix.
+        // Sampling args come from the model's capability tier so a 14B model is
+        // no longer clamped to the guardrails a 0.5B model needs.
+        $gen = self::GEN_PROFILES[$this->tierFor($modelCode)];
         $cmd = sprintf(
-            '%s "%s" --model "%s" --port %d --ctx %d --id "%s"',
+            '%s "%s" --model "%s" --port %d --ctx %d --id "%s"'
+                . ' --temp %s --top-p %s --top-k %d --repeat-penalty %s'
+                . ' --freq-penalty %s --pres-penalty %s --max-tokens %d',
             $node,
             $script,
             $ggufPath,
             $port,
             $ctx,
-            $modelCode
+            $modelCode,
+            $gen['temp'],
+            $gen['top-p'],
+            $gen['top-k'],
+            $gen['repeat-penalty'],
+            $gen['freq-penalty'],
+            $gen['pres-penalty'],
+            $gen['max-tokens']
         );
 
         Log::info("Starting local GGUF engine: {$cmd}");
