@@ -27,9 +27,9 @@ class FakeLLMProvider implements LLMProviderInterface, SupportsToolUse
 
     public array $agentReturn = ['stop_reason' => 'end'];
 
-    public function streamResponse(array $messages, string $model): \Generator
+    public function streamResponse(array $messages, string $model, array $options = []): \Generator
     {
-        $this->calls[] = ['messages' => $messages, 'model' => $model];
+        $this->calls[] = ['messages' => $messages, 'model' => $model, 'options' => $options];
         foreach ($this->streamScript as $chunk) {
             yield $chunk;
         }

@@ -40,7 +40,7 @@ class MistralProvider implements LLMProviderInterface, SupportsToolUse
         );
     }
 
-    public function streamResponse(array $messages, string $model): \Generator
+    public function streamResponse(array $messages, string $model, array $options = []): \Generator
     {
         $user = \Illuminate\Support\Facades\Auth::user();
         $apiKey = $user ? $user->mistral_api_key : null;

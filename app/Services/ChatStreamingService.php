@@ -123,10 +123,16 @@ class ChatStreamingService
             // Apply sliding window context strategy (token budget per model)
             $messagesForAi = $this->applySlidingWindow($messages, $systemPrompt, $model);
 
+            // Per-chapter skripsi pipeline (perubahan.md #2): a full skripsi never
+            // fits one local generation, so skripsi-shaped requests are written
+            // chapter by chapter and stitched into one artifact. The in-message
+            // reminder and grammar below are for the remaining single-shot docs.
+            $useChapterPipeline = $isGgufDocRequest && $this->isSkripsiPipelineRequest($messages);
+
             // For GGUF models on a document request, inject a targeted SYSTEM REMINDER
             // into the last user message — same mechanism used by the cloud path but
             // only fired when actually needed (prevents spurious artifacts on greetings).
-            if ($isGgufDocRequest && !empty($messagesForAi)) {
+            if ($isGgufDocRequest && !$useChapterPipeline && !empty($messagesForAi)) {
                 $lastIdx = count($messagesForAi) - 1;
                 if ($messagesForAi[$lastIdx]['role'] === 'user') {
                     $messagesForAi[$lastIdx]['content'] .= "\n\n[SYSTEM REMINDER — ARTIFACT OUTPUT REQUIRED:\n"
@@ -175,7 +181,16 @@ class ChatStreamingService
             }
 
             // Stream from AI service
-            $stream = $this->aiService->streamResponse($messagesForAi, $model);
+            if ($useChapterPipeline) {
+                $stream = $this->streamSkripsiPerChapter($messages, $model, $ggufTier, $stopKey);
+            } else {
+                // Constrained output (perubahan.md #3): on local GGUF document
+                // requests a GBNF grammar physically forces the reply shape —
+                // optional reasoning, short preamble, then ONE <antArtifact>
+                // block. The "document stuck in chat" failure mode disappears.
+                $genOptions = $isGgufDocRequest ? ['grammar' => $this->docArtifactGrammar()] : [];
+                $stream = $this->aiService->streamResponse($messagesForAi, $model, $genOptions);
+            }
         }
 
         $fullResponse = '';
@@ -186,7 +201,10 @@ class ChatStreamingService
         // prompted for it — so models that natively emit inline <think>/<thinking>
         // blocks in their content (DeepSeek-style via HF/proxies) also get their
         // reasoning routed to the thinking panel instead of leaking raw tags.
-        $simState = ['phase' => $thinking ? 'detect' : 'off', 'buf' => '', 'close' => null];
+        // Local GGUF models (Qwen3 generation) reason natively on EVERY turn,
+        // so for them the scanner is always on regardless of the toggle.
+        $isLocalGgufModel = app(\App\Services\LlamaServerService::class)->isGgufModel($model);
+        $simState = ['phase' => ($thinking || $isLocalGgufModel) ? 'detect' : 'off', 'buf' => '', 'close' => null];
 
         foreach ($stream as $chunk) {
             // Check if user requested stop
@@ -240,7 +258,7 @@ class ChatStreamingService
         // token cap), leaving an unclosed <antArtifact> and half a skripsi.
         // Detect that and ask the model to continue — up to 2 rounds — then
         // stitch the pieces into ONE complete document before artifact parsing.
-        if (($isGgufDocRequest ?? false) && !$stopped && isset($messagesForAi)) {
+        if (($isGgufDocRequest ?? false) && !($useChapterPipeline ?? false) && !$stopped && isset($messagesForAi)) {
             for ($round = 0; $round < 2; $round++) {
                 $unfinished = $truncated
                     || (str_contains($fullResponse, '<antArtifact') && !str_contains($fullResponse, '</antArtifact>'));
@@ -260,7 +278,9 @@ class ChatStreamingService
                 ]);
 
                 $contText = '';
-                foreach ($this->aiService->streamResponse($continueMessages, $model) as $chunk) {
+                // Continuation grammar: the model may only continue the document
+                // body and close the </antArtifact> tag — no restarting, no chat.
+                foreach ($this->aiService->streamResponse($continueMessages, $model, ['grammar' => $this->docContinuationGrammar()]) as $chunk) {
                     if (Cache::get($stopKey)) {
                         Cache::forget($stopKey);
                         $stopped = true;
@@ -718,6 +738,332 @@ class ChatStreamingService
             . $docContent . "\n</antArtifact>";
 
         return $chatPart !== '' ? $chatPart . "\n\n" . $artifact : $artifact;
+    }
+
+    /**
+     * True when the latest user turn asks for a full skripsi/thesis — the case
+     * the per-chapter pipeline (perubahan.md #2) is built for. Shorter document
+     * types (makalah/laporan/proposal) stay on the single-shot + grammar path.
+     */
+    protected function isSkripsiPipelineRequest(array $messages): bool
+    {
+        foreach (array_reverse($messages) as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                $text = is_array($msg['content'])
+                    ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                    : (string) ($msg['content'] ?? '');
+                return (bool) preg_match('/\b(skripsi|tesis|thesis|tugas akhir)\b/i', $text);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * GBNF grammar (perubahan.md #3) for single-shot document requests on the
+     * local GGUF engine: optional reasoning block, a short chat preamble, then
+     * EXACTLY ONE <antArtifact type="text/markdown"> block, nothing after it.
+     * Sampling physically cannot put the document anywhere else — the classic
+     * small-model failures (```markdown fences, document stuck in chat) become
+     * impossible instead of merely discouraged.
+     * "</" is disallowed inside free text so the closing tags stay unambiguous;
+     * Markdown documents don't need closing HTML tags.
+     */
+    protected function docArtifactGrammar(): string
+    {
+        return <<<'GBNF'
+root ::= think? pre artifact ws
+think ::= ("<think>" | "<thinking>" | "<sim_thinking>") free ("</think>" | "</thinking>" | "</sim_thinking>") ws
+pre ::= [^<]*
+artifact ::= "<antArtifact type=\"text/markdown\" title=\"" title "\">" free "</antArtifact>"
+title ::= [^"\n]+
+free ::= fchar*
+fchar ::= [^<] | "<" [^/]
+ws ::= [ \t\r\n]*
+GBNF;
+    }
+
+    /**
+     * Grammar for auto-continue rounds: the model may only extend the document
+     * body and close </antArtifact> — no restarting the artifact, no chatting.
+     */
+    protected function docContinuationGrammar(): string
+    {
+        return <<<'GBNF'
+root ::= free "</antArtifact>" ws
+free ::= fchar*
+fchar ::= [^<] | "<" [^/]
+ws ::= [ \t\r\n]*
+GBNF;
+    }
+
+    /**
+     * Grammar for the skripsi metadata stage: forces exactly the nine YAML
+     * lines the academic front-matter needs, in order, so even a 0.6B model
+     * produces parseable output.
+     */
+    protected function skripsiMetaGrammar(): string
+    {
+        return <<<'GBNF'
+root ::= "judul: " line "penulis: " line "nim: " line "prodi: " line "fakultas: " line "universitas: " line "kota: " line "tahun: " [0-9] [0-9] [0-9] [0-9] "\n" "pembimbing: " line
+line ::= [^\r\n]+ "\n"
+GBNF;
+    }
+
+    /**
+     * Per-chapter skripsi pipeline for local GGUF models (perubahan.md #2).
+     *
+     * Instead of asking a small model to write a 100-page document in one
+     * breath (it runs out of tokens or coherence mid-way), the document is
+     * produced in stages: one constrained metadata call, then one generation
+     * per chapter. Each chapter call gets a compact outline of what was
+     * already written (headings + first sentences), so chapters stay
+     * consistent without re-feeding whole chapters into the small context.
+     * The pieces are stitched into ONE <antArtifact> block that we open and
+     * close ourselves — the model never has to emit artifact tags at all,
+     * eliminating that failure mode entirely for skripsi.
+     *
+     * Yields the same chunk shapes the provider stream does (strings for
+     * content, ['type' => 'thinking'] arrays), so the main stream() loop
+     * consumes it unchanged.
+     */
+    protected function streamSkripsiPerChapter(array $messages, string $model, string $tier, string $stopKey): \Generator
+    {
+        $request = '';
+        foreach (array_reverse($messages) as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                $request = is_array($msg['content'])
+                    ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                    : (string) ($msg['content'] ?? '');
+                break;
+            }
+        }
+
+        // ── Stage 1: metadata for the cover / front-matter ───────────────────
+        yield ['type' => 'thinking', 'text' => "Tahap 1/8 — menyusun judul dan metadata dokumen…\n"];
+        $meta = $this->collectSkripsiMeta($request, $model);
+
+        $frontMatter = "---\n"
+            . "mode: skripsi\n"
+            . "judul: {$meta['judul']}\n"
+            . "penulis: {$meta['penulis']}\n"
+            . "nim: {$meta['nim']}\n"
+            . "prodi: {$meta['prodi']}\n"
+            . "fakultas: {$meta['fakultas']}\n"
+            . "universitas: {$meta['universitas']}\n"
+            . "kota: {$meta['kota']}\n"
+            . "tahun: {$meta['tahun']}\n"
+            . "pembimbing: {$meta['pembimbing']}\n"
+            . "---\n\n";
+
+        $titleAttr = htmlspecialchars($meta['judul'], ENT_QUOTES);
+        yield "Saya menyusun skripsi \"{$meta['judul']}\" bab demi bab agar setiap bab utuh dan tidak terpotong. Dokumen lengkap tersusun di panel artifact.\n\n"
+            . "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n" . $frontMatter;
+
+        // [nama tahap, heading pembuka, panduan isi]
+        $chapters = [
+            ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
+                "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
+            ['BAB I', 'BAB I PENDAHULUAN',
+                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Perumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah, ## 1.5 Manfaat Penelitian. Setiap sub-bab minimal 2-3 paragraf utuh."],
+            ['BAB II', 'BAB II TINJAUAN PUSTAKA',
+                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019)."],
+            ['BAB III', 'BAB III METODOLOGI PENELITIAN',
+                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel / Sumber Data, ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja."],
+            ['BAB IV', 'BAB IV HASIL DAN PEMBAHASAN',
+                "Sub-bab: ## 4.1 Gambaran Umum Objek Penelitian, ## 4.2 Hasil Penelitian (sajikan temuan, gunakan tabel Markdown bila cocok), ## 4.3 Pembahasan (analisis yang mengaitkan hasil dengan teori BAB II). Ini bab terpanjang — tulis analisis nyata, bukan pengulangan BAB I."],
+            ['BAB V', 'BAB V PENUTUP',
+                "Sub-bab: ## 5.1 Kesimpulan (menjawab rumusan masalah poin demi poin), ## 5.2 Saran (untuk praktisi dan untuk penelitian selanjutnya)."],
+            ['Daftar Pustaka', 'DAFTAR PUSTAKA',
+                "Tulis '# DAFTAR PUSTAKA' berisi minimal 12 referensi berformat konsisten dan diurutkan alfabetis, selaras dengan penulis/tahun yang dikutip di bab-bab sebelumnya."],
+        ];
+
+        $maxTokensPerChapter = $tier === 'large' ? 4096 : 3072;
+        $summary = '';
+        $stage = 2;
+
+        foreach ($chapters as [$label, $heading, $guide]) {
+            if (Cache::get($stopKey)) {
+                break;
+            }
+            yield ['type' => 'thinking', 'text' => "Tahap {$stage}/8 — menulis {$heading}…\n"];
+            $stage++;
+
+            $chapterMessages = [
+                ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
+                ['role' => 'user', 'content' =>
+                    "Permintaan pengguna: {$request}\n"
+                    . "Judul skripsi: {$meta['judul']}\n"
+                    . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
+                    . "\nTugas Anda SEKARANG: tulis {$label} secara LENGKAP dalam Markdown murni, mulai langsung dengan heading '# {$heading}'.\n{$guide}"],
+            ];
+
+            $chapterText = '';
+            $truncated = false;
+            foreach ($this->aiService->streamResponse($chapterMessages, $model, ['max_tokens' => $maxTokensPerChapter]) as $chunk) {
+                if (Cache::get($stopKey)) {
+                    break;
+                }
+                if (!is_string($chunk)) {
+                    if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
+                        yield $chunk; // live reasoning stays visible in the panel
+                    } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
+                        $truncated = true;
+                    }
+                    continue;
+                }
+                $chapterText .= $chunk;
+            }
+
+            // One continuation round when the chapter hit its token ceiling.
+            if ($truncated && !Cache::get($stopKey) && trim($chapterText) !== '') {
+                $tail = substr($chapterText, -400);
+                $contMessages = array_merge($chapterMessages, [
+                    ['role' => 'assistant', 'content' => $chapterText],
+                    ['role' => 'user', 'content' => "[LANJUTKAN — tulisan Anda terpotong. Sambung PERSIS dari potongan terakhir di bawah, tanpa mengulang, tanpa kalimat pembuka, sampai {$label} selesai.\nPotongan terakhir:\n...{$tail}]"],
+                ]);
+                $contText = '';
+                foreach ($this->aiService->streamResponse($contMessages, $model, ['max_tokens' => $maxTokensPerChapter]) as $chunk) {
+                    if (Cache::get($stopKey)) {
+                        break;
+                    }
+                    if (is_string($chunk)) {
+                        $contText .= $chunk;
+                    }
+                }
+                $contText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $contText));
+                for ($k = min(300, strlen($contText), strlen($chapterText)); $k > 20; $k--) {
+                    if (substr($chapterText, -$k) === substr($contText, 0, $k)) {
+                        $contText = substr($contText, $k);
+                        break;
+                    }
+                }
+                $chapterText .= $contText;
+            }
+
+            $chapterText = $this->cleanChapterText($chapterText, $heading);
+            $summary .= $this->summarizeChapterForContext($heading, $chapterText);
+
+            // Stream the finished chapter out in typewriter-sized bites.
+            foreach (str_split($chapterText . "\n\n", 400) as $piece) {
+                yield $piece;
+            }
+
+            if (Cache::get($stopKey)) {
+                break; // close the artifact gracefully with what we have
+            }
+        }
+
+        yield "</antArtifact>";
+    }
+
+    /**
+     * Stage-1 helper: one small constrained call that turns the user request
+     * into the nine front-matter fields; safe defaults cover anything missing.
+     */
+    protected function collectSkripsiMeta(string $request, string $model): array
+    {
+        $judulFallback = trim((string) preg_replace('/^(tolong|mohon|coba)?\s*(buatkan|buat|tuliskan|tulis|generate|susun(kan)?)\b[\s,:]*/i', '', $request));
+        $defaults = [
+            'judul' => \Illuminate\Support\Str::limit($judulFallback !== '' ? $judulFallback : 'Skripsi', 120, ''),
+            'penulis' => 'Nama Penulis',
+            'nim' => '00000000',
+            'prodi' => 'Program Studi',
+            'fakultas' => 'Fakultas',
+            'universitas' => 'Universitas',
+            'kota' => 'Kota',
+            'tahun' => (string) now()->year,
+            'pembimbing' => 'Nama Pembimbing',
+        ];
+
+        try {
+            $prompt = "Dari permintaan skripsi berikut, isi metadata dokumen. Gunakan informasi yang disebut pengguna; jika tidak disebut, buat placeholder Indonesia yang wajar (JANGAN menulis 'tidak diketahui'). Judul harus berupa judul skripsi akademik yang baik dan spesifik.\n\n"
+                . "Permintaan: " . \Illuminate\Support\Str::limit($request, 1200) . "\n\n"
+                . "Keluarkan HANYA 9 baris YAML dengan kunci: judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing.";
+            $out = '';
+            foreach ($this->aiService->streamResponse(
+                [['role' => 'user', 'content' => $prompt]],
+                $model,
+                ['max_tokens' => 320, 'grammar' => $this->skripsiMetaGrammar()]
+            ) as $chunk) {
+                if (is_string($chunk)) {
+                    $out .= $chunk;
+                }
+                if (strlen($out) > 2000) {
+                    break;
+                }
+            }
+            foreach (array_keys($defaults) as $key) {
+                if (preg_match('/^' . $key . ':\s*(.+)$/mi', $out, $m)) {
+                    $val = trim($m[1]);
+                    if ($val !== '' && mb_strlen($val) < 200) {
+                        $defaults[$key] = $val;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // keep defaults — the pipeline must not die on a metadata hiccup
+        }
+
+        // The title lands in YAML and in the antArtifact title attribute.
+        $defaults['judul'] = trim(str_replace(['"', "\r", "\n"], ['', ' ', ' '], $defaults['judul'])) ?: 'Skripsi';
+
+        return $defaults;
+    }
+
+    /** System prompt for the chapter-writer calls of the skripsi pipeline. */
+    protected function chapterWriterPrompt(): string
+    {
+        return "Anda adalah penulis akademik Indonesia yang menulis skripsi bab demi bab.\n"
+            . "ATURAN KERAS:\n"
+            . "1. Tulis HANYA bagian yang diminta — jangan menulis bab lain dan jangan mengulang bab sebelumnya.\n"
+            . "2. Keluarkan Markdown murni: mulai LANGSUNG dengan heading '# ...' — TANPA kalimat pembuka, TANPA penutup, TANPA ``` code fence, TANPA tag <antArtifact>.\n"
+            . "3. Setiap sub-bab (## heading) berisi minimal 3 paragraf prosa akademik yang utuh dan substantif — bukan outline satu kalimat, bukan placeholder.\n"
+            . "4. Bahasa Indonesia baku (kecuali bagian ABSTRACT yang berbahasa Inggris).\n"
+            . "5. JANGAN menulis 'Sistematika Penulisan' dan jangan merangkum isi bab lain.";
+    }
+
+    /**
+     * Normalize one pipeline chapter: strip reasoning/artifact/fence wrappers
+     * and any chat noise before the first heading, so only clean document
+     * content is stitched into the artifact.
+     */
+    protected function cleanChapterText(string $text, string $heading): string
+    {
+        $text = (string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $text);
+        $text = (string) preg_replace('/<\/?antArtifact[^>]*>/i', '', $text);
+        if (preg_match('/^\s*```(?:markdown)?\s*\n([\s\S]*?)\n?```\s*$/', trim($text), $m)) {
+            $text = $m[1];
+        }
+        // Chapters start at their heading; anything before the first '#' line is chat noise.
+        if (preg_match('/^#{1,2}\s/m', $text, $m, PREG_OFFSET_CAPTURE)) {
+            $text = substr($text, $m[0][1]);
+        }
+        $text = trim($text);
+        if ($text === '') {
+            return "# {$heading}\n\n*(Bagian ini belum berhasil dihasilkan — kirim \"lanjutkan {$heading}\" untuk mencoba lagi.)*";
+        }
+        if (!str_starts_with($text, '#')) {
+            $text = "# {$heading}\n\n" . $text;
+        }
+
+        return $text;
+    }
+
+    /**
+     * Compact outline of a finished chapter (headings + first sentence each)
+     * used as context for the next chapter calls — keeps the story consistent
+     * without re-feeding whole chapters into a 16K context window.
+     */
+    protected function summarizeChapterForContext(string $heading, string $text): string
+    {
+        $lines = [];
+        if (preg_match_all('/^(#{1,3}\s+[^\n]+)\n+([^#\n][^\n]*)/m', $text, $mm, PREG_SET_ORDER)) {
+            foreach (array_slice($mm, 0, 10) as $m) {
+                $lines[] = '  ' . trim($m[1]) . ' — ' . \Illuminate\Support\Str::limit(trim($m[2]), 110, '…');
+            }
+        }
+
+        return "• {$heading}:\n" . ($lines ? implode("\n", $lines) : '  (sudah ditulis)') . "\n";
     }
 
 

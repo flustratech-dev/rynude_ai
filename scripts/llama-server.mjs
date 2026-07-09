@@ -84,21 +84,73 @@ function promptOptions(extra = {}) {
     };
 }
 
+// ---- GPU offload (perubahan.md #7) ------------------------------------------
+// Default "auto": node-llama-cpp picks the best backend (CUDA/Vulkan/Metal) and
+// offloads as many layers as fit in VRAM; falls back to CPU when no GPU works.
+// Override with --gpu cuda|vulkan|metal|off or LOCAL_GGUF_GPU, and cap layers
+// with --gpu-layers <n|max> / LOCAL_GGUF_GPU_LAYERS.
+const gpuArg = String(opt("gpu", "LOCAL_GGUF_GPU", "auto")).toLowerCase();
+const gpuPref = ["off", "false", "cpu", "none"].includes(gpuArg) ? false : gpuArg;
+const gpuLayersArg = args["gpu-layers"] ?? process.env.LOCAL_GGUF_GPU_LAYERS;
+
 // ---- Load the model + a single context up front ----------------------------
 let llama, model, context;
 let ready = false;
 
 try {
-    console.log(`[llama-server] loading ${modelPath} (ctx=${contextSize})`);
+    console.log(`[llama-server] loading ${modelPath} (ctx=${contextSize}, gpu=${gpuPref === false ? "off" : gpuPref})`);
     console.log(`[llama-server] gen profile: temp=${GEN.temperature} topP=${GEN.topP} topK=${GEN.topK} repeat=${GEN.repeatPenalty.penalty} maxTokens=${GEN.maxTokensCap}`);
-    llama = await getLlama();
-    model = await llama.loadModel({ modelPath });
+    try {
+        llama = await getLlama({ gpu: gpuPref });
+    } catch (err) {
+        // Explicit GPU backend unavailable on this machine — fall back to CPU
+        // instead of dying, so chat keeps working (just slower).
+        console.warn(`[llama-server] GPU backend '${gpuPref}' unavailable (${err?.message || err}); falling back to CPU`);
+        llama = await getLlama({ gpu: false });
+    }
+
+    const loadOptions = { modelPath };
+    if (gpuLayersArg !== undefined && llama.gpu !== false) {
+        loadOptions.gpuLayers = gpuLayersArg === "max" || gpuLayersArg === "auto"
+            ? gpuLayersArg
+            : parseInt(gpuLayersArg, 10);
+    }
+
+    model = await llama.loadModel(loadOptions);
     context = await model.createContext({ contextSize });
     ready = true;
+
+    console.log(`[llama-server] compute backend: ${llama.gpu === false ? "CPU only" : `GPU (${llama.gpu})`}`);
+    try {
+        if (llama.gpu !== false) {
+            const vram = await llama.getVramState();
+            const gb = (n) => (n / 1024 / 1024 / 1024).toFixed(2);
+            console.log(`[llama-server] VRAM: ${gb(vram.used)}GB used / ${gb(vram.total)}GB total`);
+        }
+    } catch { /* VRAM introspection is best-effort */ }
     console.log(`[llama-server] model ready on port ${port}`);
 } catch (err) {
     console.error(`[llama-server] failed to load model: ${err?.message || err}`);
     process.exit(1);
+}
+
+// ---- Constrained output (perubahan.md #3) -----------------------------------
+// The request may carry a GBNF grammar (payload.grammar). Sampling is then
+// physically restricted to strings the grammar accepts — small models can no
+// longer put the document outside the <antArtifact> "form". Compiled grammars
+// are cached by their source text.
+const grammarCache = new Map();
+async function resolveGrammar(gbnf) {
+    if (typeof gbnf !== "string" || gbnf.trim() === "") return undefined;
+    if (!grammarCache.has(gbnf)) {
+        try {
+            grammarCache.set(gbnf, await llama.createGrammar({ grammar: gbnf }));
+        } catch (err) {
+            console.warn(`[llama-server] invalid grammar ignored: ${err?.message || err}`);
+            grammarCache.set(gbnf, undefined);
+        }
+    }
+    return grammarCache.get(gbnf);
 }
 
 // ---- Helpers ----------------------------------------------------------------
@@ -164,6 +216,7 @@ async function handleChat(req, res) {
     const messages = payload.messages || [];
     const stream = payload.stream === true;
     const maxTokens = resolveMaxTokens(payload.max_tokens);
+    const grammar = await resolveGrammar(payload.grammar);
     const { systemPrompt, history, lastUser } = splitMessages(messages);
     const created = Math.floor(Date.now() / 1000);
     const id = "chatcmpl-" + Math.random().toString(36).slice(2);
@@ -186,28 +239,56 @@ async function handleChat(req, res) {
                     "Cache-Control": "no-cache",
                     Connection: "keep-alive",
                 });
-                await session.prompt(lastUser, promptOptions({
+                const sendDelta = (delta) => {
+                    const data = {
+                        id, object: "chat.completion.chunk", created, model: modelId,
+                        choices: [{ index: 0, delta, finish_reason: null }],
+                    };
+                    res.write(`data: ${JSON.stringify(data)}\n\n`);
+                };
+                // Qwen3-style models reason natively; node-llama-cpp separates
+                // that into "thought" segments. Send thoughts as
+                // `reasoning_content` (DeepSeek convention — the PHP provider
+                // already routes that to the thinking panel) and everything
+                // else as normal content. onResponseChunk supersedes
+                // onTextChunk; the emitted flag is a safety net for older
+                // node-llama-cpp builds that never call it.
+                let emitted = false;
+                const meta = await session.promptWithMeta(lastUser, promptOptions({
                     maxTokens,
-                    onTextChunk(chunk) {
-                        const data = {
-                            id, object: "chat.completion.chunk", created, model: modelId,
-                            choices: [{ index: 0, delta: { content: chunk }, finish_reason: null }],
-                        };
-                        res.write(`data: ${JSON.stringify(data)}\n\n`);
+                    grammar,
+                    onResponseChunk(chunk) {
+                        if (!chunk || chunk.text === "") return;
+                        emitted = true;
+                        if (chunk.type === "segment" && chunk.segmentType === "thought") {
+                            sendDelta({ reasoning_content: chunk.text });
+                        } else {
+                            sendDelta({ content: chunk.text });
+                        }
                     },
                 }));
+                if (!emitted && meta.responseText) {
+                    sendDelta({ content: meta.responseText });
+                }
+                // Report "length" when generation hit maxTokens so the PHP
+                // side can trigger its auto-continue logic.
+                const finishReason = meta.stopReason === "maxTokens" ? "length" : "stop";
                 const done = {
                     id, object: "chat.completion.chunk", created, model: modelId,
-                    choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+                    choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
                 };
                 res.write(`data: ${JSON.stringify(done)}\n\n`);
                 res.write("data: [DONE]\n\n");
                 res.end();
             } else {
-                const answer = await session.prompt(lastUser, promptOptions({ maxTokens }));
+                const meta = await session.promptWithMeta(lastUser, promptOptions({ maxTokens, grammar }));
                 const body = {
                     id, object: "chat.completion", created, model: modelId,
-                    choices: [{ index: 0, message: { role: "assistant", content: answer }, finish_reason: "stop" }],
+                    choices: [{
+                        index: 0,
+                        message: { role: "assistant", content: meta.responseText },
+                        finish_reason: meta.stopReason === "maxTokens" ? "length" : "stop",
+                    }],
                 };
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(JSON.stringify(body));
@@ -232,7 +313,10 @@ const server = createServer(async (req, res) => {
     try {
         if (req.method === "GET" && (req.url === "/health" || req.url === "/")) {
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: ready, model: modelId }));
+            // `gpu` shows the active compute backend ("cuda"/"vulkan"/"metal",
+            // or false = CPU) — the console log is discarded on Windows, so
+            // this is the visible way to verify GPU offload is working.
+            res.end(JSON.stringify({ ok: ready, model: modelId, gpu: llama?.gpu ?? false, ctx: contextSize }));
             return;
         }
         if (req.method === "GET" && req.url.startsWith("/v1/models")) {

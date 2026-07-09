@@ -117,9 +117,9 @@ class AiService
     /**
      * Stream a response using the appropriate provider.
      */
-    public function streamResponse(array $messages, string $model): \Generator
+    public function streamResponse(array $messages, string $model, array $options = []): \Generator
     {
         $provider = $this->resolveProvider($model);
-        return $provider->streamResponse($messages, $model);
+        return $provider->streamResponse($messages, $model, $options);
     }
 }

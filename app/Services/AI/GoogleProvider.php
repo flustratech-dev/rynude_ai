@@ -185,7 +185,7 @@ class GoogleProvider implements LLMProviderInterface, SupportsToolUse
         return [$contents, $systemPrompt];
     }
 
-    public function streamResponse(array $messages, string $model): \Generator
+    public function streamResponse(array $messages, string $model, array $options = []): \Generator
     {
         $user = \Illuminate\Support\Facades\Auth::user();
         $apiKey = $user ? $user->google_api_key : null;

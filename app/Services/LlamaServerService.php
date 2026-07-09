@@ -25,12 +25,14 @@ class LlamaServerService
      * Kept in sync with ModelHubController::getCatalog().
      */
     private const CATALOG = [
-        'qwen-2.5-0.5b'   => 'qwen2.5-0.5b-instruct-q8_0.gguf',
-        'qwen-2.5-1.5b'   => 'qwen2.5-1.5b-instruct-q5_k_m.gguf',
-        'llama-3.2-3b'    => 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
-        'mistral-7b-v0.3' => 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
-        'llama-3.1-8b'    => 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf',
-        'qwen-2.5-14b'    => 'qwen2.5-14b-instruct-q4_k_m.gguf',
+        // Generation upgrade (perubahan.md #1): codes are stable keys, the
+        // weights behind them are now Qwen3 (native <think>, 32K context).
+        'qwen-2.5-0.5b'   => 'Qwen3-0.6B-Q8_0.gguf',
+        'qwen-2.5-1.5b'   => 'Qwen3-1.7B-Q8_0.gguf',
+        'llama-3.2-3b'    => 'Qwen3-4B-Q4_K_M.gguf',
+        'mistral-7b-v0.3' => 'Qwen3-8B-Q4_K_M.gguf',
+        'llama-3.1-8b'    => 'Qwen3-14B-Q4_K_M.gguf',
+        'qwen-2.5-14b'    => 'Qwen3-30B-A3B-Q4_K_M.gguf',
     ];
 
     /**
@@ -66,7 +68,9 @@ class LlamaServerService
     private const TIERS = [
         'qwen-2.5-0.5b'   => 'small',
         'qwen-2.5-1.5b'   => 'small',
-        'llama-3.2-3b'    => 'small',
+        // Qwen3-4B follows long instructions reliably — promoted to 'large'
+        // so it gets the near-cloud prompt instead of the slim guardrail one.
+        'llama-3.2-3b'    => 'large',
         'mistral-7b-v0.3' => 'large',
         'llama-3.1-8b'    => 'large',
         'qwen-2.5-14b'    => 'large',
@@ -75,16 +79,19 @@ class LlamaServerService
     /**
      * Per-tier sampling profiles passed to llama-server.mjs as CLI args
      * (they override the env/default values inside the script).
+     * Values follow the official Qwen3 recommendations (temp 0.6–0.7,
+     * topP 0.95, topK 20) with a mild repeat penalty kept for the tiny
+     * quantized models that still loop without it.
      */
     private const GEN_PROFILES = [
         'small' => [
-            'temp' => 0.4, 'top-p' => 0.85, 'top-k' => 40,
-            'repeat-penalty' => 1.12, 'freq-penalty' => 0.1, 'pres-penalty' => 0.1,
+            'temp' => 0.6, 'top-p' => 0.95, 'top-k' => 20,
+            'repeat-penalty' => 1.1, 'freq-penalty' => 0.05, 'pres-penalty' => 0.1,
             'max-tokens' => 8192,
         ],
         'large' => [
-            'temp' => 0.7, 'top-p' => 0.92, 'top-k' => 60,
-            'repeat-penalty' => 1.05, 'freq-penalty' => 0.05, 'pres-penalty' => 0.05,
+            'temp' => 0.7, 'top-p' => 0.95, 'top-k' => 20,
+            'repeat-penalty' => 1.05, 'freq-penalty' => 0.0, 'pres-penalty' => 0.05,
             'max-tokens' => 8192,
         ],
     ];
@@ -213,6 +220,17 @@ class LlamaServerService
             $gen['pres-penalty'],
             $gen['max-tokens']
         );
+
+        // GPU offload (perubahan.md #7): 'auto' lets node-llama-cpp pick
+        // CUDA/Vulkan/Metal and offload every layer that fits in VRAM.
+        $gpu = config('services.local_gguf.gpu', 'auto');
+        if (!empty($gpu)) {
+            $cmd .= ' --gpu ' . escapeshellarg((string) $gpu);
+        }
+        $gpuLayers = config('services.local_gguf.gpu_layers');
+        if (!empty($gpuLayers)) {
+            $cmd .= ' --gpu-layers ' . escapeshellarg((string) $gpuLayers);
+        }
 
         Log::info("Starting local GGUF engine: {$cmd}");
 

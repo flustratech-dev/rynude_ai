@@ -69,6 +69,11 @@ return [
         'port' => env('LOCAL_GGUF_PORT', 8091),
         'base_url' => env('LOCAL_GGUF_BASE_URL'),
         'node' => env('LOCAL_GGUF_NODE', 'node'),
+        // GPU offload: 'auto' (default) uses CUDA/Vulkan/Metal when available
+        // and falls back to CPU; 'off' forces CPU; or name a backend explicitly.
+        'gpu' => env('LOCAL_GGUF_GPU', 'auto'),
+        // Optional cap on offloaded layers ('max', 'auto', or a number).
+        'gpu_layers' => env('LOCAL_GGUF_GPU_LAYERS'),
     ],
 
 ];

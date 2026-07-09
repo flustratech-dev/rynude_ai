@@ -200,7 +200,7 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         );
     }
 
-    public function streamResponse(array $messages, string $model): \Generator
+    public function streamResponse(array $messages, string $model, array $options = []): \Generator
     {
         // Block uninstalled Model Hub GGUF models before any dispatch, so an
         // uninstalled local model can NEVER produce an answer.
@@ -223,7 +223,8 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         // context) and generous for cloud models.
         $ragQuery = $this->ragQueryFrom($messages);
         $llama = app(\App\Services\LlamaServerService::class);
-        $ragBudget = $llama->isGgufModel($model)
+        $isLocalGguf = $llama->isGgufModel($model);
+        $ragBudget = $isLocalGguf
             ? ($llama->tierFor($model) === 'large' ? 12_000 : 8_000)
             : 48_000;
 
@@ -307,15 +308,19 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
                         'Authorization' => 'Bearer ' . $apiKey,
                         'Content-Type' => 'application/json',
                     ],
-                    'json' => [
+                    'json' => array_filter([
                         'model' => $model,
                         'messages' => $openAiMessages,
                         'stream' => true,
                         // Large ceiling so long documents (full skripsi/laporan) aren't
                         // truncated mid-chapter. Most OpenAI-compatible / proxy models
                         // accept 8192 output tokens.
-                        'max_tokens' => 8192,
-                    ],
+                        'max_tokens' => (int) ($options['max_tokens'] ?? 8192),
+                        // Constrained output (local GGUF engine only): a GBNF
+                        // grammar that llama-server.mjs compiles and enforces
+                        // during sampling. Cloud endpoints never receive it.
+                        'grammar' => $isLocalGguf ? ($options['grammar'] ?? null) : null,
+                    ], fn ($v) => $v !== null),
                     'stream' => true,
                     'verify' => false,
                     'http_errors' => false,
