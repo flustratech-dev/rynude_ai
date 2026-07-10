@@ -68,10 +68,18 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        <!-- Theme Initialization -->
+        <!-- Theme & PWA Standalone Initialization -->
         <script>
             // Force dark mode on /code route (Claude Code terminal page)
             var _isCodePage = window.location.pathname.startsWith('/code');
+
+            function checkStandaloneMode() {
+                var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                   window.matchMedia('(display-mode: window-controls-overlay)').matches ||
+                                   ('standalone' in window.navigator && window.navigator.standalone);
+                document.documentElement.classList.toggle('is-standalone', isStandalone);
+                return isStandalone;
+            }
 
             function getTheme() {
                 if (_isCodePage) return 'dark';
@@ -83,6 +91,7 @@
             function applyTheme(theme) {
                 var isDark = _isCodePage || theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 document.documentElement.classList.toggle('dark', isDark);
+                checkStandaloneMode();
                 var themeColorMeta = document.querySelector('meta[name="theme-color"]');
                 if (themeColorMeta) themeColorMeta.content = isDark ? '#121212' : '#fdf8f6';
             }
@@ -91,6 +100,10 @@
             
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (getTheme() === 'system') applyTheme('system');
+            });
+
+            window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
+                applyTheme(getTheme());
             });
             
             document.addEventListener('alpine:init', () => {

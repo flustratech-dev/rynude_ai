@@ -524,3 +524,69 @@ div[id^="step-"] {
     scroll-margin-top: 5.5rem; /* ~88px offset matching the header height */
 }
 
+/* ─── PWA Standalone / Chrome App Floating Vertical Card Sidebar ────────── */
+@media (display-mode: standalone), (display-mode: window-controls-overlay) {
+    .sidebar-wrapper {
+        padding: 0.75rem 0 0.75rem 0.75rem !important;
+        border-right: none !important;
+        background-color: transparent !important;
+    }
+    
+    .sidebar-card {
+        border-radius: 0.75rem !important; /* rounded-xl: elegan & tidak terlalu melingkar */
+        border: 1px solid rgba(229, 229, 229, 0.85) !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
+        overflow: hidden !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    html.dark .sidebar-card,
+    .dark .sidebar-card {
+        border-color: rgba(58, 58, 56, 0.65) !important;
+        background-color: #181818 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    html.dark .sidebar-card .profile-footer-container,
+    .dark .sidebar-card .profile-footer-container {
+        background-color: transparent !important;
+    }
+
+    .main-chat-container {
+        padding-left: 0.5rem;
+    }
+}
+
+.is-standalone .sidebar-wrapper {
+    padding: 0.75rem 0 0.75rem 0.75rem !important;
+    border-right: none !important;
+    background-color: transparent !important;
+}
+
+.is-standalone .sidebar-card {
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(229, 229, 229, 0.85) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
+    overflow: hidden !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+html.dark.is-standalone .sidebar-card {
+    border-color: rgba(58, 58, 56, 0.65) !important;
+    background-color: #181818 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark.is-standalone .sidebar-card .profile-footer-container {
+    background-color: transparent !important;
+}
+
+.is-standalone .main-chat-container {
+    padding-left: 0.5rem;
+}
+
+

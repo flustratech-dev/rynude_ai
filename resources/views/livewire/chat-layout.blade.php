@@ -146,7 +146,7 @@
             x-transition:leave="transition-transform ease-in duration-300"
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="-translate-x-full"
-            class="fixed inset-y-0 left-0 z-40 w-[300px] shadow-2xl bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col h-full min-h-0"
+            class="fixed inset-y-0 left-0 z-40 w-[320px] shadow-2xl bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col h-full min-h-0"
         >
             @include('livewire.sidebar')
         </div>
@@ -155,14 +155,14 @@
     <div
         x-show="!isMobile"
         x-cloak
-        :class="sidebarOpen ? 'w-[290px] overflow-hidden' : 'w-[60px] overflow-visible'"
-        class="transition-all duration-300 flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:flex md:flex-col h-full min-h-0 bg-[#F9F8F6] dark:bg-claude-bg-dark"
+        :class="sidebarOpen ? 'w-[320px] overflow-hidden' : 'w-[60px] overflow-visible'"
+        class="sidebar-wrapper transition-all duration-300 flex-shrink-0 border-r border-claude-border-light dark:border-claude-border-dark hidden md:flex md:flex-col h-full min-h-0 bg-[#F9F8F6] dark:bg-claude-bg-dark"
     >
         @include('livewire.sidebar')
     </div>
 
     {{-- ========== MAIN CONTENT ========== --}}
-    <div class="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
+    <div class="main-chat-container flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
         {{-- Mobile Sidebar Toggle --}}
         <div
             x-show="isMobile && !sidebarOpen"

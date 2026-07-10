@@ -1,50 +1,52 @@
 <div class="flex w-full h-full bg-[#F9F8F6] dark:bg-claude-bg-dark" x-data="apiKeysPage()" x-init="init()">
     {{-- Inner Sidebar --}}
-    <div class="w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col hidden md:flex">
-        <div class="px-4 py-5 flex items-center">
-            <button @click="$dispatch('close-api-keys')" class="mr-2 text-stone-500 hover:text-stone-800 transition-colors">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
-            <h2 class="text-base font-medium text-[#2D2825] dark:text-stone-200">Add API</h2>
-        </div>
+    <div class="sidebar-wrapper w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col hidden md:flex">
+        <div class="sidebar-card h-full w-full flex-1 min-h-0 flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-y-auto">
+            <div class="px-4 py-5 flex items-center">
+                <button @click="$dispatch('close-api-keys')" class="mr-2 text-stone-500 hover:text-stone-800 transition-colors">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <h2 class="text-base font-medium text-[#2D2825] dark:text-stone-200">Add API</h2>
+            </div>
 
-        <div class="px-2 mt-2 space-y-1">
-            {{-- Highlighted Model Hub (GGUF) Local AI at the top --}}
-            <button @click="tab='model-hub'" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] transition-all duration-200 border"
-                :class="tab==='model-hub'
-                    ?'bg-stone-900 border-stone-950/10 text-white dark:bg-stone-200 dark:border-stone-100/10 dark:text-stone-900 font-bold shadow-sm'
-                    : 'bg-stone-100/60 border-stone-200 text-stone-700 dark:bg-stone-800/40 dark:border-stone-700 dark:text-stone-300 font-semibold hover:bg-stone-200/50 dark:hover:bg-stone-800'">
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
-                    <span>Model Hub (GGUF)</span>
-                </div>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                      :class="tab==='model-hub'?'bg-white/20 text-white dark:bg-stone-900/20 dark:text-stone-900':'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-300'">Local AI</span>
-            </button>
+            <div class="px-2 mt-2 space-y-1 pb-6">
+                {{-- Highlighted Model Hub (GGUF) Local AI at the top --}}
+                <button @click="tab='model-hub'" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] transition-all duration-200 border"
+                    :class="tab==='model-hub'
+                        ?'bg-stone-900 border-stone-950/10 text-white dark:bg-stone-200 dark:border-stone-100/10 dark:text-stone-900 font-bold shadow-sm'
+                        : 'bg-stone-100/60 border-stone-200 text-stone-700 dark:bg-stone-800/40 dark:border-stone-700 dark:text-stone-300 font-semibold hover:bg-stone-200/50 dark:hover:bg-stone-800'">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 8.653 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/></svg>
+                        <span>Model Hub (GGUF)</span>
+                    </div>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                          :class="tab==='model-hub'?'bg-white/20 text-white dark:bg-stone-900/20 dark:text-stone-900':'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-300'">Local AI</span>
+                </button>
 
-            <div class="h-px bg-stone-200 dark:bg-stone-800 my-1.5"></div>
+                <div class="h-px bg-stone-200 dark:bg-stone-800 my-1.5"></div>
 
-            <button @click="tab='hf'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='hf'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
-                <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
-                Hugging Face
-            </button>
-            <button @click="tab='models'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='models'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
-                <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
-                AI Models
-            </button>
-            <button @click="tab='keys'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='keys'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
-                <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1221.75 8.25z"/></svg>
-                API Keys
-            </button>
-            <button @click="tab='connect'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='connect'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
-                <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
-                Connect Account
-            </button>
+                <button @click="tab='hf'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='hf'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
+                    <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>
+                    Hugging Face
+                </button>
+                <button @click="tab='models'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='models'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
+                    <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                    AI Models
+                </button>
+                <button @click="tab='keys'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='keys'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
+                    <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1221.75 8.25z"/></svg>
+                    API Keys
+                </button>
+                <button @click="tab='connect'" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="tab==='connect'?'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium':'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
+                    <svg class="w-[18px] h-[18px] text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                    Connect Account
+                </button>
+            </div>
         </div>
     </div>
 
     {{-- Main Content --}}
-    <div class="flex-1 bg-transparent dark:bg-claude-bg-dark flex flex-col items-center justify-start p-8 overflow-y-auto">
+    <div class="main-chat-container flex-1 bg-transparent dark:bg-claude-bg-dark flex flex-col items-center justify-start p-8 overflow-y-auto">
         <div class="max-w-4xl w-full flex flex-col items-stretch relative">
 
             {{-- Centered Modal Box Popup Alert --}}

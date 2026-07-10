@@ -3,48 +3,50 @@
     setTab(tab) { this.activeTab = tab; },
 }">
     {{-- Customize Sidebar --}}
-    <div class="w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col hidden md:flex">
-        <div class="px-4 py-5 flex items-center">
-            <button @click="$dispatch('close-customize')" class="mr-2 text-stone-500 hover:text-stone-800 transition-colors">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
-            <h2 class="text-base font-medium text-[#2D2825] dark:text-stone-200">Customize</h2>
-        </div>
+    <div class="sidebar-wrapper w-[280px] flex-shrink-0 border-r border-[#E5E5E5] dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark flex flex-col hidden md:flex">
+        <div class="sidebar-card h-full w-full flex-1 min-h-0 flex flex-col bg-[#F9F8F6] dark:bg-claude-bg-dark overflow-y-auto">
+            <div class="px-4 py-5 flex items-center">
+                <button @click="$dispatch('close-customize')" class="mr-2 text-stone-500 hover:text-stone-800 transition-colors">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <h2 class="text-base font-medium text-[#2D2825] dark:text-stone-200">Customize</h2>
+            </div>
 
-        <div class="px-2 mt-2 space-y-1">
-            <button @click="setTab('skills_list')" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="activeTab === 'skills_list' || activeTab === 'create_skill' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
-                <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
-                Skills
-            </button>
-            <button @click="setTab('templates')" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="activeTab === 'templates' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
-                <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                Templates
-            </button>
-            <button @click="setTab('dashboard')" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">
-                <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                Connectors
-            </button>
-        </div>
-
-        <div class="mt-8 px-5">
-            <div class="flex items-center justify-between mb-3 text-xs font-medium text-stone-400 uppercase tracking-wider">
-                <span>Personal plugins</span>
-                <button class="hover:text-stone-600 transition-colors">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <div class="px-2 mt-2 space-y-1">
+                <button @click="setTab('skills_list')" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="activeTab === 'skills_list' || activeTab === 'create_skill' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
+                    <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                    Skills
+                </button>
+                <button @click="setTab('templates')" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors" :class="activeTab === 'templates' ? 'bg-[#EAE9E5] text-[#2D2825] dark:bg-[#2C2C2C] dark:text-stone-200 font-medium' : 'text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200'">
+                    <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Templates
+                </button>
+                <button @click="setTab('dashboard')" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] text-stone-500 dark:text-stone-400 hover:bg-[#EAE9E5]/60 dark:hover:bg-[#3A3A38] hover:text-[#2D2825] dark:hover:text-stone-200 transition-colors">
+                    <svg class="w-[18px] h-[18px] text-stone-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Connectors
                 </button>
             </div>
 
-            <div class="text-center mt-6">
-                <p class="text-[13px] text-stone-500 mb-4 px-2 leading-relaxed">Give Rynude role-level expertise with plugins</p>
-                <button @click="setTab('dashboard')" class="w-full py-1.5 px-3 border border-[#E5E5E5] bg-[#FCFBFA] dark:bg-claude-bg-dark text-[#2D2825] dark:text-stone-200 rounded-lg text-[13px] font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">
-                    Browse plugins
-                </button>
+            <div class="mt-8 px-5 pb-6">
+                <div class="flex items-center justify-between mb-3 text-xs font-medium text-stone-400 uppercase tracking-wider">
+                    <span>Personal plugins</span>
+                    <button class="hover:text-stone-600 transition-colors">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                </div>
+
+                <div class="text-center mt-6">
+                    <p class="text-[13px] text-stone-500 mb-4 px-2 leading-relaxed">Give Rynude role-level expertise with plugins</p>
+                    <button @click="setTab('dashboard')" class="w-full py-1.5 px-3 border border-[#E5E5E5] bg-[#FCFBFA] dark:bg-claude-bg-dark text-[#2D2825] dark:text-stone-200 rounded-lg text-[13px] font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors shadow-sm">
+                        Browse plugins
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     {{-- Main Content --}}
-    <div class="flex-1 bg-transparent dark:bg-claude-bg-dark flex flex-col items-center justify-center p-8 overflow-y-auto">
+    <div class="main-chat-container flex-1 bg-transparent dark:bg-claude-bg-dark flex flex-col items-center justify-center p-8 overflow-y-auto">
 
         <template x-if="activeTab === 'dashboard'">
             <div class="max-w-[600px] w-full flex flex-col items-center">
