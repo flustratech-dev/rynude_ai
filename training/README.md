@@ -20,6 +20,9 @@ Target: Qwen3-1.7B → QLoRA → file GGUF yang masuk ke Model Hub aplikasi.
 | File | Fungsi |
 |---|---|
 | `golden_examples.jsonl` | Contoh emas tulisan tangan — mengajarkan persis perilaku yang sering gagal (bahasa Indonesia konsisten, koreksi premis salah, format artifact, anti-pidato). Ini inti kualitas. |
+| `golden_fixes.jsonl` | Dataset TERARAH penutup 4 soal gagal eval (46 contoh: dokumen/artifact, skripsi, instruksi ketat, istilah teknis Indonesia). Dihasilkan oleh `make_golden_fixes.py`. |
+| `make_golden_fixes.py` | Generator `golden_fixes.jsonl` — tambah/ubah contoh di sini lalu jalankan ulang. |
+| `LANGKAH_TRAINING_LYRIC_4.6.md` | **Runbook putaran latih ulang** (90.6 → 95+) — ikuti dari atas ke bawah. |
 | `build_dataset.py` | Menggabungkan contoh emas + prompt Anda + jawaban dari model guru → `train.jsonl` + `val.jsonl`. |
 | `Rynude_Lyric_LoRA_Colab.ipynb` | Notebook Colab: latih + ekspor GGUF. Tinggal Run all. |
 | `seeds.jsonl` | (dibuat oleh Anda) prompt dari riwayat chat, hasil `php artisan rynude:export-seeds`. |

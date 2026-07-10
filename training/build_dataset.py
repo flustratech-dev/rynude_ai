@@ -27,6 +27,7 @@ No paid API and no GPU required to RUN this script (teacher calls use the free
 tier). The heavy GPU work happens later, in the Colab notebook.
 """
 import argparse
+import glob
 import json
 import os
 import random
@@ -117,7 +118,8 @@ def quality_ok(prompt, answer):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--golden", default="golden_examples.jsonl")
+    ap.add_argument("--golden-glob", default="golden_*.jsonl",
+                    help="Glob for hand-authored gold files (default: all golden_*.jsonl)")
     ap.add_argument("--seeds", default=None, help="seeds.jsonl from rynude:export-seeds")
     ap.add_argument("--teacher", default="deepseek/deepseek-chat",
                     help="OpenRouter model id (use a free/open one, NOT Claude/GPT/Gemini)")
@@ -129,10 +131,16 @@ def main():
 
     dataset = []
 
-    # 1) Golden set (always).
-    golden = read_jsonl(args.golden)
-    dataset.extend(golden)
-    print(f"Golden examples: {len(golden)}")
+    # 1) Golden set (always) — ALL golden_*.jsonl files (golden_examples +
+    #    golden_fixes + any you add later).
+    golden_files = sorted(glob.glob(args.golden_glob))
+    golden_total = 0
+    for gf in golden_files:
+        rows = read_jsonl(gf)
+        dataset.extend(rows)
+        golden_total += len(rows)
+        print(f"  {gf}: {len(rows)}")
+    print(f"Golden examples (total): {golden_total}")
 
     # 2) Teacher-augmented answers to your seeds.
     if args.seeds and args.augment > 0:
