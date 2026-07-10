@@ -4,7 +4,7 @@ Folder ini berisi **semua perkakas** untuk melatih versi rynude Lyric 4.5 yang l
 (**rynude Lyric 4.6**), lewat jalur **GRATIS** (Google Colab, tanpa GPU sendiri, tanpa biaya).
 
 > Catatan nama: nama tampilan model = "rynude Lyric 4.6", tetapi **kode internal**
-> (`rynude-lyric-plus-1`) dan **nama file** (`Qwen3-1.7B-Lyric-Plus-Q8_0.gguf`) adalah
+> (`rynude-lyric-plus-1`) dan **nama file** (`rynude-lyric-4.6.gguf`) adalah
 > kunci stabil dan TIDAK diubah — jangan bingung saat melihatnya di perintah/kode.
 
 Target: Qwen3-1.7B → QLoRA → file GGUF yang masuk ke Model Hub aplikasi.
@@ -121,7 +121,7 @@ Jangan tutup tab selama proses berjalan.
 
 ## Langkah 5 — Pasang & ukur ulang
 
-1. Rename GGUF hasil unduhan → `Qwen3-1.7B-Lyric-Plus-Q8_0.gguf`, taruh di
+1. Rename GGUF hasil unduhan → `rynude-lyric-4.6.gguf`, taruh di
    `storage/app/models/`.
 2. Daftarkan sebagai model **baru** di Model Hub (minta Claude Code menambah entri
    katalog + kode `rynude-lyric-plus-1`; **jangan timpa Lyric asli** — rollback itu fitur).

@@ -11,7 +11,7 @@
 | Hal | Status |
 |---|---|
 | Lyric 4.6 v1 | ✅ Terlatih, nilai eval **90.6/100** |
-| File GGUF | ✅ `Qwen3-1.7B-Lyric-Plus-Q8_0.gguf` (di `storage/app/models/` + Hugging Face) |
+| File GGUF | ✅ `rynude-lyric-4.6.gguf` (di `storage/app/models/` + Hugging Face) |
 | Terdaftar di Model Hub | ✅ `download_url` menunjuk ke HF Anda |
 | Dataset | ✅ 66 contoh (`golden_examples.jsonl` 20 + `golden_fixes.jsonl` 46) |
 
@@ -108,7 +108,7 @@ Jangan tutup tab selama proses berjalan.
 ## LANGKAH 5 — Pasang & ukur ulang (WAJIB sebelum rilis)
 
 1. Ganti file lama dengan hasil baru:
-   - Rename GGUF hasil unduhan → **`Qwen3-1.7B-Lyric-Plus-Q8_0.gguf`**
+   - Rename GGUF hasil unduhan → **`rynude-lyric-4.6.gguf`**
    - Timpa file di **`storage/app/models/`**
 2. **Restart aplikasi** (mesin lokal memuat ulang bobot baru).
 3. Ukur:
@@ -126,12 +126,12 @@ Jangan tutup tab selama proses berjalan.
 Model Anda sudah punya repo HF. Pilih salah satu cara:
 
 **Cara A — Timpa file yang sama (paling gampang, tanpa ubah kode):**
-- Upload `Qwen3-1.7B-Lyric-Plus-Q8_0.gguf` baru ke repo yang sama
+- Upload `rynude-lyric-4.6.gguf` baru ke repo yang sama
   (`flustratechcompany/rynude-lyric-4.6-gguf`), timpa yang lama.
 - `download_url` di katalog TIDAK berubah → user yang mengunduh ulang otomatis dapat versi baru.
 
 **Cara B — Simpan sebagai versi baru (kalau ingin dua-duanya ada):**
-- Upload dengan nama berbeda (mis. `Qwen3-1.7B-Lyric-Plus-v2-Q8_0.gguf`), lalu beri tahu saya
+- Upload dengan nama berbeda (mis. `rynude-lyric-4.6-v2.gguf`), lalu beri tahu saya
   (Claude Code) untuk menambah entri katalog baru / mengubah `download_url` + `filename`.
 
 > Ingat: `file_size_bytes` di katalog sebaiknya diperbarui agar bar progres unduhan akurat.

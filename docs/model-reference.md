@@ -27,7 +27,7 @@ Semua "otak" model sudah generasi terbaru **Qwen3**.
 |---|---|---|---|---|---|
 | **rynude Vignette** | Qwen3 0.6B | `qwen-2.5-0.5b` | `Qwen3-0.6B-Q8_0.gguf` | ~640 MB | ~2 GB |
 | **rynude Lyric 4.5** ⭐ | Qwen3 1.7B | `qwen-2.5-1.5b` | `Qwen3-1.7B-Q8_0.gguf` | 1.8 GB | ~4 GB |
-| **rynude Lyric 4.6** ✨ | Qwen3 1.7B + LoRA | `rynude-lyric-plus-1` | `Qwen3-1.7B-Lyric-Plus-Q8_0.gguf` | 1.8 GB | ~4 GB |
+| **rynude Lyric 4.6** ✨ | Qwen3 1.7B + LoRA (F16) | `rynude-lyric-plus-1` | `rynude-lyric-4.6.gguf` | 3.45 GB | ~6 GB |
 | **rynude Stanza** | Qwen3 4B | `llama-3.2-3b` | `Qwen3-4B-Q4_K_M.gguf` | 2.5 GB | ~6 GB |
 | **rynude Canto** | Qwen3 8B | `mistral-7b-v0.3` | `Qwen3-8B-Q4_K_M.gguf` | 5 GB | ~10 GB |
 | **rynude Symphony** | Qwen3 14B | `llama-3.1-8b` | `Qwen3-14B-Q4_K_M.gguf` | 9 GB | ~16 GB |

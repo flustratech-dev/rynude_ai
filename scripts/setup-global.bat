@@ -20,7 +20,7 @@ echo echo Membuka project Rynude AI (Laravel + Vite)... >> "%NPM_BIN%\rynude.bat
 echo echo ======================================================== >> "%NPM_BIN%\rynude.bat"
 echo set "RYNUDE_WORKSPACE=%%CD%%" >> "%NPM_BIN%\rynude.bat"
 echo cd /d "%TARGET_DIR%" >> "%NPM_BIN%\rynude.bat"
-echo npm run rynude >> "%NPM_BIN%\rynude.bat"
+echo node cli.js %%* >> "%NPM_BIN%\rynude.bat"
 
 :: Membuat file rynudecode.bat di dalam folder global npm
 echo @echo off > "%NPM_BIN%\rynudecode.bat"

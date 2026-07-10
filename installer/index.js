@@ -263,12 +263,12 @@ async function run() {
             // Shortcut di folder Startup (auto-jalan) + Start Menu, menunjuk ke
             // tray launcher produk. [char]34 = tanda kutip, menghindari escaping.
             const ps = [
-                `$vbs = '${INSTALL_DIR}\\scripts\\Rynude-Launcher.vbs'`,
+                `$vbs = '${INSTALL_DIR}\\scripts\\windows\\Rynude.vbs'`,
                 `$icon = '${INSTALL_DIR}\\public\\favicon.ico'`,
                 '$q = [char]34',
                 '$ws = New-Object -ComObject WScript.Shell',
                 "$dirs = @([Environment]::GetFolderPath('Startup'), (Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs'))",
-                "foreach ($d in $dirs) { $l = $ws.CreateShortcut((Join-Path $d 'Rynude.lnk')); $l.TargetPath = 'wscript.exe'; $l.Arguments = ($q + $vbs + $q); $l.IconLocation = $icon; $l.Save() }"
+                "foreach ($d in $dirs) { $l = $ws.CreateShortcut((Join-Path $d 'Rynude.lnk')); $l.TargetPath = 'wscript.exe'; $l.Arguments = ($q + $vbs + $q); $l.IconLocation = $icon; $l.WorkingDirectory = '${INSTALL_DIR}'; $l.Save() }"
             ].join('; ');
             sh(`powershell -NoProfile -Command "${ps}"`);
             bgSpinner.succeed('Auto-start terpasang: Rynude muncul di system tray setiap login.');

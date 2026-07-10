@@ -42,7 +42,7 @@ $openMenuItem = New-Object System.Windows.Forms.MenuItem
 $openMenuItem.Text = "Buka Rynude (Browser)"
 $openMenuItem.add_Click({
     if (Test-Path $portFile) {
-        $port = Get-Content $portFile
+        $port = (Get-Content $portFile | Select-Object -First 1).Trim()
         Start-Process "http://localhost:$port"
     } else {
         [System.Windows.Forms.MessageBox]::Show("Server masih dalam proses startup. Silakan coba beberapa detik lagi.", "Harap Tunggu", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -53,7 +53,7 @@ $contextMenu.MenuItems.Add($openMenuItem)
 # Fungsi Double Click pada Icon
 $notifyIcon.add_DoubleClick({
     if (Test-Path $portFile) {
-        $port = Get-Content $portFile
+        $port = (Get-Content $portFile | Select-Object -First 1).Trim()
         Start-Process "http://localhost:$port"
     } else {
         [System.Windows.Forms.MessageBox]::Show("Server masih dalam proses startup. Silakan coba beberapa detik lagi.", "Harap Tunggu", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -74,12 +74,13 @@ $exitMenuItem.add_Click({
     
     # Hentikan proses Node.js
     if ($nodeProcess -and !$nodeProcess.HasExited) {
-        Stop-Process -Id $nodeProcess.Id -Force
+        Stop-Process -Id $nodeProcess.Id -Force -ErrorAction SilentlyContinue
     }
     
-    # Hentikan proses PHP yang ditinggalkan
-    # (Karena kita Force kill node, proses anak php artisan mungkin tertinggal)
-    Get-Process -Name "php" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "artisan" } | Stop-Process -Force -ErrorAction SilentlyContinue
+    # Hentikan proses CLI / PHP / Llama yang ditinggalkan di background
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "artisan|cli\.js --silent|llama-server\.mjs" } | ForEach-Object {
+        Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+    }
     
     # Hapus file port
     if (Test-Path $portFile) {

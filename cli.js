@@ -297,6 +297,7 @@ async function run() {
             choices: [
                 { title: '💻 Buka Terminal UI (RynudeCode CLI)', value: 'cli' },
                 { title: '🌐 Buka Web UI (Browser)', value: 'browser' },
+                { title: '📌 Jalankan di Background (System Tray / ^ Taskbar)', value: 'tray' },
                 { title: '🛑 Tutup Server & Keluar', value: 'exit' }
             ]
         });
@@ -318,16 +319,42 @@ async function run() {
             openBrowser(`http://localhost:${laravelPort}`);
             console.log(chalk.cyan(`\nMembuka browser...`));
             setTimeout(showMenu, 1000);
+        } else if (response.action === 'tray') {
+            console.log(chalk.green('\n🚀 Menjalankan Rynude AI Server di background (System Tray / ^ Taskbar)...'));
+            console.log(chalk.gray('Periksa icon Rynude di System Tray (^ Taskbar) untuk membuka browser atau menutup server.\n'));
+            const launcherPath = path.join(__dirname, 'scripts', 'windows', 'Rynude.vbs');
+            spawn('wscript.exe', [launcherPath], {
+                stdio: 'ignore',
+                shell: true,
+                detached: true
+            }).unref();
+            setTimeout(() => {
+                process.exit(0);
+            }, 500);
         } else {
             killServers();
         }
     }
 
-    // Cek apakah dijalankan dalam mode silent atau mode CLI langsung
+    // Cek apakah dijalankan dalam mode tray/silent atau mode CLI langsung
+    const isTrayMode = process.argv.includes('--tray') || process.argv.includes('--bg') || process.argv.includes('--background');
     const isSilent = process.argv.includes('--silent');
     const isCliMode = process.argv.includes('--cli');
 
-    if (isCliMode) {
+    if (isTrayMode) {
+        console.log(chalk.green('🚀 Menjalankan Rynude AI Server di background (System Tray / ^ Taskbar)...'));
+        console.log(chalk.gray('Periksa icon Rynude di System Tray (^ Taskbar) untuk membuka browser atau menutup server.'));
+        const launcherPath = path.join(__dirname, 'scripts', 'windows', 'Rynude.vbs');
+        spawn('wscript.exe', [launcherPath], {
+            stdio: 'ignore',
+            shell: true,
+            detached: true
+        }).unref();
+        setTimeout(() => {
+            process.exit(0);
+        }, 500);
+        return;
+    } else if (isCliMode) {
         const workspace = process.env.RYNUDE_WORKSPACE || process.cwd();
         console.clear();
         console.log(chalk.cyan(`Menjalankan RynudeCode CLI di workspace: ${workspace}`));
