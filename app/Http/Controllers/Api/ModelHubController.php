@@ -243,7 +243,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'qwen-2.5-0.5b',
                 'name' => 'rynude Vignette',
-                'description' => 'Generasi terbaru (Qwen3). Model sangat ringan dan cepat dengan kemampuan penalaran bawaan. Cocok untuk pengujian, spesifikasi rendah (< 8GB RAM), atau tugas percakapan dasar.',
+                'description' => 'Arsitektur rynude-v3 Ultra-Light. Model sangat ringan dan cepat dengan kemampuan penalaran logika bawaan. Sangat cocok untuk pengujian sistem, komputer berspesifikasi rendah (< 8GB RAM), atau tugas percakapan sehari-hari.',
                 'parameter_size' => '0.6B',
                 'required_ram_gb' => 2.0,
                 'file_size_label' => '~640 MB',
@@ -256,7 +256,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'qwen-2.5-1.5b',
                 'name' => 'rynude Lyric 4.5',
-                'description' => 'Generasi terbaru (Qwen3). Rekomendasi untuk sebagian besar pengguna: jauh lebih pintar dari generasi sebelumnya dengan penalaran bawaan, tetap ringan di komputer spesifikasi terbatas.',
+                'description' => 'Arsitektur rynude-v3 Compact. Rekomendasi utama untuk sebagian besar pengguna: memiliki pemahaman konteks mendalam dan penalaran cerdas, namun tetap sangat ringan dijalankan pada komputer berspesifikasi terbatas.',
                 'parameter_size' => '1.7B',
                 'required_ram_gb' => 4.0,
                 'file_size_label' => '1.8 GB',
@@ -269,7 +269,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'rynude-lyric-plus-1',
                 'name' => 'rynude Lyric 4.6',
-                'description' => 'Versi fine-tuned dari rynude Lyric 4.5 (Qwen3-1.7B) yang dilatih khusus dengan QLoRA untuk Bahasa Indonesia natural, format skripsi/akademik baku, dan kepatuhan format artifact. Kualitas penuh (F16).',
+                'description' => 'Edisi Khusus rynude Lyric Plus. Dilatih secara mendalam (Fine-Tuned) khusus untuk Bahasa Indonesia natural, format penulisan skripsi/akademik baku, serta kepatuhan struktur dokumen (Artifacts). Kualitas presisi tinggi (F16).',
                 'parameter_size' => '1.7B (LoRA)',
                 'required_ram_gb' => 6.0,
                 'file_size_label' => '3.45 GB',
@@ -282,7 +282,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'llama-3.2-3b',
                 'name' => 'rynude Stanza',
-                'description' => 'Generasi terbaru (Qwen3 4B). Kualitas setara model 7B generasi lama — sangat efisien untuk dokumen, penalaran, dan asisten coding ringan.',
+                'description' => 'Arsitektur rynude-v3 Mid-Scale. Kualitas pemahaman setara model kelas atas — sangat efisien dan akurat untuk analisis dokumen, penalaran logis, serta asisten coding tingkat menengah.',
                 'parameter_size' => '4B',
                 'required_ram_gb' => 6.0,
                 'file_size_label' => '2.5 GB',
@@ -295,7 +295,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'mistral-7b-v0.3',
                 'name' => 'rynude Canto',
-                'description' => 'Generasi terbaru (Qwen3 8B). Penalaran dan pemrograman kuat, pengganti langsung kelas 7B dengan kualitas jauh lebih tinggi.',
+                'description' => 'Arsitektur rynude-v3 Performance. Memiliki kemampuan penalaran logika dan pemrograman yang sangat kuat, dirancang khusus untuk efisiensi tinggi pada tugas teknis dan analitis yang kompleks.',
                 'parameter_size' => '8B',
                 'required_ram_gb' => 10.0,
                 'file_size_label' => '5.0 GB',
@@ -308,7 +308,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'llama-3.1-8b',
                 'name' => 'rynude Symphony',
-                'description' => 'Generasi terbaru (Qwen3 14B). Model serba bisa kelas atas untuk percakapan kompleks, dokumen panjang, dan pemecahan masalah algoritma.',
+                'description' => 'Arsitektur rynude-v3 Flagship. Model serba bisa kelas atas untuk percakapan mendalam tingkat lanjut, pemrosesan dokumen panjang, serta pemecahan masalah algoritma rumit.',
                 'parameter_size' => '14B',
                 'required_ram_gb' => 16.0,
                 'file_size_label' => '9.0 GB',
@@ -321,7 +321,7 @@ class ModelHubController extends Controller
             [
                 'id' => 'qwen-2.5-14b',
                 'name' => 'rynude Magnum',
-                'description' => 'Generasi terbaru (Qwen3 30B MoE, 3B aktif). Model berat tingkat lanjut: kualitas kelas 30B dengan kecepatan model kecil berkat arsitektur Mixture-of-Experts.',
+                'description' => 'Arsitektur rynude-v3 Ultimate (Mixture-of-Experts). Model kelas berat tingkat lanjut yang menggabungkan kecerdasan masif dengan kecepatan pemrosesan efisien berkat aktivasi parameter selektif.',
                 'parameter_size' => '30B (MoE)',
                 'required_ram_gb' => 24.0,
                 'file_size_label' => '18.6 GB',

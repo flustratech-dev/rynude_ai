@@ -58,7 +58,7 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0">
-                <div class="relative w-full max-w-sm p-6 bg-white dark:bg-[#1E1E20] border border-gray-200 dark:border-stone-700 rounded-2xl shadow-2xl transform transition-all text-center"
+                <div class="relative w-full max-w-sm p-6 bg-[#F9F8F6] dark:bg-[#1E1E20] border border-stone-300 dark:border-stone-700 rounded-2xl shadow-2xl transform transition-all text-center"
                      @click.away="flashMessage = null"
                      x-transition:enter="transition ease-out duration-300 transform"
                      x-transition:enter-start="opacity-0 scale-90 translate-y-4"
@@ -100,10 +100,10 @@
         {{-- ==================== MODEL HUB TAB ==================== --}}
         <div x-show="tab==='model-hub'" x-transition class="w-full">
             {{-- Hardware Recommendation Banner --}}
-            <div class="mb-8 p-5 rounded-2xl border transition-all"
+            <div class="mb-6 p-5 rounded-2xl border transition-all"
                  :class="hwStatus === 'high' ? 'bg-green-50/70 border-green-200 dark:bg-green-900/10 dark:border-green-800' : (hwStatus === 'medium' ? 'bg-amber-50/70 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800' : 'bg-red-50/70 border-red-200 dark:bg-red-900/10 dark:border-red-800')">
                 <div class="flex items-start gap-4">
-                    <div class="p-3 rounded-xl bg-white dark:bg-[#2C2C2A] shadow-sm shrink-0">
+                    <div class="p-3 rounded-xl bg-[#F0EFEA] dark:bg-[#2C2C2A] shadow-sm shrink-0 border border-stone-200 dark:border-stone-700">
                         <svg class="w-6 h-6" :class="hwStatus === 'high' ? 'text-green-600 dark:text-green-400' : (hwStatus === 'medium' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"/>
                         </svg>
@@ -117,90 +117,206 @@
                         <div class="mt-2 flex items-center gap-2 text-xs font-semibold"
                              :class="hwStatus === 'high' ? 'text-green-700 dark:text-green-400' : (hwStatus === 'medium' ? 'text-amber-700 dark:text-amber-400' : 'text-red-700 dark:text-red-400')">
                             <span>Rekomendasi Batas Ukuran Model:</span>
-                            <span class="px-2 py-0.5 rounded bg-white/80 dark:bg-black/20 border" x-text="'Maksimal ' + maxParamSize + ' Parameter'"></span>
-                            <span class="px-2 py-0.5 rounded bg-white/80 dark:bg-black/20 border text-stone-600 dark:text-stone-300" x-text="'Sisa Hardisk: ' + freeSpaceGb + ' GB'"></span>
+                            <span class="px-2 py-0.5 rounded bg-[#F0EFEA] dark:bg-black/20 border border-stone-300 dark:border-stone-800" x-text="'Maksimal ' + maxParamSize + ' Parameter'"></span>
+                            <span class="px-2 py-0.5 rounded bg-[#F0EFEA] dark:bg-black/20 border border-stone-300 dark:border-stone-800 text-stone-600 dark:text-stone-300" x-text="'Sisa Hardisk: ' + freeSpaceGb + ' GB'"></span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Model Catalog Grid --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <template x-for="model in localModels" :key="model.id">
-                    <div class="bg-[#F5F4F0] dark:bg-[#2C2C2A] border border-stone-300/80 dark:border-stone-700 rounded-2xl p-6 flex flex-col justify-between shadow-[0_2px_12px_rgba(45,40,37,0.03)] dark:shadow-none hover:shadow-[0_4px_20px_rgba(45,40,37,0.06)] hover:border-stone-400 dark:hover:border-stone-500 transition-all relative overflow-hidden">
-                        
-                        {{-- Warning Ribbon if RAM is insufficient --}}
-                        <template x-if="totalRamGb < model.required_ram_gb">
-                            <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow">
-                                RAM Kurang (< <span x-text="model.required_ram_gb + 'GB'"></span>)
-                            </div>
-                        </template>
+            {{-- Model Hub Toolbar & Search --}}
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">
+                {{-- Category Filter Tabs --}}
+                <div class="flex items-center gap-1.5 p-1 bg-[#F0EFEA] dark:bg-[#1E1E20] border border-stone-300 dark:border-stone-800 rounded-xl overflow-x-auto no-scrollbar">
+                    <button @click="localModelTab = 'all'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0"
+                            :class="localModelTab === 'all' ? 'bg-[#E5E3DB] dark:bg-[#2C2C2A] text-stone-900 dark:text-stone-100 shadow-sm font-bold' : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'">
+                        <span>Semua</span>
+                        <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-[#E5E3DB] dark:bg-stone-800 text-stone-800 dark:text-stone-300 font-bold" x-text="localModels.length"></span>
+                    </button>
 
-                        {{-- Recommended ribbon --}}
-                        <template x-if="model.recommended && totalRamGb >= model.required_ram_gb">
-                            <div class="absolute top-0 right-0 bg-stone-900/90 dark:bg-stone-300 text-white dark:text-stone-950 text-[10px] font-bold px-3.5 py-1 rounded-bl-xl uppercase tracking-wider shadow-md">
-                                ⭐ Rekomendasi
-                            </div>
-                        </template>
+                    <button @click="localModelTab = 'recommended'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 shrink-0"
+                            :class="localModelTab === 'recommended' ? 'bg-[#E5E3DB] dark:bg-[#2C2C2A] text-amber-600 dark:text-amber-400 shadow-sm font-bold' : 'text-stone-600 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400'">
+                        <span>⭐ Rekomendasi</span>
+                    </button>
 
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-white text-stone-800 border border-stone-200 dark:bg-[#3A3A38] dark:text-stone-300 dark:border-stone-700" x-text="model.parameter_size + ' PARAMS'"></span>
-                                <span class="text-xs font-semibold text-gray-500 dark:text-stone-400" x-text="model.file_size_label"></span>
-                            </div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-stone-100" x-text="model.name"></h3>
-                            <p class="text-sm text-gray-600 dark:text-stone-400 mt-2 leading-relaxed" x-text="model.description"></p>
-                        </div>
+                    <button @click="localModelTab = 'completed'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 shrink-0"
+                            :class="localModelTab === 'completed' ? 'bg-[#E5E3DB] dark:bg-[#2C2C2A] text-emerald-600 dark:text-emerald-400 shadow-sm font-bold' : 'text-stone-600 dark:text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-400'">
+                        <span>✔ Terunduh</span>
+                        <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold" x-text="localModels.filter(m => m.status === 'completed').length"></span>
+                    </button>
+                </div>
 
-                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-stone-700/60">
-                            {{-- Status: Completed --}}
-                            <template x-if="model.status === 'completed'">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="flex items-center gap-1.5 text-xs font-bold text-green-600 dark:text-green-400">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Terunduh Siap Pakai
-                                    </span>
-                                    <button @click="deleteLocalModel(model.id)" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Hapus file model">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                    </button>
+                {{-- Search Input (Matching background tone, NOT white, NOT cream) & View Mode --}}
+                <div class="flex items-center gap-2">
+                    <div class="relative flex-1 md:w-64">
+                        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500 dark:text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                        <input type="text" 
+                               x-model="localModelSearch" 
+                               placeholder="Cari model lokal..." 
+                               class="w-full pl-9 pr-4 py-2 bg-[#F0EFEA] dark:bg-[#1E1E20] border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold text-[#1F1C1A] dark:text-stone-100 placeholder-stone-500 dark:placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:border-stone-400 focus:bg-[#E5E3DB] transition-all shadow-inner">
+                    </div>
+
+                    <div class="flex items-center p-1 bg-[#F0EFEA] dark:bg-[#1E1E20] border border-stone-300 dark:border-stone-800 rounded-xl shrink-0">
+                        <button @click="localViewMode = 'list'" 
+                                class="p-1.5 rounded-lg transition-all"
+                                :class="localViewMode === 'list' ? 'bg-[#E5E3DB] dark:bg-[#2C2C2A] text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'"
+                                title="Compact Row List">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+                        </button>
+                        <button @click="localViewMode = 'grid'" 
+                                class="p-1.5 rounded-lg transition-all"
+                                :class="localViewMode === 'grid' ? 'bg-[#E5E3DB] dark:bg-[#2C2C2A] text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'"
+                                title="Compact Grid">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6H7.5v3.75H3.75V6zM10.5 6H14.25v3.75H10.5V6zM17.25 6H21v3.75H17.25V6zM3.75 12H7.5v3.75H3.75V12zM10.5 12H14.25v3.75H10.5V12zM17.25 12H21v3.75H17.25V12zM3.75 18H7.5v3.75H3.75V18zM10.5 18H14.25v3.75H10.5V18zM17.25 18H21v3.75H17.25V18z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Compact Refined List View (Default) --}}
+            <template x-if="localViewMode === 'list'">
+                <div class="bg-[#F9F8F6] dark:bg-[#191919] border border-stone-300 dark:border-stone-800 rounded-2xl overflow-hidden divide-y divide-stone-200/60 dark:divide-stone-800/60 shadow-sm">
+                    <template x-for="model in filteredLocalModels" :key="model.id">
+                        <div class="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#F0EFEA] dark:hover:bg-[#21201C] transition-all relative group"
+                             :class="model.recommended || model.id === 'rynude-lyric-plus-1' ? 'bg-amber-500/[0.015] dark:bg-amber-500/[0.02]' : ''">
+                            
+                            {{-- Left Column: Info --}}
+                            <div class="flex items-start gap-3.5 flex-1 min-w-0">
+                                <div class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0"
+                                     :class="model.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : (model.status === 'downloading' ? 'bg-blue-500 animate-pulse' : 'bg-stone-300 dark:bg-stone-700')"></div>
+                                
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                                        <h3 class="text-sm font-bold text-stone-900 dark:text-stone-100 font-serif tracking-tight truncate" x-text="model.name"></h3>
+                                        
+                                        <span class="px-2 py-0.5 rounded-md bg-[#E5E3DB] dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 font-mono text-[11px] font-semibold" x-text="model.parameter_size + ' PARAMS'"></span>
+
+                                        <template x-if="model.recommended || model.id === 'rynude-lyric-plus-1'">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                                                <span>⭐ Rekomendasi</span>
+                                            </span>
+                                        </template>
+
+                                        <template x-if="model.status === 'completed'">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">
+                                                <span>✔ Terunduh</span>
+                                            </span>
+                                        </template>
+                                    </div>
+
+                                    <p class="text-xs text-stone-600 dark:text-stone-400 line-clamp-1 max-w-2xl" x-text="model.description"></p>
+
+                                    <div class="flex items-center gap-4 mt-1.5 text-[11px] font-medium">
+                                        <span class="text-stone-500 dark:text-stone-400">File: <strong class="text-stone-800 dark:text-stone-200 font-mono" x-text="model.file_size_label"></strong></span>
+                                        
+                                        <template x-if="totalRamGb < model.required_ram_gb">
+                                            <span class="text-red-600 dark:text-red-400 flex items-center gap-1">
+                                                <span>RAM Kurang (< <span x-text="model.required_ram_gb + 'GB'"></span>)</span>
+                                            </span>
+                                        </template>
+                                    </div>
                                 </div>
-                            </template>
+                            </div>
 
-                            {{-- Status: Downloading --}}
-                            <template x-if="model.status === 'downloading'">
-                                <div>
-                                    <div class="flex items-center justify-between text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
-                                        <span>Mengunduh... (<span x-text="model.progress + '%'"></span>)</span>
-                                        <button @click="deleteLocalModel(model.id)" class="text-xs font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1" title="Batalkan dan Hapus Unduhan">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                            Batalkan & Hapus
+                            {{-- Right Column: Actions --}}
+                            <div class="flex items-center justify-end gap-2.5 shrink-0">
+                                <template x-if="model.status === 'completed'">
+                                    <div class="flex items-center gap-2">
+                                        <button @click="$dispatch('close-api-keys')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all">
+                                            Aktifkan
+                                        </button>
+                                        <button @click="deleteLocalModel(model.id)" class="p-1.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-[#E5E3DB] dark:bg-stone-800 text-stone-600 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Hapus model">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
                                         </button>
                                     </div>
-                                    <div class="w-full bg-gray-200 dark:bg-stone-700 rounded-full h-2.5 overflow-hidden">
-                                        <div class="bg-stone-900/90 dark:bg-stone-300 h-2.5 rounded-full transition-all duration-300 shadow-sm" :style="'width: ' + model.progress + '%'"></div>
-                                    </div>
-                                </div>
-                            </template>
+                                </template>
 
-                            {{-- Status: Not Downloaded or Error --}}
-                            <template x-if="model.status !== 'completed' && model.status !== 'downloading'">
-                                <div>
-                                    <template x-if="model.status === 'error'">
-                                        <p class="text-xs text-red-600 dark:text-red-400 font-medium mb-2" x-text="model.error_message || 'Gagal mengunduh'"></p>
-                                    </template>
+                                <template x-if="model.status === 'downloading'">
+                                    <div class="w-36">
+                                        <div class="flex justify-between text-[11px] font-bold text-stone-800 dark:text-stone-200 mb-1">
+                                            <span><span x-text="model.progress + '%'"></span></span>
+                                            <button @click="deleteLocalModel(model.id)" class="text-red-500 hover:underline">Batal</button>
+                                        </div>
+                                        <div class="w-full bg-stone-200 dark:bg-stone-800 rounded-full h-1.5 overflow-hidden">
+                                            <div class="bg-blue-500 h-1.5 rounded-full transition-all" :style="'width: ' + model.progress + '%'"></div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template x-if="model.status !== 'completed' && model.status !== 'downloading'">
                                     <button @click="downloadLocalModel(model.id)"
                                             :disabled="totalRamGb < model.required_ram_gb"
-                                            class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm border"
-                                            :class="totalRamGb < model.required_ram_gb ? 'bg-stone-50 border-stone-200/80 text-stone-400 dark:bg-stone-800/40 dark:border-stone-700/60 dark:text-stone-500 cursor-not-allowed' : 'bg-stone-900 border-stone-950/10 text-white hover:bg-black dark:bg-stone-200 dark:border-stone-100/10 dark:text-stone-900 dark:hover:bg-stone-100 active:scale-95'">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                                        <span x-text="totalRamGb < model.required_ram_gb ? 'Tidak Disarankan (RAM < ' + model.required_ram_gb + 'GB)' : 'Unduh Model (' + model.file_size_label + ')'"></span>
+                                            class="px-4 py-1.5 rounded-xl text-xs font-semibold transition-all border flex items-center justify-center gap-1.5"
+                                            :class="totalRamGb < model.required_ram_gb ? 'bg-[#E5E3DB] border-stone-300 text-stone-500 dark:bg-stone-800/50 dark:border-stone-800 dark:text-stone-600 cursor-not-allowed' : 'bg-[#2D2825] dark:bg-stone-100 text-white dark:text-[#2D2825] hover:bg-black dark:hover:bg-white border-stone-800 dark:border-stone-200'">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                                        <span x-text="totalRamGb < model.required_ram_gb ? 'RAM Kurang' : 'Unduh (' + model.file_size_label + ')'"></span>
                                     </button>
-                                </div>
-                            </template>
+                                </template>
+                            </div>
                         </div>
-                    </div>
-                </template>
-            </div>
+                    </template>
+                </div>
+            </template>
+
+            {{-- Compact Grid View Option --}}
+            <template x-if="localViewMode === 'grid'">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <template x-for="model in filteredLocalModels" :key="model.id">
+                        <div class="bg-[#F9F8F6] dark:bg-[#191919] border border-stone-300 dark:border-stone-800 rounded-2xl p-5 flex flex-col justify-between transition-all hover:border-stone-400 dark:hover:border-stone-600 shadow-sm relative overflow-hidden"
+                             :class="model.recommended || model.id === 'rynude-lyric-plus-1' ? 'ring-1 ring-amber-500/30' : ''">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-2.5">
+                                    <span class="px-2 py-0.5 rounded bg-[#E5E3DB] dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-300 text-[11px] font-mono font-bold" x-text="model.parameter_size + ' PARAMS'"></span>
+                                    <template x-if="model.recommended || model.id === 'rynude-lyric-plus-1'">
+                                        <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20">⭐ Rekomendasi</span>
+                                    </template>
+                                </div>
+                                <h3 class="text-base font-bold text-stone-900 dark:text-stone-100 font-serif" x-text="model.name"></h3>
+                                <p class="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed line-clamp-3" x-text="model.description"></p>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-stone-200 dark:border-stone-800/60">
+                                <div class="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 mb-2.5">
+                                    <span>File: <strong class="text-stone-800 dark:text-stone-200 font-mono" x-text="model.file_size_label"></strong></span>
+                                    <template x-if="totalRamGb < model.required_ram_gb">
+                                        <span class="text-red-500 text-[11px] font-semibold">RAM Kurang</span>
+                                    </template>
+                                </div>
+
+                                <template x-if="model.status === 'completed'">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <button @click="$dispatch('close-api-keys')" class="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold text-center transition-all">✔ Aktifkan</button>
+                                        <button @click="deleteLocalModel(model.id)" class="p-1.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-[#E5E3DB] dark:bg-stone-800 text-stone-600 hover:text-red-500 transition-colors" title="Hapus file"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg></button>
+                                    </div>
+                                </template>
+
+                                <template x-if="model.status === 'downloading'">
+                                    <div>
+                                        <div class="flex justify-between text-[11px] font-bold text-stone-800 dark:text-stone-200 mb-1">
+                                            <span>Mengunduh... (<span x-text="model.progress + '%'"></span>)</span>
+                                            <button @click="deleteLocalModel(model.id)" class="text-red-500 hover:underline">Batal</button>
+                                        </div>
+                                        <div class="w-full bg-stone-200 dark:bg-stone-800 rounded-full h-1.5 overflow-hidden"><div class="bg-blue-500 h-1.5 rounded-full" :style="'width: ' + model.progress + '%'"></div></div>
+                                    </div>
+                                </template>
+
+                                <template x-if="model.status !== 'completed' && model.status !== 'downloading'">
+                                    <button @click="downloadLocalModel(model.id)"
+                                            :disabled="totalRamGb < model.required_ram_gb"
+                                            class="w-full py-1.5 px-3 rounded-xl text-xs font-semibold transition-all border flex items-center justify-center gap-1.5"
+                                            :class="totalRamGb < model.required_ram_gb ? 'bg-[#E5E3DB] dark:bg-stone-800/50 text-stone-500 border-stone-300 dark:border-stone-800 cursor-not-allowed' : 'bg-[#2D2825] dark:bg-stone-100 text-white dark:text-[#2D2825] hover:bg-black dark:hover:bg-white border-stone-800 dark:border-stone-200'">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                                        <span x-text="totalRamGb < model.required_ram_gb ? 'RAM Kurang' : 'Unduh Model'"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
         </div>
 
         {{-- ==================== HUGGING FACE TAB ==================== --}}
@@ -213,12 +329,12 @@
                     <div>
                         <label class="block text-[14px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">API Key</label>
                         <p class="text-[12.5px] text-gray-500 dark:text-stone-400 mb-2">Get your API key from <a href="https://huggingface.co/settings/tokens" target="_blank" class="underline hover:text-gray-800 dark:hover:text-stone-200">huggingface.co/settings/tokens</a>. Keys start with <code class="bg-gray-100 dark:bg-[#1E1E20] px-1 rounded text-[12px]">hf_</code>.</p>
-                        <input type="password" x-model="hfKey" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500">
+                        <input type="password" x-model="hfKey" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2.5 rounded-lg border border-stone-300 dark:border-claude-border-dark bg-[#F0EFEA] dark:bg-claude-bg-dark text-[15px] font-medium text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-stone-400 dark:focus:border-stone-500 focus:bg-[#E5E3DB] shadow-inner placeholder-stone-500 dark:placeholder-stone-500">
                     </div>
                     <div>
                         <label class="block text-[14px] font-medium text-[#2D2825] dark:text-stone-300 mb-1.5">Base URL</label>
                         <p class="text-[12.5px] text-gray-500 dark:text-stone-400 mb-2">Default: <code class="bg-gray-100 dark:bg-[#1E1E20] px-1 rounded text-[12px]">https://api-inference.huggingface.co/v1</code></p>
-                        <input type="text" x-model="hfUrl" placeholder="https://api-inference.huggingface.co/v1" class="w-full px-3 py-2.5 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-[15px] text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-gray-400 dark:focus:border-stone-500 placeholder-gray-400 dark:placeholder-stone-500">
+                        <input type="text" x-model="hfUrl" placeholder="https://api-inference.huggingface.co/v1" class="w-full px-3 py-2.5 rounded-lg border border-stone-300 dark:border-claude-border-dark bg-[#F0EFEA] dark:bg-claude-bg-dark text-[15px] font-medium text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-stone-400 dark:focus:border-stone-500 focus:bg-[#E5E3DB] shadow-inner placeholder-stone-500 dark:placeholder-stone-500">
                     </div>
                     <div class="pt-2">
                         <button @click="saveHF()" :disabled="saving" class="px-5 py-2 bg-[#D97757] hover:bg-[#c66547] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60" x-text="saving?'Saving...':'Save'">Save</button>
@@ -281,7 +397,7 @@
         type="text" 
         x-model="searchQuery" 
         placeholder="Search by name, provider, code..." 
-        class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-[#F9F8F6] dark:bg-claude-bg-dark text-[15px] text-[#2D2825] dark:text-stone-200 placeholder-stone-400 focus:outline-none focus:ring-0 focus:border-stone-300 dark:focus:border-stone-500 transition-all"
+        class="w-full pl-11 pr-4 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-[#F0EFEA] dark:bg-claude-bg-dark text-[15px] font-medium text-[#2D2825] dark:text-stone-200 placeholder-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:border-stone-400 focus:bg-[#E5E3DB] transition-all shadow-inner"
     >
 </div>
 
@@ -317,7 +433,7 @@
                         </div>
                         <h3 class="text-[15px] font-semibold text-[#2D2825] dark:text-stone-200 mb-1">No models found</h3>
                         <p class="text-[13px] text-gray-500 dark:text-stone-400 max-w-sm text-center">We couldn't find any models matching your search or filter criteria. Try adjusting your query.</p>
-                        <button x-show="searchQuery !== ''" @click="searchQuery = ''; filter = 'all'" class="mt-4 px-4 py-2 bg-white dark:bg-[#2C2C2A] border border-gray-200 dark:border-stone-700 rounded-lg text-[13px] font-medium text-gray-600 dark:text-stone-300 hover:bg-gray-50 dark:hover:bg-stone-700 transition-colors">Clear Search</button>
+                        <button x-show="searchQuery !== ''" @click="searchQuery = ''; filter = 'all'" class="mt-4 px-4 py-2 bg-[#F0EFEA] dark:bg-[#2C2C2A] border border-stone-300 dark:border-stone-700 rounded-lg text-[13px] font-medium text-stone-800 dark:text-stone-300 hover:bg-[#E5E3DB] dark:hover:bg-stone-700 transition-colors">Clear Search</button>
                     </div>
                 </div>
             </div>
@@ -662,7 +778,7 @@
                      x-transition:leave="transition ease-in duration-200"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0">
-                    <div class="relative w-full max-w-sm p-6 bg-white dark:bg-[#1E1E20] border border-gray-200 dark:border-stone-700 rounded-2xl shadow-2xl transform transition-all text-center"
+                    <div class="relative w-full max-w-sm p-6 bg-[#EBE8E0] dark:bg-[#1E1E20] border border-stone-300 dark:border-stone-700 rounded-2xl shadow-2xl transform transition-all text-center"
                          @click.away="flashMessage = null"
                          x-transition:enter="transition ease-out duration-300 transform"
                          x-transition:enter-start="opacity-0 scale-90 translate-y-4"
@@ -1069,15 +1185,15 @@
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Code</label>
-                <input type="text" x-model="dlgCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                <input type="text" x-model="dlgCode" placeholder="e.g. meta-llama/Llama-3" class="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-claude-border-dark bg-[#F0EFEA] dark:bg-claude-bg-dark text-sm font-medium text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-stone-400 focus:bg-[#E5E3DB] shadow-inner placeholder-stone-500">
             </div>
             <div>
                 <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Model Name</label>
-                <input type="text" x-model="dlgName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                <input type="text" x-model="dlgName" placeholder="e.g. Llama 3" class="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-claude-border-dark bg-[#F0EFEA] dark:bg-claude-bg-dark text-sm font-medium text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-stone-400 focus:bg-[#E5E3DB] shadow-inner placeholder-stone-500">
             </div>
             <div>
                 <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Provider</label>
-                <select x-model="dlgProv" class="w-full px-3 py-2 rounded-lg border border-claude-border-light dark:border-claude-border-dark bg-[#F9F8F6] dark:bg-claude-bg-dark text-sm text-[#2D2825] dark:text-stone-200 focus:outline-none">
+                <select x-model="dlgProv" class="w-full px-3 py-2 rounded-lg border border-stone-300 dark:border-claude-border-dark bg-[#F0EFEA] dark:bg-claude-bg-dark text-sm font-medium text-[#2D2825] dark:text-stone-200 focus:outline-none focus:border-stone-400 shadow-inner">
                     <option value="huggingface">Hugging Face</option>
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic</option>
@@ -1116,6 +1232,9 @@ function apiKeysPage(){
         models:[],filter:'all',
         dlgOpen:false,dlgEditId:null,dlgCode:'',dlgName:'',dlgActive:true,dlgProv:'huggingface',dlgErr:null,dlgSaving:false,
         searchQuery:'',
+        localModelSearch: '',
+        localModelTab: 'all',
+        localViewMode: 'list',
 
         localModels: [],
         freeSpaceGb: 0,
@@ -1127,6 +1246,20 @@ function apiKeysPage(){
         gpuName: '',
         vramGb: 0,
         localPollingInterval: null,
+
+        get filteredLocalModels(){
+            let list = this.localModels;
+            if(this.localModelTab === 'recommended'){
+                list = list.filter(m => m.recommended || m.id === 'rynude-lyric-plus-1');
+            } else if(this.localModelTab === 'completed'){
+                list = list.filter(m => m.status === 'completed');
+            }
+            if(this.localModelSearch.trim()){
+                const q = this.localModelSearch.toLowerCase();
+                list = list.filter(m => (m.name && m.name.toLowerCase().includes(q)) || (m.description && m.description.toLowerCase().includes(q)));
+            }
+            return list;
+        },
 
         get hfModels(){return this.models.filter(m=>m.provider==='huggingface')},
         get filteredModels(){

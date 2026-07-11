@@ -219,13 +219,14 @@ class OpenAIProvider implements LLMProviderInterface, SupportsToolUse
         }
 
         // RAG parameters for document attachments: retrieval query is the latest
-        // user message; the budget is tight for local GGUF models (16K real
-        // context) and generous for cloud models.
+        // user message; the budget scales with the local model's real context
+        // (now 32K, up from 16K) so document continuation (#6) has enough of the
+        // source to ground on, and is generous for cloud models.
         $ragQuery = $this->ragQueryFrom($messages);
         $llama = app(\App\Services\LlamaServerService::class);
         $isLocalGguf = $llama->isGgufModel($model);
         $ragBudget = $isLocalGguf
-            ? ($llama->tierFor($model) === 'large' ? 12_000 : 8_000)
+            ? ($llama->tierFor($model) === 'large' ? 20_000 : 14_000)
             : 48_000;
 
         // Filter messages (OpenAI only supports system, user, assistant)

@@ -64,7 +64,7 @@ class DocxRenderer
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');
-        $mode = in_array($mode, ['skripsi', 'laporan', 'document'], true) ? $mode : 'document';
+        $mode = in_array($mode, ['skripsi', 'tesis', 'laporan', 'makalah', 'proposal', 'document'], true) ? $mode : 'document';
 
         $html = $this->resolveImages($html);
 
@@ -76,7 +76,7 @@ class DocxRenderer
      */
     private function buildDocx(string $title, string $bodyHtml, array $meta, string $mode): string
     {
-        $academic = in_array($mode, ['skripsi', 'laporan'], true);
+        $academic = in_array($mode, ['skripsi', 'tesis', 'laporan', 'makalah', 'proposal'], true);
         $fmt = $this->resolveFormat($meta, $academic);
         $font = self::FONT_MAP[$fmt['font']] ?? 'Times New Roman';
         $size = $fmt['fontSize'];
@@ -446,11 +446,32 @@ class DocxRenderer
         $judul = $meta['judul'] ?: $title;
         $section->addText(strtoupper($judul), ['name' => $font, 'size' => 14, 'bold' => true], array_merge($center, ['spaceBefore' => 567, 'spaceAfter' => 240]));
 
-        if (($meta['mode'] ?? '') === 'skripsi') {
-            $section->addText('SKRIPSI', ['name' => $font, 'size' => 14, 'bold' => true], array_merge($center, ['spaceBefore' => 480]));
-            $section->addText('Diajukan sebagai salah satu syarat untuk memperoleh gelar Sarjana pada ' . ($meta['universitas'] ?? 'Universitas'), ['name' => $font, 'size' => 11], array_merge($center, ['spaceBefore' => 240]));
-        } elseif (($meta['mode'] ?? '') === 'laporan') {
-            $section->addText('LAPORAN', ['name' => $font, 'size' => 14, 'bold' => true], array_merge($center, ['spaceBefore' => 480]));
+        // Per-type banner + subtitle, mirroring PdfRenderer::coverHtml() (issue #2).
+        $univ = $meta['universitas'] ?? 'Universitas';
+        $banner = function (string $label, string $subtitle = '') use ($section, $font, $center) {
+            $section->addText($label, ['name' => $font, 'size' => 14, 'bold' => true], array_merge($center, ['spaceBefore' => 480]));
+            if ($subtitle !== '') {
+                $section->addText($subtitle, ['name' => $font, 'size' => 11], array_merge($center, ['spaceBefore' => 240]));
+            }
+        };
+        switch ($meta['mode'] ?? '') {
+            case 'skripsi':
+                $banner('SKRIPSI', 'Diajukan sebagai salah satu syarat untuk memperoleh gelar Sarjana pada ' . $univ);
+                break;
+            case 'tesis':
+                $banner('TESIS', 'Diajukan sebagai salah satu syarat untuk memperoleh gelar Magister pada ' . $univ);
+                break;
+            case 'proposal':
+                $banner('PROPOSAL PENELITIAN', 'Diajukan untuk memenuhi persyaratan penyusunan skripsi pada ' . $univ);
+                break;
+            case 'makalah':
+                $banner('MAKALAH', ($meta['dosen'] ?? '') !== ''
+                    ? 'Diajukan untuk memenuhi tugas mata kuliah — Dosen Pengampu: ' . $meta['dosen']
+                    : 'Diajukan untuk memenuhi tugas mata kuliah pada ' . $univ);
+                break;
+            case 'laporan':
+                $banner('LAPORAN');
+                break;
         }
 
         if (! empty($meta['logo'])) {

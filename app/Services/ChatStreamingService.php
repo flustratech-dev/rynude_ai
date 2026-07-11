@@ -134,14 +134,75 @@ class ChatStreamingService
             $useChapterPipeline = false;
             if ($llamaService->isGgufModel($model)) {
                 $lastAssistantText = '';
+                $latestUserForScope = '';
                 for ($i = count($messages) - 1; $i >= 0; $i--) {
-                    if (($messages[$i]['role'] ?? '') === 'assistant') {
+                    if ($lastAssistantText === '' && ($messages[$i]['role'] ?? '') === 'assistant') {
                         $lastAssistantText = (string) ($messages[$i]['content'] ?? '');
+                    }
+                    if ($latestUserForScope === '' && ($messages[$i]['role'] ?? '') === 'user') {
+                        $latestUserForScope = is_array($messages[$i]['content'])
+                            ? collect($messages[$i]['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                            : (string) ($messages[$i]['content'] ?? '');
+                    }
+                }
+                // The full pipeline writes ALL chapters (BAB I–V). When the user
+                // explicitly scopes the request to a specific/partial chapter
+                // ("full sampai bab 1", "bab 1 saja", "cuma bab 2") the pipeline
+                // would over-produce — keep it on the single-shot artifact path.
+                $chapterScoped = (bool) preg_match('/\b(sampai\s+bab|bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $latestUserForScope);
+
+                $useChapterPipeline = (!$chapterScoped && $isGgufDocRequest && $this->isSkripsiPipelineRequest($messages))
+                    || str_contains($lastAssistantText, 'Metode penelitian apa yang ingin Anda pakai');
+            }
+
+            // ── Revision / upload-continuation routing (issues #5 & #6) ───────
+            // A follow-up action on an existing document must UPDATE that document
+            // (not dribble plain text into chat, #5); and a turn that uploads a
+            // document or continues one must NEVER regenerate from scratch via the
+            // skripsi pipeline (#6). Both force a document turn and bypass the
+            // pipeline.
+            $isRevisionTurn = false;
+            $revisionArtifact = null;
+            $isUploadContinuation = false;
+            if ($llamaService->isGgufModel($model)) {
+                $latestUserText = '';
+                $latestUserHasDoc = false;
+                for ($i = count($messages) - 1; $i >= 0; $i--) {
+                    if (($messages[$i]['role'] ?? '') === 'user') {
+                        $latestUserText = is_array($messages[$i]['content'])
+                            ? collect($messages[$i]['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                            : (string) ($messages[$i]['content'] ?? '');
+                        foreach (($messages[$i]['attachments'] ?? []) as $att) {
+                            $mime = strtolower((string) ($att['file_type'] ?? ''));
+                            $ext = strtolower(pathinfo((string) ($att['file_name'] ?? ''), PATHINFO_EXTENSION));
+                            if (str_contains($mime, 'pdf') || str_contains($mime, 'word')
+                                || in_array($ext, ['pdf', 'docx', 'doc', 'txt', 'md'], true)) {
+                                $latestUserHasDoc = true;
+                            }
+                        }
                         break;
                     }
                 }
-                $useChapterPipeline = ($isGgufDocRequest && $this->isSkripsiPipelineRequest($messages))
-                    || str_contains($lastAssistantText, 'Metode penelitian apa yang ingin Anda pakai');
+
+                $revisionPattern = '/\b(perpanjang|perdalam|perbanyak|tambah(?:kan)?\s+(?:bab|isi|sub ?bab)|lanjut(?:kan)?|teruskan|sambung|revisi|perbaiki\s+(?:struktur|format|isi)|kembangkan|lengkapi)\b/i';
+
+                // #5: follow-up action on the room's active markdown artifact.
+                if (!$latestUserHasDoc && preg_match($revisionPattern, $latestUserText)) {
+                    $revisionArtifact = $this->latestMarkdownArtifact($conversation);
+                    if ($revisionArtifact) {
+                        $isRevisionTurn = true;
+                    }
+                }
+
+                // #6: uploaded a document and asked to build/continue from it.
+                if ($latestUserHasDoc && $this->wantsDocumentCreation($latestUserText)) {
+                    $isUploadContinuation = true;
+                }
+
+                if ($isRevisionTurn || $isUploadContinuation) {
+                    $isGgufDocRequest = true;   // force artifact output + grammar
+                    $useChapterPipeline = false; // never write from scratch
+                }
             }
 
             // For GGUF models on a document request, inject a targeted SYSTEM REMINDER
@@ -150,49 +211,20 @@ class ChatStreamingService
             if ($isGgufDocRequest && !$useChapterPipeline && !empty($messagesForAi)) {
                 $lastIdx = count($messagesForAi) - 1;
                 if ($messagesForAi[$lastIdx]['role'] === 'user') {
-                    $messagesForAi[$lastIdx]['content'] .= "\n\n[SYSTEM REMINDER — ARTIFACT OUTPUT REQUIRED:\n"
-                        . "You MUST output your document EXCLUSIVELY inside an <antArtifact> block. "
-                        . "NEVER use ```markdown code blocks for the document.\n"
-                        . "Format your response exactly as:\n"
-                        . "<antArtifact type=\"text/markdown\" title=\"Judul Skripsi Anda\">\n"
-                        . "---\n"
-                        . "mode: skripsi\n"
-                        . "judul: Judul Lengkap Skripsi\n"
-                        . "penulis: Nama Penulis\n"
-                        . "nim: NIM-12345\n"
-                        . "prodi: Program Studi\n"
-                        . "fakultas: Nama Fakultas\n"
-                        . "universitas: Nama Universitas\n"
-                        . "kota: Kota\n"
-                        . "tahun: 2024\n"
-                        . "pembimbing: Nama Pembimbing\n"
-                        . "---\n"
-                        . "# HALAMAN PENGESAHAN\n"
-                        . "# ABSTRAK\n"
-                        . "# ABSTRACT\n"
-                        . "# BAB I PENDAHULUAN\n"
-                        . "## 1.1 Latar Belakang\n"
-                        . "## 1.2 Perumusan Masalah\n"
-                        . "## 1.3 Tujuan\n"
-                        . "## 1.4 Batasan Masalah\n"
-                        . "## 1.5 Manfaat\n"
-                        . "# BAB II TINJAUAN PUSTAKA\n"
-                        . "# BAB III METODOLOGI\n"
-                        . "# BAB IV PEMBAHASAN\n"
-                        . "# BAB V KESIMPULAN DAN SARAN\n"
-                        . "# DAFTAR PUSTAKA\n"
-                        . "</antArtifact>\n"
-                        . "Write FULL paragraphs in every sub-section — no placeholder text, no one-sentence summaries.\n"
-                        . ($ggufTier === 'large'
-                            ? "DEPTH REQUIREMENTS (mandatory):\n"
-                                . "- Every sub-bab (## heading) contains at least 3 substantial paragraphs of real academic prose.\n"
-                                . "- BAB II cites theories/definitions from named authors with years, e.g. (Sugiyono, 2019).\n"
-                                . "- BAB III describes the method concretely: population/sample or data sources, instruments, analysis steps.\n"
-                                . "- BAB IV presents actual analysis/discussion, not a restatement of BAB I.\n"
-                                . "- DAFTAR PUSTAKA lists at least 10 properly formatted references.\n"
-                                . "Keep writing until the document is COMPLETE through DAFTAR PUSTAKA — do not stop early or summarize remaining chapters.\n"
-                            : '')
-                        . "Before the <antArtifact> tag write 2-3 sentences explaining your structure in the user's language.]";                }
+                    if ($isRevisionTurn && $revisionArtifact) {
+                        // #5: revise the active artifact in full, reusing structure.
+                        $messagesForAi[$lastIdx]['content'] .= $this->docRevisionReminder($revisionArtifact, $ggufTier);
+                    } elseif ($isUploadContinuation) {
+                        // #6: continue/build from the attached document.
+                        $messagesForAi[$lastIdx]['content'] .= $this->docUploadContinuationReminder($ggufTier);
+                    } else {
+                        // Per-type skeleton (issue #2): makalah/laporan/proposal/jurnal
+                        // no longer get a hardcoded 5-chapter skripsi skeleton + a
+                        // skripsi cover. detectDocType picks the right mode + structure.
+                        $docType = $this->detectDocTypeFromMessages($messages);
+                        $messagesForAi[$lastIdx]['content'] .= $this->docArtifactReminder($docType, $ggufTier);
+                    }
+                }
             }
 
             // Stream from AI service
@@ -532,6 +564,34 @@ class ChatStreamingService
         // Parse artifacts if present (a reply may carry several)
         $parsedArtifacts = $this->parseArtifacts($fullResponse);
 
+        // #5: on a revision turn, pin the produced artifact to the SAME identifier
+        // (and title) as the document being revised, so the save logic below turns
+        // it into a NEW VERSION of that document instead of a brand-new artifact —
+        // regardless of what identifier the small model did or didn't emit.
+        if (($isRevisionTurn ?? false) && ($revisionArtifact ?? null) && !empty($parsedArtifacts['items'])) {
+            $parsedArtifacts['items'][0]['identifier'] = $revisionArtifact->identifier;
+            if (($parsedArtifacts['items'][0]['title'] ?? 'Document') === 'Document') {
+                $parsedArtifacts['items'][0]['title'] = $revisionArtifact->title;
+            }
+            // Small local models routinely DROP the YAML front-matter when
+            // rewriting, which would strip the document's academic cover/mode
+            // (e.g. makalah → plain document) on export. If the revision didn't
+            // reproduce a front-matter, carry over the most recent one that
+            // exists ANYWHERE in this document's version history (the immediate
+            // base may itself have lost it on an earlier revision, so we can't
+            // rely on it alone) so the cover/layout survives across revisions.
+            $newContent = ltrim((string) $parsedArtifacts['items'][0]['content']);
+            if (!str_starts_with($newContent, '---')) {
+                $fmSource = MessageArtifact::where('identifier', $revisionArtifact->identifier)
+                    ->orderByDesc('id')
+                    ->get(['content'])
+                    ->first(fn ($a) => preg_match('/^\s*---\r?\n.*?\r?\n---\r?\n/s', (string) $a->content));
+                if ($fmSource && preg_match('/^\s*(---\r?\n.*?\r?\n---\r?\n)/s', (string) $fmSource->content, $fm)) {
+                    $parsedArtifacts['items'][0]['content'] = $fm[1] . "\n" . $newContent;
+                }
+            }
+        }
+
         // A document artifact always deserves "what's next" chips — fall back
         // to sensible defaults when neither pipeline nor model supplied any.
         if (empty($suggestions) && !empty($parsedArtifacts['items'])) {
@@ -845,10 +905,30 @@ class ChatStreamingService
                 break;
             }
         }
-        $isDocumentRequest = (bool) preg_match(
-            '/\b(skripsi|makalah|laporan|proposal|tesis|jurnal|artikel ilmiah|dokumen|document|report|pdf|docx|buatkan|generate|tulis|buat).{0,60}(skripsi|makalah|laporan|proposal|tesis|jurnal|artikel|dokumen|document|report|pdf|docx|full|lengkap|complete)|\b(skripsi|makalah|laporan|proposal|tesis|jurnal ilmiah)\b/i',
-            $lastUserText
-        );
+        // A document is only PRODUCED when the user actually asks to create one.
+        // Merely mentioning "skripsi"/"makalah" ("apa itu skripsi?", "jelaskan
+        // makalah") must NOT force an artifact (issue #1) — that used to fire on
+        // the bare noun. Now the rule is: a document SIGNAL + a creation-intent verb.
+        //
+        // A "document signal" is either an explicit document noun, OR an academic
+        // structure term (BAB, sub-bab, section names). The latter matters because
+        // build/continue turns often carry no noun — e.g. "dari judul ini buatkan
+        // saya full sampai bab 1" — yet clearly ask for a document. Requiring a
+        // bare noun there was a regression: the chapter got written as plain chat
+        // text instead of an artifact.
+        $docSignalRe = '/\b(skripsi|makalah|laporan|proposal|tesis|thesis|tugas akhir|jurnal|artikel ilmiah|karya ilmiah|paper|dokumen|document|report|pdf|docx|word'
+            . '|bab\s*[ivxlcdm0-9]+|pendahuluan|latar belakang|rumusan masalah|tinjauan pustaka|landasan teori|metodolog|metode penelitian|daftar pustaka|abstrak|kata pengantar|pembahasan)\b/i';
+        $hasDocSignalNow = (bool) preg_match($docSignalRe, $lastUserText);
+
+        // Continuation of a document already established earlier in the room: the
+        // current turn is a build/continue instruction and a recent turn set up a
+        // document (e.g. the user was handed a skripsi title, now says "buatkan
+        // full sampai bab 1"). Uses the joined recent turns, not just this one.
+        $recentDocCtx = $this->recentUserRequestText($messages, 4);
+        $isDocContinuation = (bool) preg_match('/\b(bab|full|lengkap|sampai\s+bab|lanjut|teruskan|sambung|buatkan|buatlah|tuliskan|susun)\b/i', $lastUserText)
+            && (bool) preg_match($docSignalRe, $recentDocCtx);
+
+        $isDocumentRequest = ($hasDocSignalNow || $isDocContinuation) && $this->wantsDocumentCreation($lastUserText);
 
         // ── Base identity & thinking rules (always injected) ──────────────────
         // Two prompt tiers: 'small' (0.5B–3B) keeps the deliberately slim prompt
@@ -905,6 +985,36 @@ class ChatStreamingService
                 . "=== WEB SEARCH TOOL ===\n"
                 . "The system can search the web FOR you — you are NOT cut off from current information. When the question needs fresh or specific facts (news, prices, versions, dates, people, statistics), reply with ONLY this single tag and nothing else: <antSearch>concise search keywords</antSearch> — the system will fetch sources and ask you again. NEVER claim you \"have no access\" or \"operate offline\" — request a search instead. For stable general knowledge, answer directly without the tag.";
         }
+
+        // ── Shared capability block (tier-independent) ───────────────────────
+        // Added to BOTH tiers so Lyric 4.6 (tier 'small') still gets diagrams,
+        // document-type awareness and the offer-before-building behaviour, while
+        // its loop-safe sampling stays untouched ("kasih yang terbaik").
+
+        // (#1) Offer, don't auto-build. Only injected when the turn mentions a
+        // document type WITHOUT a clear create request — then the model answers
+        // the question and offers via option chips instead of dumping a document.
+        if ($isDocumentRequest === false && preg_match('/\b(skripsi|makalah|laporan|proposal|tesis|jurnal|karya ilmiah|dokumen)\b/i', $lastUserText)) {
+            $prompt .= "\n\n=== JANGAN LANGSUNG MEMBUAT DOKUMEN ===\n"
+                . "Pengguna MENYEBUT jenis dokumen tapi belum jelas meminta dibuatkan. JANGAN langsung menghasilkan <antArtifact> dan JANGAN menanyakan template. "
+                . "Jawab/ bahas dulu pertanyaannya secara singkat, lalu TAWARKAN lewat satu tag di akhir: "
+                . "<antOptions>Ya, buatkan dokumennya | Jelaskan dulu poin-poinnya | Bantu susun kerangkanya</antOptions>. "
+                . "Baru buat dokumen penuh jika pengguna memang memintanya.";
+        }
+
+        // (#2) Document-type awareness: the produced document's front-matter
+        // `mode:` and chapter structure must match the requested type — a makalah
+        // is NOT a 5-chapter skripsi. Only injected on an actual create request.
+        if ($isDocumentRequest) {
+            $prompt .= "\n\n" . $this->docTypeStructureInstructions($this->detectDocTypeFromMessages($messages));
+        }
+
+        // (#3) Diagram generation (Mermaid) — the cloud prompt has this but the
+        // local prompt never did, so Lyric never drew diagrams. Slim version:
+        $prompt .= "\n\n=== DIAGRAM (MERMAID) ===\n"
+            . "Untuk SETIAP permintaan visual (diagram, flowchart, bagan, alur, struktur, arsitektur, ERD, sequence, mindmap, gantt, pie), keluarkan diagram sebagai blok ```mermaid berisi HANYA sintaks Mermaid yang valid — tanpa teks lain di dalam blok. "
+            . "Diagram berdiri sendiri: taruh blok ```mermaid langsung di chat. Diagram di dalam dokumen (skripsi/laporan): taruh blok ```mermaid DI DALAM <antArtifact>. "
+            . "DILARANG memakai ASCII art, tag HTML/SVG, atau gambar. Hindari tanda ( ) : & \" di dalam label node. Cocokkan bahasa label dengan bahasa pengguna. Sistem otomatis merender blok ```mermaid menjadi diagram.";
 
         // Hard per-turn language pin: small local models reason in English and
         // drift into answering in English mid-conversation. When THIS turn is
@@ -989,7 +1099,254 @@ class ChatStreamingService
         // Scan the last few user turns, not just the latest: after a clarify
         // chip the newest message is only the answer ("Metode kuantitatif"),
         // while the skripsi ask lives one turn earlier.
-        return (bool) preg_match('/\b(skripsi|tesis|thesis|tugas akhir)\b/i', $this->recentUserRequestText($messages));
+        $recent = $this->recentUserRequestText($messages);
+        // Must both NAME a skripsi and actually ask to CREATE one (issue #1):
+        // "apa itu skripsi?" is a question, not a build request. The joined
+        // recent-turns text still carries the original "buatkan skripsi …" when
+        // the newest turn is only a chip answer.
+        return (bool) preg_match('/\b(skripsi|tesis|thesis|tugas akhir)\b/i', $recent)
+            && $this->wantsDocumentCreation($recent);
+    }
+
+    /**
+     * True when the user's text expresses intent to CREATE/produce a document,
+     * not merely mention or ask about one. Gates every document/skripsi trigger
+     * (issue #1). Bare "buat" is excluded — in Indonesian it also means "for"
+     * (buat kamu = for you) — so it only counts right before a document noun.
+     */
+    protected function wantsDocumentCreation(string $text): bool
+    {
+        // Explicit creation / revision verbs (Indonesian + English). Revision and
+        // continuation verbs are included so follow-up/continuation turns
+        // (issues #5, #6) also resolve to document mode.
+        if (preg_match('/\b(buatkan|buatlah|buatin|bikinkan|bikin|membuat|dibuatkan|tuliskan|tulis|menulis|susunkan|susun|menyusun|rancang|merancang|generate|kerjakan|selesaikan|lengkapi|kembangkan|perpanjang|perdalam|perbanyak|revisi|perbaiki|lanjutkan|teruskan|sambung|create|make|write|draft|compose)\b/i', $text)) {
+            return true;
+        }
+        // Bare "buat"/"buatkan" immediately before a document noun.
+        if (preg_match('/\bbuat\w*\s+(?:\w+\s+){0,2}(skripsi|makalah|laporan|proposal|tesis|jurnal|artikel|karya ilmiah|dokumen|paper|pdf|docx|word)\b/i', $text)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Classify the requested academic document type from the user's text so the
+     * document gets the RIGHT cover + chapter structure (issue #2). A makalah is
+     * not a 5-chapter skripsi; a proposal has no results chapter. Order matters —
+     * more specific types are checked first. Falls back to 'umum' (plain doc).
+     */
+    protected function detectDocType(string $text): string
+    {
+        $t = mb_strtolower($text);
+        // "proposal skripsi" → proposal (checked before skripsi).
+        if (preg_match('/\bproposal\b/', $t)) {
+            return 'proposal';
+        }
+        if (preg_match('/\b(tesis|thesis|disertasi)\b/', $t)) {
+            return 'tesis';
+        }
+        if (preg_match('/\b(skripsi|tugas akhir)\b/', $t)) {
+            return 'skripsi';
+        }
+        if (preg_match('/\b(jurnal|artikel ilmiah|paper ilmiah)\b/', $t)) {
+            return 'jurnal';
+        }
+        if (preg_match('/\bmakalah\b/', $t)) {
+            return 'makalah';
+        }
+        if (preg_match('/\blaporan\b/', $t)) {
+            return 'laporan';
+        }
+        return 'umum';
+    }
+
+    /**
+     * Document type for the CURRENT build turn, falling back to the room's recent
+     * context. Needed because a build/continue turn often names no type — e.g. a
+     * skripsi brainstorm where the final ask is only "buatkan full sampai bab 1".
+     * The current turn wins if it names a type; otherwise the last several user
+     * turns are scanned so the document still gets the right cover/structure.
+     */
+    protected function detectDocTypeFromMessages(array $messages): string
+    {
+        $last = '';
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (($messages[$i]['role'] ?? '') === 'user') {
+                $last = is_array($messages[$i]['content'])
+                    ? collect($messages[$i]['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                    : (string) ($messages[$i]['content'] ?? '');
+                break;
+            }
+        }
+        $type = $this->detectDocType($last);
+        if ($type !== 'umum') {
+            return $type;
+        }
+        return $this->detectDocType($this->recentUserRequestText($messages, 8));
+    }
+
+    /**
+     * Per-type structural guidance appended to the local system prompt on a
+     * document-creation turn (issue #2). Tells the model the front-matter `mode:`
+     * and the chapter skeleton that matches the requested type, so the renderer
+     * produces the correct cover (MAKALAH vs SKRIPSI) and the body is not a
+     * skripsi skeleton for every request.
+     */
+    protected function docTypeStructureInstructions(string $type): string
+    {
+        $head = "=== STRUKTUR DOKUMEN ({$type}) ===\n"
+            . "Dokumen WAJIB diawali front-matter YAML di antara garis --- dengan `mode: {$type}` lalu isi bab dengan heading # / ##. Isi setiap sub-bagian dengan paragraf utuh (bukan placeholder). ";
+        switch ($type) {
+            case 'skripsi':
+            case 'tesis':
+                return $head
+                    . "Front-matter: mode, judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing. "
+                    . "Struktur: # HALAMAN PENGESAHAN, # ABSTRAK, # ABSTRACT, # BAB I PENDAHULUAN (Latar Belakang, Rumusan Masalah, Tujuan, Batasan, Manfaat), # BAB II TINJAUAN PUSTAKA, # BAB III METODOLOGI PENELITIAN, # BAB IV HASIL DAN PEMBAHASAN, # BAB V PENUTUP, # DAFTAR PUSTAKA (≥10 referensi).";
+            case 'proposal':
+                return $head
+                    . "Front-matter: mode, judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing. "
+                    . "Proposal penelitian TIDAK memuat bab hasil. Struktur: # BAB I PENDAHULUAN (Latar Belakang, Rumusan Masalah, Tujuan, Manfaat), # BAB II TINJAUAN PUSTAKA, # BAB III METODOLOGI PENELITIAN (jadwal & rancangan), # DAFTAR PUSTAKA.";
+            case 'makalah':
+                return $head
+                    . "Front-matter: mode, judul, penulis, nim (jika ada), prodi, fakultas, universitas, kota, tahun, dosen (mata kuliah / dosen pengampu). "
+                    . "Makalah LEBIH RINGKAS dari skripsi — JANGAN pakai 5 bab skripsi. Struktur: # KATA PENGANTAR, # BAB I PENDAHULUAN (Latar Belakang, Rumusan Masalah, Tujuan), # BAB II PEMBAHASAN (boleh beberapa sub-bab sesuai topik), # BAB III PENUTUP (Kesimpulan, Saran), # DAFTAR PUSTAKA.";
+            case 'laporan':
+                return $head
+                    . "Front-matter: mode, judul, penulis, nim, prodi, fakultas, universitas, kota, tahun, pembimbing (jika ada). "
+                    . "Struktur laporan: # KATA PENGANTAR, # BAB I PENDAHULUAN (Latar Belakang, Tujuan, Manfaat), # BAB II LANDASAN TEORI, # BAB III PELAKSANAAN / PEMBAHASAN, # BAB IV PENUTUP (Kesimpulan, Saran), # DAFTAR PUSTAKA.";
+            case 'jurnal':
+                return $head
+                    . "Front-matter: mode, judul, penulis, prodi, universitas, tahun. "
+                    . "Artikel jurnal TIDAK memakai penomoran BAB. Struktur: # Abstrak (+ Kata Kunci), # Pendahuluan, # Metode, # Hasil dan Pembahasan, # Kesimpulan, # Daftar Pustaka.";
+            default:
+                return "=== STRUKTUR DOKUMEN (umum) ===\n"
+                    . "Dokumen umum: awali dengan front-matter `mode: document` (judul, penulis opsional), lalu susun dengan heading # / ## sesuai kebutuhan topik. Tidak perlu struktur bab akademik kecuali diminta.";
+        }
+    }
+
+    /**
+     * In-message SYSTEM REMINDER injected into the last user turn on a single-shot
+     * GGUF document request. Produces a per-type artifact skeleton (issue #2) so a
+     * makalah/laporan/proposal/jurnal is NOT forced into a 5-chapter skripsi shape
+     * with a skripsi cover. Skripsi itself uses the per-chapter pipeline elsewhere.
+     */
+    protected function docArtifactReminder(string $type, string $tier): string
+    {
+        // [render mode, example title, front-matter body, heading skeleton]
+        $meta = "judul: Judul Lengkap\npenulis: Nama Penulis\nnim: NIM-12345\nprodi: Program Studi\nfakultas: Nama Fakultas\nuniversitas: Nama Universitas\nkota: Kota\ntahun: 2024\npembimbing: Nama Pembimbing";
+        switch ($type) {
+            case 'tesis':
+            case 'skripsi':
+                $mode = $type; $title = 'Judul ' . ucfirst($type) . ' Anda';
+                $body = $meta;
+                $skeleton = "# HALAMAN PENGESAHAN\n# ABSTRAK\n# ABSTRACT\n# BAB I PENDAHULUAN\n## 1.1 Latar Belakang\n## 1.2 Perumusan Masalah\n## 1.3 Tujuan\n## 1.4 Batasan Masalah\n## 1.5 Manfaat\n# BAB II TINJAUAN PUSTAKA\n# BAB III METODOLOGI PENELITIAN\n# BAB IV HASIL DAN PEMBAHASAN\n# BAB V PENUTUP\n# DAFTAR PUSTAKA";
+                break;
+            case 'proposal':
+                $mode = 'proposal'; $title = 'Proposal Penelitian Anda';
+                $body = $meta;
+                $skeleton = "# BAB I PENDAHULUAN\n## 1.1 Latar Belakang\n## 1.2 Perumusan Masalah\n## 1.3 Tujuan\n## 1.4 Manfaat\n# BAB II TINJAUAN PUSTAKA\n# BAB III METODOLOGI PENELITIAN\n# DAFTAR PUSTAKA";
+                break;
+            case 'laporan':
+                $mode = 'laporan'; $title = 'Judul Laporan Anda';
+                $body = $meta;
+                $skeleton = "# KATA PENGANTAR\n# BAB I PENDAHULUAN\n## 1.1 Latar Belakang\n## 1.2 Tujuan\n## 1.3 Manfaat\n# BAB II LANDASAN TEORI\n# BAB III PELAKSANAAN DAN PEMBAHASAN\n# BAB IV PENUTUP\n## 4.1 Kesimpulan\n## 4.2 Saran\n# DAFTAR PUSTAKA";
+                break;
+            case 'jurnal':
+                $mode = 'jurnal'; $title = 'Judul Artikel Anda';
+                $body = "judul: Judul Artikel\npenulis: Nama Penulis\nprodi: Program Studi\nuniversitas: Nama Universitas\ntahun: 2024";
+                $skeleton = "# Abstrak\n# Pendahuluan\n# Metode\n# Hasil dan Pembahasan\n# Kesimpulan\n# Daftar Pustaka";
+                break;
+            case 'makalah':
+                $mode = 'makalah'; $title = 'Judul Makalah Anda';
+                $body = "judul: Judul Makalah\npenulis: Nama Penulis\nnim: NIM-12345\nprodi: Program Studi\nfakultas: Nama Fakultas\nuniversitas: Nama Universitas\nkota: Kota\ntahun: 2024\ndosen: Nama Dosen Pengampu";
+                $skeleton = "# KATA PENGANTAR\n# BAB I PENDAHULUAN\n## 1.1 Latar Belakang\n## 1.2 Rumusan Masalah\n## 1.3 Tujuan\n# BAB II PEMBAHASAN\n# BAB III PENUTUP\n## 3.1 Kesimpulan\n## 3.2 Saran\n# DAFTAR PUSTAKA";
+                break;
+            default:
+                $mode = 'document'; $title = 'Judul Dokumen Anda';
+                $body = "judul: Judul Dokumen\npenulis: Nama Penulis\ntahun: 2024";
+                $skeleton = "# Pendahuluan\n# Isi\n# Penutup";
+                break;
+        }
+
+        $depth = $tier === 'large'
+            ? "DEPTH REQUIREMENTS (mandatory):\n"
+                . "- Setiap sub-bagian (## heading) berisi minimal 3 paragraf prosa nyata.\n"
+                . "- Bagian teori/pustaka mengutip sumber bernama + tahun, mis. (Sugiyono, 2019).\n"
+                . "- DAFTAR PUSTAKA (bila ada) berisi minimal 8 referensi berformat konsisten.\n"
+                . "- Tulis sampai dokumen LENGKAP — jangan berhenti dini atau meringkas bab sisa.\n"
+            : '';
+
+        return "\n\n[SYSTEM REMINDER — ARTIFACT OUTPUT REQUIRED:\n"
+            . "You MUST output your document EXCLUSIVELY inside an <antArtifact> block. "
+            . "NEVER use ```markdown code blocks for the document.\n"
+            . "Format your response exactly as:\n"
+            . "<antArtifact type=\"text/markdown\" title=\"{$title}\">\n"
+            . "---\n"
+            . "mode: {$mode}\n"
+            . $body . "\n"
+            . "---\n"
+            . $skeleton . "\n"
+            . "</antArtifact>\n"
+            . "Tulis paragraf UTUH di setiap bagian — tanpa placeholder, tanpa ringkasan satu kalimat.\n"
+            . $depth
+            . "Sebelum tag <antArtifact>, tulis 2-3 kalimat yang menjelaskan struktur dokumen dalam bahasa pengguna.]";
+    }
+
+    /**
+     * The room's active markdown artifact (latest version). Shared by
+     * buildArtifactContext() and the revision routing (issue #5).
+     */
+    protected function latestMarkdownArtifact(Conversation $conversation): ?MessageArtifact
+    {
+        return MessageArtifact::query()
+            ->whereHas('message', fn ($q) => $q->where('conversation_id', $conversation->id))
+            ->whereIn('language', ['markdown', 'md'])
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * In-message reminder for a revision turn (issue #5): the model receives the
+     * FULL current document as the base and must return the COMPLETE revised
+     * document in one <antArtifact> — applying the requested change to the whole
+     * document, never shrinking it, never replying with loose chat text. The
+     * artifact identifier is pinned server-side after parsing, so versioning is
+     * guaranteed even if the model omits it.
+     */
+    protected function docRevisionReminder(MessageArtifact $artifact, string $tier): string
+    {
+        $base = (string) $artifact->content;
+        // 32K window comfortably holds a bounded base + the rewrite.
+        if (mb_strlen($base) > 16000) {
+            $base = mb_substr($base, 0, 16000) . "\n\n[... dokumen dipotong untuk konteks; pertahankan seluruh isi aslinya di keluaran Anda]";
+        }
+
+        return "\n\n[SYSTEM REMINDER — REVISI DOKUMEN (WAJIB ARTIFACT):\n"
+            . "Ini permintaan MEREVISI dokumen yang SUDAH ADA (judul: \"{$artifact->title}\"), bukan membuat dokumen baru dari nol dan BUKAN jawaban chat biasa.\n"
+            . "Terapkan permintaan pengguna pada dokumen di bawah, lalu keluarkan SELURUH dokumen versi baru (LENGKAP dari awal sampai akhir) di dalam SATU blok:\n"
+            . "<antArtifact type=\"text/markdown\" title=\"{$artifact->title}\"> ... </antArtifact>\n"
+            . "ATURAN: JANGAN memangkas bagian yang tidak diminta diubah — salin utuh. JANGAN membalas hanya potongan/teks lepas. Pertahankan front-matter YAML di awal. "
+            . ($tier === 'large' ? "Perdalam dengan paragraf nyata; jangan meringkas bab yang sudah ada.\n" : "")
+            . "\n=== ISI DOKUMEN SAAT INI (BASIS REVISI) ===\n"
+            . $base
+            . "\n=== AKHIR ISI DOKUMEN ===]";
+    }
+
+    /**
+     * In-message reminder for continuing/building from an uploaded document
+     * (issue #6): the attachment content + grounding are already injected by the
+     * provider (ResolvesAttachments); this tells the model to base its work on
+     * THAT document and emit the result as an artifact, not regenerate from zero.
+     */
+    protected function docUploadContinuationReminder(string $tier): string
+    {
+        return "\n\n[SYSTEM REMINDER — LANJUTKAN DARI DOKUMEN YANG DIUNGGAH (WAJIB ARTIFACT):\n"
+            . "Pengguna mengunggah sebuah dokumen (isinya ada di konteks di atas) dan meminta Anda melanjutkan/menyusun bagian darinya. "
+            . "DASARKAN pekerjaan Anda pada isi dokumen itu — ikuti judul, gaya, penomoran bab, dan istilahnya. JANGAN menulis ulang dari nol dan JANGAN mengarang isi yang bertentangan dengan dokumen. "
+            . "Jika pengguna meminta bab tertentu (mis. BAB IV), tulis bab itu secara LENGKAP agar nyambung dengan bab sebelumnya di dokumen. "
+            . "Keluarkan hasilnya di dalam SATU blok <antArtifact type=\"text/markdown\" title=\"Judul Sesuai Dokumen\"> ... </antArtifact>. "
+            . ($tier === 'large' ? "Tulis paragraf akademik yang utuh dan mendalam.\n" : "")
+            . "Jika informasi yang diminta tidak ada di dokumen, nyatakan dengan jujur di chat (di luar artifact).]";
     }
 
     /**
@@ -2119,14 +2476,29 @@ GBNF;
             $recentMessages = $recentCount > 0 ? array_slice($userMessages, -$recentCount) : [];
             $middleMessages = array_slice($userMessages, $keepFirst, $totalMsgs - $keepFirst - $recentCount);
 
-            $middleDigest = $this->buildMiddleDigest($middleMessages);
+            // Never drop a message that carries attachments (issue #6): the
+            // uploaded document is re-resolved by the provider on EVERY turn, so
+            // a follow-up question about a document uploaded a while ago must
+            // still find that attachment in the window. Pin such middle messages
+            // back in (in original order) and keep only the rest in the digest.
+            $pinnedAttachments = [];
+            $digestMiddle = [];
+            foreach ($middleMessages as $m) {
+                if (!empty($m['attachments'])) {
+                    $pinnedAttachments[] = $m;
+                } else {
+                    $digestMiddle[] = $m;
+                }
+            }
+
+            $middleDigest = $this->buildMiddleDigest($digestMiddle);
             if ($middleDigest !== '') {
                 $systemPrompt .= "\n\n--- EARLIER CONVERSATION DIGEST ---\n"
                     . "These exchanges fell outside the recent message window. They're summarised here so you stay aware of the thread; lean on PERSISTENT MEMORY (above) for durable facts.\n\n"
                     . $middleDigest;
             }
 
-            $messagesForAi = array_merge($firstMessages, $recentMessages);
+            $messagesForAi = array_merge($firstMessages, $pinnedAttachments, $recentMessages);
         } else {
             $messagesForAi = $userMessages;
         }
@@ -2384,7 +2756,8 @@ GBNF;
             . "- Diagrams, flowcharts, charts, org/structure figures: output INLINE raw <svg>…</svg> (mPDF renders SVG natively). Do NOT use ASCII diagrams or mermaid. Wrap each figure as <figure><svg…>…</svg><figcaption>Gambar X.Y Caption</figcaption></figure>. If the source text mentions a diagram but it's missing, creatively generate an SVG diagram to replace it!\n"
             . "- To include an image the user uploaded, reference it with markdown: ![Keterangan](attachments/<filename>) using the path from the conversation; the renderer resolves local uploads automatically.\n"
             . "- For FORMAL / ACADEMIC documents (skripsi, laporan, thesis): begin the artifact content with a YAML front-matter block to trigger the academic layout (cover page, automatic DAFTAR ISI / Table of Contents, Roman→Arabic page numbering, 4-3-3-3 cm margins, Times New Roman 12pt, justified). Use exactly this shape (omit fields you don't know):\n"
-            . "---\nmode: skripsi            # skripsi | laporan | jurnal | document\njudul: <full title>\npenulis: <author name>\nnim: <student id>\nprodi: <study program>\nfakultas: <faculty>\nuniversitas: <university>\nkota: <city>\ntahun: <year>\npembimbing: <advisor>\nlogo: <path/URL logo, mis. attachments/<filename> dari file yang diupload user — KOSONGKAN/hapus baris ini bila user tidak mengirim logo>\n---\n"
+            . "---\nmode: skripsi            # skripsi | tesis | makalah | laporan | proposal | jurnal | document — PILIH yang sesuai permintaan user (makalah ≠ skripsi: cover & struktur beda)\njudul: <full title>\npenulis: <author name>\nnim: <student id>\nprodi: <study program>\nfakultas: <faculty>\nuniversitas: <university>\nkota: <city>\ntahun: <year>\npembimbing: <advisor>\ndosen: <hanya untuk makalah: dosen pengampu mata kuliah>\nlogo: <path/URL logo, mis. attachments/<filename> dari file yang diupload user — KOSONGKAN/hapus baris ini bila user tidak mengirim logo>\n---\n"
+            . "  Struktur per tipe: skripsi/tesis = BAB I–V + Daftar Pustaka; proposal = BAB I–III (tanpa bab hasil); makalah = Kata Pengantar + BAB I Pendahuluan / II Pembahasan / III Penutup + Daftar Pustaka; laporan = Kata Pengantar + Pendahuluan/Landasan Teori/Pelaksanaan/Penutup; jurnal = tanpa BAB (Abstrak→Pendahuluan→Metode→Hasil & Pembahasan→Kesimpulan).\n"
             . "- LOGO COVER: Jika user mengirim/melampirkan gambar logo (kampus/instansi), SET field `logo:` ke path lampiran tersebut (mis. `attachments/logo-unri.png`) agar logo tampil di cover. Jika user HANYA menyebut nama universitas tanpa mengirim file gambar, JANGAN mengarang path logo dan JANGAN menulis field `logo` — cukup isi `universitas:` dengan namanya (nama itu otomatis tampil sebagai teks di cover). Sistem TIDAK bisa membuat logo dari nama; logo hanya muncul jika ada file gambar yang dikirim user.\n"
             . "Then structure chapters as level-1 headings (# BAB I PENDAHULUAN, # BAB II …) — each # heading starts a new page — with ## and ### for sub-sections (## 1.1 Latar Belakang). Headings are collected into the Table of Contents automatically.\n"
             . "\n--- BAGIAN AWAL / FRONT MATTER (WAJIB untuk skripsi/laporan FULL, meski prompt user singkat) ---\n"
@@ -2603,11 +2976,7 @@ GBNF;
      */
     protected function buildArtifactContext(Conversation $conversation, string $userText): string
     {
-        $artifact = MessageArtifact::query()
-            ->whereHas('message', fn($q) => $q->where('conversation_id', $conversation->id))
-            ->whereIn('language', ['markdown', 'md'])
-            ->latest('id')
-            ->first();
+        $artifact = $this->latestMarkdownArtifact($conversation);
 
         if (!$artifact) {
             return '';
@@ -2656,12 +3025,19 @@ GBNF;
             }
 
             $text = preg_replace('/<antArtifact[^>]*>.*?<\/antArtifact>/is', '[artifact]', $text) ?? $text;
-            $first = preg_split('/(?<=[.!?])\s/', $text, 2)[0] ?? $text;
-            if (mb_strlen($first) > 240) {
-                $first = mb_substr($first, 0, 240) . '…';
+            // Keep the first ~2 sentences (up to 400 chars) instead of one, so the
+            // digest carries enough of each turn to stay coherent (#4). With the
+            // 32K window this branch fires rarely, so the extra length is cheap.
+            $parts = preg_split('/(?<=[.!?])\s/', $text, 3);
+            $snippet = trim(implode(' ', array_slice($parts, 0, 2)));
+            if ($snippet === '') {
+                $snippet = $text;
+            }
+            if (mb_strlen($snippet) > 400) {
+                $snippet = mb_substr($snippet, 0, 400) . '…';
             }
 
-            $out[] = $role . ': ' . $first;
+            $out[] = $role . ': ' . $snippet;
 
             if (count($out) >= 80) {
                 $out[] = '... (' . (count($messages) - count($out) + 1) . ' more earlier messages omitted)';

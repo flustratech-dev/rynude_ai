@@ -50,7 +50,7 @@ class PdfRenderer
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');
-        $mode = in_array($mode, ['skripsi', 'laporan', 'jurnal', 'document'], true) ? $mode : 'document';
+        $mode = in_array($mode, ['skripsi', 'tesis', 'laporan', 'makalah', 'proposal', 'jurnal', 'document'], true) ? $mode : 'document';
 
         $html = $this->resolveImages($html);
 
@@ -79,7 +79,7 @@ class PdfRenderer
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');
-        $mode = in_array($mode, ['skripsi', 'laporan', 'jurnal', 'document'], true) ? $mode : 'document';
+        $mode = in_array($mode, ['skripsi', 'tesis', 'laporan', 'makalah', 'proposal', 'jurnal', 'document'], true) ? $mode : 'document';
 
         $html = $this->resolveImages($html);
 
@@ -91,7 +91,7 @@ class PdfRenderer
      */
     private function buildPdf(string $title, string $bodyHtml, array $meta, string $mode): string
     {
-        $academic = in_array($mode, ['skripsi', 'laporan'], true);
+        $academic = in_array($mode, ['skripsi', 'tesis', 'laporan', 'makalah', 'proposal'], true);
         $isJurnal = $mode === 'jurnal';
         $fmt = $this->resolveFormat($meta, $academic);
         [$mt, $mr, $mb, $ml] = $fmt['margins'];
@@ -215,7 +215,7 @@ class PdfRenderer
 
     private function buildHtml(string $title, string $bodyHtml, array $meta, string $mode): string
     {
-        $academic = in_array($mode, ['skripsi', 'laporan'], true);
+        $academic = in_array($mode, ['skripsi', 'tesis', 'laporan', 'makalah', 'proposal'], true);
         $fmt = $this->resolveFormat($meta, $academic);
         $css = $this->css($academic, $fmt, $mode);
 
@@ -310,12 +310,32 @@ class PdfRenderer
     {
         $judul = e($meta['judul'] ?: $title);
 
+        // Document-type banner + subtitle on the cover. Each academic type gets
+        // its own wording so a makalah/proposal no longer wears a SKRIPSI cover
+        // (issue #2). Uses a labelled banner and, where conventional, a subtitle.
+        $bannerFor = fn (string $label, string $subtitle = '') =>
+            '<div style="margin-top: 1.5cm; font-size: 14pt; font-weight: bold; text-transform: uppercase;">' . $label . '</div>'
+            . ($subtitle !== '' ? '<div style="margin-top: 1cm; font-size: 11pt; line-height: 1.5;">' . $subtitle . '</div>' : '');
+        $univ = e($meta['universitas'] ?? 'Universitas');
         $skripsi_text = '';
-        if (($meta['mode'] ?? '') === 'skripsi') {
-            $skripsi_text = '<div style="margin-top: 1.5cm; font-size: 14pt; font-weight: bold; text-transform: uppercase;">SKRIPSI</div>';
-            $skripsi_text .= '<div style="margin-top: 1cm; font-size: 11pt; line-height: 1.5;">Diajukan sebagai salah satu syarat untuk memperoleh<br>gelar Sarjana pada ' . e($meta['universitas'] ?? 'Universitas') . '</div>';
-        } elseif (($meta['mode'] ?? '') === 'laporan') {
-            $skripsi_text = '<div style="margin-top: 1.5cm; font-size: 14pt; font-weight: bold; text-transform: uppercase;">LAPORAN</div>';
+        switch ($meta['mode'] ?? '') {
+            case 'skripsi':
+                $skripsi_text = $bannerFor('SKRIPSI', 'Diajukan sebagai salah satu syarat untuk memperoleh<br>gelar Sarjana pada ' . $univ);
+                break;
+            case 'tesis':
+                $skripsi_text = $bannerFor('TESIS', 'Diajukan sebagai salah satu syarat untuk memperoleh<br>gelar Magister pada ' . $univ);
+                break;
+            case 'proposal':
+                $skripsi_text = $bannerFor('PROPOSAL PENELITIAN', 'Diajukan untuk memenuhi persyaratan penyusunan skripsi pada ' . $univ);
+                break;
+            case 'makalah':
+                $skripsi_text = $bannerFor('MAKALAH', ($meta['dosen'] ?? '') !== ''
+                    ? 'Diajukan untuk memenuhi tugas mata kuliah<br>Dosen Pengampu: ' . e($meta['dosen'])
+                    : 'Diajukan untuk memenuhi tugas mata kuliah pada ' . $univ);
+                break;
+            case 'laporan':
+                $skripsi_text = $bannerFor('LAPORAN');
+                break;
         }
 
         $logo = '';
@@ -331,7 +351,9 @@ class PdfRenderer
 
         $meta_block = '<div style="margin-top: 1cm; font-size: 12pt;">Disusun Oleh:</div>';
         $meta_block .= '<div style="margin-top: 0.5cm; font-weight: bold; font-size: 12pt; text-transform: uppercase;">' . e($meta['penulis']) . '</div>';
-        $meta_block .= '<div style="margin-top: 0.2cm; font-weight: bold; font-size: 12pt;">NIM. ' . e($meta['nim']) . '</div>';
+        if (($meta['nim'] ?? '') !== '') {
+            $meta_block .= '<div style="margin-top: 0.2cm; font-weight: bold; font-size: 12pt;">NIM. ' . e($meta['nim']) . '</div>';
+        }
 
         $inst = collect([
             $meta['prodi'] ? 'PROGRAM STUDI ' . strtoupper($meta['prodi']) : null,

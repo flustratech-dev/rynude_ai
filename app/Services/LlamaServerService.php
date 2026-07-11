@@ -38,24 +38,24 @@ class LlamaServerService
 
     /**
      * Per-model context window (`n_ctx`). We serve every Model Hub model with
-     * 16384 tokens: the chat path requests up to 8192 output tokens, so the
-     * window must hold prompt + output. The reported failure was a 6625-token
-     * prompt against a 4096 window; 16384 comfortably fits an ~8K prompt plus an
-     * ~8K reply. All these models have a >=32K native context, so 16384 is well
-     * within range; the ceiling is KV-cache RAM, which the Model Hub already
-     * gates on (required_ram_gb). Tunable per-model here if a machine is tight.
+     * 32768 tokens so a full chat room ("baca dari atas sampai terbaru") plus an
+     * ~8K reply fits without the sliding window shedding recent turns. All these
+     * models have a >=32K native context, so 32768 is within range; the ceiling
+     * is KV-cache RAM, which the Model Hub already gates on (required_ram_gb) —
+     * 32K roughly doubles the KV-cache footprint vs the old 16K. Tunable per-model
+     * here if a machine is tight (drop the tiny models back to 16384 first).
      */
     private const CONTEXT_SIZES = [
-        'qwen-2.5-0.5b'       => 16384,
-        'qwen-2.5-1.5b'       => 16384,
-        'rynude-lyric-plus-1' => 16384,
-        'llama-3.2-3b'        => 16384,
-        'mistral-7b-v0.3' => 16384,
-        'llama-3.1-8b'    => 16384,
-        'qwen-2.5-14b'    => 16384,
+        'qwen-2.5-0.5b'       => 32768,
+        'qwen-2.5-1.5b'       => 32768,
+        'rynude-lyric-plus-1' => 32768,
+        'llama-3.2-3b'        => 32768,
+        'mistral-7b-v0.3' => 32768,
+        'llama-3.1-8b'    => 32768,
+        'qwen-2.5-14b'    => 32768,
     ];
 
-    private const DEFAULT_CONTEXT = 16384;
+    private const DEFAULT_CONTEXT = 32768;
 
     /**
      * Capability tier per model. Generation params and the system prompt are

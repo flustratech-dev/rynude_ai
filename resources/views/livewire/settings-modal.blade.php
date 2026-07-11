@@ -539,7 +539,7 @@
                          checking: false,
                          statusMsg: 'Sistem sedang berjalan dengan normal dan stabil.',
                          lastChecked: 'Baru saja',
-                         updateCmd: 'php artisan rynude:update && php -S 127.0.0.1:8000 -t public',
+                         updateCmd: 'php artisan rynude:update && php -S 127.0.0.1:8080 -t public',
                          copied: false,
                          doCheck() {
                              this.checking = true;

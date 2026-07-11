@@ -334,13 +334,42 @@ class ChatApiController extends ApiController
      */
     private function buildAiMessages(Conversation $conversation): array
     {
-        $thread = Message::activeThread($conversation->id)->with('attachments')->get();
+        $thread = Message::activeThread($conversation->id)
+            ->with(['attachments', 'artifacts'])
+            ->get();
 
         $messages = [];
         foreach ($thread as $msg) {
+            $content = (string) $msg->content;
+
+            // Feed assistant artifacts back into the thread. The visible message
+            // text is the clean chat part ("Here's your document") — the actual
+            // document lives in a separate MessageArtifact row and never reached
+            // the model on later turns, so it kept "forgetting" what it wrote
+            // (issues #4/#5/#6). Re-inject a BOUNDED reference: title + heading
+            // outline only, never the full body (a skripsi would blow the window).
+            // The model then knows the document exists and its structure; the
+            // verbatim chapter is pulled on demand by buildArtifactContext().
+            if ($msg->role === 'assistant' && $msg->artifacts->isNotEmpty()) {
+                foreach ($msg->artifacts as $art) {
+                    $outline = is_array($art->outline_json)
+                        ? $art->outline_json
+                        : \App\Models\MessageArtifact::extractOutline((string) $art->content);
+                    $headings = '';
+                    foreach (array_slice($outline, 0, 40) as $h) {
+                        $indent = str_repeat('  ', max(0, (int) ($h['level'] ?? 1) - 1));
+                        $headings .= "\n{$indent}- " . trim((string) ($h['text'] ?? ''));
+                    }
+                    $content .= "\n\n[Dokumen yang sudah Anda buat sebelumnya — artifact #{$art->id}"
+                        . ", judul: \"{$art->title}\"" . ($art->version > 1 ? " (versi {$art->version})" : '') . "."
+                        . ($headings !== '' ? " Struktur/outline:{$headings}" : '')
+                        . "\nSaat pengguna minta revisi/lanjutan, dokumen inilah sumber kebenarannya — jangan menulis ulang dari nol.]";
+                }
+            }
+
             $msgData = [
                 'role' => $msg->role,
-                'content' => $msg->content,
+                'content' => $content,
             ];
 
             // Include attachments in message context if present
