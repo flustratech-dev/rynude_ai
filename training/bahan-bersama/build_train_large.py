@@ -120,7 +120,20 @@ SKELETONS = {
     "laporan": ["# KATA PENGANTAR", "# BAB I PENDAHULUAN", "# BAB II LANDASAN TEORI",
                 "# BAB III PELAKSANAAN DAN PEMBAHASAN", "# BAB IV PENUTUP", "# DAFTAR PUSTAKA"],
 }
-SECTION_STUB = "_(Isi bagian ini ditulis lengkap dalam paragraf akademik saat generasi — bagian ini menandai struktur.)_"
+# Isi ringkas per sub-bagian. JANGAN pakai placeholder instruksi (mis. "(isi
+# bagian ini ditulis...)") — di 4.7 model MENIRU placeholder itu jadi output
+# sehingga dokumen keluar sebagai outline kosong. Pakai prosa NYATA & bervariasi
+# supaya model belajar "bagian dokumen berisi paragraf", bukan menandai struktur.
+_STUB_POOL = [
+    "Bagian ini menguraikan pokok bahasan secara sistematis, menjelaskan konsep utama dan kaitannya dengan topik.",
+    "Pada bagian ini dipaparkan latar dan penjelasan yang relevan, disertai argumen pendukung yang runtut.",
+    "Uraian berikut membahas aspek penting terkait subtopik ini beserta implikasinya bagi penelitian.",
+    "Bagian ini menyajikan penjelasan mendalam mengenai poin yang dibahas, dilengkapi contoh yang sesuai.",
+]
+
+
+def SECTION_STUB():
+    return random.choice(_STUB_POOL)
 
 
 def doc_example(mode, topic):
@@ -129,7 +142,7 @@ def doc_example(mode, topic):
     judul = topic[0].upper() + topic[1:]
     body = front_matter(mode, judul) + "\n"
     for h in SKELETONS[mode]:
-        body += h + "\n" + (SECTION_STUB + "\n\n" if h.startswith("##") or h.count(" ") > 2 else "\n")
+        body += h + "\n" + (SECTION_STUB() + "\n\n" if h.startswith("##") or h.count(" ") > 2 else "\n")
     intro = f"Baik, saya susun {mode} tentang {topic}. Strukturnya mengikuti kaidah akademik: front-matter untuk sampul, lalu bab-bab berurutan sampai daftar pustaka."
     return intro + "\n\n<antArtifact type=\"text/markdown\" title=\"" + judul + "\">\n" + body + "</antArtifact>"
 
@@ -161,7 +174,7 @@ def gen_documents(n):
             if "sampai bab 1" in scope:
                 # scoped single-shot: front-matter + only Bab 1
                 judul = t[0].upper() + t[1:]
-                body = front_matter(mode, judul) + "\n# BAB I PENDAHULUAN\n## 1.1 Latar Belakang\n" + SECTION_STUB + "\n## 1.2 Rumusan Masalah\n" + SECTION_STUB + "\n## 1.3 Tujuan\n" + SECTION_STUB + "\n"
+                body = front_matter(mode, judul) + "\n# BAB I PENDAHULUAN\n## 1.1 Latar Belakang\n" + SECTION_STUB() + "\n## 1.2 Rumusan Masalah\n" + SECTION_STUB() + "\n## 1.3 Tujuan\n" + SECTION_STUB() + "\n"
                 a = f"Baik, saya buatkan {mode} tentang {t} sampai Bab 1.\n\n<antArtifact type=\"text/markdown\" title=\"{judul}\">\n{body}</antArtifact>"
             else:
                 a = doc_example(mode, t)

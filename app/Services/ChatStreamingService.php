@@ -132,6 +132,7 @@ class ChatStreamingService
             // "Metode kualitatif" carries no skripsi keyword, so the last-message
             // doc detector ($isGgufDocRequest) misses it by design.
             $useChapterPipeline = false;
+            $babLimit = null; // max BAB for a scoped skripsi ("sampai bab N")
             if ($llamaService->isGgufModel($model)) {
                 $lastAssistantText = '';
                 $latestUserForScope = '';
@@ -145,13 +146,15 @@ class ChatStreamingService
                             : (string) ($messages[$i]['content'] ?? '');
                     }
                 }
-                // The full pipeline writes ALL chapters (BAB I–V). When the user
-                // explicitly scopes the request to a specific/partial chapter
-                // ("full sampai bab 1", "bab 1 saja", "cuma bab 2") the pipeline
-                // would over-produce — keep it on the single-shot artifact path.
+                // A scoped skripsi ("full sampai bab 1", "bab 1 saja") ALSO goes
+                // through the per-chapter pipeline — so it gets the clarify question,
+                // per-stage thinking + explanation, and REAL chapter content — just
+                // LIMITED to the requested BAB. The old single-shot path produced
+                // empty outlines with placeholder text ("isi bagian ini ditulis…").
                 $chapterScoped = (bool) preg_match('/\b(sampai\s+bab|bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $latestUserForScope);
+                $babLimit = $chapterScoped ? $this->detectBabReference($latestUserForScope) : null;
 
-                $useChapterPipeline = (!$chapterScoped && $isGgufDocRequest && $this->isSkripsiPipelineRequest($messages))
+                $useChapterPipeline = ($isGgufDocRequest && $this->isSkripsiPipelineRequest($messages))
                     || str_contains($lastAssistantText, 'Metode penelitian apa yang ingin Anda pakai');
             }
 
@@ -229,7 +232,7 @@ class ChatStreamingService
 
             // Stream from AI service
             if ($useChapterPipeline) {
-                $stream = $this->streamSkripsiPerChapter($conversation, $messages, $model, $ggufTier, $stopKey);
+                $stream = $this->streamSkripsiPerChapter($conversation, $messages, $model, $ggufTier, $stopKey, $babLimit ?? null);
             } else {
                 // Constrained output (perubahan.md #3): on local GGUF document
                 // requests a GBNF grammar physically forces the reply shape —
@@ -1509,7 +1512,7 @@ GBNF;
      * content, ['type' => 'thinking'] arrays), so the main stream() loop
      * consumes it unchanged.
      */
-    protected function streamSkripsiPerChapter(Conversation $conversation, array $messages, string $model, string $tier, string $stopKey): \Generator
+    protected function streamSkripsiPerChapter(Conversation $conversation, array $messages, string $model, string $tier, string $stopKey, ?int $babLimit = null): \Generator
     {
         // Working request = last few user turns joined, so a chip answer
         // ("Metode kuantitatif") still carries the original skripsi ask.
@@ -1585,6 +1588,14 @@ GBNF;
             ['Daftar Pustaka', 'DAFTAR PUSTAKA',
                 "Tulis '# DAFTAR PUSTAKA' berisi minimal 12 referensi berformat konsisten dan diurutkan alfabetis, selaras dengan penulis/tahun yang dikutip di bab-bab sebelumnya."],
         ];
+
+        // Scoped skripsi ("sampai bab N"): write Pengesahan/Abstrak (index 0) + BAB I..N
+        // (index 1..N) only, with REAL content — then stop. Skips later chapters +
+        // Daftar Pustaka. N came from detectBabReference; index N maps to BAB N.
+        $partialSkripsi = ($babLimit !== null && $babLimit >= 1 && $babLimit < 5);
+        if ($partialSkripsi) {
+            $chapters = array_slice($chapters, 0, $babLimit + 1);
+        }
 
         $maxTokensPerChapter = $tier === 'large' ? 4096 : 3072;
         $summary = '';
@@ -1720,12 +1731,23 @@ GBNF;
         // built, how, per-chapter contents, and what they can do next.
         if (!Cache::get($stopKey)) {
             yield "\n\n" . $this->buildSkripsiExplanation($meta, $chapterOutlines);
-            yield ['type' => 'suggestions', 'data' => [
-                'Perdalam BAB IV (analisis & pembahasan)',
-                'Tambah tabel dan diagram pendukung',
-                'Ubah judul atau data halaman sampul',
-                'Buat versi PDF-nya',
-            ]];
+            if ($partialSkripsi) {
+                $nextRoman = $this->intToRoman($babLimit + 1);
+                yield "\n\n_Sesuai permintaan, saya menulisnya **sampai BAB {$babLimit}** dulu (dengan isi lengkap, bukan kerangka). Kalau mau dilanjutkan, ketik **\"lanjutkan BAB {$nextRoman}\"**._";
+                yield ['type' => 'suggestions', 'data' => [
+                    "Lanjutkan ke BAB {$nextRoman}",
+                    "Perdalam BAB " . $this->intToRoman($babLimit),
+                    'Ubah judul atau data halaman sampul',
+                    'Buat versi PDF-nya',
+                ]];
+            } else {
+                yield ['type' => 'suggestions', 'data' => [
+                    'Perdalam BAB IV (analisis & pembahasan)',
+                    'Tambah tabel dan diagram pendukung',
+                    'Ubah judul atau data halaman sampul',
+                    'Buat versi PDF-nya',
+                ]];
+            }
         }
     }
 

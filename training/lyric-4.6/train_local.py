@@ -31,7 +31,7 @@ from peft import LoraConfig, get_peft_model
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="Qwen/Qwen3-1.7B")
-    ap.add_argument("--data", default="dataset_upgrade.jsonl")
+    ap.add_argument("--data", default="dataset_4.8.jsonl")
     ap.add_argument("--out", default="rynude-lyric-4.7")
     ap.add_argument("--block", type=int, default=1024, help="panjang blok packing")
     ap.add_argument("--epochs", type=float, default=1.0)
