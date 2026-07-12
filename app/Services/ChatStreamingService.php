@@ -592,6 +592,25 @@ class ChatStreamingService
             }
         }
 
+        // Academic documents must carry YAML front-matter so the renderer applies
+        // the cover/TOC layout. Small local models sometimes emit the body but
+        // forget the front-matter on a single-shot document turn (seen live: a
+        // skripsi came out as a plain document, no cover). Synthesize a minimal
+        // front-matter from the artifact title when it's missing, so the correct
+        // cover still renders. The per-chapter pipeline already builds its own.
+        if (($isGgufDocRequest ?? false) && !($isRevisionTurn ?? false)
+            && !($useChapterPipeline ?? false) && !empty($parsedArtifacts['items'])) {
+            $docType = $this->detectDocTypeFromMessages($messages);
+            if (in_array($docType, ['skripsi', 'tesis', 'makalah', 'laporan', 'proposal', 'jurnal'], true)) {
+                $body = ltrim((string) $parsedArtifacts['items'][0]['content']);
+                if (!str_starts_with($body, '---')) {
+                    $judul = trim(str_replace(["\n", "\r"], ' ', (string) ($parsedArtifacts['items'][0]['title'] ?? 'Dokumen')));
+                    $fm = "---\nmode: {$docType}\njudul: {$judul}\ntahun: " . date('Y') . "\n---\n\n";
+                    $parsedArtifacts['items'][0]['content'] = $fm . $body;
+                }
+            }
+        }
+
         // A document artifact always deserves "what's next" chips — fall back
         // to sensible defaults when neither pipeline nor model supplied any.
         if (empty($suggestions) && !empty($parsedArtifacts['items'])) {

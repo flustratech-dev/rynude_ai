@@ -20,6 +20,7 @@ class AiModelSeeder extends Seeder
             ['code' => 'qwen-2.5-0.5b', 'name' => 'rynude Vignette', 'provider' => 'local'],
             ['code' => 'qwen-2.5-1.5b', 'name' => 'rynude Lyric 4.5', 'provider' => 'local'],
             ['code' => 'rynude-lyric-plus-1', 'name' => 'rynude Lyric 4.6', 'provider' => 'local'],
+            ['code' => 'rynude-lyric-plus-2', 'name' => 'rynude Lyric 4.7', 'provider' => 'local'],
             ['code' => 'llama-3.2-3b', 'name' => 'rynude Stanza', 'provider' => 'local'],
             ['code' => 'mistral-7b-v0.3', 'name' => 'rynude Canto', 'provider' => 'local'],
             ['code' => 'llama-3.1-8b', 'name' => 'rynude Symphony', 'provider' => 'local'],

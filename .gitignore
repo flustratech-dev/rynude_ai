@@ -25,3 +25,15 @@ Thumbs.db
 
 # Runtime port file dibuat launcher
 .rynude-port
+
+# --- Training artefak (bobot model ada di HuggingFace, BUKAN di git) ---
+training/.venv-train/
+training/llama.cpp/
+training/**/outputs_local/
+training/**/rynude-lyric-*-merged/
+training/**/rynude-lyric-*-lora/
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.bin
