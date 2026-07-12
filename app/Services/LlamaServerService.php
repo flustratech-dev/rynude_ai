@@ -31,6 +31,7 @@ class LlamaServerService
         'qwen-2.5-1.5b'       => 'Qwen3-1.7B-Q8_0.gguf',
         'rynude-lyric-plus-1' => 'rynude-lyric-4.6.gguf',
         'rynude-lyric-plus-2' => 'rynude-lyric-4.7.gguf',
+        'rynude-lyric-plus-3' => 'rynude-lyric-4.8.gguf',
         'llama-3.2-3b'        => 'Qwen3-4B-Q4_K_M.gguf',
         'mistral-7b-v0.3' => 'Qwen3-8B-Q4_K_M.gguf',
         'llama-3.1-8b'    => 'Qwen3-14B-Q4_K_M.gguf',
@@ -51,6 +52,7 @@ class LlamaServerService
         'qwen-2.5-1.5b'       => 32768,
         'rynude-lyric-plus-1' => 32768,
         'rynude-lyric-plus-2' => 32768,
+        'rynude-lyric-plus-3' => 32768,
         'llama-3.2-3b'        => 32768,
         'mistral-7b-v0.3' => 32768,
         'llama-3.1-8b'    => 32768,
@@ -74,6 +76,7 @@ class LlamaServerService
         'qwen-2.5-1.5b'       => 'small',
         'rynude-lyric-plus-1' => 'small',
         'rynude-lyric-plus-2' => 'small',
+        'rynude-lyric-plus-3' => 'small',
         // Qwen3-4B follows long instructions reliably — promoted to 'large'
         // so it gets the near-cloud prompt instead of the slim guardrail one.
         'llama-3.2-3b'    => 'large',

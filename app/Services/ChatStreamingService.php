@@ -151,10 +151,21 @@ class ChatStreamingService
                 // per-stage thinking + explanation, and REAL chapter content — just
                 // LIMITED to the requested BAB. The old single-shot path produced
                 // empty outlines with placeholder text ("isi bagian ini ditulis…").
-                $chapterScoped = (bool) preg_match('/\b(sampai\s+bab|bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $latestUserForScope);
-                $babLimit = $chapterScoped ? $this->detectBabReference($latestUserForScope) : null;
+                // The scope ("sampai bab N") often lives one or more turns BACK: after
+                // the clarify chip the newest user turn is just "Metode kualitatif…",
+                // which carries no scope. Read the joined recent user turns so the
+                // original "…sampai bab 1" is still seen — otherwise babLimit resets to
+                // null on the write turn and the whole BAB I–V gets produced.
+                $scopeText = $this->recentUserRequestText($messages, 4);
+                $chapterScoped = (bool) preg_match('/\b(sampai\s+bab|bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $scopeText);
+                $babLimit = $chapterScoped ? $this->detectBabReference($scopeText) : null;
 
-                $useChapterPipeline = ($isGgufDocRequest && $this->isSkripsiPipelineRequest($messages))
+                $isSkripsiCreate = $this->isSkripsiPipelineRequest($messages);
+                $useChapterPipeline = ($isGgufDocRequest && $isSkripsiCreate)
+                    // A scoped skripsi ("sampai bab N") must ALWAYS enter the pipeline,
+                    // never the single-shot skeleton path — whose full BAB I–V outline
+                    // would otherwise leak into a "bab 1 only" document.
+                    || ($chapterScoped && $isSkripsiCreate)
                     || str_contains($lastAssistantText, 'Metode penelitian apa yang ingin Anda pakai');
             }
 
@@ -167,6 +178,8 @@ class ChatStreamingService
             $isRevisionTurn = false;
             $revisionArtifact = null;
             $isUploadContinuation = false;
+            $isSkripsiContinuation = false;
+            $continuationRange = null; // [fromBab, toBab] when appending new chapters
             if ($llamaService->isGgufModel($model)) {
                 $latestUserText = '';
                 $latestUserHasDoc = false;
@@ -194,6 +207,24 @@ class ChatStreamingService
                     $revisionArtifact = $this->latestMarkdownArtifact($conversation);
                     if ($revisionArtifact) {
                         $isRevisionTurn = true;
+
+                        // #4: "lanjutkan/teruskan/sambung/tambah BAB N" on an active
+                        // SKRIPSI must APPEND the next chapter(s) to the SAME document
+                        // — not regenerate the whole thing (which produced a new,
+                        // ngaco doc). Only when the target chapter isn't there yet;
+                        // "perdalam BAB IV" on an existing BAB IV stays a normal revision.
+                        $content = (string) $revisionArtifact->content;
+                        $isSkripsiDoc = (bool) preg_match('/^\s*---[\s\S]*?\bmode:\s*(skripsi|tesis)\b/i', $content)
+                            || (bool) preg_match('/^#\s+BAB\s+[IVX]/mi', $content);
+                        $continueVerb = (bool) preg_match('/\b(lanjut(?:kan)?|teruskan|sambung|tambah(?:kan)?\s+bab)\b/i', $latestUserText);
+                        if ($isSkripsiDoc && $continueVerb) {
+                            $highest = $this->highestBabInDocument($content);
+                            $target = $this->detectBabReference($latestUserText) ?? ($highest + 1);
+                            if ($target > $highest && $highest >= 1 && $target <= 5) {
+                                $isSkripsiContinuation = true;
+                                $continuationRange = [$highest + 1, $target];
+                            }
+                        }
                     }
                 }
 
@@ -211,7 +242,7 @@ class ChatStreamingService
             // For GGUF models on a document request, inject a targeted SYSTEM REMINDER
             // into the last user message — same mechanism used by the cloud path but
             // only fired when actually needed (prevents spurious artifacts on greetings).
-            if ($isGgufDocRequest && !$useChapterPipeline && !empty($messagesForAi)) {
+            if ($isGgufDocRequest && !$useChapterPipeline && !$isSkripsiContinuation && !empty($messagesForAi)) {
                 $lastIdx = count($messagesForAi) - 1;
                 if ($messagesForAi[$lastIdx]['role'] === 'user') {
                     if ($isRevisionTurn && $revisionArtifact) {
@@ -233,6 +264,12 @@ class ChatStreamingService
             // Stream from AI service
             if ($useChapterPipeline) {
                 $stream = $this->streamSkripsiPerChapter($conversation, $messages, $model, $ggufTier, $stopKey, $babLimit ?? null);
+            } elseif ($isSkripsiContinuation && $revisionArtifact && $continuationRange) {
+                // #4: append the next chapter(s) to the SAME skripsi document.
+                $stream = $this->streamSkripsiContinuation(
+                    $conversation, $model, $ggufTier, $stopKey, $revisionArtifact,
+                    $continuationRange[0], $continuationRange[1], $this->recentUserRequestText($messages)
+                );
             } else {
                 // Constrained output (perubahan.md #3): on local GGUF document
                 // requests a GBNF grammar physically forces the reply shape —
@@ -1496,6 +1533,151 @@ GBNF;
     }
 
     /**
+     * The canonical skripsi chapter plan: [label, opening heading, content guide]
+     * for each section. Index 0 = Pengesahan/Abstrak, index 1..5 = BAB I..V,
+     * index 6 = Daftar Pustaka. Shared by the fresh per-chapter pipeline and the
+     * "lanjutkan BAB N" continuation so both produce identical chapter shapes.
+     */
+    protected function skripsiChapterPlan(): array
+    {
+        return [
+            ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
+                "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
+            ['BAB I', 'BAB I PENDAHULUAN',
+                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Perumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah, ## 1.5 Manfaat Penelitian. Setiap sub-bab minimal 2-3 paragraf utuh."],
+            ['BAB II', 'BAB II TINJAUAN PUSTAKA',
+                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019)."],
+            ['BAB III', 'BAB III METODOLOGI PENELITIAN',
+                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel / Sumber Data, ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja."],
+            ['BAB IV', 'BAB IV HASIL DAN PEMBAHASAN',
+                "Sub-bab: ## 4.1 Gambaran Umum Objek Penelitian, ## 4.2 Hasil Penelitian (sajikan temuan, gunakan tabel Markdown bila cocok), ## 4.3 Pembahasan (analisis yang mengaitkan hasil dengan teori BAB II). Ini bab terpanjang — tulis analisis nyata, bukan pengulangan BAB I."],
+            ['BAB V', 'BAB V PENUTUP',
+                "Sub-bab: ## 5.1 Kesimpulan (menjawab rumusan masalah poin demi poin), ## 5.2 Saran (untuk praktisi dan untuk penelitian selanjutnya)."],
+            ['Daftar Pustaka', 'DAFTAR PUSTAKA',
+                "Tulis '# DAFTAR PUSTAKA' berisi minimal 12 referensi berformat konsisten dan diurutkan alfabetis, selaras dengan penulis/tahun yang dikutip di bab-bab sebelumnya."],
+        ];
+    }
+
+    /**
+     * Highest BAB number present in a document's markdown (0 if none). Used to
+     * decide which chapter a "lanjutkan" turn should ADD next.
+     */
+    protected function highestBabInDocument(string $content): int
+    {
+        if (!preg_match_all('/^#\s+BAB\s+([IVXLCDM]+|\d{1,2})\b/mi', $content, $mm)) {
+            return 0;
+        }
+        $max = 0;
+        foreach ($mm[1] as $tok) {
+            $n = ctype_digit($tok) ? (int) $tok : $this->detectBabReference('bab ' . $tok);
+            if ($n !== null && $n > $max) {
+                $max = $n;
+            }
+        }
+        return $max;
+    }
+
+    /**
+     * "lanjutkan BAB N" continuation (issue #4): APPEND the next chapter(s) to the
+     * SAME skripsi artifact instead of asking a small model to regenerate the whole
+     * document (which produced a brand-new ngaco doc). The existing content — YAML
+     * front-matter, cover, and every chapter already written — is preserved
+     * verbatim; only the requested new chapter(s) are generated and appended, then
+     * the whole document is re-emitted in ONE artifact that the save logic pins to
+     * the original identifier (a new version of the same document).
+     */
+    protected function streamSkripsiContinuation(Conversation $conversation, string $model, string $tier, string $stopKey, MessageArtifact $artifact, int $fromBab, int $toBab, string $request): \Generator
+    {
+        $existing = rtrim((string) $artifact->content);
+        $judul = (string) $artifact->title;
+        // Reuse the title from front-matter/artifact for chapter context.
+        $meta = ['judul' => $judul !== '' ? $judul : 'Skripsi'];
+
+        $plan = $this->skripsiChapterPlan();
+        $fromBab = max(1, $fromBab);
+        $toBab = min(5, $toBab);
+
+        yield $this->progressEvent($conversation, $model,
+            "🚀 **Melanjutkan dokumen yang sama — bukan membuat baru.**\n\n"
+            . "Judul dipertahankan: _{$meta['judul']}_. Saya menambahkan "
+            . ($fromBab === $toBab ? "**BAB " . $this->intToRoman($fromBab) . "**" : "**BAB " . $this->intToRoman($fromBab) . "–" . $this->intToRoman($toBab) . "**")
+            . " ke dokumen, isi lama tidak diubah.");
+
+        // Rolling summary seeded from the existing document's outline so the new
+        // chapter stays consistent with what's already there.
+        $summary = '';
+        foreach ((is_array($artifact->outline_json) ? $artifact->outline_json : MessageArtifact::extractOutline($existing)) as $h) {
+            if (($h['level'] ?? 1) <= 2) {
+                $summary .= '• ' . trim((string) ($h['text'] ?? '')) . "\n";
+            }
+        }
+
+        // Re-open the artifact with the FULL existing content, then append.
+        $titleAttr = htmlspecialchars($meta['judul'], ENT_QUOTES);
+        yield "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n" . $existing . "\n\n";
+
+        $newHeadings = [];
+        for ($bab = $fromBab; $bab <= $toBab; $bab++) {
+            if (Cache::get($stopKey)) {
+                break;
+            }
+            [$label, $heading, $guide] = $plan[$bab];
+            yield ['type' => 'thinking', 'text' => "Menulis {$heading} untuk melanjutkan dokumen…\n", 'transient' => true];
+
+            $gen = $this->generateChapterBody($model, $tier === 'large' ? 5120 : 4096, $stopKey, $request, $meta, $summary, $label, $heading, $guide, false);
+            $chapterThinking = '';
+            foreach ($gen as $ev) {
+                if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
+                    $chapterThinking .= (string) ($ev['text'] ?? '');
+                }
+                yield $ev;
+            }
+            $chapterText = (string) $gen->getReturn();
+
+            $outline = $this->chapterOutlineLines($chapterText);
+            $summary .= "• {$heading}:\n"
+                . ($outline ? implode("\n", array_map(fn ($l) => '  ' . $l, $outline)) : '  (sudah ditulis)') . "\n";
+            $newHeadings[] = $heading;
+
+            foreach (str_split($chapterText . "\n\n", 400) as $piece) {
+                yield $piece;
+            }
+
+            yield $this->progressEvent($conversation, $model,
+                "✅ **{$heading} selesai dan ditambahkan ke dokumen.**\n\n"
+                . ($outline ? "Isi ringkasnya:\n" . implode("\n", array_map(fn ($l) => '- ' . $l, array_slice($outline, 0, 6))) : 'Bagian ini sudah masuk ke dokumen.'),
+                $chapterThinking);
+        }
+
+        yield "</antArtifact>";
+
+        if (!Cache::get($stopKey)) {
+            $added = implode(', ', $newHeadings);
+            $nextBab = $toBab + 1;
+            yield "\n\n---\n\n## 📖 Ringkasan Kelanjutan\n\n"
+                . "Saya menambahkan **{$added}** ke dokumen **\"{$meta['judul']}\"** yang sudah ada — judul, halaman sampul, dan bab-bab sebelumnya tidak diubah sama sekali, hanya bab baru yang ditambahkan.";
+            if ($nextBab <= 5) {
+                $nextRoman = $this->intToRoman($nextBab);
+                yield "\n\nUntuk meneruskan, ketik **\"lanjutkan BAB {$nextRoman}\"**.";
+                yield ['type' => 'suggestions', 'data' => [
+                    "Lanjutkan ke BAB {$nextRoman}",
+                    "Perdalam " . end($newHeadings),
+                    'Tambah tabel dan diagram pendukung',
+                    'Buat versi PDF-nya',
+                ]];
+            } else {
+                yield "\n\nSemua bab inti (I–V) sudah ada. Anda bisa menambah **Daftar Pustaka** atau memperdalam bab tertentu.";
+                yield ['type' => 'suggestions', 'data' => [
+                    'Tambahkan Daftar Pustaka',
+                    'Perdalam BAB IV (analisis & pembahasan)',
+                    'Perbaiki struktur/format dokumen',
+                    'Buat versi PDF-nya',
+                ]];
+            }
+        }
+    }
+
+    /**
      * Per-chapter skripsi pipeline for local GGUF models (perubahan.md #2).
      *
      * Instead of asking a small model to write a 100-page document in one
@@ -1571,23 +1753,9 @@ GBNF;
         $titleAttr = htmlspecialchars($meta['judul'], ENT_QUOTES);
         yield "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n" . $frontMatter;
 
-        // [nama tahap, heading pembuka, panduan isi]
-        $chapters = [
-            ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
-                "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
-            ['BAB I', 'BAB I PENDAHULUAN',
-                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Perumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah, ## 1.5 Manfaat Penelitian. Setiap sub-bab minimal 2-3 paragraf utuh."],
-            ['BAB II', 'BAB II TINJAUAN PUSTAKA',
-                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019)."],
-            ['BAB III', 'BAB III METODOLOGI PENELITIAN',
-                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel / Sumber Data, ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja."],
-            ['BAB IV', 'BAB IV HASIL DAN PEMBAHASAN',
-                "Sub-bab: ## 4.1 Gambaran Umum Objek Penelitian, ## 4.2 Hasil Penelitian (sajikan temuan, gunakan tabel Markdown bila cocok), ## 4.3 Pembahasan (analisis yang mengaitkan hasil dengan teori BAB II). Ini bab terpanjang — tulis analisis nyata, bukan pengulangan BAB I."],
-            ['BAB V', 'BAB V PENUTUP',
-                "Sub-bab: ## 5.1 Kesimpulan (menjawab rumusan masalah poin demi poin), ## 5.2 Saran (untuk praktisi dan untuk penelitian selanjutnya)."],
-            ['Daftar Pustaka', 'DAFTAR PUSTAKA',
-                "Tulis '# DAFTAR PUSTAKA' berisi minimal 12 referensi berformat konsisten dan diurutkan alfabetis, selaras dengan penulis/tahun yang dikutip di bab-bab sebelumnya."],
-        ];
+        // [nama tahap, heading pembuka, panduan isi] — shared with the
+        // "lanjutkan BAB N" continuation via skripsiChapterPlan().
+        $chapters = $this->skripsiChapterPlan();
 
         // Scoped skripsi ("sampai bab N"): write Pengesahan/Abstrak (index 0) + BAB I..N
         // (index 1..N) only, with REAL content — then stop. Skips later chapters +
@@ -1597,7 +1765,7 @@ GBNF;
             $chapters = array_slice($chapters, 0, $babLimit + 1);
         }
 
-        $maxTokensPerChapter = $tier === 'large' ? 4096 : 3072;
+        $maxTokensPerChapter = $tier === 'large' ? 5120 : 4096;
         $summary = '';
         $chapterOutlines = [];
         $totalChapters = count($chapters);
@@ -1609,67 +1777,19 @@ GBNF;
             $stage = $ci + 2; // stage 1 was metadata
             yield ['type' => 'thinking', 'text' => "Tahap {$stage}/8 — menulis {$heading}…\n", 'transient' => true];
 
-            $chapterMessages = [
-                ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
-                ['role' => 'user', 'content' =>
-                    "Permintaan pengguna: {$request}\n"
-                    . "Judul skripsi: {$meta['judul']}\n"
-                    . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
-                    . "\nTugas Anda SEKARANG: tulis {$label} secara LENGKAP dalam Markdown murni, mulai langsung dengan heading '# {$heading}'.\n{$guide}\n\n"
-                    . ($ci === 0
-                        ? "BAHASA: HALAMAN PENGESAHAN dan ABSTRAK wajib Bahasa Indonesia baku; HANYA bagian '# ABSTRACT' yang ditulis dalam bahasa Inggris."
-                        : "⚠️ PENTING — BAHASA: Tulis SELURUH {$label} dalam Bahasa Indonesia baku, dari kalimat pertama sampai kalimat terakhir. DILARANG memakai bahasa Inggris sama sekali. Abaikan bahasa apa pun yang muncul pada ringkasan di atas — bagian ini 100% Bahasa Indonesia.")],
-            ];
-
-            $chapterText = '';
+            // Generate the chapter body (initial pass + continuation rounds +
+            // fill for any sub-bab the model skipped). Shared with the
+            // "lanjutkan BAB N" continuation so both always produce a COMPLETE
+            // chapter (fixes BAB I stopping at 1.4).
+            $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $meta, $summary, $label, $heading, $guide, $ci === 0);
             $chapterThinking = '';
-            $truncated = false;
-            foreach ($this->aiService->streamResponse($chapterMessages, $model, ['max_tokens' => $maxTokensPerChapter]) as $chunk) {
-                if (Cache::get($stopKey)) {
-                    break;
+            foreach ($gen as $ev) {
+                if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
+                    $chapterThinking .= (string) ($ev['text'] ?? '');
                 }
-                if (!is_string($chunk)) {
-                    if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
-                        // Live in the scratchpad panel now; permanently attached
-                        // to THIS stage's report bubble below ('transient' keeps
-                        // it out of the final message's merged panel).
-                        $chapterThinking .= $chunk['text'];
-                        yield ['type' => 'thinking', 'text' => $chunk['text'], 'transient' => true];
-                    } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
-                        $truncated = true;
-                    }
-                    continue;
-                }
-                $chapterText .= $chunk;
+                yield $ev;
             }
-
-            // One continuation round when the chapter hit its token ceiling.
-            if ($truncated && !Cache::get($stopKey) && trim($chapterText) !== '') {
-                $tail = substr($chapterText, -400);
-                $contMessages = array_merge($chapterMessages, [
-                    ['role' => 'assistant', 'content' => $chapterText],
-                    ['role' => 'user', 'content' => "[LANJUTKAN — tulisan Anda terpotong. Sambung PERSIS dari potongan terakhir di bawah, tanpa mengulang, tanpa kalimat pembuka, sampai {$label} selesai.\nPotongan terakhir:\n...{$tail}]"],
-                ]);
-                $contText = '';
-                foreach ($this->aiService->streamResponse($contMessages, $model, ['max_tokens' => $maxTokensPerChapter]) as $chunk) {
-                    if (Cache::get($stopKey)) {
-                        break;
-                    }
-                    if (is_string($chunk)) {
-                        $contText .= $chunk;
-                    }
-                }
-                $contText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $contText));
-                for ($k = min(300, strlen($contText), strlen($chapterText)); $k > 20; $k--) {
-                    if (substr($chapterText, -$k) === substr($contText, 0, $k)) {
-                        $contText = substr($contText, $k);
-                        break;
-                    }
-                }
-                $chapterText .= $contText;
-            }
-
-            $chapterText = $this->cleanChapterText($chapterText, $heading);
+            $chapterText = (string) $gen->getReturn();
 
             // Language guard: BAB I–V must be Indonesian. A small model drifts
             // into English right after the (legitimately English) ABSTRACT —
@@ -1831,7 +1951,9 @@ GBNF;
             }
             foreach (array_keys($defaults) as $key) {
                 if (preg_match('/^' . $key . ':\s*(.+)$/mi', $out, $m)) {
-                    $val = trim($m[1]);
+                    // Strip any native reasoning tag the model leaked onto the value
+                    // (e.g. "Nama Pembimbing</think>") so it never lands in the cover.
+                    $val = trim((string) preg_replace('/<\/?(?:think|thinking|sim_thinking)>/i', '', $m[1]));
                     if ($val !== '' && mb_strlen($val) < 200) {
                         $defaults[$key] = $val;
                     }
@@ -1857,6 +1979,148 @@ GBNF;
             . "3. Setiap sub-bab (## heading) berisi minimal 3 paragraf prosa akademik yang utuh dan substantif — bukan outline satu kalimat, bukan placeholder.\n"
             . "4. BAHASA: seluruh tulisan WAJIB Bahasa Indonesia baku. SATU-SATUNYA pengecualian adalah bagian berjudul '# ABSTRACT' (terjemahan abstrak) yang ditulis dalam bahasa Inggris. Di luar bagian itu, menulis kalimat berbahasa Inggris adalah KESALAHAN.\n"
             . "5. JANGAN menulis 'Sistematika Penulisan' dan jangan merangkum isi bab lain.";
+    }
+
+    /**
+     * Generate ONE skripsi chapter body completely: initial pass, up to three
+     * truncation-continuation rounds, then a TARGETED fill for any sub-bab the
+     * guide declares (## N.M) that the model skipped — the small model routinely
+     * stops after 1.4 without ever writing 1.5, so a plain truncation check is
+     * not enough. Yields transient thinking events for the scratchpad; the
+     * finished, cleaned chapter markdown is returned via ->getReturn().
+     * Shared by the fresh pipeline and the "lanjutkan BAB N" continuation.
+     */
+    protected function generateChapterBody(string $model, int $maxTokens, string $stopKey, string $request, array $meta, string $summary, string $label, string $heading, string $guide, bool $isFrontChapter): \Generator
+    {
+        $chapterMessages = [
+            ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
+            ['role' => 'user', 'content' =>
+                "Permintaan pengguna: {$request}\n"
+                . "Judul skripsi: {$meta['judul']}\n"
+                . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
+                . "\nTugas Anda SEKARANG: tulis {$label} secara LENGKAP dalam Markdown murni, mulai langsung dengan heading '# {$heading}'.\n{$guide}\n\n"
+                . ($isFrontChapter
+                    ? "BAHASA: HALAMAN PENGESAHAN dan ABSTRAK wajib Bahasa Indonesia baku; HANYA bagian '# ABSTRACT' yang ditulis dalam bahasa Inggris."
+                    : "⚠️ PENTING — BAHASA: Tulis SELURUH {$label} dalam Bahasa Indonesia baku, dari kalimat pertama sampai kalimat terakhir. DILARANG memakai bahasa Inggris sama sekali. Abaikan bahasa apa pun yang muncul pada ringkasan di atas — bagian ini 100% Bahasa Indonesia.")],
+        ];
+
+        $chapterText = '';
+        $truncated = false;
+        foreach ($this->aiService->streamResponse($chapterMessages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
+            if (Cache::get($stopKey)) {
+                break;
+            }
+            if (!is_string($chunk)) {
+                if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
+                    yield ['type' => 'thinking', 'text' => $chunk['text'], 'transient' => true];
+                } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
+                    $truncated = true;
+                }
+                continue;
+            }
+            $chapterText .= $chunk;
+        }
+
+        // Continuation rounds while the chapter keeps hitting its token ceiling —
+        // one round is not always enough for a long BAB on a small model.
+        $rounds = 0;
+        while ($truncated && $rounds < 3 && !Cache::get($stopKey) && trim($chapterText) !== '') {
+            $rounds++;
+            $truncated = false;
+            $tail = substr($chapterText, -400);
+            $contMessages = array_merge($chapterMessages, [
+                ['role' => 'assistant', 'content' => $chapterText],
+                ['role' => 'user', 'content' => "[LANJUTKAN — tulisan Anda terpotong. Sambung PERSIS dari potongan terakhir di bawah, tanpa mengulang, tanpa kalimat pembuka, sampai {$label} selesai.\nPotongan terakhir:\n...{$tail}]"],
+            ]);
+            $contText = '';
+            foreach ($this->aiService->streamResponse($contMessages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
+                if (Cache::get($stopKey)) {
+                    break;
+                }
+                if (is_string($chunk)) {
+                    $contText .= $chunk;
+                } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
+                    $truncated = true;
+                }
+            }
+            $contText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $contText));
+            for ($k = min(300, strlen($contText), strlen($chapterText)); $k > 20; $k--) {
+                if (substr($chapterText, -$k) === substr($contText, 0, $k)) {
+                    $contText = substr($contText, $k);
+                    break;
+                }
+            }
+            if (trim($contText) === '') {
+                break;
+            }
+            $chapterText .= $contText;
+        }
+
+        $chapterText = $this->cleanChapterText($chapterText, $heading);
+
+        // Fill any sub-bab the guide declares (## N.M) but the model omitted.
+        // The guide lists them on one line separated by commas, so parse each
+        // "## N.M Label" (exactly two #, not the ### sub-sub-babs) and check the
+        // chapter actually contains that heading; write the missing ones once.
+        if (!Cache::get($stopKey)
+            && preg_match_all('/(?<!#)##(?!#)\s*(\d+\.\d+)\s+([^,\n#]+)/', $guide, $gm, PREG_SET_ORDER)) {
+            $missing = [];
+            $seen = [];
+            foreach ($gm as $g) {
+                $num = $g[1];
+                if (isset($seen[$num])) {
+                    continue;
+                }
+                $seen[$num] = true;
+                if (!preg_match('/^#{2,3}\s*' . preg_quote($num, '/') . '\b/m', $chapterText)) {
+                    $missing[] = '## ' . $num . ' ' . trim($g[2]);
+                }
+            }
+            if ($missing && !Cache::get($stopKey)) {
+                yield ['type' => 'thinking', 'text' => "Melengkapi sub-bab {$heading} yang belum tertulis…\n", 'transient' => true];
+                $fillMessages = [
+                    ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
+                    ['role' => 'user', 'content' =>
+                        "Judul skripsi: {$meta['judul']}\n"
+                        . "Dalam {$heading}, sub-bab berikut BELUM ditulis. Tulis HANYA sub-bab ini secara LENGKAP dalam Bahasa Indonesia baku, mulai langsung dengan heading '##', setiap sub-bab minimal 2-3 paragraf utuh. JANGAN menulis heading '# {$heading}' lagi dan JANGAN mengulang sub-bab yang sudah ada:\n"
+                        . implode("\n", $missing)],
+                ];
+                $fillText = '';
+                $fillTrunc = false;
+                foreach ($this->aiService->streamResponse($fillMessages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
+                    if (Cache::get($stopKey)) {
+                        break;
+                    }
+                    if (is_string($chunk)) {
+                        $fillText .= $chunk;
+                    } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
+                        $fillTrunc = true;
+                    }
+                }
+                if ($fillTrunc && !Cache::get($stopKey) && trim($fillText) !== '') {
+                    $tail = substr($fillText, -400);
+                    foreach ($this->aiService->streamResponse(array_merge($fillMessages, [
+                        ['role' => 'assistant', 'content' => $fillText],
+                        ['role' => 'user', 'content' => "[LANJUTKAN persis dari potongan terakhir tanpa mengulang:\n...{$tail}]"],
+                    ]), $model, ['max_tokens' => $maxTokens]) as $chunk) {
+                        if (Cache::get($stopKey)) {
+                            break;
+                        }
+                        if (is_string($chunk)) {
+                            $fillText .= $chunk;
+                        }
+                    }
+                }
+                $fillText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $fillText));
+                $fillText = trim((string) preg_replace('/<\/?antArtifact[^>]*>/i', '', $fillText));
+                if (preg_match('/^#{2,3}\s/m', $fillText, $fm2, PREG_OFFSET_CAPTURE)) {
+                    $fillText = trim(substr($fillText, $fm2[0][1]));
+                    $chapterText = rtrim($chapterText) . "\n\n" . $fillText;
+                }
+            }
+        }
+
+        return $chapterText;
     }
 
     /**
