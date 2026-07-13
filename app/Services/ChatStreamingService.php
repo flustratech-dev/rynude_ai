@@ -1544,7 +1544,7 @@ GBNF;
             ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
                 "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
             ['BAB I', 'BAB I PENDAHULUAN',
-                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Perumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah, ## 1.5 Manfaat Penelitian. Setiap sub-bab minimal 2-3 paragraf utuh."],
+                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Rumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah, ## 1.5 Manfaat Penelitian, ## 1.6 Metodologi Penelitian (ringkas), ## 1.7 Sistematika Penulisan. Setiap sub-bab minimal 3 paragraf utuh dan mendalam (kecuali 1.7 boleh lebih ringkas)."],
             ['BAB II', 'BAB II TINJAUAN PUSTAKA',
                 "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019)."],
             ['BAB III', 'BAB III METODOLOGI PENELITIAN',
@@ -1624,7 +1624,7 @@ GBNF;
             [$label, $heading, $guide] = $plan[$bab];
             yield ['type' => 'thinking', 'text' => "Menulis {$heading} untuk melanjutkan dokumen…\n", 'transient' => true];
 
-            $gen = $this->generateChapterBody($model, $tier === 'large' ? 5120 : 4096, $stopKey, $request, $meta, $summary, $label, $heading, $guide, false);
+            $gen = $this->generateChapterBody($model, $tier === 'large' ? 8192 : 6144, $stopKey, $request, $meta, $summary, $label, $heading, $guide, false);
             $chapterThinking = '';
             foreach ($gen as $ev) {
                 if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
@@ -1765,7 +1765,9 @@ GBNF;
             $chapters = array_slice($chapters, 0, $babLimit + 1);
         }
 
-        $maxTokensPerChapter = $tier === 'large' ? 5120 : 4096;
+        // Depth over speed (user directive): give each chapter a generous ceiling
+        // and lean on the continuation loop rather than cutting the answer short.
+        $maxTokensPerChapter = $tier === 'large' ? 8192 : 6144;
         $summary = '';
         $chapterOutlines = [];
         $totalChapters = count($chapters);
@@ -1977,8 +1979,9 @@ GBNF;
             . "1. Tulis HANYA bagian yang diminta — jangan menulis bab lain dan jangan mengulang bab sebelumnya.\n"
             . "2. Keluarkan Markdown murni: mulai LANGSUNG dengan heading '# ...' — TANPA kalimat pembuka, TANPA penutup, TANPA ``` code fence, TANPA tag <antArtifact>.\n"
             . "3. Setiap sub-bab (## heading) berisi minimal 3 paragraf prosa akademik yang utuh dan substantif — bukan outline satu kalimat, bukan placeholder.\n"
-            . "4. BAHASA: seluruh tulisan WAJIB Bahasa Indonesia baku. SATU-SATUNYA pengecualian adalah bagian berjudul '# ABSTRACT' (terjemahan abstrak) yang ditulis dalam bahasa Inggris. Di luar bagian itu, menulis kalimat berbahasa Inggris adalah KESALAHAN.\n"
-            . "5. JANGAN menulis 'Sistematika Penulisan' dan jangan merangkum isi bab lain.";
+            . "4. DILARANG KERAS menulis teks penanda/placeholder seperti '(Isi bagian ini ditulis lengkap...)', '(menandai struktur)', '(...)', atau tanda kurung kosong. Setiap bagian HARUS langsung berisi paragraf nyata. Jangan pernah menulis kerangka kosong.\n"
+            . "5. BAHASA: seluruh tulisan WAJIB Bahasa Indonesia baku. SATU-SATUNYA pengecualian adalah bagian berjudul '# ABSTRACT' (terjemahan abstrak) yang ditulis dalam bahasa Inggris. Di luar bagian itu, menulis kalimat berbahasa Inggris adalah KESALAHAN.\n"
+            . "6. Tulis HANYA bagian yang diminta pada giliran ini — JANGAN menuliskan heading bab lain (mis. BAB berikutnya atau DAFTAR PUSTAKA) di bagian ini.";
     }
 
     /**
@@ -1992,135 +1995,325 @@ GBNF;
      */
     protected function generateChapterBody(string $model, int $maxTokens, string $stopKey, string $request, array $meta, string $summary, string $label, string $heading, string $guide, bool $isFrontChapter): \Generator
     {
-        $chapterMessages = [
-            ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
-            ['role' => 'user', 'content' =>
-                "Permintaan pengguna: {$request}\n"
-                . "Judul skripsi: {$meta['judul']}\n"
-                . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
-                . "\nTugas Anda SEKARANG: tulis {$label} secara LENGKAP dalam Markdown murni, mulai langsung dengan heading '# {$heading}'.\n{$guide}\n\n"
-                . ($isFrontChapter
-                    ? "BAHASA: HALAMAN PENGESAHAN dan ABSTRAK wajib Bahasa Indonesia baku; HANYA bagian '# ABSTRACT' yang ditulis dalam bahasa Inggris."
-                    : "⚠️ PENTING — BAHASA: Tulis SELURUH {$label} dalam Bahasa Indonesia baku, dari kalimat pertama sampai kalimat terakhir. DILARANG memakai bahasa Inggris sama sekali. Abaikan bahasa apa pun yang muncul pada ringkasan di atas — bagian ini 100% Bahasa Indonesia.")],
-        ];
+        $topic = trim((string) ($meta['judul'] ?? ''));
+        $langRule = $isFrontChapter
+            ? "BAHASA: HALAMAN PENGESAHAN dan ABSTRAK wajib Bahasa Indonesia baku; HANYA bagian '# ABSTRACT' yang ditulis dalam bahasa Inggris."
+            : "⚠️ PENTING — BAHASA: Tulis SELURUH {$label} dalam Bahasa Indonesia baku, dari kalimat pertama sampai kalimat terakhir. DILARANG memakai bahasa Inggris sama sekali.";
 
+        // The user prompt binds the TOPIC hard (a small model otherwise drifts to
+        // an unrelated topic — seen live: a cloud-computing skripsi came out about
+        // livestock disease) and bans placeholder/skeleton output outright.
+        $buildUser = function (bool $harden) use ($request, $topic, $summary, $label, $heading, $guide, $langRule): string {
+            return "TOPIK/JUDUL SKRIPSI (WAJIB diikuti, dilarang berpindah topik): \"{$topic}\".\n"
+                . "Permintaan pengguna: {$request}\n"
+                . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (untuk konsistensi, JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
+                . "\nTUGAS SEKARANG: tulis {$label} secara LENGKAP dan MENDALAM untuk skripsi berjudul \"{$topic}\" — mulai LANGSUNG dengan heading '# {$heading}'.\n{$guide}\n\n"
+                . "ATURAN ISI (WAJIB dipatuhi):\n"
+                . "- Setiap sub-bab berisi PARAGRAF akademik nyata yang panjang, spesifik pada topik di atas.\n"
+                . "- DILARANG KERAS menulis placeholder/penanda seperti '(Isi bagian ini ditulis lengkap...)', '(menandai struktur)', '(...)', atau kurung kosong. Jika Anda menulis itu, jawaban Anda SALAH total.\n"
+                . "- Tulis HANYA {$label}. JANGAN menuliskan heading atau kerangka bab lain (BAB lain / DAFTAR PUSTAKA) di bagian ini.\n"
+                . ($harden
+                    ? "- PERINGATAN: percobaan sebelumnya gagal karena hanya berupa kerangka kosong. KALI INI tulis isi paragraf yang benar-benar penuh, tidak boleh ada satu pun tanda kurung placeholder.\n"
+                    : '')
+                . $langRule;
+        };
+
+        // Up to 3 attempts: a chapter that comes back as an empty skeleton
+        // (placeholder markers, or headings with no real prose) is rejected and
+        // rewritten with a hardened prompt — the garbage never reaches the doc.
         $chapterText = '';
+        $attempt = 0;
+        while ($attempt < 3 && !Cache::get($stopKey)) {
+            $attempt++;
+            $messages = [
+                ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
+                ['role' => 'user', 'content' => $buildUser($attempt > 1)],
+            ];
+            $gen = $this->streamRawChapter($messages, $model, $maxTokens, $stopKey, $label);
+            foreach ($gen as $ev) {
+                yield $ev;
+            }
+            $candidate = $this->stripStubLines(
+                $this->trimToChapterScope(
+                    $this->cleanChapterText((string) $gen->getReturn(), $heading),
+                    $heading,
+                    $isFrontChapter
+                )
+            );
+            $chapterText = $candidate; // keep the latest as fallback
+            if (!$this->chapterLooksLikeStub($candidate) || Cache::get($stopKey)) {
+                break;
+            }
+            yield ['type' => 'thinking', 'text' => "Bagian {$heading} keluar sebagai kerangka kosong — menulis ulang dengan isi paragraf nyata…\n"];
+        }
+
+        // Complete every sub-bab the guide declares (## N.M) — not just the
+        // MISSING headings but also the EMPTY ones (heading present, no prose,
+        // seen live: 1.1–1.3 came back as bare headings). Rebuilt in declared
+        // order so filled sub-babs never land out of sequence at the end.
+        if (!Cache::get($stopKey)
+            && preg_match_all('/(?<!#)##(?!#)\s*(\d+\.\d+)\s+([^,\n#]+)/', $guide, $gm, PREG_SET_ORDER)) {
+            $declared = [];
+            $seen = [];
+            foreach ($gm as $g) {
+                if (isset($seen[$g[1]])) {
+                    continue;
+                }
+                $seen[$g[1]] = true;
+                // Clean the label: drop any parenthetical hint and everything from
+                // the first sentence break, so a run-on guide line like
+                // "Sistematika Penulisan. Setiap sub-bab minimal…" yields just the
+                // sub-bab title, not the trailing instruction.
+                $label = preg_replace('/\s*[\(.].*$/s', '', $g[2]);
+                $declared[] = [$g[1], trim((string) $label, " \t-–")];
+            }
+            $gen2 = $this->completeChapterSubbabs($model, $maxTokens, $stopKey, $meta, $heading, $chapterText, $declared);
+            foreach ($gen2 as $ev) {
+                yield $ev;
+            }
+            $chapterText = (string) $gen2->getReturn();
+        }
+
+        return $this->stripStubLines($chapterText);
+    }
+
+    /**
+     * Ensure every declared sub-bab (## N.M) has REAL prose and appears in the
+     * right order. Splits the chapter into intro + per-sub-bab sections, finds
+     * the empty/missing ones, generates them in a single fill call, and
+     * reassembles the chapter with the declared sub-babs in sequence (extra
+     * sub-babs the model added are kept after). Returns the rebuilt chapter via
+     * ->getReturn(); yields a status thinking line if a fill was needed.
+     */
+    protected function completeChapterSubbabs(string $model, int $maxTokens, string $stopKey, array $meta, string $heading, string $chapterText, array $declared): \Generator
+    {
+        // Split into intro (before first "## ") + each "## " section.
+        $sections = preg_split('/(?m)^(?=##[ \t])/', $chapterText);
+        $intro = rtrim((string) array_shift($sections));
+        $bodies = [];   // num => "## N.M …\n<body>"
+        $extra = [];    // ## sections that aren't declared numbers
+        foreach ($sections as $sec) {
+            if (preg_match('/^##[ \t]+(\d+\.\d+)\b/', $sec, $sm)) {
+                $bodies[$sm[1]] = rtrim($sec);
+            } elseif (trim($sec) !== '') {
+                $extra[] = rtrim($sec);
+            }
+        }
+
+        $contentOf = function (string $num) use (&$bodies): string {
+            if (!isset($bodies[$num])) {
+                return '';
+            }
+            return trim((string) preg_replace('/^##[^\n]*\n?/', '', $bodies[$num]));
+        };
+
+        // Which declared sub-babs are empty or too thin to count as written?
+        $need = [];
+        foreach ($declared as [$num, $label]) {
+            if (mb_strlen($contentOf($num)) < 80) {
+                $need[$num] = $label;
+            }
+        }
+
+        if ($need && !Cache::get($stopKey)) {
+            yield ['type' => 'thinking', 'text' => "Melengkapi sub-bab {$heading} yang masih kosong: " . implode(', ', array_keys($need)) . "…\n"];
+            $list = implode("\n", array_map(fn ($n) => "## {$n} {$need[$n]}", array_keys($need)));
+            $fillMessages = [
+                ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
+                ['role' => 'user', 'content' =>
+                    "Topik/judul skripsi: \"{$meta['judul']}\".\n"
+                    . "Dalam {$heading}, sub-bab berikut masih kosong. Tulis LENGKAP setiap sub-bab ini dalam Bahasa Indonesia baku — mulai tiap bagian dengan heading '## N.M ...' PERSIS seperti daftar di bawah, minimal 3 paragraf akademik nyata per sub-bab, spesifik pada topik di atas. DILARANG menulis placeholder/tanda kurung kosong, DILARANG mengulang heading '# {$heading}':\n"
+                    . $list],
+            ];
+            $gen = $this->streamRawChapter($fillMessages, $model, $maxTokens, $stopKey, $heading);
+            foreach ($gen as $ev) {
+                yield $ev;
+            }
+            $fillText = (string) preg_replace('/<\/?antArtifact[^>]*>/i', '', (string) $gen->getReturn());
+            // Parse the fill's "## N.M" sections and slot them into $bodies.
+            foreach (preg_split('/(?m)^(?=##[ \t])/', $fillText) as $sec) {
+                if (preg_match('/^##[ \t]+(\d+\.\d+)\b/', $sec, $sm) && isset($need[$sm[1]])) {
+                    $clean = $this->stripStubLines(rtrim($sec));
+                    if (mb_strlen(trim((string) preg_replace('/^##[^\n]*\n?/', '', $clean))) >= 40) {
+                        $bodies[$sm[1]] = $clean;
+                    }
+                }
+            }
+        }
+
+        // Reassemble: intro, declared sub-babs in order, then any extras.
+        $result = $intro;
+        foreach ($declared as [$num, $label]) {
+            $result .= "\n\n" . ($bodies[$num] ?? "## {$num} {$label}");
+        }
+        foreach ($extra as $sec) {
+            $result .= "\n\n" . $sec;
+        }
+
+        return trim($result);
+    }
+
+    /**
+     * Raw chapter generation: one model call + up to 3 truncation-continuation
+     * rounds. Yields the model's native reasoning as NON-transient thinking so it
+     * stays attached to the finished message (the pipeline's "proses berpikir"
+     * must remain visible after the run ends, not vanish). Returns the assembled
+     * (uncleaned) chapter text via ->getReturn().
+     */
+    protected function streamRawChapter(array $messages, string $model, int $maxTokens, string $stopKey, string $label): \Generator
+    {
+        $text = '';
         $truncated = false;
-        foreach ($this->aiService->streamResponse($chapterMessages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
+        foreach ($this->aiService->streamResponse($messages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
             if (Cache::get($stopKey)) {
                 break;
             }
             if (!is_string($chunk)) {
                 if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking' && ($chunk['text'] ?? '') !== '') {
-                    yield ['type' => 'thinking', 'text' => $chunk['text'], 'transient' => true];
+                    yield ['type' => 'thinking', 'text' => $chunk['text']];
                 } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
                     $truncated = true;
                 }
                 continue;
             }
-            $chapterText .= $chunk;
+            $text .= $chunk;
         }
 
-        // Continuation rounds while the chapter keeps hitting its token ceiling —
-        // one round is not always enough for a long BAB on a small model.
         $rounds = 0;
-        while ($truncated && $rounds < 3 && !Cache::get($stopKey) && trim($chapterText) !== '') {
+        while ($truncated && $rounds < 3 && !Cache::get($stopKey) && trim($text) !== '') {
             $rounds++;
             $truncated = false;
-            $tail = substr($chapterText, -400);
-            $contMessages = array_merge($chapterMessages, [
-                ['role' => 'assistant', 'content' => $chapterText],
+            $tail = substr($text, -400);
+            $cont = array_merge($messages, [
+                ['role' => 'assistant', 'content' => $text],
                 ['role' => 'user', 'content' => "[LANJUTKAN — tulisan Anda terpotong. Sambung PERSIS dari potongan terakhir di bawah, tanpa mengulang, tanpa kalimat pembuka, sampai {$label} selesai.\nPotongan terakhir:\n...{$tail}]"],
             ]);
-            $contText = '';
-            foreach ($this->aiService->streamResponse($contMessages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
+            $ct = '';
+            foreach ($this->aiService->streamResponse($cont, $model, ['max_tokens' => $maxTokens]) as $chunk) {
                 if (Cache::get($stopKey)) {
                     break;
                 }
                 if (is_string($chunk)) {
-                    $contText .= $chunk;
+                    $ct .= $chunk;
                 } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
                     $truncated = true;
                 }
             }
-            $contText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $contText));
-            for ($k = min(300, strlen($contText), strlen($chapterText)); $k > 20; $k--) {
-                if (substr($chapterText, -$k) === substr($contText, 0, $k)) {
-                    $contText = substr($contText, $k);
+            $ct = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $ct));
+            for ($k = min(300, strlen($ct), strlen($text)); $k > 20; $k--) {
+                if (substr($text, -$k) === substr($ct, 0, $k)) {
+                    $ct = substr($ct, $k);
                     break;
                 }
             }
-            if (trim($contText) === '') {
+            if (trim($ct) === '') {
                 break;
             }
-            $chapterText .= $contText;
+            $text .= $ct;
         }
 
-        $chapterText = $this->cleanChapterText($chapterText, $heading);
+        return $text;
+    }
 
-        // Fill any sub-bab the guide declares (## N.M) but the model omitted.
-        // The guide lists them on one line separated by commas, so parse each
-        // "## N.M Label" (exactly two #, not the ### sub-sub-babs) and check the
-        // chapter actually contains that heading; write the missing ones once.
-        if (!Cache::get($stopKey)
-            && preg_match_all('/(?<!#)##(?!#)\s*(\d+\.\d+)\s+([^,\n#]+)/', $guide, $gm, PREG_SET_ORDER)) {
-            $missing = [];
-            $seen = [];
-            foreach ($gm as $g) {
-                $num = $g[1];
-                if (isset($seen[$num])) {
+    /**
+     * A chapter is a useless "skeleton" when it carries the model's placeholder
+     * markers, or is essentially just headings with no real paragraphs. Such a
+     * chapter is rejected and regenerated so it never lands in the document.
+     */
+    protected function chapterLooksLikeStub(string $text): bool
+    {
+        if (preg_match('/menandai struktur|isi bagian ini ditulis|ditulis lengkap dalam paragraf|ditulis saat generasi|isi bagian ini/i', $text)) {
+            return true;
+        }
+        $prose = 0;
+        foreach (preg_split('/\n/', $text) as $line) {
+            $t = trim($line);
+            if ($t === '' || $t[0] === '#') {
+                continue;
+            }
+            // A line that is only a parenthetical/italic placeholder doesn't count.
+            if (preg_match('/^[_*>\s]*[\(\[].*[\)\]][_*\s]*$/u', $t)) {
+                continue;
+            }
+            if (mb_strlen($t) >= 40) {
+                $prose++;
+            }
+        }
+
+        return $prose < 2;
+    }
+
+    /**
+     * Remove any residual placeholder/skeleton lines the model emitted, so a
+     * stray "(Isi bagian ini ditulis lengkap…)" can never reach the document
+     * even if the surrounding chapter is otherwise real.
+     */
+    protected function stripStubLines(string $text): string
+    {
+        $lines = [];
+        foreach (preg_split('/\n/', $text) as $line) {
+            if (preg_match('/menandai struktur|isi bagian ini ditulis|ditulis lengkap dalam paragraf|ditulis saat generasi/i', $line)) {
+                continue;
+            }
+            // Leaked system directives the small model sometimes echoes verbatim
+            // into the prose (seen live: "DILARANG mengarang data…").
+            if (preg_match('/^\s*\[?(SISTEM|SYSTEM)\b|DILARANG mengarang|menolak memberikan hasil|tanpa kalimat pembuka/i', $line)) {
+                continue;
+            }
+            $lines[] = $line;
+        }
+        // Collapse the blank lines a removed stub may leave behind.
+        $out = (string) preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines));
+
+        return trim($out);
+    }
+
+    /**
+     * Trim a generated chapter to ITS OWN scope: cut everything from the first
+     * top-level heading that belongs to a DIFFERENT section. A small model asked
+     * for "Pengesahan+Abstrak" sometimes dumps the whole BAB I–V skeleton after
+     * it; this removes that leak so each chapter contributes only its own part.
+     */
+    protected function trimToChapterScope(string $text, string $heading, bool $isFrontChapter): string
+    {
+        $ownBab = preg_match('/^BAB\s+([IVXLCDM]+|\d+)/i', trim($heading), $hm)
+            ? $this->detectBabReference('bab ' . $hm[1])
+            : null;
+
+        $lines = explode("\n", $text);
+        $out = [];
+        $seenOwn = false;
+        $seenHeads = [];
+        foreach ($lines as $line) {
+            if (preg_match('/^#\s+(BAB\s+([IVXLCDM]+|\d+)\b|DAFTAR\s+PUSTAKA|HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line, $cm)) {
+                if ($isFrontChapter) {
+                    $owned = (bool) preg_match('/^#\s+(HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line);
+                } elseif ($ownBab !== null) {
+                    $n = isset($cm[2]) && $cm[2] !== '' ? $this->detectBabReference('bab ' . $cm[2]) : null;
+                    $owned = ($n === $ownBab);
+                } else { // Daftar Pustaka chapter
+                    $owned = (bool) preg_match('/^#\s+DAFTAR\s+PUSTAKA/i', $line);
+                }
+                if (!$owned) {
+                    if ($seenOwn) {
+                        break; // reached a different chapter → stop here
+                    }
+                    // A leading foreign heading before our own content: skip it.
                     continue;
                 }
-                $seen[$num] = true;
-                if (!preg_match('/^#{2,3}\s*' . preg_quote($num, '/') . '\b/m', $chapterText)) {
-                    $missing[] = '## ' . $num . ' ' . trim($g[2]);
+                // Drop a repeated identical top-level heading (small models echo
+                // "# HALAMAN PENGESAHAN" twice) — keep only the first.
+                $key = mb_strtolower(trim(preg_replace('/\s+/', ' ', $line)));
+                if (isset($seenHeads[$key])) {
+                    continue;
                 }
+                $seenHeads[$key] = true;
+                $seenOwn = true;
             }
-            if ($missing && !Cache::get($stopKey)) {
-                yield ['type' => 'thinking', 'text' => "Melengkapi sub-bab {$heading} yang belum tertulis…\n", 'transient' => true];
-                $fillMessages = [
-                    ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
-                    ['role' => 'user', 'content' =>
-                        "Judul skripsi: {$meta['judul']}\n"
-                        . "Dalam {$heading}, sub-bab berikut BELUM ditulis. Tulis HANYA sub-bab ini secara LENGKAP dalam Bahasa Indonesia baku, mulai langsung dengan heading '##', setiap sub-bab minimal 2-3 paragraf utuh. JANGAN menulis heading '# {$heading}' lagi dan JANGAN mengulang sub-bab yang sudah ada:\n"
-                        . implode("\n", $missing)],
-                ];
-                $fillText = '';
-                $fillTrunc = false;
-                foreach ($this->aiService->streamResponse($fillMessages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
-                    if (Cache::get($stopKey)) {
-                        break;
-                    }
-                    if (is_string($chunk)) {
-                        $fillText .= $chunk;
-                    } elseif (is_array($chunk) && ($chunk['type'] ?? '') === 'truncated') {
-                        $fillTrunc = true;
-                    }
-                }
-                if ($fillTrunc && !Cache::get($stopKey) && trim($fillText) !== '') {
-                    $tail = substr($fillText, -400);
-                    foreach ($this->aiService->streamResponse(array_merge($fillMessages, [
-                        ['role' => 'assistant', 'content' => $fillText],
-                        ['role' => 'user', 'content' => "[LANJUTKAN persis dari potongan terakhir tanpa mengulang:\n...{$tail}]"],
-                    ]), $model, ['max_tokens' => $maxTokens]) as $chunk) {
-                        if (Cache::get($stopKey)) {
-                            break;
-                        }
-                        if (is_string($chunk)) {
-                            $fillText .= $chunk;
-                        }
-                    }
-                }
-                $fillText = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $fillText));
-                $fillText = trim((string) preg_replace('/<\/?antArtifact[^>]*>/i', '', $fillText));
-                if (preg_match('/^#{2,3}\s/m', $fillText, $fm2, PREG_OFFSET_CAPTURE)) {
-                    $fillText = trim(substr($fillText, $fm2[0][1]));
-                    $chapterText = rtrim($chapterText) . "\n\n" . $fillText;
-                }
-            }
+            $out[] = $line;
         }
 
-        return $chapterText;
+        return trim(implode("\n", $out));
     }
 
     /**
