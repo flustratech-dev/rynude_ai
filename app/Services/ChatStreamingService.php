@@ -133,6 +133,7 @@ class ChatStreamingService
             // doc detector ($isGgufDocRequest) misses it by design.
             $useChapterPipeline = false;
             $babLimit = null; // max BAB for a scoped skripsi ("sampai bab N")
+            $fullSkripsiIntent = false; // "susun/lanjut FULL skripsi" → pipeline, not revision
             if ($llamaService->isGgufModel($model)) {
                 $lastAssistantText = '';
                 $latestUserForScope = '';
@@ -161,11 +162,27 @@ class ChatStreamingService
                 $babLimit = $chapterScoped ? $this->detectBabReference($scopeText) : null;
 
                 $isSkripsiCreate = $this->isSkripsiPipelineRequest($messages);
+
+                // Fix #3 (Stanza test Q6): "lanjut penyusunan FULL skripsi" must write
+                // the WHOLE skripsi via the pipeline — NOT be caught by the revision
+                // router (which revised the last stray artifact, a Daftar Pustaka, →
+                // ngaco). Detected standalone (isSkripsiPipelineRequest misses the
+                // nominal "penyusunan"/bare "lanjut"): mentions skripsi + a build/whole
+                // word, NOT pointing at one specific BAB, and NOT a plain question.
+                $curTurn = trim($latestUserForScope);
+                $isPlainQuestion = (bool) preg_match('/^(apa|apakah|bagaimana|gimana|kenapa|mengapa|adakah|bisakah|apa kah)\b/i', $curTurn)
+                    && str_ends_with($curTurn, '?');
+                $fullSkripsiIntent = (bool) preg_match('/\b(skripsi|tesis|tugas akhir)\b/i', $curTurn)
+                    && (bool) preg_match('/\b(full|penuh|lengkap|seluruh|keseluruhan|semua\s+bab|penyusunan|penulisan|pembuatan|menyusun|susun(?:kan)?|menulis|tulis(?:kan)?|kerjakan|selesaikan|lanjut(?:kan)?|teruskan)\b/i', $curTurn)
+                    && $this->detectBabReference($curTurn) === null
+                    && !$isPlainQuestion;
+
                 $useChapterPipeline = ($isGgufDocRequest && $isSkripsiCreate)
                     // A scoped skripsi ("sampai bab N") must ALWAYS enter the pipeline,
                     // never the single-shot skeleton path — whose full BAB I–V outline
                     // would otherwise leak into a "bab 1 only" document.
                     || ($chapterScoped && $isSkripsiCreate)
+                    || $fullSkripsiIntent
                     || str_contains($lastAssistantText, 'Metode penelitian apa yang ingin Anda pakai');
             }
 
@@ -203,7 +220,9 @@ class ChatStreamingService
                 $revisionPattern = '/\b(perpanjang|perdalam|perbanyak|tambah(?:kan)?\s+(?:bab|isi|sub ?bab)|lanjut(?:kan)?|teruskan|sambung|revisi|perbaiki\s+(?:struktur|format|isi)|kembangkan|lengkapi)\b/i';
 
                 // #5: follow-up action on the room's active markdown artifact.
-                if (!$latestUserHasDoc && preg_match($revisionPattern, $latestUserText)) {
+                // Fix #3: a FULL-skripsi request is NOT a revision — let it hit the
+                // pipeline even though it contains "lanjut"/"susun".
+                if (!$latestUserHasDoc && !$fullSkripsiIntent && preg_match($revisionPattern, $latestUserText)) {
                     $revisionArtifact = $this->latestMarkdownArtifact($conversation);
                     if ($revisionArtifact) {
                         $isRevisionTurn = true;
@@ -236,6 +255,16 @@ class ChatStreamingService
                 if ($isRevisionTurn || $isUploadContinuation) {
                     $isGgufDocRequest = true;   // force artifact output + grammar
                     $useChapterPipeline = false; // never write from scratch
+                }
+
+                // Fix #2 (Stanza test Q4): a QUESTION ABOUT a document ("apakah daftar
+                // pustaka valid?", "bisa dibuka?", "akurat?") must be answered in CHAT,
+                // not re-emitted as a new artifact. Only override when this isn't a
+                // real build/revision/continuation turn.
+                if ($isGgufDocRequest && !$useChapterPipeline && !$isRevisionTurn
+                    && !$isUploadContinuation && !$isSkripsiContinuation
+                    && $this->isDocumentQuestion($latestUserText)) {
+                    $isGgufDocRequest = false; // → plain chat answer
                 }
             }
 
@@ -647,6 +676,28 @@ class ChatStreamingService
                     $judul = trim(str_replace(["\n", "\r"], ' ', (string) ($parsedArtifacts['items'][0]['title'] ?? 'Dokumen')));
                     $fm = "---\nmode: {$docType}\njudul: {$judul}\ntahun: " . date('Y') . "\n---\n\n";
                     $parsedArtifacts['items'][0]['content'] = $fm . $body;
+                }
+            }
+        }
+
+        // Fix #1 (Stanza test Q3/Q4 + user's hard requirement): a turn that produces
+        // a DOCUMENT must ALSO have a chat explanation — a local model routinely dumps
+        // everything into the artifact and leaves the chat empty (seen live: chat_len=0).
+        // If the chat is empty/too short while an artifact exists, synthesize a short
+        // deterministic debrief from the doc's title + heading tree, stream it live,
+        // and store it. (The skripsi pipeline already fills chat, so it won't trigger.)
+        if (!empty($parsedArtifacts['items'])) {
+            $chatText = trim((string) ($parsedArtifacts['cleanResponse'] ?? ''));
+            if (mb_strlen($chatText) < 40) {
+                $explain = $this->buildDocChatExplanation(
+                    (string) ($parsedArtifacts['items'][0]['title'] ?? 'Dokumen'),
+                    (string) ($parsedArtifacts['items'][0]['content'] ?? '')
+                );
+                if ($explain !== '') {
+                    foreach (str_split($explain, 400) as $piece) {
+                        yield ['type' => 'content', 'data' => $piece];
+                    }
+                    $parsedArtifacts['cleanResponse'] = trim($chatText === '' ? $explain : $chatText . "\n\n" . $explain);
                 }
             }
         }
@@ -1186,6 +1237,56 @@ class ChatStreamingService
             return true;
         }
         return false;
+    }
+
+    /**
+     * True when the turn is a QUESTION ABOUT an existing document rather than a
+     * request to build/revise one (Stanza test Q4: "apakah daftar pustaka valid
+     * dan bisa dibuka?"). Such turns must be answered in chat, never re-emitted as
+     * a fresh artifact. Guarded so it only fires when there is NO creation verb.
+     */
+    protected function isDocumentQuestion(string $text): bool
+    {
+        $t = trim($text);
+        if ($t === '' || $this->wantsDocumentCreation($t)) {
+            return false;
+        }
+        $interrogative = (bool) preg_match('/\?\s*$/', $t)
+            || (bool) preg_match('/^(apakah|apa|apa kah|apa saja|adakah|bisakah|bisa kah|bolehkah|benarkah|kenapa|mengapa|bagaimana|gimana|siapa|kapan|di ?mana|berapa)\b/i', $t);
+        $aboutDoc = (bool) preg_match('/\b(valid|akurat|benar|betul|aman|asli|nyata|real|bisa\s+dibuka|dapat\s+dibuka|sumber(nya)?|referensi(nya)?|daftar\s+pustaka|isi(nya)?|bab\b|dokumen(nya)?|maksud|arti(nya)?)\b/i', $t);
+
+        return $interrogative && $aboutDoc;
+    }
+
+    /**
+     * Short deterministic chat debrief for a NON-skripsi document turn — used when
+     * the model produced an artifact but left the chat empty (Fix #1). Built from
+     * the document title + heading tree so it is always accurate and cheap (no
+     * extra model call).
+     */
+    protected function buildDocChatExplanation(string $title, string $content): string
+    {
+        $title = trim(str_replace(["\n", "\r"], ' ', $title)) ?: 'Dokumen';
+        $outline = MessageArtifact::extractOutline($content);
+        $lines = [];
+        foreach ($outline as $h) {
+            $text = trim((string) ($h['text'] ?? ''));
+            if ($text === '') {
+                continue;
+            }
+            $lines[] = '- ' . $text;
+            if (count($lines) >= 8) {
+                break;
+            }
+        }
+
+        $out = "Saya sudah menyusun dokumen **\"{$title}\"** — silakan buka di panel artifact di sebelah kanan.";
+        if ($lines) {
+            $out .= "\n\nStruktur/isi ringkasnya:\n" . implode("\n", $lines);
+        }
+        $out .= "\n\nKalau ada yang ingin diperdalam, diubah, atau dibuatkan versi PDF/DOCX-nya, tinggal beri tahu saya.";
+
+        return $out;
     }
 
     /**
