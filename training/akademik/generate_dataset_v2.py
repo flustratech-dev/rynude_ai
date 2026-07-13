@@ -6,7 +6,7 @@ import json
 import random
 import os
 
-output_path = r'C:\Users\Ryan\.gemini\antigravity\brain\30f49fa2-d53b-4eaa-a7f9-7f936fbceeff\dataset_skripsi_v2_100plus.jsonl'
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dataset_skripsi_v2_100plus.jsonl')
 
 SYSTEM_PROMPT = (
     "Anda adalah asisten akademik ahli yang membantu mahasiswa menulis skripsi dalam bahasa Indonesia "
@@ -397,6 +397,13 @@ SKRIPSI_LIST = [
         "pembimbing": "Dr. Fredy Purnomo, M.Kom.",
     },
 ]
+
+# Judul tambahan (perluasan cakupan topik) — digabung tanpa menghapus yang lama.
+try:
+    from titles_extra import TITLES_EXTRA
+    SKRIPSI_LIST = SKRIPSI_LIST + TITLES_EXTRA
+except Exception as _e:
+    print("titles_extra tidak dimuat:", _e)
 
 # =============================================================================
 # TEMPLATE GENERATOR UNTUK SETIAP KOMPONEN SKRIPSI
