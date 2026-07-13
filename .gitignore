@@ -32,6 +32,9 @@ training/llama.cpp/
 training/**/outputs_local/
 training/**/rynude-lyric-*-merged/
 training/**/rynude-lyric-*-lora/
+training/**/rynude-stanza-*-merged/
+training/**/rynude-stanza-*-lora/
+training/llama-bin/
 *.gguf
 *.safetensors
 *.pt
