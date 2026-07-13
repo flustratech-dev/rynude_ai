@@ -1,6 +1,6 @@
 {
   "name": "install-rynude",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Auto-installer for Rynude AI",
   "main": "index.js",
   "type": "module",
