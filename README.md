@@ -85,7 +85,6 @@ sequenceDiagram
 
 | Provider Terdukung | Status Dukungan | Keunggulan Utama | Model Terbaik Saat Ini |
 | :--- | :---: | :--- | :--- |
-| **rynude Local Engine** 🆕 | ✅ Native | Gratis & 100% lokal & offline | `rynude Lyric 4.5`, `rynude Lyric 4.6`, `rynude Magnum`, 'dan model lainnya'|
 | **Hugging Face** | ✅ Native | Gratis, Ratusan Model Open-Source | `Llama-3.3-70B`, `DeepSeek-V4` |
 | **Anthropic** | ✅ Native | Resmi, Paling Cerdas (Coding & Logika) | `Claude 3.5 Sonnet` |
 | **OpenAI** | ✅ Native | Resmi, Ekosistem Terbesar | `GPT-4o` |
@@ -94,6 +93,9 @@ sequenceDiagram
 | **Kimi (Moonshot)** 🆕 | ✅ API Key | Konteks super panjang | `kimi-latest`, `moonshot-v1` |
 | **Qwen (Alibaba)** 🆕 | ✅ API Key | Multibahasa & jago coding | `qwen-plus`, `qwen-max` |
 | **Connect Account** 🆕 | ✅ Extension | Chat via **akun web gratis** (tanpa API key) | `Claude`, `Gemini` |
+
+> [!NOTE]
+> **Model lokal "rynude" sengaja tidak dimasukkan ke tabel ini.** Model `rynude` bukan sekadar penyedia pihak ketiga — ini keluarga model **milik rynude sendiri**. Katalog lengkap beserta penjelasan tiap modelnya ada di bagian khusus **[🧩 Mesin AI Lokal "rynude"](#-mesin-ai-lokal-rynude-dedicated-local-gguf-engine)** di bawah.
 
 ---
 
@@ -253,17 +255,35 @@ Rynude kini memiliki **mesin inferensi lokal miliknya sendiri** untuk menjalanka
 
 ### 📚 Katalog Model "rynude"
 
-Enam model lokal (`rynude`):
+Semua model di bawah ini adalah **model rynude asli** — dibangun, dioptimasi, dan (untuk seri fine-tuned) **dilatih sendiri oleh tim rynude**. Nama, kelas arsitektur, dan perilakunya sepenuhnya identitas rynude; tidak ada ketergantungan identitas pada model pihak mana pun. Seluruhnya berjalan **100% lokal & offline** di komputer Anda lewat mesin GGUF rynude (port `8091`).
 
-| Nama `rynude` | Parameter | Kode Internal | Estimasi RAM | Use Case Backend Ideal |
-| :--- | :---: | :--- | :---: | :--- |
-| **rynude Vignette** | 0.5B | ~2 GB | Uji coba, percakapan dasar, spesifikasi sangat rendah |
-| **rynude Lyric 4.5** ⭐ | 1.5B | ~4 GB | **Rekomendasi default** — tugas ringan & generasi dokumen |
-| **rynude Lyric 4.6** | 1.7B (LoRA) | ~4 GB | Versi fine-tuned Lyric 4.5 — Bahasa Indonesia & format lebih baik |
-| **rynude Stanza** | 3B | ~6 GB | Asisten *coding* ringan & rangkuman dokumen |
-| **rynude Canto** | 7B | ~8 GB | Penalaran & pemrograman bahasa yang kuat |
-| **rynude Symphony** | 8B |  ~10 GB | Percakapan kompleks, terjemahan, pemecahan masalah |
-| **rynude Magnum** | 14B |  ~16 GB | *Heavy reasoning* setara model cloud besar |
+**11 model rynude** — 10 model chat + 1 modul pemahaman makna:
+
+| Model | Kelas Arsitektur | Parameter | RAM Minimal | Paling Cocok Untuk |
+| :--- | :--- | :---: | :---: | :--- |
+| **rynude Vignette** | rynude-v3 Ultra-Light | 0.6B | ~2 GB | Uji coba, PC spek rendah (< 8 GB), percakapan harian |
+| **rynude Lyric 4.5** | rynude-v3 Compact | 1.7B | ~4 GB | Serba bisa ringan — tugas harian & generasi dokumen |
+| **rynude Lyric 4.6** | rynude-v3 Compact · Fine-Tuned | 1.7B | ~6 GB | Bahasa Indonesia natural + format skripsi/akademik baku |
+| **rynude Lyric 4.7** | rynude-v3 Compact · Fine-Tuned | 1.7B | ~4 GB | Kepatuhan dokumen, anti-halusinasi, matematika & diagram |
+| **rynude Lyric 4.8** ⭐ | rynude-v3 Compact · Fine-Tuned | 1.7B | ~4 GB | Skripsi ringan — dokumen hanya bab diminta, sub-bab lengkap |
+| **rynude Stanza 4.5** | rynude-v3 Mid-Scale | 4B | ~6 GB | Coding ringan, analisis & rangkuman dokumen |
+| **rynude Stanza 4.6** ⭐ | rynude-v3 Mid-Scale · Fine-Tuned | 4B | ~6 GB | **Penyusunan skripsi paling rapi** — bebas placeholder, fokus topik |
+| **rynude Canto** | rynude-v3 Performance | 8B | ~10 GB | Penalaran logika & pemrograman yang kuat |
+| **rynude Symphony** | rynude-v3 Flagship | 14B | ~16 GB | Percakapan mendalam, dokumen panjang, algoritma rumit |
+| **rynude Magnum** | rynude-v3 Ultimate (MoE) | 30B (MoE) | ~24 GB | *Heavy reasoning* setara model cloud besar |
+| **rynude Sense** | rynude-v3 Semantic (RAG) | 0.6B | ~1.5 GB | *Bukan model chat* — modul pemahaman makna saat baca dokumen |
+
+> ⭐ **Model rekomendasi:** **rynude Lyric 4.8** untuk perangkat ringan, **rynude Stanza 4.6** untuk hasil skripsi terbaik.
+
+#### 🎓 Seri Fine-Tuned untuk Skripsi (Keunggulan Utama rynude)
+
+Sebagian model rynude bukan model umum biasa — mereka **dilatih khusus oleh tim rynude** untuk penulisan akademik Bahasa Indonesia:
+
+- **rynude Lyric 4.6 → 4.7 → 4.8** *(jalur ringan)* — tiap versi menyempurnakan pendahulunya: Bahasa Indonesia natural & format baku (4.6) → kepatuhan dokumen + anti-halusinasi + matematika/diagram (4.7) → penyusunan skripsi ber-*scope*: dokumen **hanya** memuat bab yang diminta, semua sub-bab terisi lengkap, dan perintah "lanjutkan BAB" menambah ke dokumen yang sama, bukan menimpa (4.8).
+- **rynude Stanza 4.6** *(jalur menengah, model skripsi terbaik saat ini)* — dilatih di atas data yang sudah dibersihkan dari contoh kerangka kosong, sehingga menulis isi bab sampai **tuntas tanpa placeholder** ("(Isi bagian ini…)" ), tetap **fokus pada topik** yang diminta, dan mempertahankan proses berpikirnya. Pilih ini ketika hasil dari seri Lyric terasa kurang mendalam.
+
+> [!TIP]
+> Semua model rynude di atas bisa diunduh langsung dari menu **Model Hub** di dalam aplikasi. Setelah terunduh, ia otomatis siap dipilih di *dropdown* model pada chat.
 
 **Variabel konfigurasi** :
 
@@ -287,7 +307,7 @@ Ini adalah <i>backend guard</i> yang bekerja sesuai desain, bukan bug. Untuk mod
 <details>
 <summary><b>Berapa kebutuhan RAM untuk model besar (Symphony / Magnum)?</b></summary>
 <br/>
-Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>16384</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric 4.5 (1.5B)</b>.
+Kebutuhan RAM ditentukan oleh <b>bobot model</b> ditambah <b>KV-cache</b>. Ukuran KV-cache tumbuh seiring <i>context window</i> (di sini <code>32768</code> token) <b>dan</b> ukuran model, sehingga model besar jauh lebih boros memori. Perkiraan aman: <b>rynude Symphony (8B) ≈ 10 GB RAM</b>, <b>rynude Magnum (14B) ≈ 16 GB RAM</b>. Rekomendasi: gunakan SSD/NVMe, tutup aplikasi berat lain saat inferensi, dan bila memori terbatas, turunkan <code>LOCAL_GGUF_*</code> (mis. <i>context</i> pada <code>LlamaServerService</code>) atau pilih model yang lebih kecil seperti <b>rynude Lyric 4.5 (1.5B)</b>.
 </details>
 
 ### 📸 Tampilan 
