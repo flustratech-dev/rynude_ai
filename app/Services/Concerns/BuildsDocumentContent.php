@@ -24,6 +24,11 @@ trait BuildsDocumentContent
      */
     protected function markdownToHtml(string $markdown): array
     {
+        // Patch 9: Opsi B (Fallback teks)
+        // Hapus blok diagram mermaid agar tidak tercetak mentah sebagai code block di PDF/DOCX.
+        // Model sudah diinstruksikan untuk selalu memberikan caption di atas diagram.
+        $markdown = (string) preg_replace('/```mermaid\s*.*?```/is', '', $markdown);
+
         $environment = new Environment([
             'html_input' => 'allow',          // keep author/AI inline <svg> and <img>
             'allow_unsafe_links' => false,

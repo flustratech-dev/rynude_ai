@@ -158,8 +158,21 @@ class ChatStreamingService
                 // original "…sampai bab 1" is still seen — otherwise babLimit resets to
                 // null on the write turn and the whole BAB I–V gets produced.
                 $scopeText = $this->recentUserRequestText($messages, 4);
-                $chapterScoped = (bool) preg_match('/\b(sampai\s+bab|bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $scopeText);
-                $babLimit = $chapterScoped ? $this->detectBabReference($scopeText) : null;
+                $singleBab = false;
+                $babTarget = null;
+                $babLimit = null;
+
+                if (preg_match('/\b(sampai\s+bab|s\/d\s+bab|hingga\s+bab)\s*([ivx0-9]+)\b/i', $scopeText, $m)) {
+                    $babLimit = $this->detectBabReference('bab ' . $m[2]);
+                } elseif (preg_match('/\b(bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $scopeText)) {
+                    $singleBab = true;
+                    $babTarget = $this->detectBabReference($scopeText);
+                } elseif (preg_match('/\bbab\s+([ivx0-9]+)\b/i', $scopeText, $m) && !preg_match('/\b(full|lengkap|semua\s+bab)\b/i', $scopeText)) {
+                    $singleBab = true;
+                    $babTarget = $this->detectBabReference('bab ' . $m[1]);
+                }
+
+                $chapterScoped = ($babLimit !== null || ($singleBab && $babTarget !== null));
 
                 $isSkripsiCreate = $this->isSkripsiPipelineRequest($messages);
 
@@ -262,9 +275,19 @@ class ChatStreamingService
                 // not re-emitted as a new artifact. Only override when this isn't a
                 // real build/revision/continuation turn.
                 if ($isGgufDocRequest && !$useChapterPipeline && !$isRevisionTurn
-                    && !$isUploadContinuation && !$isSkripsiContinuation
-                    && $this->isDocumentQuestion($latestUserText)) {
-                    $isGgufDocRequest = false; // → plain chat answer
+                    && !$isUploadContinuation && !$isSkripsiContinuation) {
+                    
+                    if ($this->isDocumentQuestion($latestUserText)) {
+                        $isGgufDocRequest = false; // → plain chat answer
+                    } elseif ($this->isTitleSuggestionRequest($latestUserText)) {
+                        $isGgufDocRequest = false; // → plain chat answer
+                        
+                        // Sisipkan reminder ringan agar model menjawab dengan 5–8 opsi judul
+                        $lastIdx = count($messagesForAi) - 1;
+                        if (!empty($messagesForAi) && ($messagesForAi[$lastIdx]['role'] ?? '') === 'user') {
+                            $messagesForAi[$lastIdx]['content'] .= "\n\n[SISTEM: Berikan 5-8 saran judul skripsi dalam format daftar bernomor langsung di chat. JANGAN membuat dokumen/artifact.]";
+                        }
+                    }
                 }
             }
 
@@ -278,8 +301,7 @@ class ChatStreamingService
                         // #5: revise the active artifact in full, reusing structure.
                         $messagesForAi[$lastIdx]['content'] .= $this->docRevisionReminder($revisionArtifact, $ggufTier);
                     } elseif ($isUploadContinuation) {
-                        // #6: continue/build from the attached document.
-                        $messagesForAi[$lastIdx]['content'] .= $this->docUploadContinuationReminder($ggufTier);
+                        // handled by streamUploadSkripsiContinuation
                     } else {
                         // Per-type skeleton (issue #2): makalah/laporan/proposal/jurnal
                         // no longer get a hardcoded 5-chapter skripsi skeleton + a
@@ -292,13 +314,15 @@ class ChatStreamingService
 
             // Stream from AI service
             if ($useChapterPipeline) {
-                $stream = $this->streamSkripsiPerChapter($conversation, $messages, $model, $ggufTier, $stopKey, $babLimit ?? null);
+                $stream = $this->streamSkripsiPerChapter($conversation, $messages, $model, $ggufTier, $stopKey, $babLimit, $singleBab ? $babTarget : null);
             } elseif ($isSkripsiContinuation && $revisionArtifact && $continuationRange) {
                 // #4: append the next chapter(s) to the SAME skripsi document.
                 $stream = $this->streamSkripsiContinuation(
                     $conversation, $model, $ggufTier, $stopKey, $revisionArtifact,
                     $continuationRange[0], $continuationRange[1], $this->recentUserRequestText($messages)
                 );
+            } elseif ($isUploadContinuation) {
+                $stream = $this->streamUploadSkripsiContinuation($conversation, $messages, $model, $ggufTier, $stopKey);
             } else {
                 // Constrained output (perubahan.md #3): on local GGUF document
                 // requests a GBNF grammar physically forces the reply shape —
@@ -1259,6 +1283,19 @@ class ChatStreamingService
     }
 
     /**
+     * Patch 2: True when the user asks for title suggestions (e.g., "minta saran judul skripsi")
+     * rather than asking to build the document.
+     */
+    protected function isTitleSuggestionRequest(string $text): bool
+    {
+        $hasSuggestionWord = (bool) preg_match('/\b(saran|sarankan|rekomendasi|rekomendasikan|ide|contoh|usul(?:kan)?|beri(?:kan)?|kasih|minta)\b/i', $text);
+        $hasJudulWord = (bool) preg_match('/\bjudul\b/i', $text);
+        $hasCreationVerb = (bool) preg_match('/\b(buatkan|buat|susun|tulis(?:kan)?|outline)\b/i', $text);
+
+        return $hasSuggestionWord && $hasJudulWord && !$hasCreationVerb;
+    }
+
+    /**
      * Short deterministic chat debrief for a NON-skripsi document turn — used when
      * the model produced an artifact but left the chat empty (Fix #1). Built from
      * the document title + heading tree so it is always accurate and cheap (no
@@ -1645,13 +1682,13 @@ GBNF;
             ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
                 "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
             ['BAB I', 'BAB I PENDAHULUAN',
-                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Rumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah, ## 1.5 Manfaat Penelitian, ## 1.6 Metodologi Penelitian (ringkas), ## 1.7 Sistematika Penulisan. Setiap sub-bab minimal 3 paragraf utuh dan mendalam (kecuali 1.7 boleh lebih ringkas)."],
+                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Rumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah — WAJIB bentuk paragraf mengalir (BUKAN daftar/bullet/poin), 2–4 paragraf, ## 1.5 Manfaat Penelitian, ## 1.6 Metodologi Penelitian (ringkas), ## 1.7 Sistematika Penulisan. Setiap sub-bab minimal 4-6 paragraf akademik yang tebal & spesifik (kecuali 1.7 boleh lebih ringkas)."],
             ['BAB II', 'BAB II TINJAUAN PUSTAKA',
-                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019)."],
+                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019). WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (misal tabel perbandingan penelitian terdahulu dan tabel definisi). WAJIB menyertakan minimal 1 diagram dalam blok ```mermaid (misal flowchart Kerangka Pemikiran)."],
             ['BAB III', 'BAB III METODOLOGI PENELITIAN',
-                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel / Sumber Data, ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja."],
+                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel / Sumber Data, ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja. WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (misal tabel populasi/sampel dan kisi-kisi instrumen). WAJIB menyertakan minimal 1 diagram dalam blok ```mermaid (misal alur penelitian, atau arsitektur sistem/use-case/ERD jika relevan)."],
             ['BAB IV', 'BAB IV HASIL DAN PEMBAHASAN',
-                "Sub-bab: ## 4.1 Gambaran Umum Objek Penelitian, ## 4.2 Hasil Penelitian (sajikan temuan, gunakan tabel Markdown bila cocok), ## 4.3 Pembahasan (analisis yang mengaitkan hasil dengan teori BAB II). Ini bab terpanjang — tulis analisis nyata, bukan pengulangan BAB I."],
+                "Sub-bab: ## 4.1 Gambaran Umum Objek Penelitian, ## 4.2 Hasil Penelitian, ## 4.3 Pembahasan (analisis yang mengaitkan hasil dengan teori BAB II). Ini bab terpanjang — tulis analisis nyata, bukan pengulangan BAB I. WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (data hasil temuan). Tambahkan diagram dalam blok ```mermaid jika relevan untuk visualisasi hasil."],
             ['BAB V', 'BAB V PENUTUP',
                 "Sub-bab: ## 5.1 Kesimpulan (menjawab rumusan masalah poin demi poin), ## 5.2 Saran (untuk praktisi dan untuk penelitian selanjutnya)."],
             ['Daftar Pustaka', 'DAFTAR PUSTAKA',
@@ -1676,6 +1713,131 @@ GBNF;
             }
         }
         return $max;
+    }
+
+    /**
+     * Patch 8: Melanjutkan draf skripsi yang diunggah pengguna.
+     * Mengekstrak teks, membuang front-matter lama, dan melanjutkan penulisan
+     * dalam satu artifact Markdown baru.
+     */
+    protected function streamUploadSkripsiContinuation(Conversation $conversation, array $messages, string $model, string $tier, string $stopKey): \Generator
+    {
+        $latestUserMsg = null;
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (($messages[$i]['role'] ?? '') === 'user') {
+                $latestUserMsg = $messages[$i];
+                break;
+            }
+        }
+        
+        $requestText = $this->recentUserRequestText($messages);
+        $attachments = $latestUserMsg['attachments'] ?? [];
+        
+        // Resolve attachment parts to get full text
+        $parts = $this->resolveAttachmentParts($attachments, $requestText, 100000);
+        $uploadText = '';
+        foreach ($parts as $part) {
+            if ($part['kind'] === 'text') {
+                $uploadText .= $part['text'] . "\n\n";
+            }
+        }
+        $uploadText = trim($uploadText);
+        
+        if ($uploadText === '') {
+             yield "\n\n(Mohon maaf, saya tidak dapat membaca teks dari dokumen yang Anda unggah. Pastikan formatnya PDF, DOCX, TXT, atau Markdown.)";
+             return;
+        }
+
+        $isSkripsiDoc = (bool) preg_match('/^\s*---[\s\S]*?\bmode:\s*(skripsi|tesis)\b/i', $uploadText)
+                        || (bool) preg_match('/^#\s+BAB\s+[IVX]/mi', $uploadText);
+
+        if (!$isSkripsiDoc) {
+             // Fallback to normal upload continuation if not skripsi
+             $genOptions = ['grammar' => $this->docArtifactGrammar()];
+             $messagesForAi = array_merge($messages, [
+                 ['role' => 'system', 'content' => $this->docUploadContinuationReminder($tier)]
+             ]);
+             foreach ($this->aiService->streamResponse($messagesForAi, $model, $genOptions) as $chunk) {
+                 if (Cache::get($stopKey)) break;
+                 if (is_array($chunk) && ($chunk['type'] ?? '') === 'thinking') yield $chunk;
+                 elseif (is_string($chunk)) yield $chunk;
+             }
+             return;
+        }
+
+        $highest = $this->highestBabInDocument($uploadText);
+        $targetBab = $highest + 1;
+        
+        if ($targetBab > 5) {
+             yield "\n\nDokumen sudah memiliki kelima BAB inti (I–V). Anda bisa meminta revisi bab tertentu.";
+             return;
+        }
+
+        $plan = $this->skripsiChapterPlan();
+        $targetPlan = null;
+        $ciIndex = -1;
+        foreach ($plan as $ci => $p) {
+             if (preg_match('/^BAB\s+' . $this->toRoman($targetBab) . '\b/i', $p[1])) {
+                 $targetPlan = $p;
+                 $ciIndex = $ci;
+                 break;
+             }
+        }
+
+        if (!$targetPlan) {
+            return;
+        }
+
+        [$label, $heading, $guide] = $targetPlan;
+        
+        $meta = $this->collectSkripsiMeta($requestText, $model);
+        // Clean markdown from attachment so it can be appended to
+        $existing = rtrim($uploadText);
+
+        yield $this->progressEvent($conversation, $model,
+            "🚀 **Melanjutkan dokumen skripsi yang diunggah.**\n\n"
+            . "Saya telah membaca dokumen Anda yang berisi materi hingga BAB " . $this->toRoman($highest) . ". Saya akan menulis {$heading} dan menggabungkannya menjadi dokumen penuh utuh..."
+        );
+
+        // Pre-append the original doc wrapped in artifact
+        $titleAttr = htmlspecialchars($meta['judul'] ?? 'Skripsi', ENT_QUOTES);
+        yield "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n";
+        yield $existing . "\n\n";
+
+        // Summary of what is written so far
+        $summary = "RINGKASAN DARI DOKUMEN YANG DIUNGGAH SEBELUMNYA:\n";
+        $outlineLines = $this->chapterOutlineLines($existing);
+        $summary .= count($outlineLines) > 0 ? implode("\n", array_slice($outlineLines, -50)) : "(Belum ada isi)";
+        
+        $maxTokensPerChapter = $tier === 'large' ? 10240 : 8192;
+        $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $requestText, $meta, $summary, $label, $heading, $guide, false);
+        
+        $chapterText = '';
+        foreach ($gen as $ev) {
+             if (is_array($ev)) {
+                 if (($ev['type'] ?? '') === 'thinking') {
+                     yield $ev;
+                 }
+                 continue;
+             }
+        }
+        
+        $chapterText = (string) $gen->getReturn();
+        yield $chapterText;
+        yield "\n</antArtifact>";
+
+        $nextBab = $targetBab + 1;
+        if ($nextBab <= 5 && !Cache::get($stopKey)) {
+             yield "\n\n**{$heading}** telah selesai ditambahkan ke dalam dokumen unggahan. Lanjut ke BAB berikutnya?";
+             yield ['type' => 'suggestions', 'data' => [
+                 "Lanjutkan BAB " . $this->toRoman($nextBab)
+             ]];
+        }
+    }
+    
+    protected function toRoman(int $num): string {
+        $map = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V'];
+        return $map[$num] ?? 'I';
     }
 
     /**
@@ -1795,7 +1957,7 @@ GBNF;
      * content, ['type' => 'thinking'] arrays), so the main stream() loop
      * consumes it unchanged.
      */
-    protected function streamSkripsiPerChapter(Conversation $conversation, array $messages, string $model, string $tier, string $stopKey, ?int $babLimit = null): \Generator
+    protected function streamSkripsiPerChapter(Conversation $conversation, array $messages, string $model, string $tier, string $stopKey, ?int $babLimit = null, ?int $singleBabTarget = null): \Generator
     {
         // Working request = last few user turns joined, so a chip answer
         // ("Metode kuantitatif") still carries the original skripsi ask.
@@ -1806,7 +1968,11 @@ GBNF;
         // question beats guessing. The reply also lets the user drop cover data
         // (nama, NIM, universitas) in the same message.
         if ($this->needsSkripsiClarification($messages)) {
+            $explicitTitle = $this->detectUserProvidedTitle($request);
+            $titleMsg = $explicitTitle ? "Judul yang akan saya pakai: _{$explicitTitle}_ (tidak akan saya ubah).\n\n" : "";
+
             yield "Sebelum saya menyusun skripsinya, satu hal penting dulu:\n\n"
+                . $titleMsg
                 . "**Metode penelitian apa yang ingin Anda pakai?** Pilihan ini menentukan seluruh isi BAB III (metodologi) dan cara BAB IV menyajikan hasil, jadi lebih baik saya pastikan daripada menebak.\n\n"
                 . "Silakan pilih salah satu tombol di bawah — atau ketik jawaban sendiri, sekaligus boleh sebutkan **nama Anda, NIM, universitas, program studi, dan nama pembimbing** agar halaman judulnya akurat.";
             yield ['type' => 'suggestions', 'data' => [
@@ -1861,22 +2027,38 @@ GBNF;
         // Scoped skripsi ("sampai bab N"): write Pengesahan/Abstrak (index 0) + BAB I..N
         // (index 1..N) only, with REAL content — then stop. Skips later chapters +
         // Daftar Pustaka. N came from detectBabReference; index N maps to BAB N.
-        $partialSkripsi = ($babLimit !== null && $babLimit >= 1 && $babLimit < 5);
-        if ($partialSkripsi) {
-            $chapters = array_slice($chapters, 0, $babLimit + 1);
+        $singleBab = ($singleBabTarget !== null && $singleBabTarget >= 1 && $singleBabTarget <= 6);
+        $partialSkripsi = false;
+        
+        // Track the true original index of each chapter to safely detect the front chapter
+        $chaptersWithOriginalIndex = [];
+        foreach ($chapters as $idx => $chapter) {
+            $chaptersWithOriginalIndex[] = ['original_index' => $idx, 'chapter' => $chapter];
+        }
+
+        if ($singleBab) {
+            $chaptersWithOriginalIndex = [ $chaptersWithOriginalIndex[$singleBabTarget] ];
+        } else {
+            $partialSkripsi = ($babLimit !== null && $babLimit >= 1 && $babLimit < 5);
+            if ($partialSkripsi) {
+                $chaptersWithOriginalIndex = array_slice($chaptersWithOriginalIndex, 0, $babLimit + 1);
+            }
         }
 
         // Depth over speed (user directive): give each chapter a generous ceiling
         // and lean on the continuation loop rather than cutting the answer short.
-        $maxTokensPerChapter = $tier === 'large' ? 8192 : 6144;
+        $maxTokensPerChapter = $tier === 'large' ? 10240 : 8192;
         $summary = '';
         $chapterOutlines = [];
-        $totalChapters = count($chapters);
+        $totalChapters = count($chaptersWithOriginalIndex);
 
-        foreach ($chapters as $ci => [$label, $heading, $guide]) {
+        foreach ($chaptersWithOriginalIndex as $ci => $item) {
             if (Cache::get($stopKey)) {
                 break;
             }
+            $originalIdx = $item['original_index'];
+            [$label, $heading, $guide] = $item['chapter'];
+            
             $stage = $ci + 2; // stage 1 was metadata
             yield ['type' => 'thinking', 'text' => "Tahap {$stage}/8 — menulis {$heading}…\n", 'transient' => true];
 
@@ -1884,7 +2066,7 @@ GBNF;
             // fill for any sub-bab the model skipped). Shared with the
             // "lanjutkan BAB N" continuation so both always produce a COMPLETE
             // chapter (fixes BAB I stopping at 1.4).
-            $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $meta, $summary, $label, $heading, $guide, $ci === 0);
+            $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $meta, $summary, $label, $heading, $guide, $originalIdx === 0);
             $chapterThinking = '';
             foreach ($gen as $ev) {
                 if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
@@ -2017,14 +2199,58 @@ GBNF;
     }
 
     /**
+     * Detect explicit title from the user request.
+     */
+    protected function detectUserProvidedTitle(string $request): ?string
+    {
+        // 1. DAHULUKAN pola berlabel yang DENGAN tanda kutip
+        if (preg_match('/\bjudul(?:\s*(?:skripsi|nya))?\s*[:\-]\s*["“](.+?)["”]/i', $request, $m)) {
+            return trim($m[1]);
+        }
+        
+        // 2. Pola "dari judul ini …" (dengan kutip diprioritaskan)
+        if (preg_match('/\bdari\s+judul\s+(?:ini|berikut)\b[:\-]?\s*["“](.+?)["”]/i', $request, $m)) {
+            return trim($m[1]);
+        }
+        
+        // 3. Judul polos dalam tanda kutip (tanpa awalan label eksplisit)
+        if (preg_match('/["“](.{15,140}?)["”]/', $request, $m)) {
+            return trim($m[1]);
+        }
+
+        // 4. Pola berlabel TANPA tanda kutip (berhenti di pemisah metadata/kalimat)
+        if (preg_match('/\bjudul(?:\s*(?:skripsi|nya))?\s*[:\-]\s*(.+?)(?=\s*(?:\b(?:metode|penulis|nim|prodi|sampai\s+bab)\b|[.!?,]|$|\n))/i', $request, $m)) {
+            return trim($m[1]);
+        }
+        
+        // 5. Pola "dari judul ini …" tanpa kutip
+        if (preg_match('/\bdari\s+judul\s+(?:ini|berikut)\b[:\-]?\s*(.+?)(?=\s*(?:\b(?:buatkan|buat|susun|tolong)\b|[.!?,]|$|\n))/i', $request, $m)) {
+            return trim($m[1]);
+        }
+
+        // Fallback frasa judul
+        $judulFallback = trim((string) preg_replace('/^(tolong|mohon|coba)?\s*(buatkan|buat|tuliskan|tulis|generate|susun(kan)?)\b[\s,:]*/i', '', $request));
+        if (strlen($judulFallback) >= 15 && strlen($judulFallback) <= 140) {
+            if (preg_match('/\b(sistem|aplikasi|pengembangan|analisis|rancang bangun|perancangan|implementasi)\b/i', $judulFallback)) {
+                return $judulFallback;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Stage-1 helper: one small constrained call that turns the user request
      * into the nine front-matter fields; safe defaults cover anything missing.
      */
     protected function collectSkripsiMeta(string $request, string $model): array
     {
+        $explicitTitle = $this->detectUserProvidedTitle($request);
         $judulFallback = trim((string) preg_replace('/^(tolong|mohon|coba)?\s*(buatkan|buat|tuliskan|tulis|generate|susun(kan)?)\b[\s,:]*/i', '', $request));
+        
+        // Default set initial
         $defaults = [
-            'judul' => \Illuminate\Support\Str::limit($judulFallback !== '' ? $judulFallback : 'Skripsi', 120, ''),
+            'judul' => \Illuminate\Support\Str::limit($explicitTitle ?: ($judulFallback !== '' ? $judulFallback : 'Skripsi'), 120, ''),
             'penulis' => 'Nama Penulis',
             'nim' => '00000000',
             'prodi' => 'Program Studi',
@@ -2058,6 +2284,10 @@ GBNF;
                     // (e.g. "Nama Pembimbing</think>") so it never lands in the cover.
                     $val = trim((string) preg_replace('/<\/?(?:think|thinking|sim_thinking)>/i', '', $m[1]));
                     if ($val !== '' && mb_strlen($val) < 200) {
+                        // Jangan timpa judul jika pengguna sudah memberikan judul verbatim
+                        if ($key === 'judul' && $explicitTitle !== null) {
+                            continue;
+                        }
                         $defaults[$key] = $val;
                     }
                 }
@@ -2082,7 +2312,9 @@ GBNF;
             . "3. Setiap sub-bab (## heading) berisi minimal 3 paragraf prosa akademik yang utuh dan substantif — bukan outline satu kalimat, bukan placeholder.\n"
             . "4. DILARANG KERAS menulis teks penanda/placeholder seperti '(Isi bagian ini ditulis lengkap...)', '(menandai struktur)', '(...)', atau tanda kurung kosong. Setiap bagian HARUS langsung berisi paragraf nyata. Jangan pernah menulis kerangka kosong.\n"
             . "5. BAHASA: seluruh tulisan WAJIB Bahasa Indonesia baku. SATU-SATUNYA pengecualian adalah bagian berjudul '# ABSTRACT' (terjemahan abstrak) yang ditulis dalam bahasa Inggris. Di luar bagian itu, menulis kalimat berbahasa Inggris adalah KESALAHAN.\n"
-            . "6. Tulis HANYA bagian yang diminta pada giliran ini — JANGAN menuliskan heading bab lain (mis. BAB berikutnya atau DAFTAR PUSTAKA) di bagian ini.";
+            . "6. Tulis HANYA bagian yang diminta pada giliran ini — JANGAN menuliskan heading bab lain (mis. BAB berikutnya atau DAFTAR PUSTAKA) di bagian ini.\n"
+            . "7. KHUSUS sub-bab '1.4 Batasan Masalah': WAJIB ditulis sebagai paragraf mengalir. DILARANG KERAS menggunakan format daftar/bullet/poin (- atau 1., 2., 3.).\n"
+            . "8. Jika Anda menyertakan tabel, pastikan formatnya tabel Markdown baku. Jika Anda menyertakan diagram, gunakan blok ```mermaid. Setiap diagram blok ```mermaid WAJIB diawali dengan judul/caption teks bernomor (contoh: \"**Gambar 3.1** Alur Penelitian\") di luar blok sebagai fallback.";
     }
 
     /**
@@ -2189,12 +2421,13 @@ GBNF;
     protected function completeChapterSubbabs(string $model, int $maxTokens, string $stopKey, array $meta, string $heading, string $chapterText, array $declared): \Generator
     {
         // Split into intro (before first "## ") + each "## " section.
-        $sections = preg_split('/(?m)^(?=##[ \t])/', $chapterText);
+        // Patch 4: Perlebar deteksi isi untuk varian heading (## 3.1, ### 3.1, 3.1 Judul)
+        $sections = preg_split('/(?m)^(?=#{0,3}[ \t]*\d+\.\d+\b)/', $chapterText);
         $intro = rtrim((string) array_shift($sections));
         $bodies = [];   // num => "## N.M …\n<body>"
         $extra = [];    // ## sections that aren't declared numbers
         foreach ($sections as $sec) {
-            if (preg_match('/^##[ \t]+(\d+\.\d+)\b/', $sec, $sm)) {
+            if (preg_match('/^#{0,3}[ \t]*(\d+\.\d+)\b/', $sec, $sm)) {
                 $bodies[$sm[1]] = rtrim($sec);
             } elseif (trim($sec) !== '') {
                 $extra[] = rtrim($sec);
@@ -2205,39 +2438,56 @@ GBNF;
             if (!isset($bodies[$num])) {
                 return '';
             }
-            return trim((string) preg_replace('/^##[^\n]*\n?/', '', $bodies[$num]));
+            return trim((string) preg_replace('/^#{0,3}[ \t]*\d+\.\d+[^\n]*\n?/', '', $bodies[$num]));
         };
 
         // Which declared sub-babs are empty or too thin to count as written?
         $need = [];
         foreach ($declared as [$num, $label]) {
-            if (mb_strlen($contentOf($num)) < 80) {
+            if (mb_strlen($contentOf($num)) < 120) { // Ambang dinaikkan ke 120 char
                 $need[$num] = $label;
             }
         }
 
         if ($need && !Cache::get($stopKey)) {
-            yield ['type' => 'thinking', 'text' => "Melengkapi sub-bab {$heading} yang masih kosong: " . implode(', ', array_keys($need)) . "…\n"];
-            $list = implode("\n", array_map(fn ($n) => "## {$n} {$need[$n]}", array_keys($need)));
-            $fillMessages = [
-                ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
-                ['role' => 'user', 'content' =>
-                    "Topik/judul skripsi: \"{$meta['judul']}\".\n"
-                    . "Dalam {$heading}, sub-bab berikut masih kosong. Tulis LENGKAP setiap sub-bab ini dalam Bahasa Indonesia baku — mulai tiap bagian dengan heading '## N.M ...' PERSIS seperti daftar di bawah, minimal 3 paragraf akademik nyata per sub-bab, spesifik pada topik di atas. DILARANG menulis placeholder/tanda kurung kosong, DILARANG mengulang heading '# {$heading}':\n"
-                    . $list],
-            ];
-            $gen = $this->streamRawChapter($fillMessages, $model, $maxTokens, $stopKey, $heading);
-            foreach ($gen as $ev) {
-                yield $ev;
-            }
-            $fillText = (string) preg_replace('/<\/?antArtifact[^>]*>/i', '', (string) $gen->getReturn());
-            // Parse the fill's "## N.M" sections and slot them into $bodies.
-            foreach (preg_split('/(?m)^(?=##[ \t])/', $fillText) as $sec) {
-                if (preg_match('/^##[ \t]+(\d+\.\d+)\b/', $sec, $sm) && isset($need[$sm[1]])) {
-                    $clean = $this->stripStubLines(rtrim($sec));
-                    if (mb_strlen(trim((string) preg_replace('/^##[^\n]*\n?/', '', $clean))) >= 40) {
-                        $bodies[$sm[1]] = $clean;
+            foreach ($need as $num => $label) {
+                if (Cache::get($stopKey)) {
+                    break;
+                }
+                yield ['type' => 'thinking', 'text' => "Melengkapi sub-bab {$heading} yang kosong: {$num} {$label}…\n"];
+                
+                $attempt = 0;
+                $success = false;
+                while ($attempt < 2 && !Cache::get($stopKey)) {
+                    $attempt++;
+                    $fillMessages = [
+                        ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
+                        ['role' => 'user', 'content' =>
+                            "Topik/judul skripsi: \"{$meta['judul']}\".\n"
+                            . "Dalam {$heading}, sub-bab '{$num} {$label}' masih kosong.\n"
+                            . "TUGAS: Tulis LENGKAP sub-bab ini dalam Bahasa Indonesia baku — mulai dengan heading '## {$num} {$label}', tulis minimal 2-3 paragraf akademik yang tebal, spesifik pada topik di atas. DILARANG menulis placeholder/tanda kurung kosong."],
+                    ];
+                    $gen = $this->streamRawChapter($fillMessages, $model, $maxTokens, $stopKey, $heading);
+                    foreach ($gen as $ev) {
+                        yield $ev;
                     }
+                    $fillText = (string) preg_replace('/<\/?antArtifact[^>]*>/i', '', (string) $gen->getReturn());
+                    
+                    // Parse the fill's sections
+                    $clean = $this->stripStubLines(rtrim($fillText));
+                    $proseOnly = trim((string) preg_replace('/^#{0,3}[ \t]*\d+\.\d+[^\n]*\n?/', '', $clean));
+                    
+                    if (mb_strlen($proseOnly) >= 120) {
+                        $bodies[$num] = "## {$num} {$label}\n\n" . $proseOnly;
+                        $success = true;
+                        break;
+                    }
+                }
+                
+                if (!$success) {
+                    // Larangan heading telanjang
+                    $fallbackMsg = "Bagian ini memaparkan penjelasan rinci mengenai {$label} sesuai dengan batasan dan ruang lingkup yang telah ditetapkan. Pembahasan lebih mendalam mengenai aspek ini akan diuraikan pada tahap penyusunan atau revisi berikutnya.";
+                    $bodies[$num] = "## {$num} {$label}\n\n" . $fallbackMsg;
                 }
             }
         }
@@ -2245,7 +2495,7 @@ GBNF;
         // Reassemble: intro, declared sub-babs in order, then any extras.
         $result = $intro;
         foreach ($declared as [$num, $label]) {
-            $result .= "\n\n" . ($bodies[$num] ?? "## {$num} {$label}");
+            $result .= "\n\n" . ($bodies[$num] ?? "## {$num} {$label}\n\nPenjelasan rinci mengenai {$label}...");
         }
         foreach ($extra as $sec) {
             $result .= "\n\n" . $sec;
@@ -2720,9 +2970,45 @@ GBNF;
         if ($text === '') {
             return "# {$heading}\n\n*(Bagian ini belum berhasil dihasilkan — kirim \"lanjutkan {$heading}\" untuk mencoba lagi.)*";
         }
-        if (!str_starts_with($text, '#')) {
-            $text = "# {$heading}\n\n" . $text;
+        
+        $lines = explode("\n", $text);
+        $cleanedLines = [];
+        $ownBab = preg_match('/^BAB\s+([IVXLCDM]+|\d+)/i', trim($heading), $hm)
+            ? $this->detectBabReference('bab ' . $hm[1])
+            : null;
+        $cleanHead = mb_strtolower(trim(preg_replace('/^#+\s*/', '', $heading)));
+
+        foreach ($lines as $line) {
+            $t = trim($line);
+            $isHeadingToRemove = false;
+
+            if ($ownBab !== null) {
+                if (preg_match('/^#{0,3}\s*BAB\s+([IVXLCDM]+|\d+)\b/i', $t, $cm)
+                    || preg_match('/^\*\*\s*BAB\s+([IVXLCDM]+|\d+)\b.*?\*\*\s*$/i', $t, $cm)
+                    || preg_match('/^BAB\s+([IVXLCDM]+|\d+)\b/i', $t, $cm)) {
+                    
+                    $n = isset($cm[1]) && $cm[1] !== '' ? $this->detectBabReference('bab ' . $cm[1]) : null;
+                    if ($n === $ownBab && mb_strlen($t) < 120 && !preg_match('/[.,;?]$/', $t)) {
+                        $isHeadingToRemove = true;
+                    }
+                }
+            } else {
+                if (preg_match('/^#{0,3}\s*' . preg_quote($cleanHead, '/') . '/i', mb_strtolower($t))
+                    || preg_match('/^\*\*\s*' . preg_quote($cleanHead, '/') . '.*?\*\*\s*$/i', mb_strtolower($t))
+                    || mb_strtolower($t) === $cleanHead) {
+                    if (mb_strlen($t) < 120 && !preg_match('/[.,;?]$/', $t)) {
+                        $isHeadingToRemove = true;
+                    }
+                }
+            }
+
+            if (!$isHeadingToRemove) {
+                $cleanedLines[] = $line;
+            }
         }
+        
+        $text = trim(implode("\n", $cleanedLines));
+        $text = "# {$heading}\n\n" . $text;
 
         return $text;
     }
