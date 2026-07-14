@@ -118,7 +118,11 @@
     @close-panel.window="activePanel = null"
     @open-artifact.window="
         const d = $event.detail;
-        openArtifactId = typeof d === 'number' ? d : (d.id || null);
+        if (d !== null && d !== undefined) {
+            openArtifactId = (typeof d === 'number' || typeof d === 'string') ? parseInt(d) : ((d && d.id) ? parseInt(d.id) : 0);
+        } else {
+            openArtifactId = 0;
+        }
         if (activePanel === 'artifacts') activePanel = null;
     "
     @close-artifact-panel.window="openArtifactId = null"

@@ -1381,6 +1381,7 @@ function chatInterfaceState() {
             this.doneMeta = null;
             this.pendingArtifacts = [];
             this.pendingCitations = null;
+            this._hasAutoOpenedArtifact = false;
             // A new turn consumes the previous chips
             this.suggestions = [];
             this.pendingSuggestions = null;
@@ -1492,7 +1493,12 @@ function chatInterfaceState() {
                                         self.streamEnded = true;
                                         self.pumpStream();
                                     } else if (data.type === 'artifact') {
-                                        if (data.data) self.pendingArtifacts.push(data.data);
+                                        if (data.data) {
+                                            self.pendingArtifacts.push(data.data);
+                                            if (data.data.id) {
+                                                window.dispatchEvent(new CustomEvent('open-artifact', { detail: { id: data.data.id } }));
+                                            }
+                                        }
                                     } else if (data.type === 'citations') {
                                         self.pendingCitations = data.data || null;
                                     } else if (data.type === 'progress') {
@@ -1777,6 +1783,10 @@ function chatInterfaceState() {
             this.thinkingContent = '';
             this.streaming = false;
             this.doneMeta = null;
+            // Auto-open artifact drawer if an artifact was generated/updated
+            if (this.pendingArtifacts && this.pendingArtifacts.length > 0 && this.pendingArtifacts[0].id) {
+                window.dispatchEvent(new CustomEvent('open-artifact', { detail: { id: this.pendingArtifacts[0].id } }));
+            }
             this.pendingArtifacts = [];
             if (this.conversationId) {
                 // Swap in the authoritative thread (ids, artifacts, branch info)
@@ -2327,6 +2337,13 @@ function chatInterfaceState() {
             // Attributes are parsed separately because models emit them in any order
             // (the system prompt example puts type before title).
             var match = content.match(/([\s\S]*?)<antArtifact\b([^>]*)>([\s\S]*?)(?:<\/antArtifact>|$)([\s\S]*)/i);
+            if (match || content.search(/<antArtifact\b/i) !== -1) {
+                if (!this._hasAutoOpenedArtifact) {
+                    this._hasAutoOpenedArtifact = true;
+                    window.dispatchEvent(new CustomEvent('show-artifact-panel'));
+                }
+            }
+
             if (!match) {
                 // The opening tag is still arriving (no '>' yet): hide the
                 // partial raw tag and just show what came before it

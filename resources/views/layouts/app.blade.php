@@ -190,7 +190,9 @@
                                 canvas.className = 'w-full h-auto block';
                                 
                                 wrapper.appendChild(canvas);
-                                this.$refs.container.appendChild(wrapper);
+                                if (this.$refs && this.$refs.container) {
+                                    this.$refs.container.appendChild(wrapper);
+                                }
                                 
                                 const renderContext = {
                                     canvasContext: context,
