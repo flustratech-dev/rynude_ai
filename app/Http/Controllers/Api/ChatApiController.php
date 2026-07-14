@@ -462,7 +462,7 @@ class ChatApiController extends ApiController
 
                 $buffer->flush();
 
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 if (isset($buffer)) {
                     $buffer->apply(['type' => 'error', 'data' => $e->getMessage()]);
                 }

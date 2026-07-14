@@ -147,29 +147,67 @@ class ChatStreamingService
                             : (string) ($messages[$i]['content'] ?? '');
                     }
                 }
-                // A scoped skripsi ("full sampai bab 1", "bab 1 saja") ALSO goes
-                // through the per-chapter pipeline — so it gets the clarify question,
-                // per-stage thinking + explanation, and REAL chapter content — just
-                // LIMITED to the requested BAB. The old single-shot path produced
-                // empty outlines with placeholder text ("isi bagian ini ditulis…").
-                // The scope ("sampai bab N") often lives one or more turns BACK: after
-                // the clarify chip the newest user turn is just "Metode kualitatif…",
-                // which carries no scope. Read the joined recent user turns so the
-                // original "…sampai bab 1" is still seen — otherwise babLimit resets to
-                // null on the write turn and the whole BAB I–V gets produced.
-                $scopeText = $this->recentUserRequestText($messages, 4);
+                // We read up to 4 recent messages from NEWEST to OLDEST.
+                // The newest explicit scope modifier always wins.
+                // This prevents the AI from being "stubborn" (e.g. if the user says "bab 1 aja" 
+                // in turn 1, but says "sekarang buatkan full" in turn 2, "full" must win).
                 $singleBab = false;
                 $babTarget = null;
                 $babLimit = null;
+                $scopeFound = false;
 
-                if (preg_match('/\b(sampai\s+bab|s\/d\s+bab|hingga\s+bab)\s*([ivx0-9]+)\b/i', $scopeText, $m)) {
-                    $babLimit = $this->detectBabReference('bab ' . $m[2]);
-                } elseif (preg_match('/\b(bab\s*[ivx0-9]+\s*(saja|dulu|aja)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $scopeText)) {
-                    $singleBab = true;
-                    $babTarget = $this->detectBabReference($scopeText);
-                } elseif (preg_match('/\bbab\s+([ivx0-9]+)\b/i', $scopeText, $m) && !preg_match('/\b(full|lengkap|semua\s+bab)\b/i', $scopeText)) {
-                    $singleBab = true;
-                    $babTarget = $this->detectBabReference('bab ' . $m[1]);
+                for ($i = count($messages) - 1; $i >= max(0, count($messages) - 8); $i--) {
+                    if (($messages[$i]['role'] ?? '') === 'user') {
+                        $msgText = is_array($messages[$i]['content'])
+                            ? collect($messages[$i]['content'])->where('type', 'text')->pluck('text')->implode(' ')
+                            : (string) ($messages[$i]['content'] ?? '');
+                        
+                        // Check for explicit "sampai bab N"
+                        if (preg_match('/\b(sampai\s+bab|s\/d\s+bab|hingga\s+bab)\s*([ivx0-9]+)\b/i', $msgText, $m)) {
+                            $babLimit = $this->detectBabReference('bab ' . $m[2]);
+                            $scopeFound = true;
+                            break;
+                        }
+
+                        // Check for range "bab X - bab Y" or "bab X s/d Y" or "bab X - Y"
+                        if (preg_match('/\bbab\s*([ivx0-9]+)\s*(?:-|s\/d|s\.d\.|hingga|sampai)\s*(?:bab\s*)?([ivx0-9]+)\b/i', $msgText, $rm)) {
+                            $to = $this->detectBabReference('bab ' . $rm[2]);
+                            if ($to !== null) {
+                                $babLimit = $to;
+                                $scopeFound = true;
+                                break;
+                            }
+                        }
+                        
+                        // Check for explicit FULL modifiers (bukan hanya, full, penuh)
+                        $isFull = (bool) preg_match('/\b(full|penuh|lengkap|seluruh|keseluruhan|semua\s+bab)\b/i', $msgText);
+                        $isBukanHanya = (bool) preg_match('/\bbukan\s+(?:hanya|cuma)\s+bab\b/i', $msgText);
+                        
+                        if ($isFull || $isBukanHanya) {
+                            // The user explicitly wants full, so we leave singleBab and babLimit as null/false.
+                            $scopeFound = true;
+                            break;
+                        }
+                        
+                        // Check for single bab modifiers (hanya bab N, bab N saja)
+                        if (preg_match('/\b(bab\s*[ivx0-9]+\s*(saja|dulu|aja|doang)|cuma\s+bab|hanya\s+bab|khusus\s+bab)\b/i', $msgText)) {
+                            $singleBab = true;
+                            preg_match('/\b(?:bab\s*([ivx0-9]+)\s*(?:saja|dulu|aja|doang)|(?:cuma|hanya|khusus)\s+bab\s*([ivx0-9]+))\b/i', $msgText, $mm);
+                            $babTarget = $this->detectBabReference('bab ' . ($mm[1] ?: $mm[2]));
+                            $scopeFound = true;
+                            break;
+                        }
+                        
+                        // Weak single bab matching (just "bab N" without "saja").
+                        // MUST NOT match if part of a range or connector (e.g. "bab 1 - 5", "dari bab 1", "bab 1 s/d 5")
+                        if (!preg_match('/\b(dari|sampai|hingga|s\/d|s\.d\.|-)\s*bab\b|\bbab\s*[ivx0-9]+\s*(?:-|s\/d|s\.d\.|hingga|sampai)\b/i', $msgText)
+                            && preg_match('/\bbab\s+([ivx0-9]+)\b/i', $msgText, $m)) {
+                            $singleBab = true;
+                            $babTarget = $this->detectBabReference('bab ' . $m[1]);
+                            $scopeFound = true;
+                            break;
+                        }
+                    }
                 }
 
                 $chapterScoped = ($babLimit !== null || ($singleBab && $babTarget !== null));
@@ -188,7 +226,8 @@ class ChatStreamingService
                 $fullSkripsiIntent = (bool) preg_match('/\b(skripsi|tesis|tugas akhir)\b/i', $curTurn)
                     && (bool) preg_match('/\b(full|penuh|lengkap|seluruh|keseluruhan|semua\s+bab|penyusunan|penulisan|pembuatan|menyusun|susun(?:kan)?|menulis|tulis(?:kan)?|kerjakan|selesaikan|lanjut(?:kan)?|teruskan)\b/i', $curTurn)
                     && $this->detectBabReference($curTurn) === null
-                    && !$isPlainQuestion;
+                    && !$isPlainQuestion
+                    && !$this->isOutlineRequest($curTurn);
 
                 $useChapterPipeline = ($isGgufDocRequest && $isSkripsiCreate)
                     // A scoped skripsi ("sampai bab N") must ALWAYS enter the pipeline,
@@ -235,26 +274,32 @@ class ChatStreamingService
                 // #5: follow-up action on the room's active markdown artifact.
                 // Fix #3: a FULL-skripsi request is NOT a revision — let it hit the
                 // pipeline even though it contains "lanjut"/"susun".
-                if (!$latestUserHasDoc && !$fullSkripsiIntent && preg_match($revisionPattern, $latestUserText)) {
+                if (!$latestUserHasDoc) {
                     $revisionArtifact = $this->latestMarkdownArtifact($conversation);
                     if ($revisionArtifact) {
-                        $isRevisionTurn = true;
-
-                        // #4: "lanjutkan/teruskan/sambung/tambah BAB N" on an active
-                        // SKRIPSI must APPEND the next chapter(s) to the SAME document
-                        // — not regenerate the whole thing (which produced a new,
-                        // ngaco doc). Only when the target chapter isn't there yet;
-                        // "perdalam BAB IV" on an existing BAB IV stays a normal revision.
                         $content = (string) $revisionArtifact->content;
                         $isSkripsiDoc = (bool) preg_match('/^\s*---[\s\S]*?\bmode:\s*(skripsi|tesis)\b/i', $content)
                             || (bool) preg_match('/^#\s+BAB\s+[IVX]/mi', $content);
-                        $continueVerb = (bool) preg_match('/\b(lanjut(?:kan)?|teruskan|sambung|tambah(?:kan)?\s+bab)\b/i', $latestUserText);
-                        if ($isSkripsiDoc && $continueVerb) {
+
+                        // If user asks for FULL skripsi but we already have an active one,
+                        // treat it as a command to complete the remaining chapters (e.g. Bab 2-5).
+                        if ($isSkripsiDoc && $fullSkripsiIntent) {
+                            $isRevisionTurn = true;
                             $highest = $this->highestBabInDocument($content);
-                            $target = $this->detectBabReference($latestUserText) ?? ($highest + 1);
-                            if ($target > $highest && $highest >= 1 && $target <= 5) {
+                            if ($highest >= 1 && $highest < 5) {
                                 $isSkripsiContinuation = true;
-                                $continuationRange = [$highest + 1, $target];
+                                $continuationRange = [$highest + 1, 5];
+                            }
+                        } elseif (!$fullSkripsiIntent && preg_match($revisionPattern, $latestUserText)) {
+                            $isRevisionTurn = true;
+                            $continueVerb = (bool) preg_match('/\b(lanjut(?:kan)?|teruskan|sambung|tambah(?:kan)?\s+bab)\b/i', $latestUserText);
+                            if ($isSkripsiDoc && $continueVerb) {
+                                $highest = $this->highestBabInDocument($content);
+                                $target = $this->detectBabReference($latestUserText) ?? ($highest + 1);
+                                if ($target > $highest && $highest >= 1 && $target <= 5) {
+                                    $isSkripsiContinuation = true;
+                                    $continuationRange = [$highest + 1, $target];
+                                }
                             }
                         }
                     }
@@ -279,14 +324,22 @@ class ChatStreamingService
                     
                     if ($this->isDocumentQuestion($latestUserText)) {
                         $isGgufDocRequest = false; // → plain chat answer
-                    } elseif ($this->isTitleSuggestionRequest($latestUserText)) {
-                        $isGgufDocRequest = false; // → plain chat answer
-                        
-                        // Sisipkan reminder ringan agar model menjawab dengan 5–8 opsi judul
-                        $lastIdx = count($messagesForAi) - 1;
-                        if (!empty($messagesForAi) && ($messagesForAi[$lastIdx]['role'] ?? '') === 'user') {
-                            $messagesForAi[$lastIdx]['content'] .= "\n\n[SISTEM: Berikan 5-8 saran judul skripsi dalam format daftar bernomor langsung di chat. JANGAN membuat dokumen/artifact.]";
-                        }
+                    }
+                }
+
+                // ALWAYS inject system instructions for Title / Outline requests to prevent local models from hallucinating artifacts.
+                // This must run regardless of $isGgufDocRequest because small models will write documents by default if not strictly forbidden.
+                if ($this->isTitleSuggestionRequest($latestUserText)) {
+                    $isGgufDocRequest = false; // force chat
+                    $lastIdx = count($messagesForAi) - 1;
+                    if (!empty($messagesForAi) && ($messagesForAi[$lastIdx]['role'] ?? '') === 'user') {
+                        $messagesForAi[$lastIdx]['content'] .= "\n\n[SISTEM: Berikan 5-8 saran judul skripsi dalam format daftar bernomor langsung di chat. Pastikan judul SANGAT RELEVAN dengan bidang/jurusan/topik yang diminta user. JANGAN memberikan topik yang melenceng. JANGAN membuat dokumen/artifact.]";
+                    }
+                } elseif ($this->isOutlineRequest($latestUserText)) {
+                    $isGgufDocRequest = false; // force chat
+                    $lastIdx = count($messagesForAi) - 1;
+                    if (!empty($messagesForAi) && ($messagesForAi[$lastIdx]['role'] ?? '') === 'user') {
+                        $messagesForAi[$lastIdx]['content'] .= "\n\n[SISTEM: Berikan draf kerangka/outline struktur bab secara langsung di chat. ATURAN WAJIB:\n1. Format HARUS bersusun ke bawah (vertikal) menggunakan bullet points atau numbered list bersarang (nested).\n2. JANGAN menggabungkan sub-bab ke dalam satu baris/paragraf.\n3. Untuk SETIAP bab dan sub-bab, WAJIB sertakan 1-2 kalimat penjelasan singkat yang secara spesifik membahas penerapan teori/metode/kasus pada judul yang diminta user.\n4. JANGAN membuat dokumen/artifact.]";
                     }
                 }
             }
@@ -1237,8 +1290,7 @@ class ChatStreamingService
         }
         
         // Murni minta outline/kerangka (tanpa menyuruh buat skripsinya)
-        if (preg_match('/\b(buat(?:kan)?|bikin(?:kan)?|susun(?:kan)?|rancang(?:kan)?|minta|beri(?:kan)?|kasih|contoh|butuh|tulis(?:kan)?)\s+(?:saya\s+|tolong\s+)*(?:berikan\s+)?(outline|kerangka|struktur|draft outline)\b/i', $recent) 
-            && !preg_match('/\b(lanjut(?:kan)?|teruskan|berdasarkan|dari)\b/i', $recent)) {
+        if ($this->isOutlineRequest($recent)) {
             return false;
         }
 
@@ -1254,10 +1306,18 @@ class ChatStreamingService
      */
     protected function wantsDocumentCreation(string $text): bool
     {
-        if (preg_match('/\b(berikan|berilah|kasih|tolong\s+buat(?:kan)?|buatkan|buatlah|buatin|bikinkan|bikin|membuat|dibuatkan|tuliskan|tulis|menulis|susunkan|susun|menyusun|rancang|merancang|generate|kerjakan|selesaikan|lengkapi|kembangkan|perpanjang|perdalam|perbanyak|revisi|perbaiki|lanjutkan|teruskan|sambung|create|make|write|draft|compose)\b/i', $text)) {
+        // Jika ini jelas-jelas hanya minta outline/kerangka, MAKA BUKAN minta dibikinkan dokumen asli
+        if ($this->isOutlineRequest($text)) {
+            return false;
+        }
+
+        if (preg_match('/\b(buatkan|buatlah|buatin|bikinkan|susunkan|rancang|generate)\b/i', $text)) {
             return true;
         }
-        // Bare "buat"/"buatkan" immediately before a document noun.
+        if (preg_match('/\b(bikin|membuat|dibuatkan|tuliskan|tulis|menulis|susun|menyusun|merancang|kerjakan|selesaikan|lengkapi|kembangkan|perpanjang|perdalam|perbanyak|revisi|perbaiki|lanjutkan|teruskan|sambung|create|make|write|draft|compose)\b/i', $text)) {
+            return true;
+        }
+        // Bare "buat"/"minta"/"berikan" immediately before a document noun.
         if (preg_match('/\b(buat(?:kan)?|bikin(?:kan)?|susun(?:kan)?|rancang(?:kan)?|minta|beri(?:kan)?|kasih|contoh|butuh|tulis(?:kan)?|generate)\s+(?:\w+\s+){0,4}(skripsi|makalah|laporan|proposal|tesis|tugas akhir|jurnal|artikel|karya ilmiah|dokumen|paper|pdf|docx|word)\b/i', $text)) {
             return true;
         }
@@ -1296,6 +1356,16 @@ class ChatStreamingService
             return true;
         }
         return false;
+    }
+
+    /**
+     * True when the user specifically asks for an outline or structure (e.g., "buatkan kerangka skripsi")
+     * without actually asking to write the full document right now.
+     */
+    protected function isOutlineRequest(string $text): bool
+    {
+        return preg_match('/\b(buat(?:kan)?|bikin(?:kan)?|susun(?:kan)?|rancang(?:kan)?|minta|beri(?:kan)?|kasih|contoh|butuh|tulis(?:kan)?)\s+(?:saya\s+|tolong\s+)*(?:berikan\s+)?(?:draf\s+|draft\s+)?(outline|kerangka|struktur|draft outline)\b/i', $text) 
+            && !preg_match('/\b(lanjut(?:kan)?|teruskan|berdasarkan|dari)\b/i', $text);
     }
 
     /**
@@ -1599,6 +1669,8 @@ class ChatStreamingService
                 }
             } elseif ($role === 'assistant') {
                 $content = (string) ($msg['content'] ?? '');
+                // Do not feed huge generated documents back into the prompt context.
+                $content = preg_replace('/<antArtifact[\s\S]*?<\/antArtifact>/i', '[DOKUMEN TELAH DIBUAT DI ARTIFACT]', $content);
                 // Only keep substantial AI responses (likely outline/planning), ignore clarify bubbles
                 if (mb_strlen($content) > 150 && !str_contains($content, 'Metode penelitian apa yang ingin Anda pakai')) {
                     $texts[] = "AI (Outline/Plan): " . trim($content);
@@ -1733,11 +1805,11 @@ GBNF;
             ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
                 "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
             ['BAB I', 'BAB I PENDAHULUAN',
-                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Rumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah — WAJIB bentuk paragraf mengalir (BUKAN daftar/bullet/poin), 2–4 paragraf, ## 1.5 Manfaat Penelitian, ## 1.6 Metodologi Penelitian (ringkas), ## 1.7 Sistematika Penulisan. Setiap sub-bab minimal 4-6 paragraf akademik yang tebal & spesifik (kecuali 1.7 boleh lebih ringkas)."],
+                "Sub-bab: ## 1.1 Latar Belakang (minimal 4 paragraf), ## 1.2 Rumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah (WAJIB bentuk paragraf mengalir, BUKAN daftar/bullet/poin, 2–4 paragraf), ## 1.5 Manfaat Penelitian, ## 1.6 Metodologi Penelitian (ringkas), ## 1.7 Sistematika Penulisan. Setiap sub-bab minimal 4-6 paragraf akademik yang tebal & spesifik (kecuali 1.7 boleh lebih ringkas)."],
             ['BAB II', 'BAB II TINJAUAN PUSTAKA',
-                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian dengan nama penulis dan tahun), ## 2.2 Landasan Teori dengan sub-sub-bab bernomor (### 2.2.1 dst) per konsep inti, ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019). WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (misal tabel perbandingan penelitian terdahulu dan tabel definisi). WAJIB menyertakan minimal 1 diagram dalam blok ```mermaid (misal flowchart Kerangka Pemikiran)."],
+                "Sub-bab: ## 2.1 Penelitian Terdahulu (bahas minimal 5 penelitian relevan dengan nama penulis dan tahun), ## 2.2 Landasan Teori (berisi sub-sub-bab bernomor ### 2.2.1 dst per konsep inti), ## 2.3 Kerangka Pemikiran. Kutip teori dari penulis bernama dengan tahun, contoh: (Sugiyono, 2019). WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (misal tabel perbandingan penelitian terdahulu dan tabel definisi). WAJIB menyertakan minimal 1 diagram dalam blok ```mermaid (misal flowchart Kerangka Pemikiran)."],
             ['BAB III', 'BAB III METODOLOGI PENELITIAN',
-                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel / Sumber Data, ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja. WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (misal tabel populasi/sampel dan kisi-kisi instrumen). WAJIB menyertakan minimal 1 diagram dalam blok ```mermaid (misal alur penelitian, atau arsitektur sistem/use-case/ERD jika relevan)."],
+                "Sub-bab: ## 3.1 Jenis Penelitian, ## 3.2 Populasi dan Sampel (atau Sumber Data), ## 3.3 Teknik Pengumpulan Data, ## 3.4 Instrumen Penelitian, ## 3.5 Teknik Analisis Data. Jelaskan metode secara konkret dan operasional, bukan definisi umum saja. WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (misal tabel populasi/sampel dan kisi-kisi instrumen). WAJIB menyertakan minimal 1 diagram dalam blok ```mermaid (misal alur penelitian, atau arsitektur sistem/use-case/ERD jika relevan)."],
             ['BAB IV', 'BAB IV HASIL DAN PEMBAHASAN',
                 "Sub-bab: ## 4.1 Gambaran Umum Objek Penelitian, ## 4.2 Hasil Penelitian, ## 4.3 Pembahasan (analisis yang mengaitkan hasil dengan teori BAB II). Ini bab terpanjang — tulis analisis nyata, bukan pengulangan BAB I. WAJIB menyertakan minimal 2 tabel Markdown pada bab ini (data hasil temuan). Tambahkan diagram dalam blok ```mermaid jika relevan untuk visualisasi hasil."],
             ['BAB V', 'BAB V PENUTUP',
@@ -1936,6 +2008,21 @@ GBNF;
         $titleAttr = htmlspecialchars($meta['judul'], ENT_QUOTES);
         yield "<antArtifact type=\"text/markdown\" title=\"{$titleAttr}\">\n" . $existing . "\n\n";
 
+        $chatContext = '';
+        // $conversation->messages is an Eloquent Collection, but
+        // extractLongConversationContext() requires a plain array.
+        // Passing the Collection directly causes a silent TypeError crash
+        // that kills the generator without any visible error.
+        $convMessages = $conversation->messages->map(function ($msg) {
+            return [
+                'role' => $msg->role,
+                'content' => $msg->content,
+            ];
+        })->toArray();
+        if (count($convMessages) > 4) {
+            $chatContext = $this->extractLongConversationContext($convMessages);
+        }
+
         $newHeadings = [];
         for ($bab = $fromBab; $bab <= $toBab; $bab++) {
             if (Cache::get($stopKey)) {
@@ -1944,7 +2031,7 @@ GBNF;
             [$label, $heading, $guide] = $plan[$bab];
             yield ['type' => 'thinking', 'text' => "Menulis {$heading} untuk melanjutkan dokumen…\n", 'transient' => true];
 
-            $gen = $this->generateChapterBody($model, $tier === 'large' ? 8192 : 6144, $stopKey, $request, $meta, $summary, $label, $heading, $guide, false);
+            $gen = $this->generateChapterBody($model, $tier === 'large' ? 10240 : 8192, $stopKey, $request, $chatContext, $meta, $summary, $label, $heading, $guide, false);
             $chapterThinking = '';
             foreach ($gen as $ev) {
                 if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
@@ -2141,7 +2228,7 @@ GBNF;
             // Language guard: BAB I–V must be Indonesian. A small model drifts
             // into English right after the (legitimately English) ABSTRACT —
             // detect that and rewrite the chapter in Indonesian once.
-            if ($ci >= 1 && $ci <= 5 && !Cache::get($stopKey) && $this->looksEnglish($chapterText)) {
+            if ($originalIdx >= 1 && $originalIdx <= 5 && !Cache::get($stopKey) && $this->looksEnglish($chapterText)) {
                 yield ['type' => 'thinking', 'text' => "Bagian {$heading} terdeteksi berbahasa Inggris — menulis ulang dalam Bahasa Indonesia…\n", 'transient' => true];
                 $fixed = '';
                 foreach ($this->aiService->streamResponse([
@@ -2376,7 +2463,9 @@ GBNF;
             . "5. BAHASA: seluruh tulisan WAJIB Bahasa Indonesia baku. SATU-SATUNYA pengecualian adalah bagian berjudul '# ABSTRACT' (terjemahan abstrak) yang ditulis dalam bahasa Inggris. Di luar bagian itu, menulis kalimat berbahasa Inggris adalah KESALAHAN.\n"
             . "6. Tulis HANYA bagian yang diminta pada giliran ini — JANGAN menuliskan heading bab lain (mis. BAB berikutnya atau DAFTAR PUSTAKA) di bagian ini.\n"
             . "7. KHUSUS sub-bab '1.4 Batasan Masalah': WAJIB ditulis sebagai paragraf mengalir. DILARANG KERAS menggunakan format daftar/bullet/poin (- atau 1., 2., 3.).\n"
-            . "8. Jika Anda menyertakan tabel, pastikan formatnya tabel Markdown baku. Jika Anda menyertakan diagram, gunakan blok ```mermaid. Setiap diagram blok ```mermaid WAJIB diawali dengan judul/caption teks bernomor (contoh: \"**Gambar 3.1** Alur Penelitian\") di luar blok sebagai fallback.";
+            . "8. FORMAT HEADING: Heading Bab dan Sub-bab (misal # BAB, ## 1.1) WAJIB murni rata kiri. DILARANG KERAS menaruh spasi atau tab di depan tanda # agar bisa ter-render tebal dan besar.\n"
+            . "9. Jika Anda menyertakan tabel, pastikan formatnya tabel Markdown baku. Jika Anda menyertakan diagram, gunakan blok ```mermaid. Setiap diagram blok ```mermaid WAJIB diawali dengan judul/caption teks bernomor (contoh: \"**Gambar 3.1** Alur Penelitian\") di luar blok sebagai fallback.\n"
+            . "10. KONSISTENSI TOPIK: Seluruh isi bab (termasuk latar belakang, perumusan masalah, objek penelitian, tinjauan pustaka, tabel, dan diagram) WAJIB 100% konsisten dengan Judul/Topik skripsi yang diminta. DILARANG KERAS berpindah topik atau mencampuradukkan entitas/topik lain yang tidak relevan (seperti Bank Sampah, Sentiment Analysis e-commerce, atau Churn jika topik utama adalah tentang Hasil Panen / Perbankan).";
     }
 
     /**
@@ -2405,6 +2494,7 @@ GBNF;
                 . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (untuk konsistensi, JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
                 . "\nTUGAS SEKARANG: tulis {$label} secara LENGKAP dan MENDALAM untuk skripsi berjudul \"{$topic}\" — mulai LANGSUNG dengan heading '# {$heading}'.\n{$guide}\n\n"
                 . "ATURAN ISI (WAJIB dipatuhi):\n"
+                . "- Heading Bab dan Sub-bab (misal # BAB, ## 1.4 Batasan Masalah) WAJIB murni rata kiri tanpa spasi/tab di depannya agar bisa ter-render tebal dan besar.\n"
                 . "- Setiap sub-bab berisi PARAGRAF akademik nyata yang panjang, spesifik pada topik di atas.\n"
                 . "- DILARANG KERAS menulis placeholder/penanda seperti '(Isi bagian ini ditulis lengkap...)', '(menandai struktur)', '(...)', atau kurung kosong. Jika Anda menulis itu, jawaban Anda SALAH total.\n"
                 . "- Tulis HANYA {$label}. JANGAN menuliskan heading atau kerangka bab lain (BAB lain / DAFTAR PUSTAKA) di bagian ini.\n"
@@ -2460,7 +2550,7 @@ GBNF;
                 // the first sentence break, so a run-on guide line like
                 // "Sistematika Penulisan. Setiap sub-bab minimal…" yields just the
                 // sub-bab title, not the trailing instruction.
-                $label = preg_replace('/\s*[\(.].*$/s', '', $g[2]);
+                $label = preg_replace('/\s*[\(\:\–\—\.\,].*$/u', '', $g[2]);
                 $declared[] = [$g[1], trim((string) $label, " \t-–")];
             }
             $gen2 = $this->completeChapterSubbabs($model, $maxTokens, $stopKey, $meta, $heading, $chapterText, $declared);
@@ -2526,7 +2616,7 @@ GBNF;
                     $fillMessages = [
                         ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
                         ['role' => 'user', 'content' =>
-                            "Topik/judul skripsi: \"{$meta['judul']}\".\n"
+                            "TOPIK/JUDUL SKRIPSI: \"{$meta['judul']}\". WAJIB 100% konsisten pada topik ini! DILARANG berpindah topik ke entitas lain.\n"
                             . "Dalam {$heading}, sub-bab '{$num} {$label}' masih kosong.\n"
                             . "TUGAS: Tulis LENGKAP sub-bab ini dalam Bahasa Indonesia baku — mulai dengan heading '## {$num} {$label}', tulis minimal 2-3 paragraf akademik yang tebal, spesifik pada topik di atas. DILARANG menulis placeholder/tanda kurung kosong."],
                     ];
@@ -2555,13 +2645,27 @@ GBNF;
             }
         }
 
-        // Reassemble: intro, declared sub-babs in order, then any extras.
+        // Reassemble: intro, declared sub-babs in order, then any non-duplicate extras.
         $result = $intro;
         foreach ($declared as [$num, $label]) {
             $result .= "\n\n" . ($bodies[$num] ?? "## {$num} {$label}\n\nPenjelasan rinci mengenai {$label}...");
         }
         foreach ($extra as $sec) {
-            $result .= "\n\n" . $sec;
+            // Skip if extra section number matches any declared sub-bab
+            if (preg_match('/^#{0,3}[ \t]*(\d+\.\d+)\b/', $sec, $em) && isset($bodies[$em[1]])) {
+                continue;
+            }
+            // Skip if heading in extra section duplicates a declared label
+            $isDuplicate = false;
+            foreach ($declared as [$num, $label]) {
+                if ($label !== '' && preg_match('/^#{1,3}\s+.*' . preg_quote($label, '/') . '/i', $sec)) {
+                    $isDuplicate = true;
+                    break;
+                }
+            }
+            if (!$isDuplicate) {
+                $result .= "\n\n" . $sec;
+            }
         }
 
         return trim($result);
@@ -2699,14 +2803,14 @@ GBNF;
         $seenOwn = false;
         $seenHeads = [];
         foreach ($lines as $line) {
-            if (preg_match('/^#\s+(BAB\s+([IVXLCDM]+|\d+)\b|DAFTAR\s+PUSTAKA|HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line, $cm)) {
+            if (preg_match('/^#{1,3}\s+(BAB\s+([IVXLCDM]+|\d+)\b|DAFTAR\s+PUSTAKA|HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line, $cm)) {
                 if ($isFrontChapter) {
-                    $owned = (bool) preg_match('/^#\s+(HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line);
+                    $owned = (bool) preg_match('/^#{1,3}\s+(HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line);
                 } elseif ($ownBab !== null) {
                     $n = isset($cm[2]) && $cm[2] !== '' ? $this->detectBabReference('bab ' . $cm[2]) : null;
                     $owned = ($n === $ownBab);
                 } else { // Daftar Pustaka chapter
-                    $owned = (bool) preg_match('/^#\s+DAFTAR\s+PUSTAKA/i', $line);
+                    $owned = (bool) preg_match('/^#{1,3}\s+DAFTAR\s+PUSTAKA/i', $line);
                 }
                 if (!$owned) {
                     if ($seenOwn) {
@@ -3025,6 +3129,11 @@ GBNF;
         if (preg_match('/^\s*```(?:markdown)?\s*\n([\s\S]*?)\n?```\s*$/', trim($text), $m)) {
             $text = $m[1];
         }
+        // Force-strip any leading tabs or spaces before Markdown headings so they render flush-left
+        $text = (string) preg_replace('/^[ \t]+(#{1,6}\s+)/m', '$1', $text);
+        // Strip any prompt instruction leakage attached to headings (e.g. "## 1.4 Batasan Masalah — WAJIB...")
+        $text = (string) preg_replace('/^(#{1,6}\s+\d+\.\d+\s+[^—\n]+?)\s*(?:—|dengan sub-sub-bab|WAJIB).*$/mi', '$1', $text);
+
         // Chapters start at their heading; anything before the first '#' line is chat noise.
         if (preg_match('/^#{1,2}\s/m', $text, $m, PREG_OFFSET_CAPTURE)) {
             $text = substr($text, $m[0][1]);
