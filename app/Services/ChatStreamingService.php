@@ -1230,14 +1230,18 @@ class ChatStreamingService
      */
     protected function isSkripsiPipelineRequest(array $messages): bool
     {
-        // Scan the last few user turns, not just the latest: after a clarify
-        // chip the newest message is only the answer ("Metode kuantitatif"),
-        // while the skripsi ask lives one turn earlier.
         $recent = $this->recentUserRequestText($messages);
-        // Must both NAME a skripsi and actually ask to CREATE one (issue #1):
-        // "apa itu skripsi?" is a question, not a build request. The joined
-        // recent-turns text still carries the original "buatkan skripsi …" when
-        // the newest turn is only a chip answer.
+        
+        if ($this->isTitleSuggestionRequest($recent)) {
+            return false;
+        }
+        
+        // Murni minta outline/kerangka (tanpa menyuruh buat skripsinya)
+        if (preg_match('/\b(buat(?:kan)?|bikin(?:kan)?|susun(?:kan)?|rancang(?:kan)?|minta|beri(?:kan)?|kasih|contoh|butuh|tulis(?:kan)?)\s+(?:saya\s+|tolong\s+)*(?:berikan\s+)?(outline|kerangka|struktur|draft outline)\b/i', $recent) 
+            && !preg_match('/\b(lanjut(?:kan)?|teruskan|berdasarkan|dari)\b/i', $recent)) {
+            return false;
+        }
+
         return (bool) preg_match('/\b(skripsi|tesis|thesis|tugas akhir)\b/i', $recent)
             && $this->wantsDocumentCreation($recent);
     }
@@ -1250,14 +1254,11 @@ class ChatStreamingService
      */
     protected function wantsDocumentCreation(string $text): bool
     {
-        // Explicit creation / revision verbs (Indonesian + English). Revision and
-        // continuation verbs are included so follow-up/continuation turns
-        // (issues #5, #6) also resolve to document mode.
-        if (preg_match('/\b(buatkan|buatlah|buatin|bikinkan|bikin|membuat|dibuatkan|tuliskan|tulis|menulis|susunkan|susun|menyusun|rancang|merancang|generate|kerjakan|selesaikan|lengkapi|kembangkan|perpanjang|perdalam|perbanyak|revisi|perbaiki|lanjutkan|teruskan|sambung|create|make|write|draft|compose)\b/i', $text)) {
+        if (preg_match('/\b(berikan|berilah|kasih|tolong\s+buat(?:kan)?|buatkan|buatlah|buatin|bikinkan|bikin|membuat|dibuatkan|tuliskan|tulis|menulis|susunkan|susun|menyusun|rancang|merancang|generate|kerjakan|selesaikan|lengkapi|kembangkan|perpanjang|perdalam|perbanyak|revisi|perbaiki|lanjutkan|teruskan|sambung|create|make|write|draft|compose)\b/i', $text)) {
             return true;
         }
         // Bare "buat"/"buatkan" immediately before a document noun.
-        if (preg_match('/\bbuat\w*\s+(?:\w+\s+){0,2}(skripsi|makalah|laporan|proposal|tesis|jurnal|artikel|karya ilmiah|dokumen|paper|pdf|docx|word)\b/i', $text)) {
+        if (preg_match('/\b(buat(?:kan)?|bikin(?:kan)?|susun(?:kan)?|rancang(?:kan)?|minta|beri(?:kan)?|kasih|contoh|butuh|tulis(?:kan)?|generate)\s+(?:\w+\s+){0,4}(skripsi|makalah|laporan|proposal|tesis|tugas akhir|jurnal|artikel|karya ilmiah|dokumen|paper|pdf|docx|word)\b/i', $text)) {
             return true;
         }
         return false;
@@ -1288,11 +1289,13 @@ class ChatStreamingService
      */
     protected function isTitleSuggestionRequest(string $text): bool
     {
-        $hasSuggestionWord = (bool) preg_match('/\b(saran|sarankan|rekomendasi|rekomendasikan|ide|contoh|usul(?:kan)?|beri(?:kan)?|kasih|minta)\b/i', $text);
-        $hasJudulWord = (bool) preg_match('/\bjudul\b/i', $text);
-        $hasCreationVerb = (bool) preg_match('/\b(buatkan|buat|susun|tulis(?:kan)?|outline)\b/i', $text);
-
-        return $hasSuggestionWord && $hasJudulWord && !$hasCreationVerb;
+        if (preg_match('/\b(buat(?:kan)?|bikin(?:kan)?|susun(?:kan)?|beri(?:kan)?|kasih|minta|saran(?:kan)?|rekomendasi(?:kan)?|carikan|contoh|ide|generate)\s+(?:saya\s+|dong\s+|bantu\s+|beberapa\s+|contoh\s+)*(judul|topik|ide topik)\b/i', $text)) {
+            return true;
+        }
+        if (preg_match('/\b(apa|ada|butuh|carikan)\s+(?:saja\s+|sih\s+|dong\s+)?(?:ide|saran|rekomendasi|contoh|beberapa)?\s*(judul|topik)\b/i', $text)) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -1573,6 +1576,45 @@ class ChatStreamingService
     }
 
     /**
+     * Extracts longer conversation history to bind previously agreed outlines/methods 
+     * to the skripsi pipeline, ignoring the very latest request which is already handled.
+     */
+    protected function extractLongConversationContext(array $messages): string
+    {
+        $texts = [];
+        $len = count($messages);
+        
+        // Skip the very latest message (index $len - 1) as it's the trigger (e.g. "buatkan skripsi")
+        for ($i = $len - 2; $i >= 0; $i--) {
+            $msg = $messages[$i];
+            $role = $msg['role'] ?? '';
+            
+            if ($role === 'user') {
+                $content = is_array($msg['content']) 
+                    ? collect($msg['content'])->where('type', 'text')->pluck('text')->implode(' ') 
+                    : (string) ($msg['content'] ?? '');
+                
+                if (trim($content) !== '') {
+                    $texts[] = "User: " . trim($content);
+                }
+            } elseif ($role === 'assistant') {
+                $content = (string) ($msg['content'] ?? '');
+                // Only keep substantial AI responses (likely outline/planning), ignore clarify bubbles
+                if (mb_strlen($content) > 150 && !str_contains($content, 'Metode penelitian apa yang ingin Anda pakai')) {
+                    $texts[] = "AI (Outline/Plan): " . trim($content);
+                }
+            }
+            
+            // Limit to last 6 meaningful turns to prevent token overflow
+            if (count($texts) >= 6) {
+                break;
+            }
+        }
+        
+        return mb_substr(implode("\n\n", array_reverse($texts)), 0, 3000);
+    }
+
+    /**
      * Should the pipeline ask its one clarifying question (research method +
      * cover data) before writing? Never asks twice in a conversation, and
      * skips entirely when the user already stated a method or opted out.
@@ -1580,9 +1622,18 @@ class ChatStreamingService
     protected function needsSkripsiClarification(array $messages): bool
     {
         $recent = $this->recentUserRequestText($messages);
-        if (preg_match('/kuantitatif|kualitatif|campuran|mixed ?method|eksperimen|deskriptif|surv[ea]i|survey|studi kasus|etnografi|fenomenologi|\br ?& ?d\b|\bptk\b|asumsi terbaik|langsung tulis/i', $recent)) {
+        
+        // 1. Perluasan kata kunci metode termasuk IT/AI dan terms umum
+        if (preg_match('/kuantitatif|kualitatif|campuran|mixed ?method|eksperimen|deskriptif|surv[ea]i|survey|studi kasus|etnografi|fenomenologi|\br ?& ?d\b|\bptk\b|asumsi terbaik|langsung tulis|metode|data sekunder|data primer|algoritma|machine learning|dataset|pemodelan/i', $recent)) {
             return false;
         }
+        
+        // 2. Jika percakapan sudah panjang (seringkali sudah membahas outline/ide) 
+        // dan instruksi terbaru menyuruh melanjutkan atau menulis skripsinya.
+        if (count($messages) > 4 && preg_match('/\b(lanjut(?:kan)?|teruskan|sambung|buat(?:kan)?\s+skripsi(?:nya)?)\b/i', $recent)) {
+            return false;
+        }
+
         foreach ($messages as $msg) {
             if (($msg['role'] ?? '') === 'assistant'
                 && str_contains((string) ($msg['content'] ?? ''), 'Metode penelitian apa yang ingin Anda pakai')) {
@@ -1810,7 +1861,13 @@ GBNF;
         $summary .= count($outlineLines) > 0 ? implode("\n", array_slice($outlineLines, -50)) : "(Belum ada isi)";
         
         $maxTokensPerChapter = $tier === 'large' ? 10240 : 8192;
-        $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $requestText, $meta, $summary, $label, $heading, $guide, false);
+        
+        $chatContext = '';
+        if (count($messages) > 4) {
+            $chatContext = $this->extractLongConversationContext($messages);
+        }
+        
+        $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $requestText, $chatContext, $meta, $summary, $label, $heading, $guide, false);
         
         $chapterText = '';
         foreach ($gen as $ev) {
@@ -2051,6 +2108,11 @@ GBNF;
         $summary = '';
         $chapterOutlines = [];
         $totalChapters = count($chaptersWithOriginalIndex);
+        
+        $chatContext = '';
+        if (count($messages) > 4) {
+            $chatContext = $this->extractLongConversationContext($messages);
+        }
 
         foreach ($chaptersWithOriginalIndex as $ci => $item) {
             if (Cache::get($stopKey)) {
@@ -2066,7 +2128,7 @@ GBNF;
             // fill for any sub-bab the model skipped). Shared with the
             // "lanjutkan BAB N" continuation so both always produce a COMPLETE
             // chapter (fixes BAB I stopping at 1.4).
-            $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $meta, $summary, $label, $heading, $guide, $originalIdx === 0);
+            $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $chatContext, $meta, $summary, $label, $heading, $guide, $originalIdx === 0);
             $chapterThinking = '';
             foreach ($gen as $ev) {
                 if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
@@ -2326,7 +2388,7 @@ GBNF;
      * finished, cleaned chapter markdown is returned via ->getReturn().
      * Shared by the fresh pipeline and the "lanjutkan BAB N" continuation.
      */
-    protected function generateChapterBody(string $model, int $maxTokens, string $stopKey, string $request, array $meta, string $summary, string $label, string $heading, string $guide, bool $isFrontChapter): \Generator
+    protected function generateChapterBody(string $model, int $maxTokens, string $stopKey, string $request, string $chatContext, array $meta, string $summary, string $label, string $heading, string $guide, bool $isFrontChapter): \Generator
     {
         $topic = trim((string) ($meta['judul'] ?? ''));
         $langRule = $isFrontChapter
@@ -2336,8 +2398,9 @@ GBNF;
         // The user prompt binds the TOPIC hard (a small model otherwise drifts to
         // an unrelated topic — seen live: a cloud-computing skripsi came out about
         // livestock disease) and bans placeholder/skeleton output outright.
-        $buildUser = function (bool $harden) use ($request, $topic, $summary, $label, $heading, $guide, $langRule): string {
+        $buildUser = function (bool $harden) use ($request, $chatContext, $topic, $summary, $label, $heading, $guide, $langRule): string {
             return "TOPIK/JUDUL SKRIPSI (WAJIB diikuti, dilarang berpindah topik): \"{$topic}\".\n"
+                . ($chatContext !== '' ? "\n=== KONTEKS & OUTLINE DISEPAKATI ===\nIkuti outline atau metode yang sudah didiskusikan sebelumnya:\n" . $chatContext . "\n======================================\n\n" : '')
                 . "Permintaan pengguna: {$request}\n"
                 . ($summary !== '' ? "\nRingkasan bagian yang SUDAH ditulis (untuk konsistensi, JANGAN diulang):\n" . mb_substr($summary, 0, 3500) . "\n" : '')
                 . "\nTUGAS SEKARANG: tulis {$label} secara LENGKAP dan MENDALAM untuk skripsi berjudul \"{$topic}\" — mulai LANGSUNG dengan heading '# {$heading}'.\n{$guide}\n\n"
