@@ -61,6 +61,8 @@ class DocxRenderer
         }
 
         // Markdown / text document path -----------------------------------
+        // Render mermaid diagrams to images (Kroki) for the downloadable DOCX only.
+        $raw = $this->renderMermaidBlocks($raw);
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');

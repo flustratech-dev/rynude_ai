@@ -47,6 +47,8 @@ class PdfRenderer
         }
 
         // Markdown / text document path -----------------------------------
+        // Render mermaid diagrams to images (Kroki) for the downloadable PDF only.
+        $raw = $this->renderMermaidBlocks($raw);
         [$html, $meta] = $this->markdownToHtml($raw);
 
         $mode = $modeOverride ?: ($meta['mode'] ?? 'document');
@@ -314,8 +316,8 @@ class PdfRenderer
         // its own wording so a makalah/proposal no longer wears a SKRIPSI cover
         // (issue #2). Uses a labelled banner and, where conventional, a subtitle.
         $bannerFor = fn (string $label, string $subtitle = '') =>
-            '<div style="margin-top: 1.5cm; font-size: 14pt; font-weight: bold; text-transform: uppercase;">' . $label . '</div>'
-            . ($subtitle !== '' ? '<div style="margin-top: 1cm; font-size: 11pt; line-height: 1.5;">' . $subtitle . '</div>' : '');
+            '<div style="margin-top: 0.9cm; font-size: 14pt; font-weight: bold; text-transform: uppercase;">' . $label . '</div>'
+            . ($subtitle !== '' ? '<div style="margin-top: 0.6cm; font-size: 11pt; line-height: 1.4;">' . $subtitle . '</div>' : '');
         $univ = e($meta['universitas'] ?? 'Universitas');
         $skripsi_text = '';
         switch ($meta['mode'] ?? '') {
@@ -342,15 +344,15 @@ class PdfRenderer
         if ($meta['logo']) {
             $resolved = $this->resolveImagePath((string) $meta['logo']);
             if ($resolved) {
-                $logo = '<div class="cover-logo"><img src="' . e($resolved) . '" style="height:4.5cm; width:auto;" /></div>';
+                $logo = '<div class="cover-logo"><img src="' . e($resolved) . '" style="height:3.5cm; width:auto;" /></div>';
             }
         } else {
             // Spacer if no logo is provided
-            $logo = '<div class="cover-logo" style="height:4.5cm;"></div>';
+            $logo = '<div class="cover-logo" style="height:2.5cm;"></div>';
         }
 
-        $meta_block = '<div style="margin-top: 1cm; font-size: 12pt;">Disusun Oleh:</div>';
-        $meta_block .= '<div style="margin-top: 0.5cm; font-weight: bold; font-size: 12pt; text-transform: uppercase;">' . e($meta['penulis']) . '</div>';
+        $meta_block = '<div style="margin-top: 0.7cm; font-size: 12pt;">Disusun Oleh:</div>';
+        $meta_block .= '<div style="margin-top: 0.4cm; font-weight: bold; font-size: 12pt; text-transform: uppercase;">' . e($meta['penulis']) . '</div>';
         if (($meta['nim'] ?? '') !== '') {
             $meta_block .= '<div style="margin-top: 0.2cm; font-weight: bold; font-size: 12pt;">NIM. ' . e($meta['nim']) . '</div>';
         }
@@ -419,11 +421,13 @@ class PdfRenderer
             h2 { font-size: {$h2}pt; text-align: left; margin: 16pt 0 8pt 0; }
             h3 { font-size: {$h3}pt; text-align: left; margin: 12pt 0 6pt 0; }
             .cover { text-align: center; }
-            .cover-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; line-height: 1.5; margin-top: 1cm; }
-            .cover-logo { margin: 1cm 0; }
-            .cover-meta { margin-top: 1.5cm; font-size: 12pt; }
+            .cover-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; line-height: 1.3; margin-top: 0.6cm; }
+            .cover-logo { margin: 0.5cm 0; }
+            .cover-meta { margin-top: 0.9cm; font-size: 12pt; }
             .cover-line { margin: 3pt 0; }
-            .cover-bottom { margin-top: 2cm; font-size: 14pt; font-weight: bold; line-height: 1.5; }
+            /* Keep the whole institution block (…kota, tahun) together so the year
+               never spills onto a second page. */
+            .cover-bottom { margin-top: 1.1cm; font-size: 14pt; font-weight: bold; line-height: 1.4; page-break-inside: avoid; }
             .cover-inst { margin: 2pt 0; text-transform: uppercase; }
             .toc-title { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 18pt; }
             .mpdf_toc, .mpdf_toc_a, .mpdf_toc_level_0, .mpdf_toc_level_1, .mpdf_toc_level_2,

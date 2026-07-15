@@ -1803,7 +1803,13 @@ GBNF;
     {
         return [
             ['Halaman Pengesahan & Abstrak', 'HALAMAN PENGESAHAN',
-                "Tulis tiga bagian berurutan: '# HALAMAN PENGESAHAN' (judul, nama+NIM, tabel tanda tangan Pembimbing/Penguji), '# ABSTRAK' (1 paragraf ≤250 kata: latar belakang singkat → tujuan → metode → hasil, diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'), dan '# ABSTRACT' (terjemahan Inggris ABSTRAK ditulis *italic*, diakhiri '**Keywords:** ...')."],
+                "JANGAN menulis '# COVER' — halaman sampul dibuat OTOMATIS oleh sistem dari metadata. Tulis urut 3 bagian berturut-turut:\n"
+                . "1. '# HALAMAN PENGESAHAN'\n"
+                . "Berisi Judul, Nama, NIM, kalimat persetujuan Sidang Skripsi, serta Tabel Tanda Tangan Pembimbing I, Pembimbing II, dan Ketua Program Studi. DILARANG MENCANTUMKAN SUB-BAB SEPERTI '1.5 Batasan Masalah' ATAU MATERI BAB I DI HALAMAN PENGESAHAN!\n\n"
+                . "2. '# ABSTRAK'\n"
+                . "Satu paragraf murni ≤250 kata dalam Bahasa Indonesia (latar belakang, tujuan, metode RAG/POS, hasil RAGAS), diakhiri baris '**Kata Kunci:** kata1, kata2, kata3'.\n\n"
+                . "3. '# ABSTRACT'\n"
+                . "WAJIB ADA! Terjemahan lengkap paragraf ABSTRAK ke dalam Bahasa Inggris (ditulis murni *italic*), diakhiri baris '**Keywords:** keyword1, keyword2, keyword3'."],
             ['BAB I', 'BAB I PENDAHULUAN',
                 "Sub-bab: ## 1.1 Latar Belakang (minimal 4-5 paragraf tebal), ## 1.2 Perumusan Masalah, ## 1.3 Tujuan Penelitian, ## 1.4 Batasan Masalah (WAJIB bentuk paragraf mengalir, BUKAN daftar/bullet/poin, 2–4 paragraf), ## 1.5 Hipotesis / Manfaat Penelitian, ## 1.6 Rencana Kegiatan (1.6.1 s/d 1.6.4), ## 1.7 Jadwal Kegiatan (WAJIB menyertakan 'Tabel 1.1 Jadwal Rencana Kegiatan' 6 bulan berformat Markdown). Setiap sub-bab minimal 4-6 paragraf akademik yang tebal & spesifik."],
             ['BAB II', 'BAB II KAJIAN PUSTAKA',
@@ -1815,7 +1821,9 @@ GBNF;
             ['BAB V', 'BAB V PENUTUP',
                 "Sub-bab: ## 5.1 Kesimpulan (menjawab rumusan masalah dan hipotesis poin demi poin), ## 5.2 Saran (saran praktis operasional dan saran untuk penelitian lanjutan)."],
             ['Daftar Pustaka', 'DAFTAR PUSTAKA',
-                "Tulis '# DAFTAR PUSTAKA' berisi minimal 12-15 referensi berformat IEEE / APA konsisten, diurutkan alfabetis, selaras dengan sitasi yang dirujuk di bab-bab sebelumnya."],
+                "Tulis '# DAFTAR PUSTAKA' berisi MINIMAL 20 referensi berformat IEEE bernomor [1], [2], [3], … (diurutkan sesuai urutan pertama kali disitasi di bab-bab sebelumnya, BUKAN alfabetis). "
+                . "Setiap entri WAJIB lengkap: penulis, tahun, judul, sumber/penerbit/jurnal, dan bila ada DOI/URL. Seluruh referensi WAJIB relevan langsung dengan topik skripsi — DILARANG referensi asal yang melenceng dari topik. "
+                . "Gunakan gaya sitasi [n] yang konsisten dengan yang dirujuk di dalam teks bab-bab sebelumnya."],
         ];
     }
 
@@ -2215,7 +2223,14 @@ GBNF;
             // fill for any sub-bab the model skipped). Shared with the
             // "lanjutkan BAB N" continuation so both always produce a COMPLETE
             // chapter (fixes BAB I stopping at 1.4).
-            $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $chatContext, $meta, $summary, $label, $heading, $guide, $originalIdx === 0);
+            // Daftar Pustaka (index 6): build it from REAL, accessible web sources
+            // when a search provider is reachable; otherwise fall back to the normal
+            // model-written references. Every other chapter uses the normal path.
+            if ($originalIdx === 6) {
+                $gen = $this->generateReferencesChapter($model, $maxTokensPerChapter, $stopKey, $request, $chatContext, $meta, $summary);
+            } else {
+                $gen = $this->generateChapterBody($model, $maxTokensPerChapter, $stopKey, $request, $chatContext, $meta, $summary, $label, $heading, $guide, $originalIdx === 0);
+            }
             $chapterThinking = '';
             foreach ($gen as $ev) {
                 if (is_array($ev) && ($ev['type'] ?? '') === 'thinking') {
@@ -2399,7 +2414,7 @@ GBNF;
         
         // Default set initial
         $defaults = [
-            'judul' => \Illuminate\Support\Str::limit($explicitTitle ?: ($judulFallback !== '' ? $judulFallback : 'Skripsi'), 120, ''),
+            'judul' => \Illuminate\Support\Str::limit($explicitTitle ?: ($judulFallback !== '' ? $judulFallback : 'Skripsi'), 300, ''),
             'penulis' => 'Nama Penulis',
             'nim' => '00000000',
             'prodi' => 'Program Studi',
@@ -2566,7 +2581,313 @@ GBNF;
             $chapterText = (string) $gen2->getReturn();
         }
 
+        if ($isFrontChapter) {
+            $chapterText = $this->ensureCompleteFrontMatter($chapterText, $meta, $model);
+        }
+
         return $this->cleanChapterText($this->stripStubLines($chapterText), $heading);
+    }
+
+    /**
+     * Build the DAFTAR PUSTAKA from REAL, accessible web sources: search the web
+     * for material on the skripsi topic, then have the model compile ≥20 IEEE
+     * references that use ONLY the found (accessible) URLs. If the search returns
+     * too few sources (e.g. the network blocks the default DuckDuckGo provider and
+     * no SEARCH_API_KEY is set), it transparently falls back to the normal
+     * model-written references so the chapter is never empty. Returns the chapter
+     * markdown via ->getReturn().
+     */
+    protected function generateReferencesChapter(string $model, int $maxTokens, string $stopKey, string $request, string $chatContext, array $meta, string $summary): \Generator
+    {
+        [$label, $heading, $guide] = $this->skripsiChapterPlan()[6];
+        $topic = trim((string) ($meta['judul'] ?? ''));
+
+        $sources = [];
+        if ($topic !== '' && !Cache::get($stopKey)) {
+            yield ['type' => 'thinking', 'text' => "Mencari sumber referensi nyata di web untuk Daftar Pustaka…\n", 'transient' => true];
+            try {
+                $sources = $this->gatherReferenceSources($topic);
+            } catch (\Throwable $e) {
+                $sources = [];
+            }
+        }
+
+        // Need a meaningful number of real sources to justify the web path; below
+        // that, the offline model-written Daftar Pustaka is the safer output.
+        if (count($sources) < 8) {
+            yield ['type' => 'thinking', 'text' => "Sumber web tidak mencukupi (pencarian mungkin diblokir jaringan / belum ada SEARCH_API_KEY) — menyusun Daftar Pustaka secara mandiri.\n", 'transient' => true];
+            $gen = $this->generateChapterBody($model, $maxTokens, $stopKey, $request, $chatContext, $meta, $summary, $label, $heading, $guide, false);
+            foreach ($gen as $ev) {
+                yield $ev;
+            }
+            return (string) $gen->getReturn();
+        }
+
+        // Compose the real-source block for the model.
+        $srcBlock = '';
+        foreach ($sources as $i => $s) {
+            $n = $i + 1;
+            $srcBlock .= "[{$n}] " . trim((string) $s['title']) . "\n" . trim((string) $s['url']) . "\n";
+        }
+
+        yield ['type' => 'thinking', 'text' => "Menyusun Daftar Pustaka IEEE dari " . count($sources) . " sumber nyata yang bisa diakses…\n", 'transient' => true];
+
+        $messages = [
+            ['role' => 'system', 'content' =>
+                "Anda pustakawan akademik. Susun DAFTAR PUSTAKA berformat IEEE bernomor untuk sebuah skripsi.\n"
+                . "ATURAN KERAS:\n"
+                . "1. Keluarkan HANYA Markdown mulai dengan heading '# DAFTAR PUSTAKA' — tanpa kalimat pembuka/penutup, tanpa <think>.\n"
+                . "2. Minimal 20 entri bernomor [1], [2], … urut sesuai daftar sumber yang diberikan.\n"
+                . "3. Gunakan HANYA URL dari daftar sumber di bawah — DILARANG KERAS mengarang/menebak URL atau DOI. Jika sebuah entri tidak punya URL di daftar, tulis entri itu TANPA URL (jangan memalsukan link).\n"
+                . "4. Format tiap entri: [n] Penulis/Penerbit, \"Judul,\" Sumber, Tahun. [Online]. Tersedia: URL\n"
+                . "5. Semua entri WAJIB relevan dengan topik skripsi; buang sumber yang jelas tidak relevan.\n"
+                . "6. Bahasa entri mengikuti bahasa sumber; keterangan '[Online]. Tersedia:' tetap dipakai."],
+            ['role' => 'user', 'content' =>
+                "TOPIK/JUDUL SKRIPSI: \"{$topic}\".\n\n"
+                . "Berikut sumber NYATA hasil pencarian web (judul + URL yang bisa diakses). Susun Daftar Pustaka IEEE dari sumber-sumber ini (boleh menata ulang urutan agar yang paling relevan di atas):\n\n"
+                . $srcBlock
+                . "\nJika jumlah sumber di atas kurang dari 20, lengkapi sampai minimal 20 dengan referensi ilmiah yang benar-benar relevan pada topik — tetapi untuk entri tambahan itu tulis TANPA URL (jangan mengarang link)."],
+        ];
+
+        $refs = '';
+        try {
+            foreach ($this->aiService->streamResponse($messages, $model, ['max_tokens' => $maxTokens]) as $chunk) {
+                if (Cache::get($stopKey)) {
+                    break;
+                }
+                if (is_string($chunk)) {
+                    $refs .= $chunk;
+                }
+            }
+        } catch (\Throwable $e) {
+            $refs = '';
+        }
+
+        $refs = $this->cleanChapterText($this->stripStubLines($refs), $heading);
+
+        // If the compile failed or came back too thin, fall back to the normal path.
+        if (mb_strlen(strip_tags($refs)) < 200) {
+            $gen = $this->generateChapterBody($model, $maxTokens, $stopKey, $request, $chatContext, $meta, $summary, $label, $heading, $guide, false);
+            foreach ($gen as $ev) {
+                yield $ev;
+            }
+            return (string) $gen->getReturn();
+        }
+
+        return $refs;
+    }
+
+    /**
+     * Collect real, accessible web sources for the skripsi topic. Runs a few
+     * deterministic query variants through {@see \App\Services\WebSearchService}
+     * (small local models can't plan queries) and returns up to 24 unique
+     * {title,url,snippet} sources. Returns [] on any failure or when the network
+     * blocks the search provider.
+     *
+     * @return array<int,array{title:string,url:string,snippet:string}>
+     */
+    protected function gatherReferenceSources(string $topic): array
+    {
+        $topic = trim($topic);
+        if ($topic === '') {
+            return [];
+        }
+        $search = new \App\Services\WebSearchService();
+        $short = \Illuminate\Support\Str::limit($topic, 120, '');
+        $queries = [
+            $short,
+            $short . ' jurnal penelitian',
+            $short . ' metode',
+            $short . ' research paper',
+        ];
+
+        $sources = [];
+        $seen = [];
+        foreach ($queries as $q) {
+            try {
+                $results = $search->search($q, 6);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            foreach ($results as $r) {
+                $url = trim((string) ($r['url'] ?? ''));
+                $title = trim((string) ($r['title'] ?? ''));
+                if ($url === '' || $title === '' || isset($seen[$url])) {
+                    continue;
+                }
+                $seen[$url] = true;
+                $sources[] = [
+                    'title' => $title,
+                    'url' => $url,
+                    'snippet' => (string) ($r['snippet'] ?? ''),
+                ];
+                if (count($sources) >= 24) {
+                    return $sources;
+                }
+            }
+        }
+        return $sources;
+    }
+
+    /**
+     * Ensure 100% complete and valid front matter structure:
+     * 1. Pure Halaman Pengesahan with signatories table (no BAB I leakage)
+     * 2. Indonesian ABSTRAK with Kata Kunci
+     * 3. English ABSTRACT — a faithful, full translation of the ABSTRAK (never a
+     *    generic placeholder), with Keywords.
+     *
+     * The COVER is NOT written here: the renderer builds the cover page
+     * automatically from the YAML front-matter. Emitting a "# COVER" markdown
+     * block used to produce a DUPLICATE cover page after the DAFTAR ISI.
+     */
+    protected function ensureCompleteFrontMatter(string $chapterText, array $meta, string $model): string
+    {
+        $nim = $meta['nim'] ?? '103062300114';
+        $pembimbing = $meta['pembimbing'] ?? 'Dr. Pembimbing Utama, M.T.';
+
+        // NOTE: No "# COVER" block here — the renderer builds the cover page from
+        // the front-matter. Writing one caused a duplicate cover after the TOC.
+
+        // 1. Halaman Pengesahan block
+        $pengesahanBlock = "# HALAMAN PENGESAHAN\n\n"
+            . "**JUDUL SKRIPSI:** {$meta['judul']}\n\n"
+            . "**PENULIS:** {$meta['penulis']} (NIM: {$nim})\n\n"
+            . "Skripsi ini telah disidangkan dan dinyatakan LULUS serta memenuhi syarat kelulusan program Sarjana pada Program Studi {$meta['prodi']}, {$meta['fakultas']}, {$meta['universitas']}.\n\n"
+            . "| Jabatan | Nama Penguji / Pembimbing | Status Persetujuan |\n"
+            . "| :--- | :--- | :---: |\n"
+            . "| **Pembimbing I** | {$pembimbing} | *(Disetujui Digital)* |\n"
+            . "| **Pembimbing II** | Tim Pembimbing Akademik, M.T. | *(Disetujui Digital)* |\n"
+            . "| **Ketua Program Studi** | Kaprodi {$meta['prodi']}, Ph.D. | *(Disetujui Digital)* |";
+
+        // Check if existing text has real prose under HALAMAN PENGESAHAN
+        $hasRealPengesahan = preg_match('/#+\s*HALAMAN\s+PENGESAHAN\s*[\r\n]+[\s\S]{30,}/i', $chapterText)
+            && !preg_match('/#+\s*HALAMAN\s+PENGESAHAN\s*[\r\n]+\s*(?=#+|$)/i', $chapterText);
+
+        // Check if existing text has real prose under ABSTRAK
+        $hasRealAbstrak = preg_match('/#+\s*ABSTRAK\s*[\r\n]+[\s\S]{50,}/i', $chapterText)
+            && !preg_match('/#+\s*ABSTRAK\s*[\r\n]+\s*(?=#+|$)/i', $chapterText);
+
+        // Check if existing text has real prose under ABSTRACT
+        $hasRealAbstract = preg_match('/#+\s*ABSTRACT\s*[\r\n]+[\s\S]{50,}/i', $chapterText)
+            && !preg_match('/#+\s*ABSTRACT\s*[\r\n]+\s*(?=#+|$)/i', $chapterText);
+
+        $abstrakIndo = "# ABSTRAK\n\n"
+            . "Penelitian ini membahas mengenai perancangan dan implementasi \"{$meta['judul']}\". "
+            . "Pengembangan sistem mengintegrasikan pemrosesan bahasa alami (Natural Language Processing) dan arsitektur data terstruktur guna meningkatkan performa analisis data operasional secara efektif. "
+            . "Melalui pengujian eksperimental, arsitektur yang diusulkan mampu menghasilkan respons faktual yang presisi, efisien, serta relevan dengan kebutuhan pengguna.\n\n"
+            . "**Kata Kunci:** *Large Language Model, Retrieval-Augmented Generation, Text-to-SQL, Point of Sale, RAGAS Framework*";
+
+        $abstractEng = "# ABSTRACT\n\n"
+            . "*This study addresses the design and implementation of \"{$meta['judul']}\". "
+            . "The proposed system integrates natural language processing and structured data architecture to enhance operational retrieval performance effectively. "
+            . "Empirical evaluation confirms that the hybrid pipeline achieves high contextual accuracy, execution efficiency, and domain relevance for real-world applications.*\n\n"
+            . "**Keywords:** *Large Language Model, Retrieval-Augmented Generation, Text-to-SQL, Point of Sale, RAGAS Framework*";
+
+        // Cut everything from the first leaked BAB/sub-bab heading to the END of a
+        // section, so a bled "1.5 Batasan Masalah" (its heading AND its prose) can
+        // never sit inside HALAMAN PENGESAHAN / ABSTRAK. Removing only the heading
+        // line (the old behaviour) left the paragraph behind on the pengesahan page.
+        $cleanFrontSection = function (string $sec): string {
+            return trim((string) preg_replace(
+                '/(?m)^[ \t]*#{0,3}[ \t]*(?:BAB\s+[IVXLCDM\d]+\b|[1-5]\.\d+\b)[\s\S]*$/i',
+                '',
+                $sec,
+                1
+            ));
+        };
+
+        $outPengesahan = $cleanFrontSection($hasRealPengesahan ? $this->extractSectionByHeading($chapterText, 'HALAMAN PENGESAHAN') : $pengesahanBlock);
+        $outAbstrak = $cleanFrontSection($hasRealAbstrak ? $this->extractSectionByHeading($chapterText, 'ABSTRAK') : $abstrakIndo);
+
+        // English ABSTRACT is ALWAYS a faithful, full translation of the FINAL
+        // Indonesian ABSTRAK — never a generic placeholder and never skipped. Fall
+        // back to the model's own ABSTRACT (or the template) only if translation
+        // returns nothing.
+        $outAbstract = $this->translateAbstrakToEnglish($outAbstrak, $model);
+        if (trim(strip_tags($outAbstract)) === '') {
+            $outAbstract = $cleanFrontSection($hasRealAbstract ? $this->extractSectionByHeading($chapterText, 'ABSTRACT') : $abstractEng);
+        }
+
+        return $outPengesahan . "\n\n---\n\n"
+            . $outAbstrak . "\n\n---\n\n"
+            . $outAbstract;
+    }
+
+    /**
+     * Translate a finished Indonesian "# ABSTRAK" section into a complete English
+     * "# ABSTRACT" section (italic prose + a "**Keywords:**" line), preserving the
+     * full length and detail. Returns '' on any failure so the caller can fall
+     * back. Blocking (collects the stream) — it runs once per skripsi.
+     */
+    protected function translateAbstrakToEnglish(string $abstrakMarkdown, string $model): string
+    {
+        // Strip the heading + the "Kata Kunci" line so we translate only the prose;
+        // the keywords are handled explicitly by the prompt below.
+        $body = trim((string) preg_replace('/(?im)^#+\s*ABSTRAK\s*$/', '', $abstrakMarkdown));
+        if ($body === '') {
+            return '';
+        }
+
+        $messages = [
+            ['role' => 'system', 'content' =>
+                "You are a professional academic translator. Translate the Indonesian thesis abstract below into formal, fluent academic English.\n"
+                . "STRICT RULES:\n"
+                . "1. Translate the ENTIRE abstract faithfully — keep it just as long and detailed as the original; do NOT summarise, shorten, or add content.\n"
+                . "2. Keep it as flowing prose paragraph(s), matching the paragraph structure of the source.\n"
+                . "3. If the source ends with a '**Kata Kunci:** ...' line, translate it into a '**Keywords:** ...' line using the English equivalents of the same terms.\n"
+                . "4. Output ONLY the English abstract text (prose + the Keywords line). No headings, no commentary, no '# ABSTRACT' title, no code fences."],
+            ['role' => 'user', 'content' => $body],
+        ];
+
+        try {
+            $translated = '';
+            foreach ($this->aiService->streamResponse($messages, $model, ['max_tokens' => 2048]) as $chunk) {
+                if (is_string($chunk)) {
+                    $translated .= $chunk;
+                }
+            }
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        // Drop any stray <think> reasoning and code fences the model may add.
+        $translated = trim((string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $translated));
+        $translated = trim((string) preg_replace('/^```[a-z]*\s*|\s*```$/i', '', $translated));
+        // Remove a leading "# ABSTRACT" if the model added one despite instructions.
+        $translated = trim((string) preg_replace('/(?im)^#+\s*ABSTRACT\s*$/', '', $translated));
+
+        if (mb_strlen(strip_tags($translated)) < 40) {
+            return ''; // too short to be a real translation — let the caller fall back
+        }
+
+        // Italicise the prose (convention) but leave an existing "**Keywords:**"
+        // line outside the italics. Split off the keywords line if present.
+        $keywordsLine = '';
+        if (preg_match('/(?im)^\s*\**\s*Keywords\s*:.*$/m', $translated, $km, PREG_OFFSET_CAPTURE)) {
+            $keywordsLine = trim($km[0][0]);
+            $translated = trim(substr($translated, 0, $km[0][1]));
+        }
+        // Strip any markdown emphasis the model already added so we can wrap cleanly.
+        $prose = trim((string) preg_replace('/^\*+|\*+$/', '', $translated));
+
+        $out = "# ABSTRACT\n\n*" . $prose . "*";
+        if ($keywordsLine !== '') {
+            // Normalise to bold label + italic terms.
+            $terms = trim((string) preg_replace('/(?i)^\**\s*Keywords\s*:\s*\**/', '', $keywordsLine));
+            $terms = trim($terms, " *");
+            $out .= "\n\n**Keywords:** *" . $terms . "*";
+        }
+
+        return $out;
+    }
+
+    /** Helper to extract a single heading block from chapter markdown */
+    protected function extractSectionByHeading(string $text, string $headingName): string
+    {
+        if (preg_match('/(?m)^#+\s*' . preg_quote($headingName, '/') . '\b([\s\S]*?)(?=(?m)^#+|$)/i', $text, $m)) {
+            return "# {$headingName}\n\n" . trim($m[1]);
+        }
+        return "# {$headingName}";
     }
 
     /**
@@ -2620,14 +2941,17 @@ GBNF;
                 
                 $attempt = 0;
                 $success = false;
-                while ($attempt < 2 && !Cache::get($stopKey)) {
+                $best = ''; // longest real prose seen across attempts (never canned)
+                while ($attempt < 3 && !Cache::get($stopKey)) {
                     $attempt++;
                     $fillMessages = [
                         ['role' => 'system', 'content' => $this->chapterWriterPrompt()],
                         ['role' => 'user', 'content' =>
                             "TOPIK/JUDUL SKRIPSI: \"{$meta['judul']}\". WAJIB 100% konsisten pada topik ini! DILARANG berpindah topik ke entitas lain.\n"
                             . "Dalam {$heading}, sub-bab '{$num} {$label}' masih belum lengkap.\n"
-                            . "TUGAS: Tulis LENGKAP sub-bab ini dalam Bahasa Indonesia baku — mulai LANGSUNG dengan heading '## {$num} {$label}', tulis minimal 3 paragraf akademik yang tebal, substantif, dan spesifik pada topik di atas. DILARANG menulis placeholder/tanda kurung kosong."],
+                            . "TUGAS: Tulis LENGKAP sub-bab ini dalam Bahasa Indonesia baku — mulai LANGSUNG dengan heading '## {$num} {$label}', tulis minimal 3 paragraf akademik yang tebal, substantif, dan spesifik pada topik di atas.\n"
+                            . "DILARANG KERAS menulis kalimat generik/template yang bisa dipakai di skripsi mana pun (mis. 'pada bagian ini dipaparkan', 'membahas secara komprehensif', 'mengintegrasikan prinsip modularitas'). Setiap kalimat WAJIB menyebut detail konkret dari topik di atas. DILARANG placeholder/tanda kurung kosong."
+                            . ($attempt > 1 ? "\nPERINGATAN: percobaan sebelumnya terlalu pendek/generik. KALI INI tulis lebih panjang, lebih spesifik, dan konkret." : '')],
                     ];
                     $gen = $this->streamRawChapter($fillMessages, $model, $maxTokens, $stopKey, $heading);
                     foreach ($gen as $ev) {
@@ -2637,26 +2961,34 @@ GBNF;
                     // Strip thinking tags and antArtifact tags cleanly
                     $fillText = (string) preg_replace('/<(?:thinking|sim_thinking|think)>[\s\S]*?(?:<\/(?:thinking|sim_thinking|think)>|$)/i', '', $rawReturn);
                     $fillText = (string) preg_replace('/<\/?antArtifact[^>]*>/i', '', $fillText);
-                    
+
                     // Parse the fill's sections
                     $clean = $this->stripStubLines(rtrim($fillText));
                     $proseOnly = trim((string) preg_replace('/^#{0,3}[ \t]*\d+\.\d+[^\n]*\n?/', '', $clean));
-                    
+
+                    if (mb_strlen($proseOnly) > mb_strlen($best)) {
+                        $best = $proseOnly; // remember the best real attempt
+                    }
                     if (mb_strlen($proseOnly) >= 120) {
                         $bodies[$num] = "## {$num} {$label}\n\n" . $proseOnly;
                         $success = true;
                         break;
                     }
                 }
-                
+
                 if (!$success) {
-                    $topicStr = $meta['judul'] ?? 'Penelitian';
-                    $richFallback = "Sub-bab **{$num} {$label}** ini membahas secara komprehensif mengenai penerapan dan perancangan {$label} dalam kerangka skripsi berjudul \"{$topicStr}\". "
-                        . "Pengembangan komponen ini mengacu pada standar metodologi sistem informasi berkinerja tinggi, guna memastikan alur kerja RAG dan integrasi LLM beroperasi secara optimal, faktual, serta bebas dari halusinasi data.\n\n"
-                        . "Dalam kaitannya dengan implementasi sistem, analisis terhadap {$label} memegang peranan krusial untuk menjamin ketersediaan data transaksional dan operasional yang presisi. "
-                        . "Evaluasi keberhasilan pada aspek ini diukur melalui parameter objektivitas data dan keselarasan dengan kebutuhan pengguna akhir (UMKM kuliner).\n\n"
-                        . "Penerapan rancangan pada bagian ini juga mengintegrasikan prinsip modularitas dan skalabilitas, sehingga memungkinkan pengembangan modul tambahan secara efisien tanpa mengganggu stabilitas arsitektur keseluruhan.";
-                    $bodies[$num] = "## {$num} {$label}\n\n" . $richFallback;
+                    // Prefer the model's own best REAL attempt over canned filler —
+                    // a short but genuine paragraph beats obvious template text (the
+                    // user rejects generic "pada bagian ini dipaparkan…" wording).
+                    if (mb_strlen(trim($best)) >= 60) {
+                        $bodies[$num] = "## {$num} {$label}\n\n" . trim($best);
+                    } else {
+                        // Absolute last resort only (model produced essentially nothing).
+                        $topicStr = $meta['judul'] ?? 'Penelitian';
+                        $bodies[$num] = "## {$num} {$label}\n\n"
+                            . "Bagian {$label} dalam penelitian \"{$topicStr}\" belum dapat diuraikan secara otomatis. "
+                            . "Silakan lengkapi bagian ini, atau ketik \"lanjutkan {$heading}\" agar sistem menuliskannya kembali.";
+                    }
                 }
             }
         }
@@ -2664,7 +2996,7 @@ GBNF;
         // Reassemble: intro, declared sub-babs in order, then any non-duplicate extras.
         $result = $intro;
         foreach ($declared as [$num, $label]) {
-            $result .= "\n\n" . ($bodies[$num] ?? "## {$num} {$label}\n\nPenjelasan komprehensif mengenai {$label} pada skripsi ini...");
+            $result .= "\n\n" . ($bodies[$num] ?? "## {$num} {$label}");
         }
         foreach ($extra as $sec) {
             // Skip if extra section number matches any declared sub-bab
@@ -2822,9 +3154,9 @@ GBNF;
         $seenOwn = false;
         $seenHeads = [];
         foreach ($lines as $line) {
-            if (preg_match('/^#{1,3}\s+(BAB\s+([IVXLCDM]+|\d+)\b|DAFTAR\s+PUSTAKA|HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line, $cm)) {
+            if (preg_match('/^#{1,3}\s+(COVER|HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR|BAB\s+([IVXLCDM]+|\d+)\b|DAFTAR\s+PUSTAKA|\d+(?:\.\d+)+)/i', $line, $cm)) {
                 if ($isFrontChapter) {
-                    $owned = (bool) preg_match('/^#{1,3}\s+(HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line);
+                    $owned = (bool) preg_match('/^#{1,3}\s+(COVER|HALAMAN\s+PENGESAHAN|ABSTRAK|ABSTRACT|KATA\s+PENGANTAR)/i', $line);
                 } elseif ($ownBab !== null) {
                     $n = isset($cm[2]) && $cm[2] !== '' ? $this->detectBabReference('bab ' . $cm[2]) : null;
                     $owned = ($n === $ownBab);
@@ -3190,9 +3522,12 @@ GBNF;
                     }
                 }
             } else {
-                if (preg_match('/^#{0,3}\s*' . preg_quote($cleanHead, '/') . '/i', mb_strtolower($t))
+                $isFrontHeading = preg_match('/^HALAMAN\s+PENGESAHAN/i', trim($heading));
+                if (!$isFrontHeading && (
+                    preg_match('/^#{0,3}\s*' . preg_quote($cleanHead, '/') . '/i', mb_strtolower($t))
                     || preg_match('/^\*\*\s*' . preg_quote($cleanHead, '/') . '.*?\*\*\s*$/i', mb_strtolower($t))
-                    || mb_strtolower($t) === $cleanHead) {
+                    || mb_strtolower($t) === $cleanHead
+                )) {
                     if (mb_strlen($t) < 120 && !preg_match('/[.,;?]$/', $t)) {
                         $isHeadingToRemove = true;
                     }
@@ -3205,7 +3540,9 @@ GBNF;
         }
         
         $text = trim(implode("\n", $cleanedLines));
-        $text = "# {$heading}\n\n" . $text;
+        if (!preg_match('/^HALAMAN\s+PENGESAHAN/i', trim($heading))) {
+            $text = "# {$heading}\n\n" . $text;
+        }
 
         return $text;
     }

@@ -27,6 +27,9 @@ trait BuildsDocumentContent
         // Patch 9: Opsi B (Fallback teks)
         // Hapus blok diagram mermaid agar tidak tercetak mentah sebagai code block di PDF/DOCX.
         // Model sudah diinstruksikan untuk selalu memberikan caption di atas diagram.
+        // NOTE: the download renderers pre-process ```mermaid into <figure><img> via
+        // renderMermaidBlocks() BEFORE calling this, so by here any remaining mermaid
+        // block is one that could not be rendered (offline / failed) — strip it.
         $markdown = (string) preg_replace('/```mermaid\s*.*?```/is', '', $markdown);
 
         $environment = new Environment([
@@ -75,6 +78,75 @@ trait BuildsDocumentContent
         }
 
         return [(string) $result->getContent(), $this->metaDefaults($meta['mode'] ?? 'document', $meta)];
+    }
+
+    /**
+     * Pre-process a raw markdown document: render every ```mermaid block into a
+     * PNG image (via the Kroki service) and replace the fenced block with a
+     * centered <figure><img>. Rendered PNGs are cached on disk by content hash so
+     * the same diagram is never fetched twice and repeat exports are instant.
+     *
+     * Called ONLY by the binary download paths (PDF/DOCX) — never by the live
+     * HTML preview — so on-screen editing stays fast and fully local. If Kroki is
+     * unreachable (offline) or fails, the block is left as-is; {@see markdownToHtml}
+     * then strips it, preserving the previous "caption stays, diagram omitted"
+     * behaviour. Never throws — a diagram must never break a document render.
+     */
+    protected function renderMermaidBlocks(string $markdown): string
+    {
+        return (string) preg_replace_callback('/```mermaid[ \t]*\r?\n(.*?)```/is', function ($m) {
+            $code = trim($m[1]);
+            if ($code === '') {
+                return $m[0];
+            }
+            $png = $this->krokiMermaidPng($code);
+            if ($png === null) {
+                return $m[0]; // leave the fence; markdownToHtml() will strip it
+            }
+            // Absolute path + <p><img> wrapper works for both mPDF and PHPWord's
+            // HTML image parser (the same shape the SVG→PNG path already uses).
+            return "\n\n<p style=\"text-align:center;\"><img src=\""
+                . htmlspecialchars($png, ENT_QUOTES) . "\" style=\"max-width:100%;\" /></p>\n\n";
+        }, $markdown) ?? $markdown;
+    }
+
+    /**
+     * Render one Mermaid diagram to a cached PNG file and return its absolute path
+     * (or null on any failure). Uses Kroki; forces SVG-native text labels off the
+     * HTML-label path so the rasterised output is clean.
+     */
+    protected function krokiMermaidPng(string $code): ?string
+    {
+        try {
+            $dir = storage_path('app/kroki-cache');
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            $hash = substr(hash('sha256', $code), 0, 32);
+            $path = $dir . DIRECTORY_SEPARATOR . $hash . '.png';
+            if (is_file($path) && filesize($path) > 0) {
+                return $path;
+            }
+
+            $endpoint = rtrim((string) config('services.kroki.url', 'https://kroki.io'), '/') . '/mermaid/png';
+            $resp = \Illuminate\Support\Facades\Http::connectTimeout(4)
+                ->timeout((int) config('services.kroki.timeout', 15))
+                ->withBody($code, 'text/plain')
+                ->post($endpoint);
+
+            if (! $resp->successful()) {
+                return null;
+            }
+            $body = $resp->body();
+            // PNG magic number guard — never write a Kroki error page to a .png.
+            if (strncmp($body, "\x89PNG\r\n\x1a\n", 8) !== 0) {
+                return null;
+            }
+            file_put_contents($path, $body);
+            return $path;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     protected function metaDefaults(string $mode, array $meta = []): array
@@ -303,6 +375,19 @@ trait BuildsDocumentContent
             } else {
                 $mid .= $seg;
             }
+        }
+
+        // Defensive: a leaked BAB-I sub-bab (e.g. "1.5 Batasan Masalah") must never
+        // appear on the Lembar Pengesahan. Because segments only break on <h1>, a
+        // sub-heading that bled under the pengesahan <h1> would otherwise render on
+        // that page. Cut the pengesahan segment at the first numbered sub-heading
+        // (<h2>–<h6> starting with "N.M") or a stray "BAB …" heading.
+        if ($pengesahan !== '') {
+            $pengesahan = preg_replace(
+                '/<h[2-6]\b[^>]*>\s*(?:\d+\.\d+\b|BAB\b).*$/is',
+                '',
+                $pengesahan
+            ) ?? $pengesahan;
         }
 
         return [$pengesahan, $mid, $chapters];
